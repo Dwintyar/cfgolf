@@ -20,6 +20,7 @@ import Play from "./pages/Play";
 import GolfersNearby from "./pages/GolfersNearby";
 import Messages from "./pages/Messages";
 import GolferProfile from "./pages/GolferProfile";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
