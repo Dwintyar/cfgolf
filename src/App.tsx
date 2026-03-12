@@ -36,6 +36,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Navigate to="/login" replace />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/news" element={<NewsFeed />} />
             <Route path="/clubs" element={<Clubs />} />
             <Route path="/clubs/:id" element={<ClubProfile />} />
