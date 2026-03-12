@@ -108,6 +108,7 @@ const Play = () => {
           </button>
         ))}
       </div>
+      </div>
     </div>
   );
 };
