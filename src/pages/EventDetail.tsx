@@ -18,6 +18,7 @@ const EventDetail = () => {
   const navigate = useNavigate();
   const [showAssign, setShowAssign] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [calculating, setCalculating] = useState(false);
   const [startType, setStartType] = useState("tee_time");
   const [firstTee, setFirstTee] = useState("07:00");
   const [interval, setInterval] = useState("8");
