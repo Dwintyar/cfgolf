@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, User, Building2, Lock, Palette, LogOut, ChevronRight, AlertTriangle } from "lucide-react";
+import { ArrowLeft, User, Building2, Lock, Palette, LogOut, ChevronRight, Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,6 +24,7 @@ const Settings = () => {
   const [bio, setBio] = useState("");
   const [location, setLocation] = useState("");
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   // Password form
   const [newPassword, setNewPassword] = useState("");
@@ -54,7 +55,6 @@ const Settings = () => {
     enabled: !!userId,
   });
 
-  // Sync form with profile data
   useEffect(() => {
     if (profile) {
       setFullName(profile.full_name ?? "");
@@ -75,6 +75,42 @@ const Settings = () => {
     },
     enabled: !!userId,
   });
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !userId) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Ukuran file maksimal 2MB");
+      return;
+    }
+
+    setUploading(true);
+    const ext = file.name.split(".").pop();
+    const filePath = `${userId}/avatar.${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("avatars")
+      .upload(filePath, file, { upsert: true });
+
+    if (uploadError) {
+      toast.error(uploadError.message);
+      setUploading(false);
+      return;
+    }
+
+    const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(filePath);
+
+    const { error: updateError } = await supabase
+      .from("profiles")
+      .update({ avatar_url: `${publicUrl}?t=${Date.now()}`, updated_at: new Date().toISOString() })
+      .eq("id", userId);
+
+    setUploading(false);
+    if (updateError) { toast.error(updateError.message); return; }
+    toast.success("Avatar diperbarui!");
+    refetchProfile();
+  };
 
   const handleSaveProfile = async () => {
     if (!userId) return;
@@ -124,11 +160,29 @@ const Settings = () => {
           <h1 className="font-display text-xl font-bold">Edit Profile</h1>
         </div>
         <div className="space-y-4 px-4">
+          {/* Avatar with upload */}
           <div className="flex justify-center">
-            <Avatar className="h-20 w-20 border-2 border-primary/30">
-              <AvatarImage src={profile?.avatar_url ?? ""} />
-              <AvatarFallback className="bg-primary/20 text-primary text-xl font-bold">{initials}</AvatarFallback>
-            </Avatar>
+            <div className="relative">
+              <Avatar className="h-20 w-20 border-2 border-primary/30">
+                <AvatarImage src={profile?.avatar_url ?? ""} />
+                <AvatarFallback className="bg-primary/20 text-primary text-xl font-bold">{initials}</AvatarFallback>
+              </Avatar>
+              <label className="absolute bottom-0 right-0 flex h-7 w-7 cursor-pointer items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors">
+                <Camera className="h-3.5 w-3.5" />
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleAvatarUpload}
+                  disabled={uploading}
+                />
+              </label>
+              {uploading && (
+                <div className="absolute inset-0 flex items-center justify-center rounded-full bg-background/60">
+                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                </div>
+              )}
+            </div>
           </div>
           <div>
             <Label className="text-xs text-muted-foreground">Full Name</Label>
