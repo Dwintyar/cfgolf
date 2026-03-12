@@ -98,6 +98,7 @@ const Login = () => {
 
       <div className="relative z-10 w-full max-w-sm px-6 pb-12">
         <div className="mb-8 text-center">
+          <img src={logo} alt="CloudFairway" className="mx-auto h-16 w-16 mb-3" />
           <h1 className="font-display text-4xl font-bold tracking-tight">
             Cloud<span className="text-primary">Fairway</span>
           </h1>
