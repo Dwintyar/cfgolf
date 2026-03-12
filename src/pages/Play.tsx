@@ -44,8 +44,9 @@ const Play = () => {
   });
 
   return (
-    <div className="bottom-nav-safe p-4">
+    <div className="bottom-nav-safe">
       <AppHeader title="Play" />
+      <div className="px-4">
 
       <div className="space-y-3">
         {playOptions.map((opt, i) => (
