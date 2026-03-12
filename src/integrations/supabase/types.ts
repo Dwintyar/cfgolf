@@ -14,7 +14,414 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      club_invitations: {
+        Row: {
+          club_id: string
+          created_at: string
+          id: string
+          invited_by: string
+          invited_email: string | null
+          invited_user_id: string | null
+          status: Database["public"]["Enums"]["invitation_status"]
+        }
+        Insert: {
+          club_id: string
+          created_at?: string
+          id?: string
+          invited_by: string
+          invited_email?: string | null
+          invited_user_id?: string | null
+          status?: Database["public"]["Enums"]["invitation_status"]
+        }
+        Update: {
+          club_id?: string
+          created_at?: string
+          id?: string
+          invited_by?: string
+          invited_email?: string | null
+          invited_user_id?: string | null
+          status?: Database["public"]["Enums"]["invitation_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_invitations_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "club_invitations_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "club_invitations_invited_user_id_fkey"
+            columns: ["invited_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clubs: {
+        Row: {
+          cover_url: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_personal: boolean
+          logo_url: string | null
+          name: string
+          owner_id: string | null
+        }
+        Insert: {
+          cover_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_personal?: boolean
+          logo_url?: string | null
+          name: string
+          owner_id?: string | null
+        }
+        Update: {
+          cover_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_personal?: boolean
+          logo_url?: string | null
+          name?: string
+          owner_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clubs_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_holes: {
+        Row: {
+          course_id: string
+          distance_yards: number | null
+          handicap_index: number | null
+          hole_number: number
+          id: string
+          par: number
+        }
+        Insert: {
+          course_id: string
+          distance_yards?: number | null
+          handicap_index?: number | null
+          hole_number: number
+          id?: string
+          par?: number
+        }
+        Update: {
+          course_id?: string
+          distance_yards?: number | null
+          handicap_index?: number | null
+          hole_number?: number
+          id?: string
+          par?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_holes_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      courses: {
+        Row: {
+          club_id: string | null
+          created_at: string
+          description: string | null
+          green_fee_price: number | null
+          holes_count: number
+          id: string
+          image_url: string | null
+          location: string | null
+          name: string
+          par: number | null
+        }
+        Insert: {
+          club_id?: string | null
+          created_at?: string
+          description?: string | null
+          green_fee_price?: number | null
+          holes_count?: number
+          id?: string
+          image_url?: string | null
+          location?: string | null
+          name: string
+          par?: number | null
+        }
+        Update: {
+          club_id?: string | null
+          created_at?: string
+          description?: string | null
+          green_fee_price?: number | null
+          holes_count?: number
+          id?: string
+          image_url?: string | null
+          location?: string | null
+          name?: string
+          par?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "courses_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hole_scores: {
+        Row: {
+          created_at: string
+          fairway_hit: boolean | null
+          gir: boolean | null
+          hole_number: number
+          id: string
+          putts: number | null
+          scorecard_id: string
+          strokes: number | null
+        }
+        Insert: {
+          created_at?: string
+          fairway_hit?: boolean | null
+          gir?: boolean | null
+          hole_number: number
+          id?: string
+          putts?: number | null
+          scorecard_id: string
+          strokes?: number | null
+        }
+        Update: {
+          created_at?: string
+          fairway_hit?: boolean | null
+          gir?: boolean | null
+          hole_number?: number
+          id?: string
+          putts?: number | null
+          scorecard_id?: string
+          strokes?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hole_scores_scorecard_id_fkey"
+            columns: ["scorecard_id"]
+            isOneToOne: false
+            referencedRelation: "scorecards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      members: {
+        Row: {
+          club_id: string
+          id: string
+          joined_at: string
+          role: Database["public"]["Enums"]["member_role"]
+          user_id: string
+        }
+        Insert: {
+          club_id: string
+          id?: string
+          joined_at?: string
+          role?: Database["public"]["Enums"]["member_role"]
+          user_id: string
+        }
+        Update: {
+          club_id?: string
+          id?: string
+          joined_at?: string
+          role?: Database["public"]["Enums"]["member_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "members_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string
+          full_name: string | null
+          handicap: number | null
+          id: string
+          location: string | null
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          full_name?: string | null
+          handicap?: number | null
+          id: string
+          location?: string | null
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          full_name?: string | null
+          handicap?: number | null
+          id?: string
+          location?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      round_players: {
+        Row: {
+          id: string
+          round_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          round_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          round_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "round_players_round_id_fkey"
+            columns: ["round_id"]
+            isOneToOne: false
+            referencedRelation: "rounds"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "round_players_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rounds: {
+        Row: {
+          course_id: string
+          created_at: string
+          created_by: string
+          finished_at: string | null
+          id: string
+          started_at: string
+          status: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          created_by: string
+          finished_at?: string | null
+          id?: string
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          created_by?: string
+          finished_at?: string | null
+          id?: string
+          started_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rounds_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rounds_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scorecards: {
+        Row: {
+          created_at: string
+          id: string
+          player_id: string
+          round_id: string
+          total_putts: number | null
+          total_score: number | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          player_id: string
+          round_id: string
+          total_putts?: number | null
+          total_score?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          player_id?: string
+          round_id?: string
+          total_putts?: number | null
+          total_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scorecards_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scorecards_round_id_fkey"
+            columns: ["round_id"]
+            isOneToOne: false
+            referencedRelation: "rounds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +430,8 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      invitation_status: "pending" | "accepted" | "declined"
+      member_role: "owner" | "admin" | "member"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +558,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      invitation_status: ["pending", "accepted", "declined"],
+      member_role: ["owner", "admin", "member"],
+    },
   },
 } as const
