@@ -1,4 +1,5 @@
 import { Search, Users, Plus } from "lucide-react";
+import AppHeader from "@/components/AppHeader";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -42,12 +43,14 @@ const Clubs = () => {
   return (
     <div className="bottom-nav-safe">
       <div className="p-4">
-        <div className="flex items-center justify-between mb-4">
-          <h1 className="font-display text-2xl font-bold">Clubs</h1>
-          <Button size="sm" className="h-8 gap-1 rounded-lg text-xs">
-            <Plus className="h-3.5 w-3.5" /> Create
-          </Button>
-        </div>
+        <AppHeader
+          title="Clubs"
+          rightContent={
+            <Button size="sm" className="h-8 gap-1 rounded-lg text-xs">
+              <Plus className="h-3.5 w-3.5" /> Create
+            </Button>
+          }
+        />
         <div className="relative">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input

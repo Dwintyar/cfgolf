@@ -1,4 +1,5 @@
 import { Users, MessageCircle, MapPin, Compass } from "lucide-react";
+import AppHeader from "@/components/AppHeader";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -44,7 +45,7 @@ const Play = () => {
 
   return (
     <div className="bottom-nav-safe p-4">
-      <h1 className="font-display text-2xl font-bold mb-6">Play</h1>
+      <AppHeader title="Play" />
 
       <div className="space-y-3">
         {playOptions.map((opt, i) => (

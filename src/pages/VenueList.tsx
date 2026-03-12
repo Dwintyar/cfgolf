@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { MapPin, Flag } from "lucide-react";
+import AppHeader from "@/components/AppHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import venueImg from "@/assets/golf-venue.jpg";
@@ -22,10 +23,7 @@ const VenueList = () => {
 
   return (
     <div className="bottom-nav-safe">
-      <div className="flex items-center gap-2 p-4">
-        <MapPin className="h-5 w-5 text-primary" />
-        <h1 className="font-display text-2xl font-bold">Venues</h1>
-      </div>
+      <AppHeader title="Venues" icon={<MapPin className="h-5 w-5 text-primary" />} />
 
       <div className="space-y-3 px-4">
         {isLoading &&
