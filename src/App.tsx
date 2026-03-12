@@ -22,6 +22,9 @@ import GolfersNearby from "./pages/GolfersNearby";
 import Messages from "./pages/Messages";
 import GolferProfile from "./pages/GolferProfile";
 import Settings from "./pages/Settings";
+import ChatList from "./pages/ChatList";
+import ChatRoom from "./pages/ChatRoom";
+import BookTeeTime from "./pages/BookTeeTime";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -53,6 +56,9 @@ const App = () => (
             <Route path="/play/messages" element={<Messages />} />
             <Route path="/play/profile" element={<GolferProfile />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/chat" element={<ChatList />} />
+            <Route path="/chat/:id" element={<ChatRoom />} />
+            <Route path="/book/:courseId" element={<BookTeeTime />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <BottomNav />
