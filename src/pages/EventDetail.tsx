@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Calendar, MapPin, Users, Ticket, Trophy, Award, Shuffle, ChevronRight } from "lucide-react";
+import { Calendar, MapPin, Users, Ticket, Trophy, Award, Shuffle, ChevronRight, TrendingDown, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -19,6 +19,7 @@ const EventDetail = () => {
   const [showAssign, setShowAssign] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [calculating, setCalculating] = useState(false);
+  const [updatingHcp, setUpdatingHcp] = useState(false);
   const [startType, setStartType] = useState("tee_time");
   const [firstTee, setFirstTee] = useState("07:00");
   const [interval, setInterval] = useState("8");
@@ -237,6 +238,38 @@ const EventDetail = () => {
           disabled={calculating}
         >
           <Award className="h-3 w-3" /> {calculating ? "Calculating…" : "Calculate Winners"}
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-7 shrink-0 gap-1 text-[11px]"
+          onClick={async () => {
+            if (!id) return;
+            setUpdatingHcp(true);
+            try {
+              const { data: sessionData } = await supabase.auth.getSession();
+              const token = sessionData?.session?.access_token;
+              const { data, error } = await supabase.functions.invoke("update-player-handicap", {
+                body: { event_id: id },
+                headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+              });
+              if (error) {
+                toast.error(error.message || "Failed to update handicaps");
+              } else if (data?.error) {
+                toast.error(data.error);
+              } else {
+                const flags = data.sandbagging_flags ?? 0;
+                toast.success(`Updated ${data.players_updated} handicaps${flags > 0 ? ` · ${flags} sandbagging flag(s)` : ""}`);
+              }
+            } catch (err: any) {
+              toast.error(err.message || "Unexpected error");
+            } finally {
+              setUpdatingHcp(false);
+            }
+          }}
+          disabled={updatingHcp}
+        >
+          <TrendingDown className="h-3 w-3" /> {updatingHcp ? "Updating…" : "Update Handicaps"}
         </Button>
       </div>
 

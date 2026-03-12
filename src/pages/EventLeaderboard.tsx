@@ -120,8 +120,8 @@ const EventLeaderboard = () => {
               <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
                 {profile?.full_name?.charAt(0) ?? "?"}
               </div>
-              <div className="min-w-0">
-                <p className="text-sm font-medium truncate">{profile?.full_name ?? "Unknown"}</p>
+              <div className="min-w-0 cursor-pointer" onClick={() => navigate(`/profile/${r.player_id}`)}>
+                <p className="text-sm font-medium truncate hover:text-primary transition-colors">{profile?.full_name ?? "Unknown"}</p>
                 <p className="text-[10px] text-muted-foreground">HCP {r.hcp ?? "—"}</p>
               </div>
             </div>
