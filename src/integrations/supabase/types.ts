@@ -142,6 +142,44 @@ export type Database = {
           },
         ]
       }
+      course_tees: {
+        Row: {
+          color: string | null
+          course_id: string
+          created_at: string
+          id: string
+          rating: number | null
+          slope: number | null
+          tee_name: string
+        }
+        Insert: {
+          color?: string | null
+          course_id: string
+          created_at?: string
+          id?: string
+          rating?: number | null
+          slope?: number | null
+          tee_name: string
+        }
+        Update: {
+          color?: string | null
+          course_id?: string
+          created_at?: string
+          id?: string
+          rating?: number | null
+          slope?: number | null
+          tee_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_tees_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       courses: {
         Row: {
           club_id: string | null
@@ -382,30 +420,46 @@ export type Database = {
       }
       scorecards: {
         Row: {
+          course_id: string | null
           created_at: string
+          gross_score: number | null
           id: string
+          net_score: number | null
           player_id: string
           round_id: string
           total_putts: number | null
           total_score: number | null
         }
         Insert: {
+          course_id?: string | null
           created_at?: string
+          gross_score?: number | null
           id?: string
+          net_score?: number | null
           player_id: string
           round_id: string
           total_putts?: number | null
           total_score?: number | null
         }
         Update: {
+          course_id?: string | null
           created_at?: string
+          gross_score?: number | null
           id?: string
+          net_score?: number | null
           player_id?: string
           round_id?: string
           total_putts?: number | null
           total_score?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "scorecards_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "scorecards_player_id_fkey"
             columns: ["player_id"]
