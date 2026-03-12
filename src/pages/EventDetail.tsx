@@ -64,7 +64,7 @@ const EventDetail = () => {
     enabled: !!id,
   });
 
-  const { data: results } = useQuery({
+  const { data: results, refetch: refetchResults } = useQuery({
     queryKey: ["event-results", id],
     queryFn: async () => {
       const { data, error } = await supabase
