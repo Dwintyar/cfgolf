@@ -11,7 +11,7 @@ const posts = [
     category: "THINGS TO DO",
     time: "2h ago",
     title: "When setting up major championship courses, length matters less than you think.",
-    text: "At more than 7,300 yards, the Robert Trent Jones design known locally as the "Green Monster of Ladue" is feared for its crowned fairways, deep bunkers and huge greens.",
+    text: 'At more than 7,300 yards, the Robert Trent Jones design known locally as the "Green Monster of Ladue" is feared for its crowned fairways, deep bunkers and huge greens.',
     image: true,
     likes: 24,
     comments: 5,
