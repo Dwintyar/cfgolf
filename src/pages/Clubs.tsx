@@ -1,4 +1,5 @@
 import { Search, Users, Plus } from "lucide-react";
+import AppHeader from "@/components/AppHeader";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
