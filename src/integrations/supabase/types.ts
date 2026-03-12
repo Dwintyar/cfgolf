@@ -1056,8 +1056,12 @@ export type Database = {
         Row: {
           contestant_id: string | null
           event_id: string | null
+          flight_id: string | null
           hcp: number | null
           player_id: string | null
+          rank_gross: number | null
+          rank_net: number | null
+          status: string | null
           total_gross: number | null
           total_net: number | null
         }
@@ -1067,6 +1071,13 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contestants_flight_id_fkey"
+            columns: ["flight_id"]
+            isOneToOne: false
+            referencedRelation: "tournament_flights"
             referencedColumns: ["id"]
           },
           {

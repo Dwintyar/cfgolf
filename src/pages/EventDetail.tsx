@@ -18,6 +18,7 @@ const EventDetail = () => {
   const navigate = useNavigate();
   const [showAssign, setShowAssign] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [calculating, setCalculating] = useState(false);
   const [startType, setStartType] = useState("tee_time");
   const [firstTee, setFirstTee] = useState("07:00");
   const [interval, setInterval] = useState("8");
@@ -63,7 +64,7 @@ const EventDetail = () => {
     enabled: !!id,
   });
 
-  const { data: results } = useQuery({
+  const { data: results, refetch: refetchResults } = useQuery({
     queryKey: ["event-results", id],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -201,6 +202,41 @@ const EventDetail = () => {
         </Button>
         <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => navigate(`/event/${id}/pairings`)}>
           <Shuffle className="h-3 w-3" /> View Pairings
+        </Button>
+        <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => navigate(`/event/${id}/leaderboard`)}>
+          <Trophy className="h-3 w-3" /> Leaderboard
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-7 shrink-0 gap-1 text-[11px]"
+          onClick={async () => {
+            if (!id) return;
+            setCalculating(true);
+            try {
+              const { data: sessionData } = await supabase.auth.getSession();
+              const token = sessionData?.session?.access_token;
+              const { data, error } = await supabase.functions.invoke("calculate-event-winners", {
+                body: { event_id: id },
+                headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+              });
+              if (error) {
+                toast.error(error.message || "Failed to calculate winners");
+              } else if (data?.error) {
+                toast.error(data.error);
+              } else {
+                toast.success(`Calculated ${data.winners_calculated} winners across ${data.categories_processed} categories`);
+                refetchResults();
+              }
+            } catch (err: any) {
+              toast.error(err.message || "Unexpected error");
+            } finally {
+              setCalculating(false);
+            }
+          }}
+          disabled={calculating}
+        >
+          <Award className="h-3 w-3" /> {calculating ? "Calculating…" : "Calculate Winners"}
         </Button>
       </div>
 

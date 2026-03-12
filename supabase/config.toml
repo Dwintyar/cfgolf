@@ -2,3 +2,6 @@ project_id = "duktebslocooppxedanv"
 
 [functions.generate-event-pairings]
 verify_jwt = false
+
+[functions.calculate-event-winners]
+verify_jwt = false
