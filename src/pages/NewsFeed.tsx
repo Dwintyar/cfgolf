@@ -1,4 +1,5 @@
 import { Heart, MessageCircle, Share2, Bell } from "lucide-react";
+import AppHeader from "@/components/AppHeader";
 import heroImg from "@/assets/golf-hero.jpg";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
