@@ -333,6 +333,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "event_results_contestant_id_fkey"
+            columns: ["contestant_id"]
+            isOneToOne: false
+            referencedRelation: "event_leaderboard"
+            referencedColumns: ["contestant_id"]
+          },
+          {
             foreignKeyName: "event_results_event_id_fkey"
             columns: ["event_id"]
             isOneToOne: false
@@ -551,6 +558,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "pairing_players_contestant_id_fkey"
+            columns: ["contestant_id"]
+            isOneToOne: false
+            referencedRelation: "event_leaderboard"
+            referencedColumns: ["contestant_id"]
+          },
+          {
             foreignKeyName: "pairing_players_pairing_id_fkey"
             columns: ["pairing_id"]
             isOneToOne: false
@@ -566,6 +580,8 @@ export type Database = {
           flight_id: string | null
           group_number: number | null
           id: string
+          start_hole: number | null
+          start_type: string
           tee_time: string | null
         }
         Insert: {
@@ -574,6 +590,8 @@ export type Database = {
           flight_id?: string | null
           group_number?: number | null
           id?: string
+          start_hole?: number | null
+          start_type?: string
           tee_time?: string | null
         }
         Update: {
@@ -582,6 +600,8 @@ export type Database = {
           flight_id?: string | null
           group_number?: number | null
           id?: string
+          start_hole?: number | null
+          start_type?: string
           tee_time?: string | null
         }
         Relationships: [
@@ -1032,7 +1052,32 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      event_leaderboard: {
+        Row: {
+          contestant_id: string | null
+          event_id: string | null
+          hcp: number | null
+          player_id: string | null
+          total_gross: number | null
+          total_net: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contestants_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contestants_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       [_ in never]: never
