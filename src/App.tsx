@@ -11,6 +11,7 @@ import ClubProfile from "./pages/ClubProfile";
 import TourList from "./pages/TourList";
 import TourDetail from "./pages/TourDetail";
 import EventDetail from "./pages/EventDetail";
+import EventPairings from "./pages/EventPairings";
 import Venue from "./pages/Venue";
 import Play from "./pages/Play";
 import GolfersNearby from "./pages/GolfersNearby";
