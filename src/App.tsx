@@ -50,6 +50,7 @@ const App = () => (
             <Route path="/play/golfers" element={<GolfersNearby />} />
             <Route path="/play/messages" element={<Messages />} />
             <Route path="/play/profile" element={<GolferProfile />} />
+            <Route path="/settings" element={<Settings />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <BottomNav />

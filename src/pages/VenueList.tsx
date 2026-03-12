@@ -23,10 +23,7 @@ const VenueList = () => {
 
   return (
     <div className="bottom-nav-safe">
-      <div className="flex items-center gap-2 p-4">
-        <MapPin className="h-5 w-5 text-primary" />
-        <h1 className="font-display text-2xl font-bold">Venues</h1>
-      </div>
+      <AppHeader title="Venues" icon={<MapPin className="h-5 w-5 text-primary" />} />
 
       <div className="space-y-3 px-4">
         {isLoading &&
