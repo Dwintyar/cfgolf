@@ -39,13 +39,15 @@ const posts = [
 const NewsFeed = () => {
   return (
     <div className="bottom-nav-safe">
-      <div className="flex items-center justify-between p-4">
-        <h1 className="font-display text-2xl font-bold">News</h1>
-        <button className="relative rounded-full bg-secondary p-2">
-          <Bell className="h-5 w-5" />
-          <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-primary" />
-        </button>
-      </div>
+      <AppHeader
+        title="News"
+        rightContent={
+          <button className="relative rounded-full bg-secondary p-2">
+            <Bell className="h-5 w-5" />
+            <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-primary" />
+          </button>
+        }
+      />
 
       <div className="space-y-4 px-4">
         {posts.map((post, i) => (

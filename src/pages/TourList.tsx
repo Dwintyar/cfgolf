@@ -27,15 +27,15 @@ const TourList = () => {
 
   return (
     <div className="bottom-nav-safe">
-      <div className="flex items-center justify-between p-4">
-        <div className="flex items-center gap-2">
-          <Trophy className="h-5 w-5 text-primary" />
-          <h1 className="font-display text-2xl font-bold">Tournaments</h1>
-        </div>
-        <Button size="sm" className="h-8 gap-1" onClick={() => setShowCreate(true)}>
-          <Plus className="h-3.5 w-3.5" /> New Tour
-        </Button>
-      </div>
+      <AppHeader
+        title="Tournaments"
+        icon={<Trophy className="h-5 w-5 text-primary" />}
+        rightContent={
+          <Button size="sm" className="h-8 gap-1" onClick={() => setShowCreate(true)}>
+            <Plus className="h-3.5 w-3.5" /> New Tour
+          </Button>
+        }
+      />
 
       <div className="space-y-3 px-4">
         {isLoading && Array.from({ length: 3 }).map((_, i) => (
