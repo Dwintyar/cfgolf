@@ -239,6 +239,38 @@ const EventDetail = () => {
         >
           <Award className="h-3 w-3" /> {calculating ? "Calculating…" : "Calculate Winners"}
         </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-7 shrink-0 gap-1 text-[11px]"
+          onClick={async () => {
+            if (!id) return;
+            setUpdatingHcp(true);
+            try {
+              const { data: sessionData } = await supabase.auth.getSession();
+              const token = sessionData?.session?.access_token;
+              const { data, error } = await supabase.functions.invoke("update-player-handicap", {
+                body: { event_id: id },
+                headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+              });
+              if (error) {
+                toast.error(error.message || "Failed to update handicaps");
+              } else if (data?.error) {
+                toast.error(data.error);
+              } else {
+                const flags = data.sandbagging_flags ?? 0;
+                toast.success(`Updated ${data.players_updated} handicaps${flags > 0 ? ` · ${flags} sandbagging flag(s)` : ""}`);
+              }
+            } catch (err: any) {
+              toast.error(err.message || "Unexpected error");
+            } finally {
+              setUpdatingHcp(false);
+            }
+          }}
+          disabled={updatingHcp}
+        >
+          <TrendingDown className="h-3 w-3" /> {updatingHcp ? "Updating…" : "Update Handicaps"}
+        </Button>
       </div>
 
       <Tabs defaultValue="contestants" className="px-4">
