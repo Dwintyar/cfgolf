@@ -56,6 +56,9 @@ const App = () => (
             <Route path="/play/messages" element={<Messages />} />
             <Route path="/play/profile" element={<GolferProfile />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/chat" element={<ChatList />} />
+            <Route path="/chat/:id" element={<ChatRoom />} />
+            <Route path="/book/:courseId" element={<BookTeeTime />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <BottomNav />
