@@ -1,4 +1,5 @@
 import { Users, MessageCircle, MapPin, Compass } from "lucide-react";
+import AppHeader from "@/components/AppHeader";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
