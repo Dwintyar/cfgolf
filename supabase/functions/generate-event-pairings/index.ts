@@ -24,7 +24,6 @@ Deno.serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceKey);
 
-    // Verify the user token
     const anonClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!);
     const { data: { user }, error: authError } = await anonClient.auth.getUser(
       authHeader.replace("Bearer ", "")
@@ -36,20 +35,24 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { event_id, first_tee_time = "07:00", interval_minutes = 8 } = await req.json();
+    const body = await req.json();
+    const eventId: string = body.event_id;
+    const firstTeeTime: string = body.first_tee_time ?? "07:00";
+    const intervalMinutes: number = body.interval_minutes ?? 8;
+    const startType: string = body.start_type ?? "tee_time";
 
-    if (!event_id) {
+    if (!eventId) {
       return new Response(JSON.stringify({ error: "event_id required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // 1. Load the event to get start_type and event_date
+    // 1. Load event
     const { data: event, error: eventErr } = await supabase
       .from("events")
-      .select("id, event_date, course_id, tour_id")
-      .eq("id", event_id)
+      .select("id, event_date, course_id")
+      .eq("id", eventId)
       .single();
 
     if (eventErr || !event) {
@@ -59,38 +62,23 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Check pairings table for start_type config (from the request or default)
-    // We'll check if there's already a start_type preference stored
-    const { data: existingPairings } = await supabase
+    // 2. Delete existing pairings for this event
+    const { data: oldPairings } = await supabase
       .from("pairings")
       .select("id")
-      .eq("event_id", event_id)
-      .limit(1);
+      .eq("event_id", eventId);
 
-    // Delete existing pairings for this event (regenerate)
-    if (existingPairings && existingPairings.length > 0) {
-      // Delete pairing_players first (cascade should handle, but be safe)
-      const { data: oldPairings } = await supabase
-        .from("pairings")
-        .select("id")
-        .eq("event_id", event_id);
-
-      if (oldPairings && oldPairings.length > 0) {
-        const oldIds = oldPairings.map((p: { id: string }) => p.id);
-        await supabase
-          .from("pairing_players")
-          .delete()
-          .in("pairing_id", oldIds);
-      }
-
-      await supabase.from("pairings").delete().eq("event_id", event_id);
+    if (oldPairings && oldPairings.length > 0) {
+      const oldIds = oldPairings.map((p: { id: string }) => p.id);
+      await supabase.from("pairing_players").delete().in("pairing_id", oldIds);
+      await supabase.from("pairings").delete().eq("event_id", eventId);
     }
 
-    // 2. Load contestants sorted by handicap
+    // 3. Load competitors sorted by hcp
     const { data: contestants, error: contErr } = await supabase
       .from("contestants")
       .select("id, player_id, hcp, flight_id")
-      .eq("event_id", event_id)
+      .eq("event_id", eventId)
       .eq("status", "competitor")
       .order("hcp", { ascending: true, nullsFirst: false });
 
@@ -108,63 +96,42 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 3. Snake distribution for balanced groups
+    // 4. Snake distribution into groups of 3-4
     const playerCount = contestants.length;
-    const groupSize = 4;
-    const numFullGroups = Math.floor(playerCount / groupSize);
-    const remainder = playerCount % groupSize;
-    // If remainder is 1 or 2, we need to adjust group sizes
-    // Total groups = numFullGroups + (remainder > 0 ? 1 : 0) but we want groups of 3 or 4
     let numGroups: number;
-    if (remainder === 0) {
-      numGroups = numFullGroups;
-    } else if (remainder >= 3) {
-      numGroups = numFullGroups + 1;
+
+    if (playerCount <= 4) {
+      numGroups = 1;
     } else {
-      // remainder is 1 or 2: borrow from full groups to make groups of 3
-      // e.g., 9 players: 2 groups of 3 + 1 group of 3 = 3 groups of 3
-      // e.g., 10 players: 2 groups of 4 + 1 group of 2 -> better: 1 group of 4 + 2 groups of 3
-      numGroups = numFullGroups + 1;
-      // Some groups will have 3 players, that's fine
+      // Try groups of 4 first
+      numGroups = Math.ceil(playerCount / 4);
+      // If any group would have < 3 players, reduce groups
+      // Minimum per group should be 3
+      while (numGroups > 1 && Math.floor(playerCount / numGroups) < 3) {
+        numGroups--;
+      }
     }
 
-    if (numGroups === 0) numGroups = 1;
-
-    // Snake distribution: sort by hcp, then distribute in snake order
     const groups: Array<Array<typeof contestants[0]>> = Array.from(
       { length: numGroups },
       () => []
     );
 
-    let direction = 1; // 1 = forward, -1 = backward
-    let groupIdx = 0;
-
-    for (const contestant of contestants) {
-      groups[groupIdx].push(contestant);
-
-      // Move to next group in snake pattern
-      const nextIdx = groupIdx + direction;
-      if (nextIdx >= numGroups || nextIdx < 0) {
-        direction *= -1; // reverse direction
-      } else {
-        groupIdx = nextIdx;
-      }
+    // Snake: row 0 → left-to-right, row 1 → right-to-left, etc.
+    for (let i = 0; i < contestants.length; i++) {
+      const row = Math.floor(i / numGroups);
+      const col = i % numGroups;
+      const groupIdx = row % 2 === 0 ? col : numGroups - 1 - col;
+      groups[groupIdx].push(contestants[i]);
     }
 
-    // 4. Parse start_type from request body (default tee_time)
-    const { start_type = "tee_time" } = await req.json().catch(() => ({ start_type: "tee_time" }));
-    // Re-parse is problematic since body was already consumed; let's get it from the original parse
-    // Actually we need to handle this differently - let's use the initial parse
-
-    // Get start_type from initial request parse (already done above, need to add to destructure)
-    // Fix: we'll re-read from a variable
-
-    // 5. Generate pairings
+    // 5. Create pairings with tee times or shotgun holes
     const createdPairings: Array<{
       id: string;
       group_number: number;
       tee_time: string | null;
       start_hole: number | null;
+      start_type: string;
       players: Array<{ contestant_id: string; position: number }>;
     }> = [];
 
@@ -175,32 +142,22 @@ Deno.serve(async (req) => {
       const groupNumber = i + 1;
       let teeTime: string | null = null;
       let startHole: number | null = null;
-      let startType = "tee_time";
 
-      // Check the request body for start_type
-      // We already parsed it above but didn't destructure start_type
-      // Let me use a different approach - read from a stored var
-
-      if (start_type === "shotgun") {
-        startType = "shotgun";
-        startHole = groupNumber; // sequential hole assignment
-        // All groups start at the same time
-        teeTime = `${event.event_date}T${first_tee_time}:00`;
+      if (startType === "shotgun") {
+        startHole = groupNumber;
+        teeTime = `${event.event_date}T${firstTeeTime}:00`;
       } else {
-        startType = "tee_time";
-        // Calculate tee time: first_tee_time + (i * interval_minutes)
-        const [hours, minutes] = first_tee_time.split(":").map(Number);
-        const totalMinutes = hours * 60 + minutes + i * interval_minutes;
+        const [hours, minutes] = firstTeeTime.split(":").map(Number);
+        const totalMinutes = hours * 60 + minutes + i * intervalMinutes;
         const teeHours = Math.floor(totalMinutes / 60);
         const teeMins = totalMinutes % 60;
         teeTime = `${event.event_date}T${String(teeHours).padStart(2, "0")}:${String(teeMins).padStart(2, "0")}:00`;
       }
 
-      // Insert pairing
       const { data: pairing, error: pairErr } = await supabase
         .from("pairings")
         .insert({
-          event_id,
+          event_id: eventId,
           group_number: groupNumber,
           tee_time: teeTime,
           start_hole: startHole,
@@ -214,10 +171,9 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // Insert pairing players
-      const playerInserts = group.map((contestant, idx) => ({
+      const playerInserts = group.map((c, idx) => ({
         pairing_id: pairing.id,
-        contestant_id: contestant.id,
+        contestant_id: c.id,
         position: idx + 1,
       }));
 
@@ -225,15 +181,14 @@ Deno.serve(async (req) => {
         .from("pairing_players")
         .insert(playerInserts);
 
-      if (ppErr) {
-        console.error("Pairing player insert error:", ppErr);
-      }
+      if (ppErr) console.error("Pairing player insert error:", ppErr);
 
       createdPairings.push({
         id: pairing.id,
         group_number: groupNumber,
         tee_time: teeTime,
         start_hole: startHole,
+        start_type: startType,
         players: playerInserts,
       });
     }
@@ -241,7 +196,8 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        event_id,
+        event_id: eventId,
+        start_type: startType,
         groups_created: createdPairings.length,
         total_players: contestants.length,
         pairings: createdPairings,
