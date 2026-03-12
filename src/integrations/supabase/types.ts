@@ -406,6 +406,7 @@ export type Database = {
           new_hcp: number | null
           old_hcp: number | null
           player_id: string
+          sandbagging_flag: boolean
         }
         Insert: {
           created_at?: string
@@ -416,6 +417,7 @@ export type Database = {
           new_hcp?: number | null
           old_hcp?: number | null
           player_id: string
+          sandbagging_flag?: boolean
         }
         Update: {
           created_at?: string
@@ -426,6 +428,7 @@ export type Database = {
           new_hcp?: number | null
           old_hcp?: number | null
           player_id?: string
+          sandbagging_flag?: boolean
         }
         Relationships: [
           {
@@ -1082,6 +1085,54 @@ export type Database = {
           },
           {
             foreignKeyName: "contestants_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      player_handicap_trend: {
+        Row: {
+          created_at: string | null
+          event_id: string | null
+          gross_score: number | null
+          net_score: number | null
+          new_hcp: number | null
+          old_hcp: number | null
+          player_id: string | null
+          sandbagging_flag: boolean | null
+        }
+        Insert: {
+          created_at?: string | null
+          event_id?: string | null
+          gross_score?: number | null
+          net_score?: number | null
+          new_hcp?: number | null
+          old_hcp?: number | null
+          player_id?: string | null
+          sandbagging_flag?: boolean | null
+        }
+        Update: {
+          created_at?: string | null
+          event_id?: string | null
+          gross_score?: number | null
+          net_score?: number | null
+          new_hcp?: number | null
+          old_hcp?: number | null
+          player_id?: string | null
+          sandbagging_flag?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "handicap_history_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "handicap_history_player_id_fkey"
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "profiles"
