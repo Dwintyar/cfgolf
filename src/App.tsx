@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import BottomNav from "@/components/BottomNav";
 import Login from "./pages/Login";
+import ResetPassword from "./pages/ResetPassword";
 import NewsFeed from "./pages/NewsFeed";
 import Clubs from "./pages/Clubs";
 import ClubProfile from "./pages/ClubProfile";
