@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.calculate-event-winners]
 verify_jwt = false
+
+[functions.update-player-handicap]
+verify_jwt = false
