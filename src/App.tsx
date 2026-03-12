@@ -14,6 +14,7 @@ import EventDetail from "./pages/EventDetail";
 import EventPairings from "./pages/EventPairings";
 import EventLeaderboard from "./pages/EventLeaderboard";
 import PlayerProfile from "./pages/PlayerProfile";
+import VenueList from "./pages/VenueList";
 import Venue from "./pages/Venue";
 import Play from "./pages/Play";
 import GolfersNearby from "./pages/GolfersNearby";
@@ -42,6 +43,7 @@ const App = () => (
             <Route path="/event/:id/pairings" element={<EventPairings />} />
             <Route path="/event/:id/leaderboard" element={<EventLeaderboard />} />
             <Route path="/profile/:id" element={<PlayerProfile />} />
+            <Route path="/venue" element={<VenueList />} />
             <Route path="/venue/:id" element={<Venue />} />
             <Route path="/play" element={<Play />} />
             <Route path="/play/golfers" element={<GolfersNearby />} />
