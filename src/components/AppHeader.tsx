@@ -12,11 +12,11 @@ const AppHeader = ({ title, icon, rightContent }: AppHeaderProps) => {
   const navigate = useNavigate();
 
   return (
-    <div className="flex items-center justify-between p-4">
-      <div className="flex items-center gap-2">
-        <img src={logo} alt="CloudFairway" className="h-8 w-8" />
+    <div className="flex items-center justify-between px-4 py-3">
+      <div className="flex items-center gap-2.5">
+        <img src={logo} alt="CloudFairway" className="h-7 w-7 rounded-md" />
+        <h1 className="font-display text-xl font-bold leading-none">{title}</h1>
         {icon}
-        <h1 className="font-display text-2xl font-bold">{title}</h1>
       </div>
       <div className="flex items-center gap-2">
         {rightContent}
