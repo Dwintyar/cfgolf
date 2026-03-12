@@ -2,18 +2,20 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Newspaper, Users, Trophy, Play, MapPin } from "lucide-react";
 
 const tabs = [
-  { path: "/news", label: "News", icon: Newspaper },
-  { path: "/clubs", label: "Clubs", icon: Users },
-  { path: "/tour", label: "Tour", icon: Trophy },
-  { path: "/play", label: "Play", icon: Play },
-  { path: "/venue", label: "Venue", icon: MapPin },
+  { path: "/news", label: "Feeds", icon: Newspaper },
+  { path: "/play", label: "Buddies", icon: Users },
+  { path: "/clubs", label: "Clubs", icon: Trophy },
+  { path: "/tour", label: "Events", icon: Play },
+  { path: "/venue", label: "Venues", icon: MapPin },
 ];
+
+const hiddenPaths = ["/login", "/reset-password"];
 
 const BottomNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  if (location.pathname === "/login") return null;
+  if (hiddenPaths.includes(location.pathname)) return null;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border/50 bg-card/95 backdrop-blur-lg">
