@@ -8,7 +8,9 @@ import Login from "./pages/Login";
 import NewsFeed from "./pages/NewsFeed";
 import Clubs from "./pages/Clubs";
 import ClubProfile from "./pages/ClubProfile";
-import Tournaments from "./pages/Tournaments";
+import TourList from "./pages/TourList";
+import TourDetail from "./pages/TourDetail";
+import EventDetail from "./pages/EventDetail";
 import Venue from "./pages/Venue";
 import Play from "./pages/Play";
 import GolfersNearby from "./pages/GolfersNearby";
@@ -31,7 +33,9 @@ const App = () => (
             <Route path="/news" element={<NewsFeed />} />
             <Route path="/clubs" element={<Clubs />} />
             <Route path="/clubs/:id" element={<ClubProfile />} />
-            <Route path="/tournaments" element={<Tournaments />} />
+            <Route path="/tour" element={<TourList />} />
+            <Route path="/tour/:id" element={<TourDetail />} />
+            <Route path="/event/:id" element={<EventDetail />} />
             <Route path="/venue/:id" element={<Venue />} />
             <Route path="/play" element={<Play />} />
             <Route path="/play/golfers" element={<GolfersNearby />} />
