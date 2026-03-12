@@ -13,6 +13,7 @@ import TourDetail from "./pages/TourDetail";
 import EventDetail from "./pages/EventDetail";
 import EventPairings from "./pages/EventPairings";
 import EventLeaderboard from "./pages/EventLeaderboard";
+import PlayerProfile from "./pages/PlayerProfile";
 import Venue from "./pages/Venue";
 import Play from "./pages/Play";
 import GolfersNearby from "./pages/GolfersNearby";
