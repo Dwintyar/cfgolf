@@ -1,18 +1,26 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Calendar, MapPin, Users, Ticket, Trophy, Award } from "lucide-react";
+import { Calendar, MapPin, Users, Ticket, Trophy, Award, Shuffle, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useState } from "react";
+import { toast } from "sonner";
 import AssignContestantDialog from "@/components/tour/AssignContestantDialog";
 
 const EventDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [showAssign, setShowAssign] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const [startType, setStartType] = useState("tee_time");
+  const [firstTee, setFirstTee] = useState("07:00");
+  const [interval, setInterval] = useState("8");
 
   const { data: event, isLoading } = useQuery({
     queryKey: ["event", id],
@@ -69,6 +77,52 @@ const EventDetail = () => {
     enabled: !!id,
   });
 
+  const { data: pairings, refetch: refetchPairings } = useQuery({
+    queryKey: ["event-pairings", id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("pairings")
+        .select("*, pairing_players(*, contestants(*, profiles(full_name, handicap)))")
+        .eq("event_id", id!)
+        .order("group_number");
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!id,
+  });
+
+  const handleGeneratePairings = async () => {
+    if (!id) return;
+    setGenerating(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+
+      const { data, error } = await supabase.functions.invoke("generate-event-pairings", {
+        body: {
+          event_id: id,
+          start_type: startType,
+          first_tee_time: firstTee,
+          interval_minutes: parseInt(interval) || 8,
+        },
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+
+      if (error) {
+        toast.error(error.message || "Failed to generate pairings");
+      } else if (data?.error) {
+        toast.error(data.error);
+      } else {
+        toast.success(`Generated ${data.groups_created} groups for ${data.total_players} players`);
+        refetchPairings();
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Unexpected error");
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   const statusColors: Record<string, string> = {
     draft: "border-muted-foreground/30 text-muted-foreground",
     registration: "border-accent/40 text-accent",
@@ -90,6 +144,16 @@ const EventDetail = () => {
 
   const usedTickets = tickets?.filter(t => t.status !== "available").length ?? 0;
   const totalTickets = tickets?.length ?? 0;
+
+  const formatTeeTime = (teeTime: string | null) => {
+    if (!teeTime) return "—";
+    try {
+      const d = new Date(teeTime);
+      return d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false });
+    } catch {
+      return teeTime;
+    }
+  };
 
   return (
     <div className="bottom-nav-safe">
@@ -131,15 +195,19 @@ const EventDetail = () => {
       </div>
 
       {/* Admin */}
-      <div className="flex gap-2 px-4 pb-3">
-        <Button size="sm" variant="outline" className="h-7 gap-1 text-[11px]" onClick={() => setShowAssign(true)}>
+      <div className="flex gap-2 overflow-x-auto px-4 pb-3 scrollbar-none">
+        <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowAssign(true)}>
           <Users className="h-3 w-3" /> Assign Contestant
+        </Button>
+        <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => navigate(`/event/${id}/pairings`)}>
+          <Shuffle className="h-3 w-3" /> View Pairings
         </Button>
       </div>
 
       <Tabs defaultValue="contestants" className="px-4">
         <TabsList className="w-full">
           <TabsTrigger value="contestants" className="flex-1 text-xs">Contestants</TabsTrigger>
+          <TabsTrigger value="pairings" className="flex-1 text-xs">Pairings</TabsTrigger>
           <TabsTrigger value="tickets" className="flex-1 text-xs">Tickets</TabsTrigger>
           <TabsTrigger value="results" className="flex-1 text-xs">Results</TabsTrigger>
         </TabsList>
@@ -162,6 +230,72 @@ const EventDetail = () => {
               <Badge variant="outline" className={`text-[10px] ${c.status === "competitor" ? "text-primary border-primary/30" : c.status === "guest" ? "text-accent border-accent/30" : "text-muted-foreground"}`}>
                 {c.status}
               </Badge>
+            </div>
+          ))}
+        </TabsContent>
+
+        <TabsContent value="pairings" className="space-y-3 pt-2">
+          {/* Generate Pairings Controls */}
+          <div className="golf-card space-y-3 p-4">
+            <h3 className="text-sm font-semibold flex items-center gap-2">
+              <Shuffle className="h-4 w-4 text-primary" /> Generate Pairings
+            </h3>
+            <div className="grid grid-cols-3 gap-2">
+              <div>
+                <Label className="text-[10px]">Start Type</Label>
+                <Select value={startType} onValueChange={setStartType}>
+                  <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="tee_time">Tee Time</SelectItem>
+                    <SelectItem value="shotgun">Shotgun</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-[10px]">First Tee</Label>
+                <Input type="time" value={firstTee} onChange={e => setFirstTee(e.target.value)} className="h-8 text-xs" />
+              </div>
+              <div>
+                <Label className="text-[10px]">Interval</Label>
+                <Input type="number" value={interval} onChange={e => setInterval(e.target.value)} className="h-8 text-xs" disabled={startType === "shotgun"} />
+              </div>
+            </div>
+            <Button size="sm" className="w-full gap-1" onClick={handleGeneratePairings} disabled={generating}>
+              <Shuffle className="h-3.5 w-3.5" />
+              {generating ? "Generating…" : "Generate Pairings"}
+            </Button>
+          </div>
+
+          {/* Pairing list */}
+          {(!pairings || pairings.length === 0) && (
+            <div className="golf-card p-6 text-center text-sm text-muted-foreground">
+              No pairings generated yet. Use the controls above to generate.
+            </div>
+          )}
+          {pairings?.map((p) => (
+            <div key={p.id} className="golf-card p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold">Group {p.group_number}</span>
+                <div className="flex items-center gap-2">
+                  {p.start_type === "shotgun" && p.start_hole && (
+                    <Badge variant="outline" className="text-[10px] border-accent/30 text-accent">Hole {p.start_hole}</Badge>
+                  )}
+                  <span className="text-xs text-muted-foreground">{formatTeeTime(p.tee_time)}</span>
+                </div>
+              </div>
+              <div className="space-y-1">
+                {((p.pairing_players as any[]) ?? [])
+                  .sort((a: any, b: any) => (a.position ?? 0) - (b.position ?? 0))
+                  .map((pp: any) => (
+                    <div key={pp.id} className="flex items-center gap-2 text-xs">
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">
+                        {pp.position}
+                      </span>
+                      <span className="truncate">{pp.contestants?.profiles?.full_name ?? "Unknown"}</span>
+                      <span className="ml-auto text-muted-foreground">HCP {pp.contestants?.hcp ?? "—"}</span>
+                    </div>
+                  ))}
+              </div>
             </div>
           ))}
         </TabsContent>
