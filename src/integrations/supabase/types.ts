@@ -517,6 +517,83 @@ export type Database = {
           },
         ]
       }
+      pairing_players: {
+        Row: {
+          cart_number: number | null
+          contestant_id: string | null
+          created_at: string | null
+          id: string
+          pairing_id: string | null
+          position: number | null
+        }
+        Insert: {
+          cart_number?: number | null
+          contestant_id?: string | null
+          created_at?: string | null
+          id?: string
+          pairing_id?: string | null
+          position?: number | null
+        }
+        Update: {
+          cart_number?: number | null
+          contestant_id?: string | null
+          created_at?: string | null
+          id?: string
+          pairing_id?: string | null
+          position?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pairing_players_contestant_id_fkey"
+            columns: ["contestant_id"]
+            isOneToOne: false
+            referencedRelation: "contestants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pairing_players_pairing_id_fkey"
+            columns: ["pairing_id"]
+            isOneToOne: false
+            referencedRelation: "pairings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pairings: {
+        Row: {
+          created_at: string | null
+          event_id: string | null
+          flight_id: string | null
+          group_number: number | null
+          id: string
+          tee_time: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          event_id?: string | null
+          flight_id?: string | null
+          group_number?: number | null
+          id?: string
+          tee_time?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          event_id?: string | null
+          flight_id?: string | null
+          group_number?: number | null
+          id?: string
+          tee_time?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pairings_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
