@@ -37,6 +37,7 @@ const App = () => (
             <Route path="/tour" element={<TourList />} />
             <Route path="/tour/:id" element={<TourDetail />} />
             <Route path="/event/:id" element={<EventDetail />} />
+            <Route path="/event/:id/pairings" element={<EventPairings />} />
             <Route path="/venue/:id" element={<Venue />} />
             <Route path="/play" element={<Play />} />
             <Route path="/play/golfers" element={<GolfersNearby />} />
