@@ -107,6 +107,68 @@ export type Database = {
           },
         ]
       }
+      contestants: {
+        Row: {
+          created_at: string
+          event_id: string
+          flight_id: string | null
+          hcp: number | null
+          id: string
+          player_id: string
+          status: string
+          ticket_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          flight_id?: string | null
+          hcp?: number | null
+          id?: string
+          player_id: string
+          status?: string
+          ticket_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          flight_id?: string | null
+          hcp?: number | null
+          id?: string
+          player_id?: string
+          status?: string
+          ticket_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contestants_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contestants_flight_id_fkey"
+            columns: ["flight_id"]
+            isOneToOne: false
+            referencedRelation: "tournament_flights"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contestants_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contestants_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       course_holes: {
         Row: {
           course_id: string
@@ -223,6 +285,154 @@ export type Database = {
             columns: ["club_id"]
             isOneToOne: false
             referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_results: {
+        Row: {
+          category_id: string
+          contestant_id: string
+          created_at: string
+          event_id: string
+          id: string
+          rank_position: number
+          score_value: number
+        }
+        Insert: {
+          category_id: string
+          contestant_id: string
+          created_at?: string
+          event_id: string
+          id?: string
+          rank_position: number
+          score_value: number
+        }
+        Update: {
+          category_id?: string
+          contestant_id?: string
+          created_at?: string
+          event_id?: string
+          id?: string
+          rank_position?: number
+          score_value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_results_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "tournament_winner_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_results_contestant_id_fkey"
+            columns: ["contestant_id"]
+            isOneToOne: false
+            referencedRelation: "contestants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_results_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      events: {
+        Row: {
+          course_id: string
+          created_at: string
+          event_date: string
+          id: string
+          name: string
+          status: string
+          ticket_total: number
+          tour_id: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          event_date: string
+          id?: string
+          name: string
+          status?: string
+          ticket_total?: number
+          tour_id: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          event_date?: string
+          id?: string
+          name?: string
+          status?: string
+          ticket_total?: number
+          tour_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "events_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_tour_id_fkey"
+            columns: ["tour_id"]
+            isOneToOne: false
+            referencedRelation: "tours"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      handicap_history: {
+        Row: {
+          created_at: string
+          event_id: string
+          gross_score: number | null
+          id: string
+          net_score: number | null
+          new_hcp: number | null
+          old_hcp: number | null
+          player_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          gross_score?: number | null
+          id?: string
+          net_score?: number | null
+          new_hcp?: number | null
+          old_hcp?: number | null
+          player_id: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          gross_score?: number | null
+          id?: string
+          net_score?: number | null
+          new_hcp?: number | null
+          old_hcp?: number | null
+          player_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "handicap_history_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "handicap_history_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -472,6 +682,273 @@ export type Database = {
             columns: ["round_id"]
             isOneToOne: false
             referencedRelation: "rounds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tickets: {
+        Row: {
+          assigned_player_id: string | null
+          club_id: string
+          created_at: string
+          event_id: string
+          id: string
+          status: string
+          ticket_number: number
+        }
+        Insert: {
+          assigned_player_id?: string | null
+          club_id: string
+          created_at?: string
+          event_id: string
+          id?: string
+          status?: string
+          ticket_number: number
+        }
+        Update: {
+          assigned_player_id?: string | null
+          club_id?: string
+          created_at?: string
+          event_id?: string
+          id?: string
+          status?: string
+          ticket_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tickets_assigned_player_id_fkey"
+            columns: ["assigned_player_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tickets_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tickets_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tour_clubs: {
+        Row: {
+          club_id: string
+          created_at: string
+          id: string
+          status: string
+          ticket_quota: number
+          tour_id: string
+        }
+        Insert: {
+          club_id: string
+          created_at?: string
+          id?: string
+          status?: string
+          ticket_quota?: number
+          tour_id: string
+        }
+        Update: {
+          club_id?: string
+          created_at?: string
+          id?: string
+          status?: string
+          ticket_quota?: number
+          tour_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tour_clubs_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tour_clubs_tour_id_fkey"
+            columns: ["tour_id"]
+            isOneToOne: false
+            referencedRelation: "tours"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tour_players: {
+        Row: {
+          club_id: string
+          created_at: string
+          id: string
+          player_id: string
+          status: string
+          tour_id: string
+        }
+        Insert: {
+          club_id: string
+          created_at?: string
+          id?: string
+          player_id: string
+          status?: string
+          tour_id: string
+        }
+        Update: {
+          club_id?: string
+          created_at?: string
+          id?: string
+          player_id?: string
+          status?: string
+          tour_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tour_players_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tour_players_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tour_players_tour_id_fkey"
+            columns: ["tour_id"]
+            isOneToOne: false
+            referencedRelation: "tours"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tournament_flights: {
+        Row: {
+          created_at: string
+          display_order: number
+          flight_name: string
+          hcp_max: number
+          hcp_min: number
+          id: string
+          tour_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          flight_name: string
+          hcp_max?: number
+          hcp_min?: number
+          id?: string
+          tour_id: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          flight_name?: string
+          hcp_max?: number
+          hcp_min?: number
+          id?: string
+          tour_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tournament_flights_tour_id_fkey"
+            columns: ["tour_id"]
+            isOneToOne: false
+            referencedRelation: "tours"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tournament_winner_categories: {
+        Row: {
+          calculation_type: string
+          category_name: string
+          created_at: string
+          display_order: number
+          flight_id: string | null
+          id: string
+          rank_count: number
+          tour_id: string
+        }
+        Insert: {
+          calculation_type?: string
+          category_name: string
+          created_at?: string
+          display_order?: number
+          flight_id?: string | null
+          id?: string
+          rank_count?: number
+          tour_id: string
+        }
+        Update: {
+          calculation_type?: string
+          category_name?: string
+          created_at?: string
+          display_order?: number
+          flight_id?: string | null
+          id?: string
+          rank_count?: number
+          tour_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tournament_winner_categories_flight_id_fkey"
+            columns: ["flight_id"]
+            isOneToOne: false
+            referencedRelation: "tournament_flights"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tournament_winner_categories_tour_id_fkey"
+            columns: ["tour_id"]
+            isOneToOne: false
+            referencedRelation: "tours"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tours: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          organizer_club_id: string
+          tournament_type: string
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          organizer_club_id: string
+          tournament_type?: string
+          year?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          organizer_club_id?: string
+          tournament_type?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tours_organizer_club_id_fkey"
+            columns: ["organizer_club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
             referencedColumns: ["id"]
           },
         ]
