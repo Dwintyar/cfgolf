@@ -4,7 +4,7 @@ import { Newspaper, Users, Trophy, Play, MapPin } from "lucide-react";
 const tabs = [
   { path: "/news", label: "News", icon: Newspaper },
   { path: "/clubs", label: "Clubs", icon: Users },
-  { path: "/tournaments", label: "Tour", icon: Trophy },
+  { path: "/tour", label: "Tour", icon: Trophy },
   { path: "/play", label: "Play", icon: Play },
   { path: "/venue", label: "Venue", icon: MapPin },
 ];
