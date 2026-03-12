@@ -3,17 +3,41 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useNavigate } from "react-router-dom";
-
-const clubs = [
-  { id: 1, name: "Pine Valley Golf Club", initials: "PV", members: 128, location: "Pine Valley, NJ" },
-  { id: 2, name: "Augusta Legends", initials: "AL", members: 256, location: "Augusta, GA" },
-  { id: 3, name: "Links & Drinks Society", initials: "LD", members: 89, location: "Scottsdale, AZ" },
-  { id: 4, name: "Weekend Warriors GC", initials: "WW", members: 342, location: "San Diego, CA" },
-  { id: 5, name: "Iron Sharpeners", initials: "IS", members: 67, location: "Miami, FL" },
-];
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useState } from "react";
 
 const Clubs = () => {
   const navigate = useNavigate();
+  const [search, setSearch] = useState("");
+
+  const { data: clubs, isLoading } = useQuery({
+    queryKey: ["clubs"],
+    queryFn: async () => {
+      const { data: clubsData, error } = await supabase
+        .from("clubs")
+        .select("*, members(count)")
+        .eq("is_personal", false)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      return clubsData.map((c) => ({
+        ...c,
+        memberCount: (c.members as any)?.[0]?.count ?? 0,
+        initials: c.name
+          .split(" ")
+          .slice(0, 2)
+          .map((w: string) => w[0])
+          .join("")
+          .toUpperCase(),
+      }));
+    },
+  });
+
+  const filtered = clubs?.filter((c) =>
+    c.name.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
     <div className="bottom-nav-safe">
@@ -28,13 +52,32 @@ const Clubs = () => {
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Search clubs..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
             className="h-10 rounded-xl border-border/50 bg-card/80 pl-10"
           />
         </div>
       </div>
 
       <div className="space-y-3 px-4">
-        {clubs.map((club, i) => (
+        {isLoading &&
+          Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="golf-card flex items-center gap-3 p-4">
+              <Skeleton className="h-12 w-12 rounded-full" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-3 w-1/2" />
+              </div>
+            </div>
+          ))}
+
+        {filtered?.length === 0 && !isLoading && (
+          <p className="text-center text-sm text-muted-foreground py-8">
+            No clubs found. Create one to get started!
+          </p>
+        )}
+
+        {filtered?.map((club, i) => (
           <button
             key={club.id}
             onClick={() => navigate(`/clubs/${club.id}`)}
@@ -48,11 +91,11 @@ const Clubs = () => {
             </Avatar>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold truncate">{club.name}</p>
-              <p className="text-xs text-muted-foreground">{club.location}</p>
+              <p className="text-xs text-muted-foreground">{club.description || "Golf Club"}</p>
             </div>
             <div className="flex flex-col items-end gap-1">
               <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Users className="h-3.5 w-3.5" /> {club.members}
+                <Users className="h-3.5 w-3.5" /> {club.memberCount}
               </div>
               <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
                 Join

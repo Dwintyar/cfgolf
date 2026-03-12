@@ -1,24 +1,86 @@
 import { ArrowLeft, Users, UserPlus, Settings, Trophy } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Skeleton } from "@/components/ui/skeleton";
 import heroImg from "@/assets/golf-hero.jpg";
-
-const members = [
-  { name: "James Walker", initials: "JW", role: "Admin", hcp: 10 },
-  { name: "Sarah Chen", initials: "SC", role: "Member", hcp: 8 },
-  { name: "Mike O'Brien", initials: "MO", role: "Member", hcp: 15 },
-  { name: "Emma Stone", initials: "ES", role: "Captain", hcp: 5 },
-  { name: "Ryan Cole", initials: "RC", role: "Member", hcp: 22 },
-];
 
 const ClubProfile = () => {
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
+
+  const { data: club, isLoading: clubLoading } = useQuery({
+    queryKey: ["club", id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("clubs")
+        .select("*")
+        .eq("id", id!)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!id,
+  });
+
+  const { data: members, isLoading: membersLoading } = useQuery({
+    queryKey: ["club-members", id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("members")
+        .select("*, profiles(full_name, avatar_url, handicap)")
+        .eq("club_id", id!);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!id,
+  });
+
+  const initials = club?.name
+    ?.split(" ")
+    .slice(0, 2)
+    .map((w: string) => w[0])
+    .join("")
+    .toUpperCase() ?? "??";
+
+  const memberCount = members?.length ?? 0;
+  const avgHcp = members?.length
+    ? (
+        members.reduce((sum, m) => sum + ((m.profiles as any)?.handicap ?? 0), 0) /
+        members.length
+      ).toFixed(1)
+    : "—";
+
+  const getInitials = (name: string | null) =>
+    name
+      ? name
+          .split(" ")
+          .slice(0, 2)
+          .map((w) => w[0])
+          .join("")
+          .toUpperCase()
+      : "??";
+
+  const getRoleBadgeClass = (role: string) => {
+    switch (role) {
+      case "admin":
+      case "owner":
+        return "bg-accent/20 text-accent";
+      default:
+        return "bg-secondary text-secondary-foreground";
+    }
+  };
 
   return (
     <div className="bottom-nav-safe">
       <div className="relative">
-        <img src={heroImg} alt="Club" className="h-48 w-full object-cover" />
+        <img
+          src={club?.cover_url || heroImg}
+          alt="Club"
+          className="h-48 w-full object-cover"
+        />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
         <button
           onClick={() => navigate(-1)}
@@ -29,17 +91,29 @@ const ClubProfile = () => {
       </div>
 
       <div className="px-4 -mt-8 relative z-10">
-        <div className="flex items-end gap-4">
-          <Avatar className="h-16 w-16 border-4 border-background">
-            <AvatarFallback className="bg-primary text-xl font-bold text-primary-foreground">
-              PV
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex-1">
-            <h1 className="font-display text-xl font-bold">Pine Valley Golf Club</h1>
-            <p className="text-xs text-muted-foreground">Pine Valley, NJ · 128 members</p>
+        {clubLoading ? (
+          <div className="flex items-end gap-4">
+            <Skeleton className="h-16 w-16 rounded-full" />
+            <div className="space-y-2 flex-1">
+              <Skeleton className="h-5 w-3/4" />
+              <Skeleton className="h-3 w-1/2" />
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="flex items-end gap-4">
+            <Avatar className="h-16 w-16 border-4 border-background">
+              <AvatarFallback className="bg-primary text-xl font-bold text-primary-foreground">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1">
+              <h1 className="font-display text-xl font-bold">{club?.name}</h1>
+              <p className="text-xs text-muted-foreground">
+                {club?.description || "Golf Club"} · {memberCount} members
+              </p>
+            </div>
+          </div>
+        )}
 
         <div className="mt-4 flex gap-2">
           <Button className="flex-1 h-10 rounded-xl gap-1.5 text-sm">
@@ -52,9 +126,9 @@ const ClubProfile = () => {
 
         <div className="mt-6 grid grid-cols-3 gap-3">
           {[
-            { label: "Members", value: "128", icon: Users },
-            { label: "Events", value: "12", icon: Trophy },
-            { label: "Avg HCP", value: "14.2", icon: Trophy },
+            { label: "Members", value: String(memberCount), icon: Users },
+            { label: "Events", value: "—", icon: Trophy },
+            { label: "Avg HCP", value: avgHcp, icon: Trophy },
           ].map((s) => (
             <div key={s.label} className="golf-card p-3 text-center">
               <p className="text-lg font-bold text-primary">{s.value}</p>
@@ -65,32 +139,50 @@ const ClubProfile = () => {
 
         <h2 className="mt-6 mb-3 font-display text-lg font-semibold">Members</h2>
         <div className="space-y-2">
-          {members.map((m, i) => (
-            <div
-              key={m.name}
-              className="golf-card flex items-center gap-3 p-3 animate-fade-in"
-              style={{ animationDelay: `${i * 50}ms` }}
-            >
-              <Avatar className="h-10 w-10 border border-primary/20">
-                <AvatarFallback className="bg-secondary text-sm font-semibold">
-                  {m.initials}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1">
-                <p className="text-sm font-semibold">{m.name}</p>
-                <p className="text-xs text-muted-foreground">HCP {m.hcp}</p>
+          {membersLoading &&
+            Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="golf-card flex items-center gap-3 p-3">
+                <Skeleton className="h-10 w-10 rounded-full" />
+                <div className="flex-1 space-y-1">
+                  <Skeleton className="h-4 w-2/3" />
+                  <Skeleton className="h-3 w-1/3" />
+                </div>
               </div>
-              <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                m.role === "Admin"
-                  ? "bg-accent/20 text-accent"
-                  : m.role === "Captain"
-                  ? "bg-primary/20 text-primary"
-                  : "bg-secondary text-secondary-foreground"
-              }`}>
-                {m.role}
-              </span>
-            </div>
-          ))}
+            ))}
+
+          {members?.length === 0 && !membersLoading && (
+            <p className="text-center text-sm text-muted-foreground py-4">
+              No members yet. Invite golfers to join!
+            </p>
+          )}
+
+          {members?.map((m, i) => {
+            const profile = m.profiles as any;
+            return (
+              <div
+                key={m.id}
+                className="golf-card flex items-center gap-3 p-3 animate-fade-in"
+                style={{ animationDelay: `${i * 50}ms` }}
+              >
+                <Avatar className="h-10 w-10 border border-primary/20">
+                  <AvatarFallback className="bg-secondary text-sm font-semibold">
+                    {getInitials(profile?.full_name)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold">{profile?.full_name || "Golfer"}</p>
+                  <p className="text-xs text-muted-foreground">
+                    HCP {profile?.handicap ?? "—"}
+                  </p>
+                </div>
+                <span
+                  className={`rounded-full px-2 py-0.5 text-xs font-medium capitalize ${getRoleBadgeClass(m.role)}`}
+                >
+                  {m.role}
+                </span>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>
