@@ -1,4 +1,4 @@
-import { ArrowLeft, Globe, Mail, Camera, UserPlus, UserCheck, MessageCircle, Crown } from "lucide-react";
+import { ArrowLeft, Globe, Mail, Camera, UserPlus, UserCheck, MessageCircle, Crown, Check, X } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -35,6 +35,7 @@ const GolferProfile = () => {
   const [tab, setTab] = useState<Tab>("about");
   const [profile, setProfile] = useState<Profile | null>(null);
   const [clubs, setClubs] = useState<Club[]>([]);
+  const [pendingInvites, setPendingInvites] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [isOwnProfile, setIsOwnProfile] = useState(false);
@@ -78,6 +79,31 @@ const GolferProfile = () => {
     setClubs(memberClubs);
   };
 
+  const fetchInvites = async (targetId: string) => {
+    const { data } = await supabase
+      .from("club_invitations")
+      .select("*, clubs(id, name, logo_url)")
+      .eq("invited_user_id", targetId)
+      .eq("status", "pending");
+    setPendingInvites(data || []);
+  };
+
+  const handleAcceptInvite = async (inviteId: string, clubId: string) => {
+    if (!currentUserId) return;
+    await supabase.from("club_invitations").update({ status: "accepted" }).eq("id", inviteId);
+    await supabase.from("members").insert({ club_id: clubId, user_id: currentUserId, role: "member" });
+    toast({ title: "Berhasil bergabung!" });
+    const targetId = paramId || currentUserId;
+    if (targetId) { fetchClubs(targetId); fetchInvites(targetId); }
+  };
+
+  const handleDeclineInvite = async (inviteId: string) => {
+    await supabase.from("club_invitations").update({ status: "declined" }).eq("id", inviteId);
+    toast({ title: "Undangan ditolak" });
+    const targetId = paramId || currentUserId;
+    if (targetId) fetchInvites(targetId);
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -99,6 +125,7 @@ const GolferProfile = () => {
       if (profileData) setProfile(profileData);
 
       await fetchClubs(targetId);
+      await fetchInvites(targetId);
 
       // Check buddy status if viewing someone else
       if (targetId !== user.id) {
@@ -348,37 +375,77 @@ const GolferProfile = () => {
         )}
 
         {tab === "clubs" && (
-          <div className="grid grid-cols-2 gap-3 animate-fade-in">
-            {clubs.length === 0 && (
-              <p className="col-span-2 text-center text-sm text-muted-foreground py-8">
-                Belum bergabung dengan klub manapun
-              </p>
-            )}
-            {clubs.map((c, i) => (
-              <div
-                key={c.id}
-                onClick={() => navigate(`/clubs/${c.id}`)}
-                className="golf-card overflow-hidden animate-fade-in cursor-pointer"
-                style={{ animationDelay: `${i * 60}ms` }}
-              >
-                <div className="relative h-28 bg-secondary flex items-center justify-center">
-                  {c.logo_url ? (
-                    <img src={c.logo_url} alt={c.name} className="h-full w-full object-cover" />
-                  ) : (
-                    <span className="text-3xl font-bold text-primary/30">
-                      {c.name.charAt(0)}
-                    </span>
-                  )}
-                  {c.is_personal && (
-                    <span className="absolute top-2 right-2 flex items-center gap-1 rounded-full bg-primary/90 px-2 py-0.5 text-[9px] font-bold text-primary-foreground uppercase tracking-wider">
-                      <Crown className="h-3 w-3" />
-                      Personal
-                    </span>
-                  )}
-                </div>
-                <p className="p-2.5 text-xs font-medium truncate">{c.name}</p>
+          <div className="animate-fade-in space-y-4">
+            {/* Pending invitations */}
+            {isOwnProfile && pendingInvites.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Undangan Klub</p>
+                {pendingInvites.map((inv: any) => {
+                  const club = inv.clubs as any;
+                  return (
+                    <div key={inv.id} className="golf-card p-3 flex items-center gap-3">
+                      <Avatar className="h-10 w-10 border-2 border-primary/30">
+                        <AvatarImage src={club?.logo_url ?? ""} />
+                        <AvatarFallback className="bg-primary/10 text-xs font-bold text-primary">
+                          {club?.name?.charAt(0) ?? "?"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold truncate">{club?.name}</p>
+                        <p className="text-xs text-muted-foreground">Mengundang Anda</p>
+                      </div>
+                      <div className="flex gap-1.5">
+                        <button
+                          onClick={() => handleAcceptInvite(inv.id, inv.club_id)}
+                          className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground"
+                        >
+                          <Check className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeclineInvite(inv.id)}
+                          className="flex h-8 w-8 items-center justify-center rounded-full bg-destructive/10 text-destructive"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            ))}
+            )}
+
+            <div className="grid grid-cols-2 gap-3">
+              {clubs.length === 0 && pendingInvites.length === 0 && (
+                <p className="col-span-2 text-center text-sm text-muted-foreground py-8">
+                  Belum bergabung dengan klub manapun
+                </p>
+              )}
+              {clubs.map((c, i) => (
+                <div
+                  key={c.id}
+                  onClick={() => navigate(`/clubs/${c.id}`)}
+                  className="golf-card overflow-hidden animate-fade-in cursor-pointer"
+                  style={{ animationDelay: `${i * 60}ms` }}
+                >
+                  <div className="relative h-28 bg-secondary flex items-center justify-center">
+                    {c.logo_url ? (
+                      <img src={c.logo_url} alt={c.name} className="h-full w-full object-cover" />
+                    ) : (
+                      <span className="text-3xl font-bold text-primary/30">
+                        {c.name.charAt(0)}
+                      </span>
+                    )}
+                    {c.is_personal && (
+                      <span className="absolute top-2 right-2 flex items-center gap-1 rounded-full bg-primary/90 px-2 py-0.5 text-[9px] font-bold text-primary-foreground uppercase tracking-wider">
+                        <Crown className="h-3 w-3" />
+                        Personal
+                      </span>
+                    )}
+                  </div>
+                  <p className="p-2.5 text-xs font-medium truncate">{c.name}</p>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
