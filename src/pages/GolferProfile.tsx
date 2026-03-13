@@ -1,17 +1,112 @@
-import { ArrowLeft, Globe, Mail } from "lucide-react";
+import { ArrowLeft, Globe, Mail, Camera } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import heroImg from "@/assets/golf-hero.jpg";
 import venueImg from "@/assets/golf-venue.jpg";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 type Tab = "about" | "clubs" | "gallery";
+
+interface Profile {
+  id: string;
+  full_name: string | null;
+  avatar_url: string | null;
+  bio: string | null;
+  location: string | null;
+  handicap: number | null;
+}
+
+interface Club {
+  id: string;
+  name: string;
+  logo_url: string | null;
+}
 
 const GolferProfile = () => {
   const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>("about");
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [clubs, setClubs] = useState<Club[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        navigate("/login");
+        return;
+      }
+
+      const [profileRes, membersRes] = await Promise.all([
+        supabase.from("profiles").select("*").eq("id", user.id).single(),
+        supabase
+          .from("members")
+          .select("club_id, clubs(id, name, logo_url)")
+          .eq("user_id", user.id),
+      ]);
+
+      if (profileRes.data) setProfile(profileRes.data);
+      if (membersRes.data) {
+        const clubList = membersRes.data
+          .map((m: any) => m.clubs)
+          .filter(Boolean);
+        setClubs(clubList);
+      }
+      setLoading(false);
+    };
+    fetchData();
+  }, [navigate]);
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !profile) return;
+
+    setUploading(true);
+    const fileExt = file.name.split(".").pop();
+    const filePath = `${profile.id}/avatar.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("avatars")
+      .upload(filePath, file, { upsert: true });
+
+    if (uploadError) {
+      toast({ title: "Upload gagal", description: uploadError.message, variant: "destructive" });
+      setUploading(false);
+      return;
+    }
+
+    const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(filePath);
+
+    const { error: updateError } = await supabase
+      .from("profiles")
+      .update({ avatar_url: urlData.publicUrl, updated_at: new Date().toISOString() })
+      .eq("id", profile.id);
+
+    if (updateError) {
+      toast({ title: "Update gagal", description: updateError.message, variant: "destructive" });
+    } else {
+      setProfile({ ...profile, avatar_url: urlData.publicUrl });
+      toast({ title: "Avatar berhasil diperbarui" });
+    }
+    setUploading(false);
+  };
+
+  const getInitials = (name: string | null) => {
+    if (!name) return "?";
+    return name
+      .split(" ")
+      .map((w) => w[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
 
   const tabs: { id: Tab; label: string }[] = [
     { id: "about", label: "ABOUT" },
@@ -19,8 +114,30 @@ const GolferProfile = () => {
     { id: "gallery", label: "GALLERY" },
   ];
 
+  if (loading) {
+    return (
+      <div className="bottom-nav-safe p-6 space-y-4">
+        <Skeleton className="h-28 w-28 rounded-full mx-auto" />
+        <Skeleton className="h-6 w-40 mx-auto" />
+        <Skeleton className="h-4 w-32 mx-auto" />
+        <div className="flex gap-3 px-8">
+          <Skeleton className="h-10 flex-1" />
+          <Skeleton className="h-10 flex-1" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bottom-nav-safe">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleAvatarUpload}
+      />
+
       {/* Green gradient header */}
       <div className="relative bg-gradient-to-b from-secondary to-background pb-6">
         <button
@@ -32,23 +149,35 @@ const GolferProfile = () => {
 
         {/* Centered avatar */}
         <div className="flex flex-col items-center pt-14">
-          <Avatar className="h-28 w-28 border-4 border-primary/50">
-            <AvatarFallback className="bg-primary text-3xl font-bold text-primary-foreground">
-              SW
-            </AvatarFallback>
-          </Avatar>
-          <h1 className="mt-3 font-display text-xl font-bold">Susie Wright</h1>
+          <div className="relative">
+            <Avatar className="h-28 w-28 border-4 border-primary/50">
+              <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.full_name || "Avatar"} />
+              <AvatarFallback className="bg-primary text-3xl font-bold text-primary-foreground">
+                {getInitials(profile?.full_name)}
+              </AvatarFallback>
+            </Avatar>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="absolute bottom-0 right-0 rounded-full bg-primary p-1.5 text-primary-foreground shadow-lg"
+            >
+              <Camera className="h-4 w-4" />
+            </button>
+          </div>
+          <h1 className="mt-3 font-display text-xl font-bold">
+            {profile?.full_name || "Unnamed Golfer"}
+          </h1>
           <p className="text-xs uppercase tracking-widest text-muted-foreground">
-            Jakarta, Indonesia
+            {profile?.location || "No location set"}
           </p>
 
           {/* Stats badges */}
           <div className="mt-4 flex gap-3 px-8 w-full">
             <Badge variant="outline" className="flex-1 justify-center rounded-lg border-border px-4 py-2.5 text-sm font-bold">
-              HCP 18
+              HCP {profile?.handicap ?? "N/A"}
             </Badge>
             <Badge variant="outline" className="flex-1 justify-center rounded-lg border-border px-4 py-2.5 text-sm font-bold">
-              5 CLUBS
+              {clubs.length} CLUBS
             </Badge>
           </div>
 
@@ -66,7 +195,7 @@ const GolferProfile = () => {
 
       {/* Tabs */}
       <div className="flex items-center justify-center gap-8 border-b border-border/50 px-4">
-        {tabs.map((t, i) => (
+        {tabs.map((t) => (
           <div key={t.id} className="flex items-center gap-4">
             <button
               onClick={() => setTab(t.id)}
@@ -79,7 +208,6 @@ const GolferProfile = () => {
                 <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
               )}
             </button>
-            {/* Plus button after CLUBS tab */}
             {t.id === "clubs" && (
               <button className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">
                 +
@@ -93,41 +221,48 @@ const GolferProfile = () => {
       <div className="px-4 pt-4 pb-4">
         {tab === "about" && (
           <div className="space-y-4 animate-fade-in">
-            {/* Bio */}
             <div className="px-2">
               <p className="text-sm italic text-muted-foreground">
-                Easy Come ... Easy Go ...
+                {profile?.bio || "No bio yet"}
               </p>
             </div>
 
-            {/* Website & Social */}
             <div className="golf-card p-4 flex items-start gap-4">
               <Globe className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
               <div>
-                <p className="text-sm">www.susiesaysblog.com</p>
-                <p className="text-sm text-muted-foreground">SusieSays - Instagram</p>
+                <p className="text-sm text-muted-foreground">No website linked</p>
               </div>
             </div>
 
-            {/* Email */}
             <div className="golf-card p-4 flex items-center gap-4">
               <Mail className="h-5 w-5 text-muted-foreground shrink-0" />
-              <p className="text-sm">susiewright@susiesaysblog.com</p>
+              <p className="text-sm text-muted-foreground">Contact via Message</p>
             </div>
           </div>
         )}
 
         {tab === "clubs" && (
           <div className="grid grid-cols-2 gap-3 animate-fade-in">
-            {[
-              { name: "Spartan Golf Club", abbr: "S" },
-              { name: "Hollywood Golf Club", abbr: "H" },
-              { name: "Pine Valley GC", abbr: "P" },
-              { name: "Augusta National", abbr: "A" },
-            ].map((c, i) => (
-              <div key={c.name} className="golf-card overflow-hidden animate-fade-in" style={{ animationDelay: `${i * 60}ms` }}>
+            {clubs.length === 0 && (
+              <p className="col-span-2 text-center text-sm text-muted-foreground py-8">
+                Belum bergabung dengan klub manapun
+              </p>
+            )}
+            {clubs.map((c, i) => (
+              <div
+                key={c.id}
+                onClick={() => navigate(`/clubs/${c.id}`)}
+                className="golf-card overflow-hidden animate-fade-in cursor-pointer"
+                style={{ animationDelay: `${i * 60}ms` }}
+              >
                 <div className="h-28 bg-secondary flex items-center justify-center">
-                  <span className="text-3xl font-bold text-primary/30">{c.abbr}</span>
+                  {c.logo_url ? (
+                    <img src={c.logo_url} alt={c.name} className="h-full w-full object-cover" />
+                  ) : (
+                    <span className="text-3xl font-bold text-primary/30">
+                      {c.name.charAt(0)}
+                    </span>
+                  )}
                 </div>
                 <p className="p-2.5 text-xs font-medium truncate">{c.name}</p>
               </div>
