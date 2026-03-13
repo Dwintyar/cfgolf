@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Settings } from "lucide-react";
+import { Settings, UserCircle } from "lucide-react";
 import logo from "@/assets/logo.png";
 
 interface AppHeaderProps {
@@ -20,6 +20,13 @@ const AppHeader = ({ title, icon, rightContent }: AppHeaderProps) => {
       </div>
       <div className="flex items-center gap-2">
         {rightContent}
+        <button
+          onClick={() => navigate("/profile")}
+          className="rounded-full p-2 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+          aria-label="Profile"
+        >
+          <UserCircle className="h-5 w-5" />
+        </button>
         <button
           onClick={() => navigate("/settings")}
           className="rounded-full p-2 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"

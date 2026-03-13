@@ -65,7 +65,8 @@ const App = () => {
             <Route path="/play" element={<Play />} />
             <Route path="/play/golfers" element={<GolfersNearby />} />
             <Route path="/play/messages" element={<Messages />} />
-            <Route path="/play/profile" element={<GolferProfile />} />
+            <Route path="/profile" element={<GolferProfile />} />
+            <Route path="/profile/:id" element={<GolferProfile />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/chat" element={<ChatList />} />
             <Route path="/chat/:id" element={<ChatRoom />} />

@@ -1,5 +1,5 @@
 import { ArrowLeft, Globe, Mail, Camera } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -29,11 +29,13 @@ interface Club {
 
 const GolferProfile = () => {
   const navigate = useNavigate();
+  const { id: paramId } = useParams<{ id: string }>();
   const [tab, setTab] = useState<Tab>("about");
   const [profile, setProfile] = useState<Profile | null>(null);
   const [clubs, setClubs] = useState<Club[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [isOwnProfile, setIsOwnProfile] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -44,12 +46,15 @@ const GolferProfile = () => {
         return;
       }
 
+      const targetId = paramId || user.id;
+      setIsOwnProfile(targetId === user.id);
+
       const [profileRes, membersRes] = await Promise.all([
-        supabase.from("profiles").select("*").eq("id", user.id).single(),
+        supabase.from("profiles").select("*").eq("id", targetId).single(),
         supabase
           .from("members")
           .select("club_id, clubs(id, name, logo_url)")
-          .eq("user_id", user.id),
+          .eq("user_id", targetId),
       ]);
 
       if (profileRes.data) setProfile(profileRes.data);
@@ -62,7 +67,7 @@ const GolferProfile = () => {
       setLoading(false);
     };
     fetchData();
-  }, [navigate]);
+  }, [navigate, paramId]);
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -156,13 +161,15 @@ const GolferProfile = () => {
                 {getInitials(profile?.full_name)}
               </AvatarFallback>
             </Avatar>
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-              className="absolute bottom-0 right-0 rounded-full bg-primary p-1.5 text-primary-foreground shadow-lg"
-            >
-              <Camera className="h-4 w-4" />
-            </button>
+            {isOwnProfile && (
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="absolute bottom-0 right-0 rounded-full bg-primary p-1.5 text-primary-foreground shadow-lg"
+              >
+                <Camera className="h-4 w-4" />
+              </button>
+            )}
           </div>
           <h1 className="mt-3 font-display text-xl font-bold">
             {profile?.full_name || "Unnamed Golfer"}
@@ -182,14 +189,24 @@ const GolferProfile = () => {
           </div>
 
           {/* Action buttons */}
-          <div className="mt-4 flex gap-3 px-8 w-full">
-            <Button variant="outline" className="flex-1 h-11 rounded-xl text-sm font-bold uppercase tracking-wider border-border">
-              Message
-            </Button>
-            <Button className="flex-1 h-11 rounded-xl text-sm font-bold uppercase tracking-wider">
-              Follow
-            </Button>
-          </div>
+          {!isOwnProfile && (
+            <div className="mt-4 flex gap-3 px-8 w-full">
+              <Button variant="outline" className="flex-1 h-11 rounded-xl text-sm font-bold uppercase tracking-wider border-border">
+                Message
+              </Button>
+              <Button className="flex-1 h-11 rounded-xl text-sm font-bold uppercase tracking-wider">
+                Follow
+              </Button>
+            </div>
+          )}
+
+          {isOwnProfile && (
+            <div className="mt-4 flex gap-3 px-8 w-full">
+              <Button variant="outline" className="flex-1 h-11 rounded-xl text-sm font-bold uppercase tracking-wider border-border" onClick={() => navigate("/settings")}>
+                Edit Profile
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -208,7 +225,7 @@ const GolferProfile = () => {
                 <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
               )}
             </button>
-            {t.id === "clubs" && (
+            {t.id === "clubs" && isOwnProfile && (
               <button className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">
                 +
               </button>
