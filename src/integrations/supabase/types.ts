@@ -14,6 +14,59 @@ export type Database = {
   }
   public: {
     Tables: {
+      caddy_assignments: {
+        Row: {
+          caddy_id: string
+          contestant_id: string
+          created_at: string
+          event_id: string
+          id: string
+        }
+        Insert: {
+          caddy_id: string
+          contestant_id: string
+          created_at?: string
+          event_id: string
+          id?: string
+        }
+        Update: {
+          caddy_id?: string
+          contestant_id?: string
+          created_at?: string
+          event_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "caddy_assignments_caddy_id_fkey"
+            columns: ["caddy_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "caddy_assignments_contestant_id_fkey"
+            columns: ["contestant_id"]
+            isOneToOne: false
+            referencedRelation: "contestants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "caddy_assignments_contestant_id_fkey"
+            columns: ["contestant_id"]
+            isOneToOne: false
+            referencedRelation: "event_leaderboard"
+            referencedColumns: ["contestant_id"]
+          },
+          {
+            foreignKeyName: "caddy_assignments_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_messages: {
         Row: {
           content: string
@@ -99,6 +152,48 @@ export type Database = {
           {
             foreignKeyName: "club_invitations_invited_user_id_fkey"
             columns: ["invited_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      club_staff: {
+        Row: {
+          club_id: string
+          created_at: string
+          id: string
+          staff_role: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          club_id: string
+          created_at?: string
+          id?: string
+          staff_role?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          club_id?: string
+          created_at?: string
+          id?: string
+          staff_role?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_staff_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "club_staff_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -382,6 +477,58 @@ export type Database = {
           },
         ]
       }
+      event_checkins: {
+        Row: {
+          bag_drop_number: number | null
+          checked_in_at: string
+          contestant_id: string
+          event_id: string
+          id: string
+          locker_number: number | null
+          notes: string | null
+        }
+        Insert: {
+          bag_drop_number?: number | null
+          checked_in_at?: string
+          contestant_id: string
+          event_id: string
+          id?: string
+          locker_number?: number | null
+          notes?: string | null
+        }
+        Update: {
+          bag_drop_number?: number | null
+          checked_in_at?: string
+          contestant_id?: string
+          event_id?: string
+          id?: string
+          locker_number?: number | null
+          notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_checkins_contestant_id_fkey"
+            columns: ["contestant_id"]
+            isOneToOne: false
+            referencedRelation: "contestants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_checkins_contestant_id_fkey"
+            columns: ["contestant_id"]
+            isOneToOne: false
+            referencedRelation: "event_leaderboard"
+            referencedColumns: ["contestant_id"]
+          },
+          {
+            foreignKeyName: "event_checkins_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_results: {
         Row: {
           category_id: string
@@ -485,6 +632,52 @@ export type Database = {
             columns: ["tour_id"]
             isOneToOne: false
             referencedRelation: "tours"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      golf_cart_assignments: {
+        Row: {
+          cart_number: number
+          contestant_id: string
+          created_at: string
+          event_id: string
+          id: string
+        }
+        Insert: {
+          cart_number: number
+          contestant_id: string
+          created_at?: string
+          event_id: string
+          id?: string
+        }
+        Update: {
+          cart_number?: number
+          contestant_id?: string
+          created_at?: string
+          event_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "golf_cart_assignments_contestant_id_fkey"
+            columns: ["contestant_id"]
+            isOneToOne: false
+            referencedRelation: "contestants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "golf_cart_assignments_contestant_id_fkey"
+            columns: ["contestant_id"]
+            isOneToOne: false
+            referencedRelation: "event_leaderboard"
+            referencedColumns: ["contestant_id"]
+          },
+          {
+            foreignKeyName: "golf_cart_assignments_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
             referencedColumns: ["id"]
           },
         ]
