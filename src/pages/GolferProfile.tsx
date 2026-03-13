@@ -35,6 +35,7 @@ const GolferProfile = () => {
   const [tab, setTab] = useState<Tab>("about");
   const [profile, setProfile] = useState<Profile | null>(null);
   const [clubs, setClubs] = useState<Club[]>([]);
+  const [pendingInvites, setPendingInvites] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [isOwnProfile, setIsOwnProfile] = useState(false);
