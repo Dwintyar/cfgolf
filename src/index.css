@@ -51,6 +51,49 @@
 
     font-family: 'DM Sans', sans-serif;
   }
+
+  .light {
+    --background: 120 20% 97%;
+    --foreground: 150 25% 10%;
+
+    --card: 120 15% 95%;
+    --card-foreground: 150 25% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 150 25% 10%;
+
+    --primary: 145 60% 36%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 140 12% 90%;
+    --secondary-foreground: 150 20% 20%;
+
+    --muted: 140 10% 92%;
+    --muted-foreground: 150 10% 40%;
+
+    --accent: 45 80% 50%;
+    --accent-foreground: 150 30% 5%;
+
+    --destructive: 0 72% 50%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 140 12% 85%;
+    --input: 140 12% 85%;
+    --ring: 145 60% 36%;
+
+    --sidebar-background: 120 15% 95%;
+    --sidebar-foreground: 150 25% 10%;
+    --sidebar-primary: 145 60% 36%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 140 12% 90%;
+    --sidebar-accent-foreground: 150 25% 10%;
+    --sidebar-border: 140 12% 85%;
+    --sidebar-ring: 145 60% 36%;
+
+    --golf-gradient: linear-gradient(135deg, hsl(120 20% 97%), hsl(140 15% 94%));
+    --golf-card-gradient: linear-gradient(160deg, hsl(0 0% 100%), hsl(140 10% 97%));
+    --golf-accent-glow: 0 4px 20px -4px hsl(145 60% 36% / 0.2);
+  }
 }
 
 @layer base {

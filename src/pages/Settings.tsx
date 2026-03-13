@@ -17,7 +17,10 @@ const Settings = () => {
   const navigate = useNavigate();
   const [section, setSection] = useState<Section>("main");
   const [userId, setUserId] = useState<string | null>(null);
-  const [darkMode, setDarkMode] = useState(true);
+  const [darkMode, setDarkMode] = useState(() => {
+    const saved = localStorage.getItem("theme");
+    return saved ? saved === "dark" : true;
+  });
 
   // Profile form
   const [fullName, setFullName] = useState("");
