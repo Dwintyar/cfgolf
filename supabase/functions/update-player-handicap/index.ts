@@ -47,16 +47,38 @@ Deno.serve(async (req) => {
       });
     }
 
-    // 1. Get event with course par
+    // 1. Get event with course par and tour's organizer club
     const { data: event, error: eventErr } = await supabase
       .from("events")
-      .select("id, tour_id, course_id, courses(par)")
+      .select("id, tour_id, course_id, courses(par), tours(organizer_club_id)")
       .eq("id", eventId)
       .single();
 
     if (eventErr || !event) {
       return new Response(JSON.stringify({ error: "Event not found" }), {
         status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Authorization: caller must be owner/admin of the organizer club
+    const organizerClubId = (event.tours as any)?.organizer_club_id;
+    if (!organizerClubId) {
+      return new Response(JSON.stringify({ error: "Tour configuration error" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const { data: membership } = await supabase
+      .from("members")
+      .select("role")
+      .eq("user_id", user.id)
+      .eq("club_id", organizerClubId)
+      .in("role", ["owner", "admin"])
+      .maybeSingle();
+    if (!membership) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
