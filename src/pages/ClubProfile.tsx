@@ -56,8 +56,13 @@ const ClubProfile = () => {
     return name.toLowerCase().includes(search.toLowerCase());
   });
 
-  // Random status for demo
-  const statuses = ["Pending Request", "No Request"];
+  const getRoleLabel = (role: string) => {
+    switch (role) {
+      case "owner": return "Owner";
+      case "admin": return "Admin";
+      default: return "Member";
+    }
+  };
 
   return (
     <div className="bottom-nav-safe">
