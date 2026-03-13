@@ -121,14 +121,29 @@ const ClubProfile = () => {
 
           {filteredMembers?.map((m, i) => {
             const profile = m.profiles as any;
-            const status = statuses[i % statuses.length];
-            const isPending = status === "Pending Request";
             return (
               <div
                 key={m.id}
                 className="flex items-center gap-3 py-3 animate-fade-in"
                 style={{ animationDelay: `${i * 40}ms` }}
               >
+                <Avatar className="h-10 w-10 border-2 border-primary/30">
+                  <AvatarImage src={profile?.avatar_url ?? ""} />
+                  <AvatarFallback className="bg-secondary text-sm font-semibold">
+                    {getInitials(profile?.full_name)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold truncate">{profile?.full_name || "Golfer"}</p>
+                  <p className={`text-xs ${m.role === "owner" ? "text-primary" : "text-muted-foreground"}`}>
+                    {getRoleLabel(m.role)}
+                  </p>
+                </div>
+                <button className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
+                  <Mail className="h-4 w-4" />
+                </button>
+              </div>
+            );
                 <Avatar className="h-10 w-10 border-2 border-primary/30">
                   <AvatarImage src={profile?.avatar_url ?? ""} />
                   <AvatarFallback className="bg-secondary text-sm font-semibold">
