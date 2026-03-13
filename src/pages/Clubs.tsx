@@ -1,17 +1,24 @@
 import { Search, ArrowLeft, Mic } from "lucide-react";
-import AppHeader from "@/components/AppHeader";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const Clubs = () => {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) setCurrentUserId(user.id);
+    });
+  }, []);
 
   const { data: clubs, isLoading } = useQuery({
     queryKey: ["clubs"],
@@ -36,13 +43,48 @@ const Clubs = () => {
     },
   });
 
+  // Fetch user's memberships
+  const { data: myMemberships } = useQuery({
+    queryKey: ["my-memberships", currentUserId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("members")
+        .select("club_id")
+        .eq("user_id", currentUserId!);
+      if (error) throw error;
+      return new Set(data.map((m) => m.club_id));
+    },
+    enabled: !!currentUserId,
+  });
+
+  // Fetch user's pending join requests
+  const { data: myPendingRequests } = useQuery({
+    queryKey: ["my-pending-requests", currentUserId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("club_invitations")
+        .select("club_id")
+        .eq("invited_user_id", currentUserId!)
+        .eq("invited_by", currentUserId!)
+        .eq("status", "pending");
+      if (error) throw error;
+      return new Set(data.map((r) => r.club_id));
+    },
+    enabled: !!currentUserId,
+  });
+
   const filtered = clubs?.filter((c) =>
     c.name.toLowerCase().includes(search.toLowerCase())
   );
 
+  const getButtonState = (clubId: string) => {
+    if (myMemberships?.has(clubId)) return "member";
+    if (myPendingRequests?.has(clubId)) return "requested";
+    return "join";
+  };
+
   return (
     <div className="bottom-nav-safe">
-      {/* Header with back + search like reference GD_Mob_50 */}
       <div className="flex items-center gap-2 p-4">
         <button onClick={() => navigate(-1)} className="rounded-full p-1.5 hover:bg-muted transition-colors">
           <ArrowLeft className="h-5 w-5" />
@@ -78,37 +120,50 @@ const Clubs = () => {
           </p>
         )}
 
-        {/* Club cards matching reference: large logo left, info right, JOIN button */}
-        {filtered?.map((club, i) => (
-          <div
-            key={club.id}
-            className="golf-card flex items-center gap-4 p-4 animate-fade-in"
-            style={{ animationDelay: `${i * 60}ms` }}
-          >
-            <Avatar className="h-20 w-20 rounded-xl border-2 border-primary/20">
-              <AvatarImage src={club.logo_url ?? ""} className="rounded-xl object-cover" />
-              <AvatarFallback className="rounded-xl bg-primary/10 text-lg font-bold text-primary">
-                {club.initials}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0">
-              <h3 className="text-base font-semibold truncate">{club.name}</h3>
-              <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">
-                {club.description || "Golf Club"}
-              </p>
-              <Button
-                size="sm"
-                className="mt-2 h-8 rounded-lg px-6 text-xs font-bold uppercase tracking-wider"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  navigate(`/clubs/${club.id}`);
-                }}
-              >
-                Join
-              </Button>
+        {filtered?.map((club, i) => {
+          const state = getButtonState(club.id);
+          return (
+            <div
+              key={club.id}
+              className="golf-card flex items-center gap-4 p-4 animate-fade-in cursor-pointer"
+              style={{ animationDelay: `${i * 60}ms` }}
+              onClick={() => navigate(`/clubs/${club.id}`)}
+            >
+              <Avatar className="h-20 w-20 rounded-xl border-2 border-primary/20">
+                <AvatarImage src={club.logo_url ?? ""} className="rounded-xl object-cover" />
+                <AvatarFallback className="rounded-xl bg-primary/10 text-lg font-bold text-primary">
+                  {club.initials}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-base font-semibold truncate">{club.name}</h3>
+                <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">
+                  {club.description || "Golf Club"}
+                </p>
+                {state === "member" ? (
+                  <Badge className="mt-2 text-xs bg-primary/10 text-primary border-primary/20">
+                    ✓ Member
+                  </Badge>
+                ) : state === "requested" ? (
+                  <Badge variant="secondary" className="mt-2 text-xs">
+                    ⏳ Requested
+                  </Badge>
+                ) : (
+                  <Button
+                    size="sm"
+                    className="mt-2 h-8 rounded-lg px-6 text-xs font-bold uppercase tracking-wider"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/clubs/${club.id}`);
+                    }}
+                  >
+                    Join
+                  </Button>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
