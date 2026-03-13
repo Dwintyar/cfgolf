@@ -1,4 +1,4 @@
-import { ArrowLeft, Search, UserPlus, Mail, Mic } from "lucide-react";
+import { ArrowLeft, Search, Mail, Mic } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
@@ -56,8 +56,13 @@ const ClubProfile = () => {
     return name.toLowerCase().includes(search.toLowerCase());
   });
 
-  // Random status for demo
-  const statuses = ["Pending Request", "No Request"];
+  const getRoleLabel = (role: string) => {
+    switch (role) {
+      case "owner": return "Owner";
+      case "admin": return "Admin";
+      default: return "Member";
+    }
+  };
 
   return (
     <div className="bottom-nav-safe">
@@ -116,8 +121,6 @@ const ClubProfile = () => {
 
           {filteredMembers?.map((m, i) => {
             const profile = m.profiles as any;
-            const status = statuses[i % statuses.length];
-            const isPending = status === "Pending Request";
             return (
               <div
                 key={m.id}
@@ -132,12 +135,12 @@ const ClubProfile = () => {
                 </Avatar>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-bold truncate">{profile?.full_name || "Golfer"}</p>
-                  <p className={`text-xs ${isPending ? "text-primary" : "text-muted-foreground"}`}>
-                    {status}
+                  <p className={`text-xs ${m.role === "owner" ? "text-primary" : "text-muted-foreground"}`}>
+                    {getRoleLabel(m.role)}
                   </p>
                 </div>
                 <button className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
-                  {isPending ? <UserPlus className="h-4 w-4" /> : <Mail className="h-4 w-4" />}
+                  <Mail className="h-4 w-4" />
                 </button>
               </div>
             );
