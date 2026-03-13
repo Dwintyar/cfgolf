@@ -88,7 +88,7 @@ const Login = () => {
   };
 
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-end">
+    <div className="relative flex min-h-screen flex-col items-center justify-center">
       <img
         src={loginBg}
         alt="Golf course"
