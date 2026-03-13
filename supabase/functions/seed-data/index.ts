@@ -573,7 +573,237 @@ Deno.serve(async (req) => {
       }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
-    return new Response(JSON.stringify({ error: 'Invalid phase. Use ?phase=1, ?phase=2, or ?phase=3' }), {
+    if (phase === 'cleanup') {
+      console.log('Cleanup: Removing duplicate data...')
+      const results: Record<string, number> = {}
+
+      // Delete duplicate clubs (keep earliest by created_at)
+      const { data: dupClubs } = await supabase.rpc('exec_sql', { sql: '' }) // can't use rpc
+      
+      // Get all clubs grouped by name, keep earliest
+      const { data: allClubs } = await supabase.from('clubs').select('id, name, created_at').order('created_at')
+      if (allClubs) {
+        const seen = new Map<string, string>()
+        const toDelete: string[] = []
+        for (const c of allClubs) {
+          if (seen.has(c.name)) {
+            toDelete.push(c.id)
+          } else {
+            seen.set(c.name, c.id)
+          }
+        }
+        if (toDelete.length > 0) {
+          // Delete children first: club_staff, members, courses (and their holes/tees), tour_clubs, tickets
+          for (const cid of toDelete) {
+            await supabase.from('club_staff').delete().eq('club_id', cid)
+            await supabase.from('members').delete().eq('club_id', cid)
+            // courses linked to this club
+            const { data: courses } = await supabase.from('courses').select('id').eq('club_id', cid)
+            if (courses) {
+              for (const course of courses) {
+                await supabase.from('course_holes').delete().eq('course_id', course.id)
+                await supabase.from('course_tees').delete().eq('course_id', course.id)
+              }
+              await supabase.from('courses').delete().eq('club_id', cid)
+            }
+            await supabase.from('tour_clubs').delete().eq('club_id', cid)
+            await supabase.from('tour_players').delete().eq('club_id', cid)
+          }
+          // Now delete the duplicate clubs
+          for (const cid of toDelete) {
+            await supabase.from('clubs').delete().eq('id', cid)
+          }
+          results.clubs_deleted = toDelete.length
+        }
+      }
+
+      // Delete duplicate tours (keep earliest)
+      const { data: allTours } = await supabase.from('tours').select('id, name, created_at').order('created_at')
+      if (allTours) {
+        const seen = new Map<string, string>()
+        const toDelete: string[] = []
+        for (const t of allTours) {
+          if (seen.has(t.name)) {
+            toDelete.push(t.id)
+          } else {
+            seen.set(t.name, t.id)
+          }
+        }
+        if (toDelete.length > 0) {
+          for (const tid of toDelete) {
+            // Delete events and their children
+            const { data: events } = await supabase.from('events').select('id').eq('tour_id', tid)
+            if (events) {
+              for (const ev of events) {
+                await supabase.from('hole_scores').delete().in('scorecard_id', 
+                  (await supabase.from('scorecards').select('id').eq('round_id', 
+                    (await supabase.from('rounds').select('id')).data?.map(r => r.id) ?? []
+                  )).data?.map(s => s.id) ?? []
+                )
+                await supabase.from('event_results').delete().eq('event_id', ev.id)
+                await supabase.from('event_checkins').delete().eq('event_id', ev.id)
+                await supabase.from('caddy_assignments').delete().eq('event_id', ev.id)
+                await supabase.from('golf_cart_assignments').delete().eq('event_id', ev.id)
+                // pairings
+                const { data: pairings } = await supabase.from('pairings').select('id').eq('event_id', ev.id)
+                if (pairings) {
+                  for (const p of pairings) {
+                    await supabase.from('pairing_players').delete().eq('pairing_id', p.id)
+                  }
+                  await supabase.from('pairings').delete().eq('event_id', ev.id)
+                }
+                await supabase.from('tickets').delete().eq('event_id', ev.id)
+                await supabase.from('contestants').delete().eq('event_id', ev.id)
+                await supabase.from('handicap_history').delete().eq('event_id', ev.id)
+              }
+              await supabase.from('events').delete().eq('tour_id', tid)
+            }
+            await supabase.from('tournament_winner_categories').delete().eq('tour_id', tid)
+            await supabase.from('tournament_flights').delete().eq('tour_id', tid)
+            await supabase.from('tour_players').delete().eq('tour_id', tid)
+            await supabase.from('tour_clubs').delete().eq('tour_id', tid)
+            await supabase.from('tours').delete().eq('id', tid)
+          }
+          results.tours_deleted = toDelete.length
+        }
+      }
+
+      // Delete duplicate events by name (keep earliest)
+      const { data: allEvents } = await supabase.from('events').select('id, name, created_at').order('created_at')
+      if (allEvents) {
+        const seen = new Map<string, string>()
+        const toDelete: string[] = []
+        for (const e of allEvents) {
+          if (seen.has(e.name)) {
+            toDelete.push(e.id)
+          } else {
+            seen.set(e.name, e.id)
+          }
+        }
+        if (toDelete.length > 0) {
+          for (const eid of toDelete) {
+            await supabase.from('event_results').delete().eq('event_id', eid)
+            await supabase.from('event_checkins').delete().eq('event_id', eid)
+            await supabase.from('caddy_assignments').delete().eq('event_id', eid)
+            await supabase.from('golf_cart_assignments').delete().eq('event_id', eid)
+            const { data: pairings } = await supabase.from('pairings').select('id').eq('event_id', eid)
+            if (pairings) {
+              for (const p of pairings) {
+                await supabase.from('pairing_players').delete().eq('pairing_id', p.id)
+              }
+              await supabase.from('pairings').delete().eq('event_id', eid)
+            }
+            await supabase.from('tickets').delete().eq('event_id', eid)
+            await supabase.from('contestants').delete().eq('event_id', eid)
+            await supabase.from('handicap_history').delete().eq('event_id', eid)
+            await supabase.from('events').delete().eq('id', eid)
+          }
+          results.events_deleted = toDelete.length
+        }
+      }
+
+      // Delete duplicate members (same club_id + user_id, keep earliest)
+      const { data: allMembers } = await supabase.from('members').select('id, club_id, user_id, joined_at').order('joined_at')
+      if (allMembers) {
+        const seen = new Set<string>()
+        const toDelete: string[] = []
+        for (const m of allMembers) {
+          const key = `${m.club_id}-${m.user_id}`
+          if (seen.has(key)) {
+            toDelete.push(m.id)
+          } else {
+            seen.add(key)
+          }
+        }
+        if (toDelete.length > 0) {
+          for (let i = 0; i < toDelete.length; i += 100) {
+            const batch = toDelete.slice(i, i + 100)
+            await supabase.from('members').delete().in('id', batch)
+          }
+          results.members_deleted = toDelete.length
+        }
+      }
+
+      // Delete duplicate club_staff
+      const { data: allStaff } = await supabase.from('club_staff').select('id, club_id, user_id, staff_role, created_at').order('created_at')
+      if (allStaff) {
+        const seen = new Set<string>()
+        const toDelete: string[] = []
+        for (const s of allStaff) {
+          const key = `${s.club_id}-${s.user_id}-${s.staff_role}`
+          if (seen.has(key)) {
+            toDelete.push(s.id)
+          } else {
+            seen.add(key)
+          }
+        }
+        if (toDelete.length > 0) {
+          for (let i = 0; i < toDelete.length; i += 100) {
+            await supabase.from('club_staff').delete().in('id', toDelete.slice(i, i + 100))
+          }
+          results.staff_deleted = toDelete.length
+        }
+      }
+
+      // Delete duplicate tour_players
+      const { data: allTP } = await supabase.from('tour_players').select('id, tour_id, player_id, created_at').order('created_at')
+      if (allTP) {
+        const seen = new Set<string>()
+        const toDelete: string[] = []
+        for (const tp of allTP) {
+          const key = `${tp.tour_id}-${tp.player_id}`
+          if (seen.has(key)) {
+            toDelete.push(tp.id)
+          } else {
+            seen.add(key)
+          }
+        }
+        if (toDelete.length > 0) {
+          for (let i = 0; i < toDelete.length; i += 100) {
+            await supabase.from('tour_players').delete().in('id', toDelete.slice(i, i + 100))
+          }
+          results.tour_players_deleted = toDelete.length
+        }
+      }
+
+      // Delete duplicate contestants
+      const { data: allContestants } = await supabase.from('contestants').select('id, event_id, player_id, created_at').order('created_at')
+      if (allContestants) {
+        const seen = new Set<string>()
+        const toDelete: string[] = []
+        for (const c of allContestants) {
+          const key = `${c.event_id}-${c.player_id}`
+          if (seen.has(key)) {
+            toDelete.push(c.id)
+          } else {
+            seen.add(key)
+          }
+        }
+        if (toDelete.length > 0) {
+          for (let i = 0; i < toDelete.length; i += 100) {
+            await supabase.from('contestants').delete().in('id', toDelete.slice(i, i + 100))
+          }
+          results.contestants_deleted = toDelete.length
+        }
+      }
+
+      // Delete duplicate profiles (keep earliest by created_at)
+      const { data: allProfiles } = await supabase.from('profiles').select('id, full_name, created_at').order('created_at')
+      // Profiles are unique by id (PK), so no name-based dedup needed
+
+      // Get final counts
+      const counts: Record<string, number> = {}
+      for (const tbl of ['clubs','courses','members','club_staff','tours','events','contestants','tour_players']) {
+        const { count } = await supabase.from(tbl).select('*', { count: 'exact', head: true })
+        counts[tbl] = count ?? 0
+      }
+
+      return new Response(JSON.stringify({ success: true, phase: 'cleanup', deleted: results, remaining: counts }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    return new Response(JSON.stringify({ error: 'Invalid phase. Use ?phase=1, ?phase=2, ?phase=3, or ?phase=cleanup' }), {
       status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (err) {
