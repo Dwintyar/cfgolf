@@ -79,6 +79,31 @@ const GolferProfile = () => {
     setClubs(memberClubs);
   };
 
+  const fetchInvites = async (targetId: string) => {
+    const { data } = await supabase
+      .from("club_invitations")
+      .select("*, clubs(id, name, logo_url)")
+      .eq("invited_user_id", targetId)
+      .eq("status", "pending");
+    setPendingInvites(data || []);
+  };
+
+  const handleAcceptInvite = async (inviteId: string, clubId: string) => {
+    if (!currentUserId) return;
+    await supabase.from("club_invitations").update({ status: "accepted" }).eq("id", inviteId);
+    await supabase.from("members").insert({ club_id: clubId, user_id: currentUserId, role: "member" });
+    toast({ title: "Berhasil bergabung!" });
+    const targetId = paramId || currentUserId;
+    if (targetId) { fetchClubs(targetId); fetchInvites(targetId); }
+  };
+
+  const handleDeclineInvite = async (inviteId: string) => {
+    await supabase.from("club_invitations").update({ status: "declined" }).eq("id", inviteId);
+    toast({ title: "Undangan ditolak" });
+    const targetId = paramId || currentUserId;
+    if (targetId) fetchInvites(targetId);
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       const { data: { user } } = await supabase.auth.getUser();
