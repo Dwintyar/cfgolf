@@ -1,4 +1,4 @@
-import { ArrowLeft, Globe, Mail, Camera, UserPlus, UserCheck, MessageCircle, Crown } from "lucide-react";
+import { ArrowLeft, Globe, Mail, Camera, UserPlus, UserCheck, MessageCircle, Crown, Check, X } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
