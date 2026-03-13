@@ -107,7 +107,7 @@ const Login = () => {
               ? "Masukkan email untuk reset password"
               : isSignUp
                 ? "Create your account"
-                : "Your golf community awaits"}
+                : "Meet, Connect, Compete"}
           </p>
         </div>
 
