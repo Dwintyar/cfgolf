@@ -1,4 +1,4 @@
-import { ArrowLeft, Globe, Mail, Camera, UserPlus, UserCheck, MessageCircle } from "lucide-react";
+import { ArrowLeft, Globe, Mail, Camera, UserPlus, UserCheck, MessageCircle, Crown } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import venueImg from "@/assets/golf-venue.jpg";
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import CreateClubDialog from "@/components/CreateClubDialog";
 
 type Tab = "about" | "clubs" | "gallery";
 
@@ -25,6 +26,7 @@ interface Club {
   id: string;
   name: string;
   logo_url: string | null;
+  is_personal?: boolean;
 }
 
 const GolferProfile = () => {
@@ -36,9 +38,45 @@ const GolferProfile = () => {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [isOwnProfile, setIsOwnProfile] = useState(false);
-  const [buddyStatus, setBuddyStatus] = useState<string | null>(null); // null, 'pending', 'accepted', 'sent'
+  const [buddyStatus, setBuddyStatus] = useState<string | null>(null);
   const [buddyConnectionId, setBuddyConnectionId] = useState<string | null>(null);
+  const [showCreateClub, setShowCreateClub] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const fetchClubs = async (targetId: string) => {
+    // Fetch clubs via membership
+    const { data: membersData } = await supabase
+      .from("members")
+      .select("club_id, clubs(id, name, logo_url, is_personal)")
+      .eq("user_id", targetId);
+
+    // Also fetch personal club owned by user (in case not in members table)
+    const { data: personalClub } = await supabase
+      .from("clubs")
+      .select("id, name, logo_url, is_personal")
+      .eq("owner_id", targetId)
+      .eq("is_personal", true)
+      .maybeSingle();
+
+    const memberClubs: Club[] = (membersData || [])
+      .map((m: any) => m.clubs)
+      .filter(Boolean);
+
+    // Merge personal club if not already in list
+    if (personalClub && !memberClubs.find((c) => c.id === personalClub.id)) {
+      memberClubs.unshift(personalClub);
+    }
+
+    // Sort: personal club first
+    memberClubs.sort((a, b) => {
+      if (a.is_personal && !b.is_personal) return -1;
+      if (!a.is_personal && b.is_personal) return 1;
+      return 0;
+    });
+
+    setClubs(memberClubs);
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -48,24 +86,19 @@ const GolferProfile = () => {
         return;
       }
 
+      setCurrentUserId(user.id);
       const targetId = paramId || user.id;
       setIsOwnProfile(targetId === user.id);
 
-      const [profileRes, membersRes] = await Promise.all([
-        supabase.from("profiles").select("*").eq("id", targetId).single(),
-        supabase
-          .from("members")
-          .select("club_id, clubs(id, name, logo_url)")
-          .eq("user_id", targetId),
-      ]);
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", targetId)
+        .single();
 
-      if (profileRes.data) setProfile(profileRes.data);
-      if (membersRes.data) {
-        const clubList = membersRes.data
-          .map((m: any) => m.clubs)
-          .filter(Boolean);
-        setClubs(clubList);
-      }
+      if (profileData) setProfile(profileData);
+
+      await fetchClubs(targetId);
 
       // Check buddy status if viewing someone else
       if (targetId !== user.id) {
@@ -104,14 +137,6 @@ const GolferProfile = () => {
       toast({ title: "Permintaan buddy terkirim!" });
     }
   };
-
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) setCurrentUserId(user.id);
-    });
-  }, []);
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -287,7 +312,10 @@ const GolferProfile = () => {
               )}
             </button>
             {t.id === "clubs" && isOwnProfile && (
-              <button className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">
+              <button
+                onClick={() => setShowCreateClub(true)}
+                className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold"
+              >
                 +
               </button>
             )}
@@ -333,12 +361,18 @@ const GolferProfile = () => {
                 className="golf-card overflow-hidden animate-fade-in cursor-pointer"
                 style={{ animationDelay: `${i * 60}ms` }}
               >
-                <div className="h-28 bg-secondary flex items-center justify-center">
+                <div className="relative h-28 bg-secondary flex items-center justify-center">
                   {c.logo_url ? (
                     <img src={c.logo_url} alt={c.name} className="h-full w-full object-cover" />
                   ) : (
                     <span className="text-3xl font-bold text-primary/30">
                       {c.name.charAt(0)}
+                    </span>
+                  )}
+                  {c.is_personal && (
+                    <span className="absolute top-2 right-2 flex items-center gap-1 rounded-full bg-primary/90 px-2 py-0.5 text-[9px] font-bold text-primary-foreground uppercase tracking-wider">
+                      <Crown className="h-3 w-3" />
+                      Personal
                     </span>
                   )}
                 </div>
@@ -362,6 +396,16 @@ const GolferProfile = () => {
           </div>
         )}
       </div>
+
+      {/* Create Club Dialog */}
+      <CreateClubDialog
+        open={showCreateClub}
+        onOpenChange={setShowCreateClub}
+        onCreated={() => {
+          const targetId = paramId || currentUserId;
+          if (targetId) fetchClubs(targetId);
+        }}
+      />
     </div>
   );
 };
