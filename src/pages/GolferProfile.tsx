@@ -1,4 +1,4 @@
-import { ArrowLeft, Globe, Mail, Camera } from "lucide-react";
+import { ArrowLeft, Globe, Mail, Camera, UserPlus, UserCheck, MessageCircle } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -36,6 +36,8 @@ const GolferProfile = () => {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [isOwnProfile, setIsOwnProfile] = useState(false);
+  const [buddyStatus, setBuddyStatus] = useState<string | null>(null); // null, 'pending', 'accepted', 'sent'
+  const [buddyConnectionId, setBuddyConnectionId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -64,10 +66,52 @@ const GolferProfile = () => {
           .filter(Boolean);
         setClubs(clubList);
       }
+
+      // Check buddy status if viewing someone else
+      if (targetId !== user.id) {
+        const { data: connections } = await supabase
+          .from("buddy_connections")
+          .select("*")
+          .or(`and(requester_id.eq.${user.id},addressee_id.eq.${targetId}),and(requester_id.eq.${targetId},addressee_id.eq.${user.id})`)
+          .limit(1);
+
+        if (connections && connections.length > 0) {
+          const conn = connections[0] as any;
+          setBuddyConnectionId(conn.id);
+          if (conn.status === "accepted") {
+            setBuddyStatus("accepted");
+          } else if (conn.status === "pending") {
+            setBuddyStatus(conn.requester_id === user.id ? "sent" : "pending");
+          }
+        }
+      }
+
       setLoading(false);
     };
     fetchData();
   }, [navigate, paramId]);
+
+  const handleAddBuddy = async () => {
+    if (!profile || !currentUserId) return;
+    const { error } = await supabase.from("buddy_connections").insert({
+      requester_id: currentUserId,
+      addressee_id: profile.id,
+    });
+    if (error) {
+      toast({ title: "Gagal", description: error.message, variant: "destructive" });
+    } else {
+      setBuddyStatus("sent");
+      toast({ title: "Permintaan buddy terkirim!" });
+    }
+  };
+
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) setCurrentUserId(user.id);
+    });
+  }, []);
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -191,12 +235,29 @@ const GolferProfile = () => {
           {/* Action buttons */}
           {!isOwnProfile && (
             <div className="mt-4 flex gap-3 px-8 w-full">
-              <Button variant="outline" className="flex-1 h-11 rounded-xl text-sm font-bold uppercase tracking-wider border-border">
+              <Button
+                variant="outline"
+                className="flex-1 h-11 rounded-xl text-sm font-bold uppercase tracking-wider border-border"
+                onClick={() => navigate("/chat")}
+              >
+                <MessageCircle className="h-4 w-4 mr-2" />
                 Message
               </Button>
-              <Button className="flex-1 h-11 rounded-xl text-sm font-bold uppercase tracking-wider">
-                Follow
-              </Button>
+              {buddyStatus === "accepted" ? (
+                <Button className="flex-1 h-11 rounded-xl text-sm font-bold uppercase tracking-wider" variant="outline" disabled>
+                  <UserCheck className="h-4 w-4 mr-2" />
+                  Buddies
+                </Button>
+              ) : buddyStatus === "sent" ? (
+                <Button className="flex-1 h-11 rounded-xl text-sm font-bold uppercase tracking-wider" variant="outline" disabled>
+                  Requested
+                </Button>
+              ) : (
+                <Button className="flex-1 h-11 rounded-xl text-sm font-bold uppercase tracking-wider" onClick={handleAddBuddy}>
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Add Buddy
+                </Button>
+              )}
             </div>
           )}
 
