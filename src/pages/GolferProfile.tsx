@@ -125,6 +125,7 @@ const GolferProfile = () => {
       if (profileData) setProfile(profileData);
 
       await fetchClubs(targetId);
+      await fetchInvites(targetId);
 
       // Check buddy status if viewing someone else
       if (targetId !== user.id) {
