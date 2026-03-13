@@ -144,23 +144,6 @@ const ClubProfile = () => {
                 </button>
               </div>
             );
-                <Avatar className="h-10 w-10 border-2 border-primary/30">
-                  <AvatarImage src={profile?.avatar_url ?? ""} />
-                  <AvatarFallback className="bg-secondary text-sm font-semibold">
-                    {getInitials(profile?.full_name)}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold truncate">{profile?.full_name || "Golfer"}</p>
-                  <p className={`text-xs ${isPending ? "text-primary" : "text-muted-foreground"}`}>
-                    {status}
-                  </p>
-                </div>
-                <button className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
-                  {isPending ? <UserPlus className="h-4 w-4" /> : <Mail className="h-4 w-4" />}
-                </button>
-              </div>
-            );
           })}
         </div>
       </div>
