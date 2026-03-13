@@ -1,4 +1,4 @@
-import { ArrowLeft, Search, Mail, Mic, Settings, UserPlus, Check, X } from "lucide-react";
+import { ArrowLeft, Search, Mail, Mic, Settings, UserPlus, Check, X, LogIn } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
@@ -23,6 +23,7 @@ const ClubProfile = () => {
   const [showEdit, setShowEdit] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
   const [tab, setTab] = useState<Tab>("members");
+  const [joining, setJoining] = useState(false);
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -65,6 +66,27 @@ const ClubProfile = () => {
     enabled: !!id,
   });
 
+  // Check if current user is already a member
+  const isMember = members?.some((m) => m.user_id === currentUserId);
+
+  // Check if current user has a pending join request
+  const { data: myJoinRequest } = useQuery({
+    queryKey: ["my-join-request", id, currentUserId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("club_invitations")
+        .select("*")
+        .eq("club_id", id!)
+        .eq("invited_user_id", currentUserId!)
+        .eq("invited_by", currentUserId!)
+        .eq("status", "pending")
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!id && !!currentUserId && !isOwner && !isMember,
+  });
+
   // Pending invitations (for owner)
   const { data: pendingInvitations } = useQuery({
     queryKey: ["club-invitations", id],
@@ -105,8 +127,28 @@ const ClubProfile = () => {
     }
   };
 
+  const handleJoinRequest = async () => {
+    if (!currentUserId || !id) return;
+    setJoining(true);
+    try {
+      const { error } = await supabase.from("club_invitations").insert({
+        club_id: id,
+        invited_by: currentUserId,
+        invited_user_id: currentUserId,
+        status: "pending",
+      });
+      if (error) throw error;
+      toast({ title: "Permintaan bergabung terkirim!" });
+      queryClient.invalidateQueries({ queryKey: ["my-join-request", id, currentUserId] });
+      queryClient.invalidateQueries({ queryKey: ["club-invitations", id] });
+    } catch (err: any) {
+      toast({ title: "Gagal", description: err.message, variant: "destructive" });
+    } finally {
+      setJoining(false);
+    }
+  };
+
   const handleAcceptInvitation = async (invitationId: string, userId: string) => {
-    // Add as member
     const { error: memberError } = await supabase.from("members").insert({
       club_id: id!,
       user_id: userId,
@@ -116,7 +158,6 @@ const ClubProfile = () => {
       toast({ title: "Gagal", description: memberError.message, variant: "destructive" });
       return;
     }
-    // Update invitation status
     await supabase.from("club_invitations").update({ status: "accepted" }).eq("id", invitationId);
     toast({ title: "Member diterima!" });
     queryClient.invalidateQueries({ queryKey: ["club-members", id] });
@@ -130,6 +171,7 @@ const ClubProfile = () => {
   };
 
   const pendingCount = pendingInvitations?.length ?? 0;
+  const hasPendingRequest = !!myJoinRequest;
 
   return (
     <div className="bottom-nav-safe">
@@ -176,8 +218,31 @@ const ClubProfile = () => {
             <p className="text-xs uppercase tracking-wider text-muted-foreground">
               {club?.description || "Golf Club"}
             </p>
-            <div className="mt-2 flex gap-2">
+            <div className="mt-2 flex items-center gap-2">
               <Badge variant="outline" className="text-xs">{members?.length ?? 0} Members</Badge>
+              {/* Join / Requested badge for non-owner non-members */}
+              {!isOwner && !isMember && currentUserId && (
+                hasPendingRequest ? (
+                  <Badge variant="secondary" className="text-xs">
+                    ⏳ Menunggu persetujuan
+                  </Badge>
+                ) : (
+                  <Button
+                    size="sm"
+                    className="h-7 rounded-lg px-4 text-xs font-bold uppercase tracking-wider"
+                    onClick={handleJoinRequest}
+                    disabled={joining}
+                  >
+                    <LogIn className="h-3.5 w-3.5 mr-1" />
+                    {joining ? "Mengirim..." : "Join"}
+                  </Button>
+                )
+              )}
+              {!isOwner && isMember && (
+                <Badge className="text-xs bg-primary/10 text-primary border-primary/20">
+                  ✓ Member
+                </Badge>
+              )}
             </div>
           </div>
         )}
