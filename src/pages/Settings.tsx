@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, User, Building2, Lock, Palette, LogOut, ChevronRight, Camera } from "lucide-react";
+import { ArrowLeft, User, Building2, Lock, Palette, LogOut, ChevronRight, Camera, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -305,6 +305,7 @@ const Settings = () => {
         <SettingsItem icon={User} label="Edit Profile" onClick={() => setSection("profile")} />
         <SettingsItem icon={Building2} label="My Clubs" onClick={() => setSection("club")} />
         <SettingsItem icon={Lock} label="Change Password" onClick={() => setSection("password")} />
+        <SettingsItem icon={LayoutDashboard} label="Admin Dashboard" onClick={() => navigate("/admin")} />
 
         <Separator className="my-3" />
 
