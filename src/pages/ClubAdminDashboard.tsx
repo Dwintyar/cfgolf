@@ -157,16 +157,44 @@ const ClubAdminDashboard = () => {
     enabled: !!clubId,
   });
 
-  // Tours with events (replaces flat events query)
+  // Tours with events (organized + participating)
   const { data: clubTours } = useQuery({
     queryKey: ["club-admin-tours", clubId],
     queryFn: async () => {
-      const { data } = await supabase
+      // Tour yang diselenggarakan klub ini
+      const { data: organizedTours } = await supabase
         .from("tours")
         .select("*, events(id, name, event_date, status, contestants(id))")
         .eq("organizer_club_id", clubId)
         .order("year", { ascending: false });
-      return data ?? [];
+
+      // Tour yang diikuti sebagai peserta
+      const { data: participatingTourClubs } = await supabase
+        .from("tour_clubs")
+        .select("tour_id, ticket_quota, status")
+        .eq("club_id", clubId)
+        .eq("status", "accepted");
+
+      let participatingTours: any[] = [];
+      if (participatingTourClubs && participatingTourClubs.length > 0) {
+        const organizedIds = new Set((organizedTours ?? []).map((t: any) => t.id));
+        const participatingIds = participatingTourClubs
+          .map(tc => tc.tour_id)
+          .filter(id => !organizedIds.has(id));
+
+        if (participatingIds.length > 0) {
+          const { data } = await supabase
+            .from("tours")
+            .select("*, events(id, name, event_date, status, contestants(id))")
+            .in("id", participatingIds)
+            .order("year", { ascending: false });
+          participatingTours = data ?? [];
+        }
+      }
+
+      const organized = (organizedTours ?? []).map((t: any) => ({ ...t, clubRole: "organizer" }));
+      const participating = participatingTours.map((t: any) => ({ ...t, clubRole: "participant" }));
+      return [...organized, ...participating];
     },
     enabled: !!clubId,
   });
@@ -524,6 +552,11 @@ const ClubAdminDashboard = () => {
                   <div className="flex items-center gap-2 mt-1 flex-wrap">
                     <Badge variant="outline" className="text-[9px]">{tour.tournament_type}</Badge>
                     <Badge variant="secondary" className="text-[9px]">{tour.year}</Badge>
+                    {tour.clubRole === "organizer" ? (
+                      <Badge variant="outline" className="text-[9px] text-primary border-primary/30">Organizer</Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-[9px] text-accent border-accent/30">Participant</Badge>
+                    )}
                     <span className="text-[10px] text-muted-foreground">{events.length} events · {totalPlayers} players</span>
                   </div>
                 </button>
@@ -593,16 +626,18 @@ const ClubAdminDashboard = () => {
                     </div>
                   );
                 })()}
-                <div className="px-3 pb-3 pt-1">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="w-full gap-1 text-xs h-7"
-                    onClick={() => navigate(`/tour/${tour.id}`)}
-                  >
-                    <Plus className="h-3 w-3" /> Add Event to this Tour
-                  </Button>
-                </div>
+                {tour.clubRole === "organizer" && (
+                  <div className="px-3 pb-3 pt-1">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full gap-1 text-xs h-7"
+                      onClick={() => navigate(`/tour/${tour.id}`)}
+                    >
+                      <Plus className="h-3 w-3" /> Add Event to this Tour
+                    </Button>
+                  </div>
+                )}
               </CollapsibleContent>
             </div>
           </Collapsible>
