@@ -559,15 +559,78 @@ const ClubAdminDashboard = () => {
     </TabsContent>
   );
 
-  const renderAnnouncementsTab = () => (
-    <TabsContent value="announcements" className="space-y-2 pt-2">
-      <div className="golf-card p-6 text-center text-sm text-muted-foreground">
-        <Megaphone className="mx-auto h-8 w-8 text-muted-foreground/40 mb-2" />
-        <p>Announcements coming soon</p>
-        <p className="text-xs mt-1">Post updates and news for your club members</p>
+  const renderAnnouncementsTab = () => {
+    const pinnedAnnouncements = announcements?.filter((a: any) => a.is_pinned) ?? [];
+    const regularAnnouncements = announcements?.filter((a: any) => !a.is_pinned) ?? [];
+    const isAdminOrOwner = isOwner || admins.some((a) => a.user_id === userId);
+
+    const timeAgo = (date: string) => {
+      const diff = Date.now() - new Date(date).getTime();
+      const days = Math.floor(diff / 86400000);
+      if (days === 0) return "Today";
+      if (days === 1) return "Yesterday";
+      return `${days} days ago`;
+    };
+
+    const renderAnnCard = (ann: any) => (
+      <div key={ann.id} className="golf-card p-3">
+        <div className="flex items-start gap-2">
+          {ann.is_pinned && <Pin className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />}
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold">{ann.title}</p>
+            <p className="text-xs text-muted-foreground mt-1 line-clamp-3">{ann.content}</p>
+            <p className="text-[10px] text-muted-foreground mt-2">
+              {(ann.profiles as any)?.full_name ?? "Admin"} · {timeAgo(ann.created_at)}
+            </p>
+          </div>
+          {ann.author_id === userId && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-6 w-6 p-0 shrink-0">
+                  <MoreVertical className="h-3.5 w-3.5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleDeleteAnnouncement(ann.id)} className="text-destructive">
+                  <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
       </div>
-    </TabsContent>
-  );
+    );
+
+    return (
+      <TabsContent value="announcements" className="space-y-2 pt-2">
+        {isAdminOrOwner && (
+          <Button size="sm" variant="outline" className="w-full gap-1 text-xs mb-2" onClick={() => setShowCreateAnnouncement(true)}>
+            <Plus className="h-3.5 w-3.5" /> New Announcement
+          </Button>
+        )}
+        {announcements?.length === 0 && (
+          <div className="golf-card p-6 text-center text-sm text-muted-foreground">
+            <Megaphone className="mx-auto h-8 w-8 text-muted-foreground/40 mb-2" />
+            <p>No announcements yet</p>
+          </div>
+        )}
+        {pinnedAnnouncements.length > 0 && (
+          <>
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">📌 Pinned</p>
+            {pinnedAnnouncements.map(renderAnnCard)}
+          </>
+        )}
+        {regularAnnouncements.length > 0 && (
+          <>
+            {pinnedAnnouncements.length > 0 && (
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mt-2">All Announcements</p>
+            )}
+            {regularAnnouncements.map(renderAnnCard)}
+          </>
+        )}
+      </TabsContent>
+    );
+  };
 
   const renderSettingsTab = () => (
     <TabsContent value="settings" className="space-y-4 pt-2 pb-6">
