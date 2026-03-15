@@ -56,7 +56,7 @@ const RegisterPlayerDialog = ({ tourId, tourType, organizerClubId, callerClubId,
   });
 
   const { data: members } = useQuery({
-    queryKey: ["club-members", clubId],
+    queryKey: ["dialog-members", clubId],
     queryFn: async () => {
       const { data } = await supabase
         .from("members")
