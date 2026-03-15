@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import * as XLSX from 'xlsx';
+import html2canvas from 'html2canvas';
+import JSZip from 'jszip';
 import { Button } from '@/components/ui/button';
-import { Download, Database, Loader2 } from 'lucide-react';
+import { Download, Database, Loader2, Image } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 const queries = [
