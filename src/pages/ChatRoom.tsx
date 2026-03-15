@@ -36,9 +36,9 @@ const ChatRoom = () => {
     enabled: !!conversationId && !!userId,
   });
 
-  // Load initial messages
+  // Load initial messages (wait for userId so RLS auth is ready)
   useEffect(() => {
-    if (!conversationId) return;
+    if (!conversationId || !userId) return;
     const load = async () => {
       const { data } = await supabase
         .from("chat_messages")
@@ -48,7 +48,7 @@ const ChatRoom = () => {
       if (data) setMessages(data);
     };
     load();
-  }, [conversationId]);
+  }, [conversationId, userId]);
 
   // Realtime subscription
   useEffect(() => {
