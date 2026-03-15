@@ -104,21 +104,23 @@ const ChatList = () => {
     }
 
     // Create new conversation
-    const { data: conv } = await supabase
+    const newConvId = uuidv4();
+    const { error: convError } = await supabase
       .from("conversations")
-      .insert({})
-      .select()
-      .single();
+      .insert({ id: newConvId });
 
-    if (!conv) { toast.error("Failed to create chat"); return; }
+    if (convError) {
+      toast.error("Failed to create chat");
+      return;
+    }
 
     await supabase.from("conversation_participants").insert([
-      { conversation_id: conv.id, user_id: userId },
-      { conversation_id: conv.id, user_id: randomProfile.id },
+      { conversation_id: newConvId, user_id: userId },
+      { conversation_id: newConvId, user_id: randomProfile.id },
     ]);
 
     toast.success(`Chat started with ${randomProfile.full_name}`);
-    navigate(`/chat/${conv.id}`);
+    navigate(`/chat/${newConvId}`);
   };
 
   const getInitials = (name: string | null) =>
