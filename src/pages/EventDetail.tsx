@@ -21,10 +21,11 @@ import WinnerResultsDialog from "@/components/event/WinnerResultsDialog";
 const EventDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [showAssign, setShowAssign] = useState(false);
   const [generating, setGenerating] = useState(false);
-  const [calculating, setCalculating] = useState(false);
-  const [updatingHcp, setUpdatingHcp] = useState(false);
+  const [finalizing, setFinalizing] = useState(false);
+  const [showFinalizeConfirm, setShowFinalizeConfirm] = useState(false);
   const [startType, setStartType] = useState("tee_time");
   const [firstTee, setFirstTee] = useState("07:00");
   const [interval, setInterval] = useState("8");
