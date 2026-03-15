@@ -213,7 +213,7 @@ const Venue = () => {
               className="mt-6 h-14 w-full rounded-xl text-base font-bold uppercase tracking-wider golf-glow"
               onClick={() => navigate(`/book/${id}`)}
             >
-              Book This For {price ? `$${price}` : "Free"}
+              Book This For {price ?? "Free"}
             </Button>
           </>
         )}
