@@ -920,6 +920,7 @@ export type Database = {
           old_hcp: number | null
           player_id: string
           sandbagging_flag: boolean
+          tour_id: string | null
         }
         Insert: {
           created_at?: string
@@ -931,6 +932,7 @@ export type Database = {
           old_hcp?: number | null
           player_id: string
           sandbagging_flag?: boolean
+          tour_id?: string | null
         }
         Update: {
           created_at?: string
@@ -942,6 +944,7 @@ export type Database = {
           old_hcp?: number | null
           player_id?: string
           sandbagging_flag?: boolean
+          tour_id?: string | null
         }
         Relationships: [
           {
@@ -956,6 +959,13 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "handicap_history_tour_id_fkey"
+            columns: ["tour_id"]
+            isOneToOne: false
+            referencedRelation: "tours"
             referencedColumns: ["id"]
           },
         ]
@@ -1764,6 +1774,8 @@ export type Database = {
         Row: {
           club_id: string
           created_at: string
+          hcp_at_registration: number | null
+          hcp_tour: number | null
           id: string
           player_id: string
           status: string
@@ -1772,6 +1784,8 @@ export type Database = {
         Insert: {
           club_id: string
           created_at?: string
+          hcp_at_registration?: number | null
+          hcp_tour?: number | null
           id?: string
           player_id: string
           status?: string
@@ -1780,6 +1794,8 @@ export type Database = {
         Update: {
           club_id?: string
           created_at?: string
+          hcp_at_registration?: number | null
+          hcp_tour?: number | null
           id?: string
           player_id?: string
           status?: string
