@@ -552,6 +552,11 @@ const ClubAdminDashboard = () => {
                   <div className="flex items-center gap-2 mt-1 flex-wrap">
                     <Badge variant="outline" className="text-[9px]">{tour.tournament_type}</Badge>
                     <Badge variant="secondary" className="text-[9px]">{tour.year}</Badge>
+                    {tour.clubRole === "organizer" ? (
+                      <Badge variant="outline" className="text-[9px] text-primary border-primary/30">Organizer</Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-[9px] text-accent border-accent/30">Participant</Badge>
+                    )}
                     <span className="text-[10px] text-muted-foreground">{events.length} events · {totalPlayers} players</span>
                   </div>
                 </button>
