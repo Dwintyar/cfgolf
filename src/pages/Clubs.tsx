@@ -9,9 +9,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useEffect } from "react";
 
+const FACILITY_FILTERS = [
+  { label: "All", value: "all" },
+  { label: "Golf Club", value: "golf_club" },
+  { label: "Driving Range", value: "driving_range" },
+  { label: "Academy", value: "golf_academy" },
+];
+
 const Clubs = () => {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
+  const [facilityFilter, setFacilityFilter] = useState("all");
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -43,7 +51,6 @@ const Clubs = () => {
     },
   });
 
-  // Fetch user's memberships
   const { data: myMemberships } = useQuery({
     queryKey: ["my-memberships", currentUserId],
     queryFn: async () => {
@@ -57,7 +64,6 @@ const Clubs = () => {
     enabled: !!currentUserId,
   });
 
-  // Fetch user's pending join requests
   const { data: myPendingRequests } = useQuery({
     queryKey: ["my-pending-requests", currentUserId],
     queryFn: async () => {
@@ -73,14 +79,28 @@ const Clubs = () => {
     enabled: !!currentUserId,
   });
 
-  const filtered = clubs?.filter((c) =>
-    c.name.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = clubs?.filter((c) => {
+    const matchSearch = c.name.toLowerCase().includes(search.toLowerCase());
+    const matchFacility = facilityFilter === "all" || c.facility_type === facilityFilter;
+    return matchSearch && matchFacility;
+  });
 
   const getButtonState = (clubId: string) => {
     if (myMemberships?.has(clubId)) return "member";
     if (myPendingRequests?.has(clubId)) return "requested";
     return "join";
+  };
+
+  const facilityBadgeColors: Record<string, string> = {
+    golf_club: "border-primary/30 text-primary",
+    driving_range: "border-yellow-500/30 text-yellow-500",
+    golf_academy: "border-blue-400/30 text-blue-400",
+  };
+
+  const facilityLabels: Record<string, string> = {
+    golf_club: "Golf Club",
+    driving_range: "Driving Range",
+    golf_academy: "Academy",
   };
 
   return (
@@ -99,6 +119,23 @@ const Clubs = () => {
           />
           <Mic className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         </div>
+      </div>
+
+      {/* Facility type filter */}
+      <div className="flex gap-2 overflow-x-auto px-4 pb-3 scrollbar-none">
+        {FACILITY_FILTERS.map((f) => (
+          <button
+            key={f.value}
+            onClick={() => setFacilityFilter(f.value)}
+            className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-medium transition-all ${
+              facilityFilter === f.value
+                ? "bg-primary text-primary-foreground"
+                : "bg-secondary text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {f.label}
+          </button>
+        ))}
       </div>
 
       <div className="space-y-3 px-4">
@@ -136,8 +173,16 @@ const Clubs = () => {
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
-                <h3 className="text-base font-semibold truncate">{club.name}</h3>
-                <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-base font-semibold truncate">{club.name}</h3>
+                </div>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <Badge variant="outline" className={`text-[9px] ${facilityBadgeColors[club.facility_type] ?? ""}`}>
+                    {facilityLabels[club.facility_type] ?? club.facility_type}
+                  </Badge>
+                  <span className="text-[10px] text-muted-foreground">{club.memberCount} members</span>
+                </div>
+                <p className="mt-0.5 text-xs text-muted-foreground line-clamp-1">
                   {club.description || "Golf Club"}
                 </p>
                 {state === "member" ? (

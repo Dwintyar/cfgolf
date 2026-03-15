@@ -29,6 +29,8 @@ import BookTeeTime from "./pages/BookTeeTime";
 import NotFound from "./pages/NotFound";
 import AdminDashboard from "./pages/AdminDashboard";
 import ExportQueries from "./pages/ExportQueries";
+import ScorecardInput from "./pages/ScorecardInput";
+import Notifications from "./pages/Notifications";
 
 const queryClient = new QueryClient();
 
@@ -61,6 +63,7 @@ const App = () => {
             <Route path="/event/:id" element={<EventDetail />} />
             <Route path="/event/:id/pairings" element={<EventPairings />} />
             <Route path="/event/:id/leaderboard" element={<EventLeaderboard />} />
+            <Route path="/event/:id/scorecard" element={<ScorecardInput />} />
             <Route path="/profile/:id" element={<PlayerProfile />} />
             <Route path="/venue" element={<VenueList />} />
             <Route path="/venue/:id" element={<Venue />} />
@@ -73,6 +76,7 @@ const App = () => {
             <Route path="/chat" element={<ChatList />} />
             <Route path="/chat/:id" element={<ChatRoom />} />
             <Route path="/book/:courseId" element={<BookTeeTime />} />
+            <Route path="/notifications" element={<Notifications />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <BottomNav />

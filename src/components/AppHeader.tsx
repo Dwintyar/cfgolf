@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Settings, UserCircle } from "lucide-react";
+import { Settings, UserCircle, MessageCircle, Bell } from "lucide-react";
 import logo from "@/assets/logo.png";
 
 interface AppHeaderProps {
@@ -18,8 +18,23 @@ const AppHeader = ({ title, icon, rightContent }: AppHeaderProps) => {
         <h1 className="font-display text-xl font-bold leading-none">{title}</h1>
         {icon}
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1">
         {rightContent}
+        <button
+          onClick={() => navigate("/notifications")}
+          className="relative rounded-full p-2 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+          aria-label="Notifications"
+        >
+          <Bell className="h-5 w-5" />
+          <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-primary" />
+        </button>
+        <button
+          onClick={() => navigate("/chat")}
+          className="rounded-full p-2 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+          aria-label="Messages"
+        >
+          <MessageCircle className="h-5 w-5" />
+        </button>
         <button
           onClick={() => navigate("/profile")}
           className="rounded-full p-2 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
