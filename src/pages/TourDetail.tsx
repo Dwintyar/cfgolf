@@ -96,7 +96,22 @@ const TourDetail = () => {
     enabled: !!id,
   });
 
-  const statusColors: Record<string, string> = {
+  const { data: isOrganizer } = useQuery({
+    queryKey: ["tour-organizer-check", id, userId],
+    queryFn: async () => {
+      if (!userId || !tour?.organizer_club_id) return false;
+      const { data } = await supabase
+        .from("members")
+        .select("role")
+        .eq("club_id", tour.organizer_club_id)
+        .eq("user_id", userId)
+        .in("role", ["owner", "admin"])
+        .maybeSingle();
+      return !!data;
+    },
+    enabled: !!userId && !!tour?.organizer_club_id,
+  });
+
     draft: "border-muted-foreground/30 text-muted-foreground",
     registration: "border-accent/40 text-accent",
     checkin: "border-accent/40 text-accent",
