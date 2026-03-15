@@ -103,7 +103,7 @@ const Venue = () => {
             <div className="flex gap-4">
               <div>
                 {price && (
-                  <p className="text-3xl font-bold text-primary">${price}</p>
+                  <p className="text-3xl font-bold text-primary">{price}</p>
                 )}
                 <Badge variant="outline" className="mt-2 border-primary/30 text-xs uppercase tracking-wider">
                   {new Date().toLocaleDateString("en-US", { weekday: "short", day: "numeric", month: "short" })}
