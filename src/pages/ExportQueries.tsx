@@ -400,6 +400,10 @@ const ExportQueries = () => {
             {loadingPng ? <Loader2 className="h-5 w-5 animate-spin" /> : <Image className="h-5 w-5" />}
             {loadingPng ? pngProgress : 'Export Semua Halaman (PNG)'}
           </Button>
+          <Button onClick={handleDownloadSavedPngs} size="lg" variant="outline" className="gap-2" disabled={loadingSavedPng}>
+            {loadingSavedPng ? <Loader2 className="h-5 w-5 animate-spin" /> : <Download className="h-5 w-5" />}
+            {loadingSavedPng ? 'Downloading...' : 'Download Saved PNGs (ZIP)'}
+          </Button>
         </div>
         {loadingPng && (
           <p className="text-xs text-muted-foreground animate-pulse">{pngProgress}</p>
