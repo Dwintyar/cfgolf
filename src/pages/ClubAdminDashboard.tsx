@@ -4,17 +4,24 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Users, UserCheck, Calendar, Bell, ChevronRight, Plus, ArrowLeft,
-  Settings as SettingsIcon, Building2, Shield, Trash2, MessageSquare
+  Settings as SettingsIcon, Building2, Shield, Trash2, MessageSquare,
+  Crown, AlertTriangle
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import InviteMemberDialog from "@/components/InviteMemberDialog";
 
@@ -33,6 +40,10 @@ const ClubAdminDashboard = () => {
   const [editPhone, setEditPhone] = useState("");
   const [editEmail, setEditEmail] = useState("");
   const [saving, setSaving] = useState(false);
+
+  // Succession
+  const [successionUserId, setSuccessionUserId] = useState("");
+  const [transferTargetId, setTransferTargetId] = useState("");
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -77,6 +88,7 @@ const ClubAdminDashboard = () => {
       setEditDesc(club.description ?? "");
       setEditPhone(club.contact_phone ?? "");
       setEditEmail(club.contact_email ?? "");
+      setSuccessionUserId(club.succession_user_id ?? "");
     }
   }, [club]);
 
@@ -145,6 +157,10 @@ const ClubAdminDashboard = () => {
   const upcomingEvents = clubEvents?.filter(e => e.status !== "completed").length ?? 0;
   const pendingCount = pendingInvitations?.length ?? 0;
 
+  const isOwner = club?.owner_id === userId;
+  const admins = members?.filter(m => m.role === "admin") ?? [];
+  const regularMembers = members?.filter(m => m.role === "member") ?? [];
+
   const handleChangeRole = async (memberId: string, newRole: "admin" | "member") => {
     await supabase.from("members").update({ role: newRole }).eq("id", memberId);
     toast.success(`Role updated to ${newRole}`);
@@ -172,6 +188,50 @@ const ClubAdminDashboard = () => {
     queryClient.invalidateQueries({ queryKey: ["club-admin-info", clubId] });
   };
 
+  const handleSaveSuccession = async () => {
+    if (!clubId) return;
+    const { error } = await supabase.from("clubs").update({
+      succession_user_id: successionUserId || null,
+    }).eq("id", clubId);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Succession member updated");
+    queryClient.invalidateQueries({ queryKey: ["club-admin-info", clubId] });
+  };
+
+  const handleTransferOwnership = async () => {
+    if (!clubId || !transferTargetId || !userId) return;
+    // Verify target is admin of this club
+    const targetMember = members?.find(m => m.user_id === transferTargetId && m.role === "admin");
+    if (!targetMember) {
+      toast.error("Target must be an admin of this club");
+      return;
+    }
+    const currentOwnerMember = members?.find(m => m.user_id === userId && m.role === "owner");
+    if (!currentOwnerMember) return;
+
+    // Update club owner
+    const { error: e1 } = await supabase.from("clubs").update({ owner_id: transferTargetId }).eq("id", clubId);
+    if (e1) { toast.error(e1.message); return; }
+    // Promote target to owner - need to delete and re-insert since we can't update role
+    await supabase.from("members").delete().eq("id", targetMember.id);
+    await supabase.from("members").insert({ club_id: clubId, user_id: transferTargetId, role: "owner" });
+    // Demote self to admin
+    await supabase.from("members").delete().eq("id", currentOwnerMember.id);
+    await supabase.from("members").insert({ club_id: clubId, user_id: userId, role: "admin" });
+
+    toast.success("Ownership transferred successfully");
+    queryClient.invalidateQueries({ queryKey: ["club-admin-info", clubId] });
+    refetchMembers();
+  };
+
+  const handleArchiveClub = async () => {
+    if (!clubId) return;
+    const { error } = await supabase.from("clubs").update({ is_personal: true }).eq("id", clubId);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Club archived");
+    navigate("/clubs");
+  };
+
   const roleColors: Record<string, string> = {
     owner: "bg-destructive/10 text-destructive border-destructive/30",
     admin: "bg-accent/10 text-accent border-accent/30",
@@ -184,6 +244,11 @@ const ClubAdminDashboard = () => {
       <p>No club selected</p>
     </div>
   );
+
+  const getProfileName = (uid: string) => {
+    const m = members?.find(m => m.user_id === uid);
+    return m?.profiles?.full_name || "Unknown";
+  };
 
   return (
     <div className="bottom-nav-safe">
@@ -355,28 +420,203 @@ const ClubAdminDashboard = () => {
           </TabsContent>
 
           {/* TAB: SETTINGS */}
-          <TabsContent value="settings" className="space-y-4 pt-2">
-            <div className="space-y-3">
-              <div>
-                <Label className="text-xs text-muted-foreground">Club Name</Label>
-                <Input value={editName} onChange={e => setEditName(e.target.value)} className="mt-1" />
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Description</Label>
-                <Input value={editDesc} onChange={e => setEditDesc(e.target.value)} className="mt-1" />
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Contact Phone</Label>
-                <Input value={editPhone} onChange={e => setEditPhone(e.target.value)} className="mt-1" />
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Contact Email</Label>
-                <Input value={editEmail} onChange={e => setEditEmail(e.target.value)} className="mt-1" />
-              </div>
-              <Button className="w-full" onClick={handleSaveSettings} disabled={saving}>
-                {saving ? "Saving…" : "Save Changes"}
-              </Button>
-            </div>
+          <TabsContent value="settings" className="space-y-4 pt-2 pb-6">
+            {/* SECTION 1: Club Identity */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Building2 className="h-4 w-4 text-primary" /> Club Identity
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Club Name</Label>
+                  <Input value={editName} onChange={e => setEditName(e.target.value)} className="mt-1" />
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Description</Label>
+                  <Textarea value={editDesc} onChange={e => setEditDesc(e.target.value)} className="mt-1" rows={3} />
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Contact Phone</Label>
+                  <Input value={editPhone} onChange={e => setEditPhone(e.target.value)} className="mt-1" />
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Contact Email</Label>
+                  <Input value={editEmail} onChange={e => setEditEmail(e.target.value)} className="mt-1" />
+                </div>
+                <Button className="w-full" onClick={handleSaveSettings} disabled={saving}>
+                  {saving ? "Saving…" : "Save Changes"}
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* SECTION 2: Admin Management (owner only) */}
+            {isOwner && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Shield className="h-4 w-4 text-primary" /> Admin Management
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {admins.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">No admins assigned yet.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {admins.map((a: any) => (
+                        <div key={a.id} className="flex items-center gap-3 rounded-lg border border-border p-2.5">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={a.profiles?.avatar_url ?? ""} />
+                            <AvatarFallback className="bg-accent/20 text-accent text-xs font-bold">
+                              {(a.profiles?.full_name ?? "A").charAt(0).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium truncate">{a.profiles?.full_name || "Admin"}</p>
+                            <Badge variant="outline" className="text-[9px] bg-accent/10 text-accent border-accent/30">admin</Badge>
+                          </div>
+                          <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => handleChangeRole(a.id, "member")}>
+                            Demote
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {regularMembers.length > 0 && (
+                    <div>
+                      <Label className="text-xs text-muted-foreground mb-1 block">Promote Member to Admin</Label>
+                      <Select onValueChange={(memberId) => handleChangeRole(memberId, "admin")}>
+                        <SelectTrigger className="h-9 text-xs">
+                          <SelectValue placeholder="+ Select member to promote" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {regularMembers.map((m: any) => (
+                            <SelectItem key={m.id} value={m.id}>
+                              {m.profiles?.full_name || "Member"}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* SECTION 3: Succession & Transfer (owner only) */}
+            {isOwner && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Crown className="h-4 w-4 text-primary" /> Succession & Transfer
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Succession Member */}
+                  <div>
+                    <Label className="text-xs text-muted-foreground mb-1 block">Succession Member</Label>
+                    <p className="text-[11px] text-muted-foreground mb-2">
+                      If you're inactive for 180 days, this person will automatically become owner.
+                    </p>
+                    <Select value={successionUserId} onValueChange={setSuccessionUserId}>
+                      <SelectTrigger className="h-9 text-xs">
+                        <SelectValue placeholder="Select an admin" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {admins.map((a: any) => (
+                          <SelectItem key={a.user_id} value={a.user_id}>
+                            {a.profiles?.full_name || "Admin"}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button size="sm" variant="outline" className="w-full mt-2 text-xs" onClick={handleSaveSuccession}>
+                      Save Succession
+                    </Button>
+                  </div>
+
+                  {/* Transfer Ownership */}
+                  <div className="border-t border-border pt-4">
+                    <Label className="text-xs text-muted-foreground mb-1 block">Transfer Ownership</Label>
+                    <p className="text-[11px] text-muted-foreground mb-2">
+                      Transfer full ownership to an admin. You will become an Admin. This cannot be undone.
+                    </p>
+                    <Select value={transferTargetId} onValueChange={setTransferTargetId}>
+                      <SelectTrigger className="h-9 text-xs">
+                        <SelectValue placeholder="Select admin to transfer to" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {admins.map((a: any) => (
+                          <SelectItem key={a.user_id} value={a.user_id}>
+                            {a.profiles?.full_name || "Admin"}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="sm" className="w-full mt-2 text-xs" disabled={!transferTargetId}>
+                          Transfer Ownership
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Transfer Ownership</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Anda akan menyerahkan kepemilikan klub kepada <strong>{getProfileName(transferTargetId)}</strong>.
+                            Anda akan menjadi Admin biasa. Tindakan ini tidak dapat dibatalkan.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Batalkan</AlertDialogCancel>
+                          <AlertDialogAction onClick={handleTransferOwnership}>Ya, Transfer</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* SECTION 4: Danger Zone (owner only) */}
+            {isOwner && (
+              <Card className="border-destructive/30">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm flex items-center gap-2 text-destructive">
+                    <AlertTriangle className="h-4 w-4" /> Danger Zone
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-[11px] text-muted-foreground mb-3">
+                    Club akan diarsipkan. Member tidak bisa bergabung baru. Data tetap tersimpan.
+                  </p>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="outline" size="sm" className="w-full text-xs text-destructive border-destructive/30 hover:bg-destructive/10">
+                        Archive Club
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Archive Club</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Club akan diarsipkan dan tidak bisa menerima member baru. Data tetap tersimpan. Lanjutkan?
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Batalkan</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleArchiveClub} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                          Ya, Archive
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
         </Tabs>
       </div>
