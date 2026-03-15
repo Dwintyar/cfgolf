@@ -357,7 +357,6 @@ const ClubAdminDashboard = () => {
 
   // ── Render helpers ──
 
-  const [memberSearch, setMemberSearch] = useState("");
 
   const filteredMembers = members?.filter((m: any) =>
     (m.profiles?.full_name ?? "").toLowerCase().includes(memberSearch.toLowerCase())
