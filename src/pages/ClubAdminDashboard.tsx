@@ -200,6 +200,20 @@ const ClubAdminDashboard = () => {
     enabled: !!clubId,
   });
 
+  // Tour players registered by this club
+  const { data: clubTourPlayers } = useQuery({
+    queryKey: ["club-tour-players", clubId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("tour_players")
+        .select("*, profiles(full_name, handicap), tours(name, id)")
+        .eq("club_id", clubId)
+        .order("created_at", { ascending: false });
+      return data ?? [];
+    },
+    enabled: !!clubId,
+  });
+
   const { data: courseBookings } = useQuery({
     queryKey: ["club-venue-bookings", linkedCourse?.id],
     queryFn: async () => {
