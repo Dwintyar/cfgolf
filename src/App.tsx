@@ -28,6 +28,7 @@ import ChatRoom from "./pages/ChatRoom";
 import BookTeeTime from "./pages/BookTeeTime";
 import NotFound from "./pages/NotFound";
 import AdminDashboard from "./pages/AdminDashboard";
+import ExportQueries from "./pages/ExportQueries";
 
 const queryClient = new QueryClient();
 
