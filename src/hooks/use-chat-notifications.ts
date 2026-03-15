@@ -95,6 +95,53 @@ export function useChatNotifications() {
     };
   }, [userId]);
 
+  // Subscribe to club invitations
+  useEffect(() => {
+    if (!userId) return;
+
+    const channel = supabase
+      .channel("global-club-invite-notifications")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "club_invitations",
+        },
+        async (payload) => {
+          const inv = payload.new as any;
+
+          // Only notify the invited user
+          if (inv.invited_user_id !== userId) return;
+
+          // Get club name
+          const { data: club } = await supabase
+            .from("clubs")
+            .select("name")
+            .eq("id", inv.club_id)
+            .single();
+
+          const clubName = club?.name ?? "A club";
+
+          toast.message(`🏌️ Undangan Club`, {
+            description: `${clubName} mengundang kamu untuk bergabung!`,
+            action: {
+              label: "Lihat",
+              onClick: () => {
+                window.location.href = "/notifications";
+              },
+            },
+            duration: 6000,
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userId]);
+
   // Reset unread count when visiting chat pages
   useEffect(() => {
     if (location.pathname.startsWith("/chat")) {
