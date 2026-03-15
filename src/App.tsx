@@ -5,6 +5,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import BottomNav from "@/components/BottomNav";
+import AdminRoute from "@/components/AdminRoute";
 import Login from "./pages/Login";
 import ResetPassword from "./pages/ResetPassword";
 import NewsFeed from "./pages/NewsFeed";
@@ -19,7 +20,6 @@ import PlayerProfile from "./pages/PlayerProfile";
 import VenueList from "./pages/VenueList";
 import Venue from "./pages/Venue";
 import Play from "./pages/Play";
-
 import Messages from "./pages/Messages";
 import GolferProfile from "./pages/GolferProfile";
 import Settings from "./pages/Settings";
@@ -27,7 +27,8 @@ import ChatList from "./pages/ChatList";
 import ChatRoom from "./pages/ChatRoom";
 import BookTeeTime from "./pages/BookTeeTime";
 import NotFound from "./pages/NotFound";
-import AdminDashboard from "./pages/AdminDashboard";
+import PlatformAdminDashboard from "./pages/PlatformAdminDashboard";
+import ClubAdminDashboard from "./pages/ClubAdminDashboard";
 import ExportQueries from "./pages/ExportQueries";
 import ScorecardInput from "./pages/ScorecardInput";
 import Notifications from "./pages/Notifications";
@@ -51,7 +52,8 @@ const App = () => {
         <div className="mx-auto max-w-lg min-h-screen">
           <Routes>
             <Route path="/" element={<Navigate to="/login" replace />} />
-            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin" element={<AdminRoute requirePlatformAdmin><PlatformAdminDashboard /></AdminRoute>} />
+            <Route path="/admin/club/:clubId" element={<AdminRoute><ClubAdminDashboard /></AdminRoute>} />
             <Route path="/export-queries" element={<ExportQueries />} />
             <Route path="/login" element={<Login />} />
             <Route path="/reset-password" element={<ResetPassword />} />
@@ -68,7 +70,6 @@ const App = () => {
             <Route path="/venue" element={<VenueList />} />
             <Route path="/venue/:id" element={<Venue />} />
             <Route path="/play" element={<Play />} />
-            
             <Route path="/play/messages" element={<Messages />} />
             <Route path="/profile" element={<GolferProfile />} />
             <Route path="/profile/:id" element={<GolferProfile />} />
