@@ -38,6 +38,7 @@ const EventDetail = () => {
   const [selectedContestantForCart, setSelectedContestantForCart] = useState("");
   const [selectedContestantForCaddy, setSelectedContestantForCaddy] = useState("");
   const [selectedCaddy, setSelectedCaddy] = useState("");
+  const [showWinners, setShowWinners] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
