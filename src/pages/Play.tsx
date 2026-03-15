@@ -435,7 +435,7 @@ const Play = () => {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => navigate(`/chat`)}
+                        onClick={() => startConversation(b.profile.id)}
                         className="h-9 w-9 rounded-lg p-0"
                       >
                         <MessageCircle className="h-4 w-4" />
