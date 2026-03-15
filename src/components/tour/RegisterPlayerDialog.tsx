@@ -20,10 +20,26 @@ interface Props {
 
 const RegisterPlayerDialog = ({ tourId, tourType, organizerClubId, callerClubId, open, onOpenChange, onDone }: Props) => {
   const isOrganizer = !callerClubId || callerClubId === organizerClubId;
-  const [clubId, setClubId] = useState(callerClubId ?? organizerClubId);
+  const [clubId, setClubId] = useState(organizerClubId);
   const [playerId, setPlayerId] = useState("");
   const [playerSearch, setPlayerSearch] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (callerClubId) {
+      setClubId(callerClubId);
+      setPlayerId("");
+      setPlayerSearch("");
+    }
+  }, [callerClubId]);
+
+  useEffect(() => {
+    if (open) {
+      setClubId(callerClubId ?? organizerClubId);
+      setPlayerId("");
+      setPlayerSearch("");
+    }
+  }, [open, callerClubId, organizerClubId]);
 
   // For organizer: show participating clubs (accepted in tour_clubs)
   const { data: participatingClubs } = useQuery({
