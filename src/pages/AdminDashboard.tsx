@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Users, Building2, Calendar, Trophy, Activity, TrendingUp, BarChart3, Award } from "lucide-react";
+import { Users, Building2, Calendar, Trophy, Activity, TrendingUp, BarChart3, Award, MessageSquare, UserCheck, MapPin, Dumbbell } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
