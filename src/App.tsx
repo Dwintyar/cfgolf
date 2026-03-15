@@ -9,7 +9,6 @@ import AdminRoute from "@/components/AdminRoute";
 import { useChatNotifications } from "@/hooks/use-chat-notifications";
 
 export const ChatNotifContext = createContext<{ unreadCount: number }>({ unreadCount: 0 });
-import AdminRoute from "@/components/AdminRoute";
 import Login from "./pages/Login";
 import ResetPassword from "./pages/ResetPassword";
 import NewsFeed from "./pages/NewsFeed";
