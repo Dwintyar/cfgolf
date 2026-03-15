@@ -36,6 +36,7 @@ const ClubAdminDashboard = () => {
   const queryClient = useQueryClient();
   const [userId, setUserId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("members");
+  const [memberSearch, setMemberSearch] = useState("");
   const [showInvite, setShowInvite] = useState(false);
   const [selectedClubId, setSelectedClubId] = useState(paramClubId ?? "");
   const [expandedTours, setExpandedTours] = useState<Set<string>>(new Set());
