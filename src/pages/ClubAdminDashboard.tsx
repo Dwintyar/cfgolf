@@ -1010,6 +1010,44 @@ const ClubAdminDashboard = () => {
           onDone={() => { setShowInvite(false); refetchMembers(); }}
         />
       )}
+
+      {/* Create Announcement Dialog */}
+      <Dialog open={showCreateAnnouncement} onOpenChange={setShowCreateAnnouncement}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-base">New Announcement</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div>
+              <Label className="text-xs text-muted-foreground">Title</Label>
+              <Input value={annTitle} onChange={(e) => setAnnTitle(e.target.value)} className="mt-1" placeholder="Announcement title" />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Content</Label>
+              <Textarea value={annContent} onChange={(e) => setAnnContent(e.target.value)} className="mt-1" rows={4} placeholder="Write your announcement..." />
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch checked={annPinned} onCheckedChange={setAnnPinned} />
+              <Label className="text-xs">📌 Pin to top</Label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={handleCreateAnnouncement} disabled={!annTitle.trim() || !annContent.trim()} className="w-full">
+              Publish
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Assign Event Roles Dialog */}
+      {rolesEventId && clubId && (
+        <AssignEventRolesDialog
+          eventId={rolesEventId}
+          clubId={clubId}
+          open={!!rolesEventId}
+          onOpenChange={(open) => { if (!open) setRolesEventId(null); }}
+        />
+      )}
     </div>
   );
 };
