@@ -176,6 +176,35 @@ const EventDetail = () => {
   const myCheckin = checkins?.find(ci => ci.contestant_id === myContestant?.id);
   const isCheckedIn = !!myCheckin;
 
+  // Check if user is club admin for the event's organizing club
+  const { data: isEventAdmin } = useQuery({
+    queryKey: ["event-admin-check", id, userId],
+    queryFn: async () => {
+      const clubId = (event?.tours as any)?.organizer_club_id;
+      if (!clubId || !userId) return false;
+      // Check club admin
+      const { data: memberRole } = await supabase
+        .from("members")
+        .select("role")
+        .eq("club_id", clubId)
+        .eq("user_id", userId)
+        .in("role", ["owner", "admin"])
+        .maybeSingle();
+      if (memberRole) return true;
+      // Check platform admin
+      const { data: sysAdmin } = await supabase
+        .from("system_admins")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("is_active", true)
+        .maybeSingle();
+      return !!sysAdmin;
+    },
+    enabled: !!event && !!userId,
+  });
+
+  const showAdminActions = !!isEventAdmin;
+
   // --- Handlers ---
   const invokeWithAuth = async (fnName: string, body: any) => {
     const { data: sessionData } = await supabase.auth.getSession();
