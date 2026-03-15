@@ -16,6 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import AssignContestantDialog from "@/components/tour/AssignContestantDialog";
+import WinnerResultsDialog from "@/components/event/WinnerResultsDialog";
 
 const EventDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -37,6 +38,7 @@ const EventDetail = () => {
   const [selectedContestantForCart, setSelectedContestantForCart] = useState("");
   const [selectedContestantForCaddy, setSelectedContestantForCaddy] = useState("");
   const [selectedCaddy, setSelectedCaddy] = useState("");
+  const [showWinners, setShowWinners] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -375,6 +377,9 @@ const EventDetail = () => {
         <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={handleCalculateWinners} disabled={calculating}>
           <Award className="h-3 w-3" /> {calculating ? "…" : "Winners"}
         </Button>
+        <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowWinners(true)}>
+          <Trophy className="h-3 w-3" /> Results
+        </Button>
         <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={handleUpdateHandicaps} disabled={updatingHcp}>
           <TrendingDown className="h-3 w-3" /> {updatingHcp ? "…" : "HCP Update"}
         </Button>
@@ -593,6 +598,7 @@ const EventDetail = () => {
 
       {/* Dialogs */}
       <AssignContestantDialog eventId={event.id} tourId={event.tour_id} open={showAssign} onOpenChange={setShowAssign} onDone={() => { setShowAssign(false); refetchContestants(); }} />
+      <WinnerResultsDialog eventId={event.id} eventName={event.name} eventStatus={event.status} open={showWinners} onOpenChange={setShowWinners} onDone={() => { setShowWinners(false); refetchResults(); }} />
 
       {/* Self Check-in Dialog */}
       <Dialog open={showCheckinDialog} onOpenChange={setShowCheckinDialog}>

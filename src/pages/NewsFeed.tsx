@@ -1,128 +1,215 @@
-import { Heart, MessageCircle, Share2, Bell } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Heart, MessageCircle, Share2, Plus, Image, MapPin, Tag, X } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
 import heroImg from "@/assets/golf-hero.jpg";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
-const posts = [
-  {
-    id: 1,
-    author: "Sarah Parmenter",
-    initials: "SP",
-    category: "THINGS TO DO",
-    time: "2h ago",
-    title: "When setting up major championship courses, length matters less than you think.",
-    text: 'At more than 7,300 yards, the Robert Trent Jones design known locally as the "Green Monster of Ladue" is feared for its crowned fairways, deep bunkers and huge greens.',
-    image: true,
-    likes: 24,
-    comments: 5,
-  },
-  {
-    id: 2,
-    author: "James Walker",
-    initials: "JW",
-    category: "TIPS",
-    time: "5h ago",
-    title: "Amazing round at Pine Valley today!",
-    text: "Shot my personal best 🏌️‍♂️ The greens were in perfect condition and the weather was ideal for a round.",
-    image: false,
-    likes: 12,
-    comments: 8,
-  },
-  {
-    id: 3,
-    author: "Mike O'Brien",
-    initials: "MO",
-    category: "GEAR",
-    time: "1d ago",
-    title: "New clubs arrived!",
-    text: "Can't wait to test them on the range tomorrow. The new irons feel incredible in hand.",
-    image: false,
-    likes: 31,
-    comments: 14,
-  },
+const CATEGORIES = [
+  { value: "general", label: "General" },
+  { value: "things_to_do", label: "Things to Do" },
+  { value: "tournament", label: "Tournament" },
+  { value: "tips", label: "Tips" },
+  { value: "gear", label: "Gear" },
 ];
 
 const NewsFeed = () => {
+  const [userId, setUserId] = useState<string | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
+  const [content, setContent] = useState("");
+  const [category, setCategory] = useState("general");
+  const [posting, setPosting] = useState(false);
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) setUserId(user.id);
+    });
+  }, []);
+
+  const { data: posts, isLoading } = useQuery({
+    queryKey: ["feed-posts"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("posts")
+        .select("*, profiles:author_id(full_name, avatar_url)")
+        .order("created_at", { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const handlePost = async () => {
+    if (!content.trim() || !userId) return;
+    setPosting(true);
+    const { error } = await supabase.from("posts").insert({
+      author_id: userId,
+      content: content.trim(),
+      category,
+    });
+    setPosting(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Post published!");
+    setContent("");
+    setCategory("general");
+    setShowCreate(false);
+    queryClient.invalidateQueries({ queryKey: ["feed-posts"] });
+  };
+
+  const handleLike = async (postId: string) => {
+    if (!userId) { toast.error("Please login first"); return; }
+    const { error } = await supabase.from("post_likes").insert({ post_id: postId, user_id: userId });
+    if (error?.code === "23505") {
+      // Already liked, unlike
+      await supabase.from("post_likes").delete().eq("post_id", postId).eq("user_id", userId);
+    }
+    // Update count
+    const { count } = await supabase.from("post_likes").select("id", { count: "exact", head: true }).eq("post_id", postId);
+    await supabase.from("posts").update({ likes_count: count ?? 0 }).eq("id", postId);
+    queryClient.invalidateQueries({ queryKey: ["feed-posts"] });
+  };
+
+  const getInitials = (name: string | null) =>
+    name ? name.split(" ").slice(0, 2).map(w => w[0]).join("").toUpperCase() : "?";
+
+  const timeAgo = (dateStr: string) => {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    return `${Math.floor(hrs / 24)}d ago`;
+  };
+
+  // Fallback static posts when no DB posts
+  const staticPosts = [
+    {
+      id: "static-1", author_id: "", content: "When setting up major championship courses, length matters less than you think. At more than 7,300 yards, the Robert Trent Jones design known locally as the \"Green Monster of Ladue\" is feared for its crowned fairways, deep bunkers and huge greens.", category: "things_to_do", likes_count: 24, comments_count: 5, created_at: new Date(Date.now() - 2 * 3600000).toISOString(), image_url: null,
+      profiles: { full_name: "Sarah Parmenter", avatar_url: null },
+      hasImage: true,
+    },
+    {
+      id: "static-2", author_id: "", content: "Amazing round at Pine Valley today! Shot my personal best 🏌️‍♂️ The greens were in perfect condition.", category: "tips", likes_count: 12, comments_count: 8, created_at: new Date(Date.now() - 5 * 3600000).toISOString(), image_url: null,
+      profiles: { full_name: "James Walker", avatar_url: null },
+    },
+  ];
+
+  const allPosts = (posts && posts.length > 0) ? posts : staticPosts;
+
   return (
     <div className="bottom-nav-safe">
-      <AppHeader
-        title="Feeds"
-        rightContent={
-          <button className="relative rounded-full bg-secondary p-2">
-            <Bell className="h-5 w-5" />
-            <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-primary" />
-          </button>
-        }
-      />
+      <AppHeader title="Feeds" />
 
-      <div className="space-y-4 px-4">
-        {posts.map((post, i) => (
-          <article
-            key={post.id}
-            className="overflow-hidden animate-fade-in"
-            style={{ animationDelay: `${i * 80}ms` }}
-          >
-            {/* Hero post with image overlay like reference GD_Mob_30 */}
-            {post.image && (
-              <div className="relative rounded-xl overflow-hidden">
-                <img
-                  src={heroImg}
-                  alt="Golf course"
-                  className="h-56 w-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-background via-background/30 to-transparent" />
-                {/* Author overlay at bottom of image */}
-                <div className="absolute bottom-3 left-3 flex items-center gap-2">
-                  <Avatar className="h-9 w-9 border-2 border-foreground/50">
-                    <AvatarFallback className="bg-secondary text-xs font-semibold">
-                      {post.initials}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="text-xs font-semibold drop-shadow">{post.author}</p>
-                    <p className="text-[10px] uppercase tracking-wider text-foreground/70">{post.category}</p>
-                  </div>
-                </div>
-              </div>
-            )}
+      <div className="space-y-4 px-4 pb-20">
+        {isLoading && <p className="text-center text-sm text-muted-foreground py-8">Loading feed...</p>}
 
-            <div className={post.image ? "pt-3" : "golf-card p-4"}>
-              {!post.image && (
-                <div className="flex items-center gap-2 mb-2">
-                  <Avatar className="h-8 w-8 border border-primary/30">
-                    <AvatarFallback className="bg-secondary text-xs font-semibold">
-                      {post.initials}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="text-xs font-semibold">{post.author}</p>
-                    <p className="text-[10px] text-muted-foreground">{post.time}</p>
+        {allPosts.map((post: any, i: number) => {
+          const profile = post.profiles as any;
+          const showImage = post.hasImage || (i === 0 && !posts?.length);
+          return (
+            <article key={post.id} className="overflow-hidden animate-fade-in" style={{ animationDelay: `${i * 80}ms` }}>
+              {showImage && (
+                <div className="relative rounded-xl overflow-hidden">
+                  <img src={heroImg} alt="Golf" className="h-56 w-full object-cover" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-background via-background/30 to-transparent" />
+                  <div className="absolute bottom-3 left-3 flex items-center gap-2">
+                    <Avatar className="h-9 w-9 border-2 border-foreground/50">
+                      <AvatarImage src={profile?.avatar_url ?? ""} />
+                      <AvatarFallback className="bg-secondary text-xs font-semibold">{getInitials(profile?.full_name)}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="text-xs font-semibold drop-shadow">{profile?.full_name ?? "User"}</p>
+                      <p className="text-[10px] uppercase tracking-wider text-foreground/70">{post.category?.replace("_", " ")}</p>
+                    </div>
                   </div>
                 </div>
               )}
 
-              <h2 className="font-display text-lg font-semibold leading-snug">
-                {post.title}
-              </h2>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                {post.text}
-              </p>
-
-              <div className="mt-3 flex items-center gap-6 text-muted-foreground">
-                <button className="flex items-center gap-1.5 text-xs hover:text-primary transition-colors">
-                  <Heart className="h-4 w-4" /> {post.likes}
-                </button>
-                <button className="flex items-center gap-1.5 text-xs hover:text-primary transition-colors">
-                  <MessageCircle className="h-4 w-4" /> {post.comments}
-                </button>
-                <button className="ml-auto hover:text-primary transition-colors">
-                  <Share2 className="h-4 w-4" />
-                </button>
+              <div className={showImage ? "pt-3" : "golf-card p-4"}>
+                {!showImage && (
+                  <div className="flex items-center gap-2 mb-2">
+                    <Avatar className="h-8 w-8 border border-primary/30">
+                      <AvatarImage src={profile?.avatar_url ?? ""} />
+                      <AvatarFallback className="bg-secondary text-xs font-semibold">{getInitials(profile?.full_name)}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="text-xs font-semibold">{profile?.full_name ?? "User"}</p>
+                      <p className="text-[10px] text-muted-foreground">{timeAgo(post.created_at)}</p>
+                    </div>
+                  </div>
+                )}
+                <p className="text-sm leading-relaxed">{post.content}</p>
+                <div className="mt-3 flex items-center gap-6 text-muted-foreground">
+                  <button className="flex items-center gap-1.5 text-xs hover:text-primary transition-colors" onClick={() => handleLike(post.id)}>
+                    <Heart className="h-4 w-4" /> {post.likes_count ?? 0}
+                  </button>
+                  <button className="flex items-center gap-1.5 text-xs hover:text-primary transition-colors">
+                    <MessageCircle className="h-4 w-4" /> {post.comments_count ?? 0}
+                  </button>
+                  <button className="ml-auto hover:text-primary transition-colors">
+                    <Share2 className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
-            </div>
-          </article>
-        ))}
+            </article>
+          );
+        })}
       </div>
+
+      {/* FAB */}
+      <button
+        onClick={() => setShowCreate(true)}
+        className="fixed bottom-20 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors"
+      >
+        <Plus className="h-6 w-6" />
+      </button>
+
+      {/* Create Post Dialog */}
+      <Dialog open={showCreate} onOpenChange={setShowCreate}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>Create Post</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <Textarea
+              placeholder="What's on your mind?"
+              value={content}
+              onChange={e => setContent(e.target.value)}
+              className="min-h-[100px] resize-none"
+            />
+            <div className="flex gap-2">
+              <Select value={category} onValueChange={setCategory}>
+                <SelectTrigger className="h-8 text-xs flex-1"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" className="gap-1 text-xs" disabled>
+                <Image className="h-3.5 w-3.5" /> Photo
+              </Button>
+              <Button size="sm" variant="outline" className="gap-1 text-xs" disabled>
+                <MapPin className="h-3.5 w-3.5" /> Course
+              </Button>
+              <Button size="sm" variant="outline" className="gap-1 text-xs" disabled>
+                <Tag className="h-3.5 w-3.5" /> Buddy
+              </Button>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
+            <Button onClick={handlePost} disabled={posting || !content.trim()}>
+              {posting ? "Posting…" : "Post"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
