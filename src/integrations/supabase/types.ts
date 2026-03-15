@@ -14,6 +14,53 @@ export type Database = {
   }
   public: {
     Tables: {
+      audit_log: {
+        Row: {
+          action: string
+          actor_id: string | null
+          actor_role: string
+          created_at: string
+          id: string
+          ip_address: string | null
+          new_values: Json | null
+          old_values: Json | null
+          target_id: string | null
+          target_table: string
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          actor_role: string
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          new_values?: Json | null
+          old_values?: Json | null
+          target_id?: string | null
+          target_table: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          actor_role?: string
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          new_values?: Json | null
+          old_values?: Json | null
+          target_id?: string | null
+          target_table?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_log_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       buddy_connections: {
         Row: {
           addressee_id: string
@@ -244,31 +291,43 @@ export type Database = {
       }
       clubs: {
         Row: {
+          contact_email: string | null
+          contact_phone: string | null
           cover_url: string | null
           created_at: string
           description: string | null
+          facility_type: string
           id: string
           is_personal: boolean
+          is_verified: boolean
           logo_url: string | null
           name: string
           owner_id: string | null
         }
         Insert: {
+          contact_email?: string | null
+          contact_phone?: string | null
           cover_url?: string | null
           created_at?: string
           description?: string | null
+          facility_type?: string
           id?: string
           is_personal?: boolean
+          is_verified?: boolean
           logo_url?: string | null
           name: string
           owner_id?: string | null
         }
         Update: {
+          contact_email?: string | null
+          contact_phone?: string | null
           cover_url?: string | null
           created_at?: string
           description?: string | null
+          facility_type?: string
           id?: string
           is_personal?: boolean
+          is_verified?: boolean
           logo_url?: string | null
           name?: string
           owner_id?: string | null
@@ -475,6 +534,8 @@ export type Database = {
       courses: {
         Row: {
           club_id: string | null
+          course_rating: number | null
+          course_type: string
           created_at: string
           description: string | null
           green_fee_price: number | null
@@ -484,9 +545,12 @@ export type Database = {
           location: string | null
           name: string
           par: number | null
+          slope_rating: number | null
         }
         Insert: {
           club_id?: string | null
+          course_rating?: number | null
+          course_type?: string
           created_at?: string
           description?: string | null
           green_fee_price?: number | null
@@ -496,9 +560,12 @@ export type Database = {
           location?: string | null
           name: string
           par?: number | null
+          slope_rating?: number | null
         }
         Update: {
           club_id?: string | null
+          course_rating?: number | null
+          course_type?: string
           created_at?: string
           description?: string | null
           green_fee_price?: number | null
@@ -508,6 +575,7 @@ export type Database = {
           location?: string | null
           name?: string
           par?: number | null
+          slope_rating?: number | null
         }
         Relationships: [
           {
@@ -634,6 +702,7 @@ export type Database = {
         Row: {
           course_id: string
           created_at: string
+          created_by: string | null
           event_date: string
           id: string
           name: string
@@ -644,6 +713,7 @@ export type Database = {
         Insert: {
           course_id: string
           created_at?: string
+          created_by?: string | null
           event_date: string
           id?: string
           name: string
@@ -654,6 +724,7 @@ export type Database = {
         Update: {
           course_id?: string
           created_at?: string
+          created_by?: string | null
           event_date?: string
           id?: string
           name?: string
@@ -667,6 +738,13 @@ export type Database = {
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -978,6 +1056,181 @@ export type Database = {
         }
         Relationships: []
       }
+      range_bays: {
+        Row: {
+          bay_number: number
+          bay_type: string
+          club_id: string
+          created_at: string
+          id: string
+          is_active: boolean
+          price_per_hour: number
+        }
+        Insert: {
+          bay_number: number
+          bay_type?: string
+          club_id: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          price_per_hour?: number
+        }
+        Update: {
+          bay_number?: number
+          bay_type?: string
+          club_id?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          price_per_hour?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "range_bays_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      range_bookings: {
+        Row: {
+          balls_bucket_count: number | null
+          bay_id: string
+          booking_date: string
+          club_id: string
+          created_at: string
+          duration_hours: number
+          end_time: string
+          id: string
+          notes: string | null
+          start_time: string
+          status: string
+          total_price: number
+          user_id: string
+        }
+        Insert: {
+          balls_bucket_count?: number | null
+          bay_id: string
+          booking_date: string
+          club_id: string
+          created_at?: string
+          duration_hours?: number
+          end_time: string
+          id?: string
+          notes?: string | null
+          start_time: string
+          status?: string
+          total_price: number
+          user_id: string
+        }
+        Update: {
+          balls_bucket_count?: number | null
+          bay_id?: string
+          booking_date?: string
+          club_id?: string
+          created_at?: string
+          duration_hours?: number
+          end_time?: string
+          id?: string
+          notes?: string | null
+          start_time?: string
+          status?: string
+          total_price?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "range_bookings_bay_id_fkey"
+            columns: ["bay_id"]
+            isOneToOne: false
+            referencedRelation: "range_bays"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "range_bookings_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "range_bookings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      range_lessons: {
+        Row: {
+          club_id: string
+          created_at: string
+          duration_minutes: number
+          id: string
+          instructor_id: string
+          lesson_date: string
+          lesson_type: string
+          notes: string | null
+          price: number
+          start_time: string
+          status: string
+          student_id: string
+        }
+        Insert: {
+          club_id: string
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          instructor_id: string
+          lesson_date: string
+          lesson_type?: string
+          notes?: string | null
+          price?: number
+          start_time: string
+          status?: string
+          student_id: string
+        }
+        Update: {
+          club_id?: string
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          instructor_id?: string
+          lesson_date?: string
+          lesson_type?: string
+          notes?: string | null
+          price?: number
+          start_time?: string
+          status?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "range_lessons_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "range_lessons_instructor_id_fkey"
+            columns: ["instructor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "range_lessons_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       round_players: {
         Row: {
           id: string
@@ -1110,6 +1363,54 @@ export type Database = {
             columns: ["round_id"]
             isOneToOne: false
             referencedRelation: "rounds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      system_admins: {
+        Row: {
+          admin_level: string
+          created_at: string
+          granted_at: string
+          granted_by: string | null
+          id: string
+          is_active: boolean
+          notes: string | null
+          user_id: string
+        }
+        Insert: {
+          admin_level?: string
+          created_at?: string
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          user_id: string
+        }
+        Update: {
+          admin_level?: string
+          created_at?: string
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "system_admins_granted_by_fkey"
+            columns: ["granted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "system_admins_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1400,6 +1701,7 @@ export type Database = {
       tours: {
         Row: {
           created_at: string
+          created_by: string | null
           description: string | null
           id: string
           name: string
@@ -1409,6 +1711,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          created_by?: string | null
           description?: string | null
           id?: string
           name: string
@@ -1418,6 +1721,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          created_by?: string | null
           description?: string | null
           id?: string
           name?: string
@@ -1426,6 +1730,13 @@ export type Database = {
           year?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "tours_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "tours_organizer_club_id_fkey"
             columns: ["organizer_club_id"]

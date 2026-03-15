@@ -803,7 +803,291 @@ Deno.serve(async (req) => {
       })
     }
 
-    return new Response(JSON.stringify({ error: 'Invalid phase. Use ?phase=1, ?phase=2, ?phase=3, or ?phase=cleanup' }), {
+    if (phase === '4') {
+      // ============ PHASE 4: Social, Booking & Range Data ============
+      console.log('Phase 4: Buddy connections, chats, tee times, range data, system admins...')
+
+      const { data: profiles } = await supabase.from('profiles').select('id, full_name, handicap').order('created_at').limit(200)
+      const { data: allClubs } = await supabase.from('clubs').select('id, name, is_personal, owner_id').eq('is_personal', false)
+      const { data: allCourses } = await supabase.from('courses').select('id, club_id, green_fee_price, holes_count').eq('holes_count', 18)
+
+      if (!profiles?.length || !allClubs?.length) throw new Error('Run phases 1-3 first.')
+
+      const results: Record<string, number> = {}
+
+      // --- UPDATE CLUBS with facility_type ---
+      const golfClubs = allClubs.filter((_, i) => i < 20)
+      const rangeClubs = allClubs.filter((_, i) => i >= 20 && i < 26)
+      const academyClubs = allClubs.filter((_, i) => i >= 26 && i < 28)
+      const studioClubs = allClubs.filter((_, i) => i >= 28)
+
+      for (const c of golfClubs) await supabase.from('clubs').update({ facility_type: 'golf_club', is_verified: true }).eq('id', c.id)
+      for (const c of rangeClubs) await supabase.from('clubs').update({ facility_type: 'driving_range', is_verified: true }).eq('id', c.id)
+      for (const c of academyClubs) await supabase.from('clubs').update({ facility_type: 'golf_academy', is_verified: true }).eq('id', c.id)
+      for (const c of studioClubs) await supabase.from('clubs').update({ facility_type: 'golf_studio', is_verified: true }).eq('id', c.id)
+      console.log('Club facility_type updated')
+
+      // --- SYSTEM ADMINS ---
+      const admins = [
+        { user_id: profiles[0].id, admin_level: 'super_admin', granted_by: profiles[0].id, is_active: true, notes: 'Platform founder and super administrator' },
+        { user_id: profiles[1].id, admin_level: 'moderator', granted_by: profiles[0].id, is_active: true, notes: 'Moderates clubs and user content' },
+        { user_id: profiles[5].id, admin_level: 'support', granted_by: profiles[0].id, is_active: true, notes: 'User support and troubleshooting' },
+      ]
+      const { error: admErr } = await supabase.from('system_admins').upsert(admins, { onConflict: 'user_id' })
+      if (admErr) console.error('system_admins error:', admErr.message)
+      else results.system_admins = 3
+      console.log('System admins created')
+
+      // --- BUDDY CONNECTIONS ---
+      const buddyPairs: any[] = []
+      const buddySet = new Set<string>()
+      for (let i = 0; i < Math.min(60, profiles.length); i++) {
+        const numBuddies = rand(1, 4)
+        for (let b = 0; b < numBuddies; b++) {
+          const j = rand(0, Math.min(80, profiles.length - 1))
+          if (i === j) continue
+          const key1 = `${profiles[i].id}-${profiles[j].id}`
+          const key2 = `${profiles[j].id}-${profiles[i].id}`
+          if (buddySet.has(key1) || buddySet.has(key2)) continue
+          buddySet.add(key1)
+          buddyPairs.push({
+            id: crypto.randomUUID(),
+            requester_id: profiles[i].id,
+            addressee_id: profiles[j].id,
+            status: Math.random() > 0.15 ? 'accepted' : 'pending',
+          })
+        }
+      }
+      for (let i = 0; i < buddyPairs.length; i += 50) {
+        const { error } = await supabase.from('buddy_connections').insert(buddyPairs.slice(i, i + 50))
+        if (error) console.error('buddy error:', error.message)
+      }
+      results.buddy_connections = buddyPairs.length
+      console.log(`${buddyPairs.length} buddy connections created`)
+
+      // --- CONVERSATIONS & CHAT MESSAGES ---
+      const convos: any[] = []
+      const participants: any[] = []
+      const messages: any[] = []
+      const chatTopics = [
+        ['Sudah lihat jadwal pairing untuk event bulan ini?', 'Sudah! Kita satu group. Tee off jam 7:20.', 'Oke. Praktek dulu di range besok pagi?', 'Siap! Jam 7 ya di driving range.'],
+        ['Handicap kamu udah turun banyak. Rajin latihan?', 'Haha iya, setiap minggu di range. Coach baru bagus banget.', 'Siapa coachnya? Mau coba juga.', 'Pro di club. Booking lewat app, gampang.'],
+        ['Bro, tee time besok masih kosong?', 'Masih! Jam 9:30 ada slot. Mau bareng?', 'Gas! Ajak teman juga dong.', 'Oke, udah di-invite. Booking untuk 3 orang ya.'],
+        ['Selamat ya bro, net score 67!', 'Makasih! Putt di hole 17 emang lagi bagus.', 'GG! Leaderboard update real-time sekarang, keren banget.', 'Yep, input skor per hole langsung keliatan.'],
+        ['Bay simulator lagi available ga hari ini?', 'Bay 11 dan 12 kosong dari jam 3. Rate 150k/jam.', 'Oke booking jam 3 ya. Payment lewat app?', 'Bisa! Atau bayar di tempat juga fine.'],
+        ['Turnamen bulan depan siap?', 'Siap dong! Udah daftar flight A.', 'Keren, kita ketemu di sana ya.', 'See you on the course! 🏌️'],
+        ['Driving range baru buka di Tangerang, udah coba?', 'Belum! Bay-nya bagus ya?', 'Premium semua, ada simulator juga.', 'Wah harus coba, booking dulu ah.'],
+        ['Score di event kemarin gimana?', 'Gross 78, lumayan lah.', 'Mantap! Net berapa?', 'Net 70, alhamdulillah masuk top 5.'],
+        ['Caddy kemarin service-nya bagus banget', 'Iya, dia udah pengalaman bertahun-tahun.', 'Request caddy yang sama bisa ga ya?', 'Bisa, lewat app tinggal pilih.'],
+        ['Green fee weekend naik ga?', 'Naik dikit, 50rb dari harga weekday.', 'Masih worth it sih, course-nya bagus.', 'Setuju, maintenance-nya juga top.'],
+      ]
+
+      for (let c = 0; c < 10; c++) {
+        const convId = crypto.randomUUID()
+        const p1 = profiles[c * 2]
+        const p2 = profiles[c * 2 + 1]
+        const daysAgo = 10 - c
+
+        convos.push({ id: convId, created_at: new Date(Date.now() - daysAgo * 86400000).toISOString(), updated_at: new Date(Date.now() - c * 3600000).toISOString() })
+        participants.push(
+          { id: crypto.randomUUID(), conversation_id: convId, user_id: p1.id, joined_at: new Date(Date.now() - daysAgo * 86400000).toISOString() },
+          { id: crypto.randomUUID(), conversation_id: convId, user_id: p2.id, joined_at: new Date(Date.now() - daysAgo * 86400000).toISOString() },
+        )
+
+        const topic = chatTopics[c % chatTopics.length]
+        for (let m = 0; m < topic.length; m++) {
+          messages.push({
+            id: crypto.randomUUID(), conversation_id: convId,
+            sender_id: m % 2 === 0 ? p1.id : p2.id,
+            content: topic[m],
+            created_at: new Date(Date.now() - (daysAgo * 86400000) + m * 3600000).toISOString(),
+          })
+        }
+      }
+
+      await supabase.from('conversations').insert(convos)
+      await supabase.from('conversation_participants').insert(participants)
+      await supabase.from('chat_messages').insert(messages)
+      results.conversations = convos.length
+      results.chat_messages = messages.length
+      console.log(`${convos.length} conversations, ${messages.length} messages created`)
+
+      // --- TEE TIME BOOKINGS ---
+      if (allCourses?.length) {
+        const teeTimeSlots = ['07:00','07:10','07:20','07:30','07:40','07:50','08:00','08:10','08:20','08:30','09:00','09:30','10:00','10:30','13:00','13:30','14:00','14:30']
+        const bookings: any[] = []
+        for (let i = 0; i < Math.min(30, profiles.length); i++) {
+          // 4 past bookings
+          for (let j = 0; j < 4; j++) {
+            const course = allCourses[(i + j) % allCourses.length]
+            const daysAgo = (i * 2 + j * 3) % 30 + 3
+            const bookDate = new Date(Date.now() - daysAgo * 86400000).toISOString().split('T')[0]
+            const playersCount = 1 + (i + j) % 4
+            const fee = (course.green_fee_price || 600000) * playersCount
+
+            bookings.push({
+              id: crypto.randomUUID(), course_id: course.id, user_id: profiles[i].id,
+              booking_date: bookDate, tee_time: teeTimeSlots[(i + j) % teeTimeSlots.length],
+              players_count: playersCount, total_price: fee, status: 'completed',
+              notes: `Regular booking - ${playersCount} players`,
+            })
+          }
+          // 2 future bookings
+          for (let j = 0; j < 2; j++) {
+            const course = allCourses[(i + j + 1) % allCourses.length]
+            const daysAhead = j * 3 + (i % 7) + 1
+            const bookDate = new Date(Date.now() + daysAhead * 86400000).toISOString().split('T')[0]
+            const playersCount = 2 + j % 3
+            const fee = (course.green_fee_price || 600000) * playersCount
+
+            bookings.push({
+              id: crypto.randomUUID(), course_id: course.id, user_id: profiles[i].id,
+              booking_date: bookDate, tee_time: teeTimeSlots[(i * 2 + j) % teeTimeSlots.length],
+              players_count: playersCount, total_price: fee, status: 'confirmed',
+            })
+          }
+        }
+
+        for (let i = 0; i < bookings.length; i += 50) {
+          const { error } = await supabase.from('tee_time_bookings').insert(bookings.slice(i, i + 50))
+          if (error) console.error('tee_time_bookings error:', error.message)
+        }
+        results.tee_time_bookings = bookings.length
+        console.log(`${bookings.length} tee time bookings created`)
+      }
+
+      // --- RANGE BAYS ---
+      const nonGolfClubs = [...rangeClubs, ...academyClubs, ...studioClubs]
+      const bayTypes = ['premium','premium','premium','premium','standard','standard','standard','standard','covered','covered','simulator','simulator']
+      const bayPrices = [80000,80000,80000,80000,50000,50000,50000,50000,65000,65000,150000,150000]
+      const allBays: any[] = []
+
+      for (const club of nonGolfClubs) {
+        for (let b = 1; b <= 12; b++) {
+          allBays.push({
+            id: crypto.randomUUID(), club_id: club.id, bay_number: b,
+            bay_type: bayTypes[b - 1], price_per_hour: bayPrices[b - 1], is_active: true,
+          })
+        }
+      }
+      if (allBays.length) {
+        for (let i = 0; i < allBays.length; i += 50) {
+          const { error } = await supabase.from('range_bays').insert(allBays.slice(i, i + 50))
+          if (error) console.error('range_bays error:', error.message)
+        }
+        results.range_bays = allBays.length
+        console.log(`${allBays.length} range bays created`)
+      }
+
+      // --- RANGE BOOKINGS ---
+      if (allBays.length > 0) {
+        const rangeBookings: any[] = []
+        for (let i = 0; i < Math.min(20, profiles.length); i++) {
+          for (let j = 0; j < 4; j++) {
+            const bay = allBays[(i * 4 + j) % allBays.length]
+            const daysAgo = (j * 5 + i) % 28
+            const bookDate = new Date(Date.now() - daysAgo * 86400000).toISOString().split('T')[0]
+            const startHour = 7 + (i + j) % 11
+            const duration = j % 3 === 0 ? 2 : 1
+            const startTime = `${String(startHour).padStart(2, '0')}:${j % 2 === 0 ? '00' : '30'}:00`
+            const endHour = startHour + duration
+            const endTime = `${String(endHour).padStart(2, '0')}:${j % 2 === 0 ? '00' : '30'}:00`
+
+            rangeBookings.push({
+              id: crypto.randomUUID(), club_id: bay.club_id, bay_id: bay.id,
+              user_id: profiles[i].id, booking_date: bookDate,
+              start_time: startTime, end_time: endTime,
+              duration_hours: duration, total_price: bay.price_per_hour * duration,
+              status: daysAgo > 1 ? 'completed' : 'confirmed',
+              balls_bucket_count: duration * 2,
+            })
+          }
+        }
+        for (let i = 0; i < rangeBookings.length; i += 50) {
+          const { error } = await supabase.from('range_bookings').insert(rangeBookings.slice(i, i + 50))
+          if (error) console.error('range_bookings error:', error.message)
+        }
+        results.range_bookings = rangeBookings.length
+        console.log(`${rangeBookings.length} range bookings created`)
+      }
+
+      // --- RANGE LESSONS ---
+      const { data: instructors } = await supabase.from('club_staff').select('user_id, club_id').eq('staff_role', 'pro').limit(10)
+      if (instructors?.length) {
+        const lessons: any[] = []
+        const lessonTypes = ['individual', 'group', 'video_analysis', 'individual']
+        for (let i = 0; i < Math.min(12, profiles.length); i++) {
+          for (let j = 0; j < 3; j++) {
+            const inst = instructors[(i + j) % instructors.length]
+            const daysAgo = (i * j + j) % 25
+            const lessonDate = new Date(Date.now() - daysAgo * 86400000).toISOString().split('T')[0]
+            lessons.push({
+              id: crypto.randomUUID(), club_id: inst.club_id,
+              instructor_id: inst.user_id, student_id: profiles[i + 10].id,
+              lesson_date: lessonDate, start_time: `${String(8 + (i + j) % 4).padStart(2, '0')}:00:00`,
+              duration_minutes: 60, lesson_type: lessonTypes[(i + j) % 4],
+              price: 300000, status: daysAgo > 0 ? 'completed' : 'scheduled',
+            })
+          }
+        }
+        for (let i = 0; i < lessons.length; i += 50) {
+          const { error } = await supabase.from('range_lessons').insert(lessons.slice(i, i + 50))
+          if (error) console.error('range_lessons error:', error.message)
+        }
+        results.range_lessons = lessons.length
+        console.log(`${lessons.length} range lessons created`)
+      }
+
+      // --- CLUB INVITATIONS ---
+      const invitations: any[] = []
+      const invStatuses = ['pending', 'pending', 'accepted', 'pending', 'declined', 'pending', 'accepted', 'pending', 'pending', 'accepted', 'pending', 'pending']
+      for (let i = 0; i < 12; i++) {
+        const club = golfClubs[i % golfClubs.length]
+        invitations.push({
+          id: crypto.randomUUID(),
+          club_id: club.id,
+          invited_by: club.owner_id,
+          invited_user_id: profiles[80 + i]?.id ?? profiles[i + 40].id,
+          status: invStatuses[i],
+        })
+      }
+      const { error: invErr } = await supabase.from('club_invitations').insert(invitations)
+      if (invErr) console.error('club_invitations error:', invErr.message)
+      else results.club_invitations = invitations.length
+      console.log('Club invitations created')
+
+      // --- AUDIT LOG ---
+      const auditLogs = [
+        { actor_id: profiles[0].id, actor_role: 'super_admin', action: 'VERIFY_CLUB', target_table: 'clubs', target_id: golfClubs[0]?.id, new_values: { is_verified: true } },
+        { actor_id: profiles[0].id, actor_role: 'super_admin', action: 'CREATE_TOUR', target_table: 'tours', new_values: { name: 'Championship Series', type: 'interclub' } },
+        { actor_id: profiles[1].id, actor_role: 'moderator', action: 'APPROVE_MEMBER', target_table: 'members', new_values: { role: 'member' } },
+        { actor_id: profiles[5].id, actor_role: 'support', action: 'RESOLVE_TICKET', target_table: 'profiles', new_values: { issue: 'handicap_correction' } },
+        { actor_id: profiles[2].id, actor_role: 'owner', action: 'CREATE_EVENT', target_table: 'events', new_values: { name: 'Monthly Tournament', status: 'published' } },
+      ]
+      const { error: auditErr } = await supabase.from('audit_log').insert(auditLogs)
+      if (auditErr) console.error('audit_log error:', auditErr.message)
+      else results.audit_log = auditLogs.length
+      console.log('Audit logs created')
+
+      // --- UPDATE COURSES with course_type and ratings ---
+      if (allCourses?.length) {
+        for (let i = 0; i < allCourses.length; i++) {
+          const types = ['championship', 'championship', 'resort', 'championship', 'championship', 'resort', 'championship', 'resort', 'executive', 'championship']
+          await supabase.from('courses').update({
+            course_type: types[i % types.length],
+            slope_rating: +(113 + Math.random() * 25).toFixed(1),
+            course_rating: +(69 + Math.random() * 6).toFixed(1),
+          }).eq('id', allCourses[i].id)
+        }
+        console.log('Course ratings updated')
+      }
+
+      return new Response(JSON.stringify({ success: true, phase: 4, results }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    return new Response(JSON.stringify({ error: 'Invalid phase. Use ?phase=1, ?phase=2, ?phase=3, ?phase=4, or ?phase=cleanup' }), {
       status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (err) {

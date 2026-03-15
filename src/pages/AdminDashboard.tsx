@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Users, Building2, Calendar, Trophy, Activity, TrendingUp, BarChart3, Award } from "lucide-react";
+import { Users, Building2, Calendar, Trophy, Activity, TrendingUp, BarChart3, Award, MessageSquare, UserCheck, MapPin, Dumbbell } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
@@ -23,18 +23,23 @@ const AdminDashboard = () => {
   const { data: stats, isLoading } = useQuery({
     queryKey: ["admin-stats"],
     queryFn: async () => {
-      const [users, clubs, events, tours, contestants, checkins, pairings, results] = await Promise.all([
+      const [users, clubs, events, tours, contestants, checkins, pairings, results, buddies, convos, teeBookings, rangeBays] = await Promise.all([
         supabase.from("profiles").select("id", { count: "exact", head: true }),
-        supabase.from("clubs").select("id, is_personal", { count: "exact" }),
+        supabase.from("clubs").select("id, is_personal, facility_type", { count: "exact" }),
         supabase.from("events").select("id, status", { count: "exact" }),
         supabase.from("tours").select("id", { count: "exact", head: true }),
         supabase.from("contestants").select("id", { count: "exact", head: true }),
         supabase.from("event_checkins").select("id", { count: "exact", head: true }),
         supabase.from("pairings").select("id", { count: "exact", head: true }),
         supabase.from("event_results").select("id", { count: "exact", head: true }),
+        supabase.from("buddy_connections").select("id", { count: "exact", head: true }),
+        supabase.from("conversations").select("id", { count: "exact", head: true }),
+        supabase.from("tee_time_bookings").select("id", { count: "exact", head: true }),
+        supabase.from("range_bays").select("id", { count: "exact", head: true }),
       ]);
 
-      const golfClubs = clubs.data?.filter(c => !c.is_personal).length ?? 0;
+      const golfClubs = clubs.data?.filter(c => !c.is_personal && (c as any).facility_type === 'golf_club').length ?? 0;
+      const drivingRanges = clubs.data?.filter(c => (c as any).facility_type === 'driving_range').length ?? 0;
       const eventsByStatus: Record<string, number> = {};
       events.data?.forEach((e: any) => {
         eventsByStatus[e.status] = (eventsByStatus[e.status] || 0) + 1;
@@ -44,12 +49,17 @@ const AdminDashboard = () => {
         totalUsers: users.count ?? 0,
         totalClubs: clubs.count ?? 0,
         golfClubs,
+        drivingRanges,
         totalEvents: events.count ?? 0,
         totalTours: tours.count ?? 0,
         totalContestants: contestants.count ?? 0,
         totalCheckins: checkins.count ?? 0,
         totalPairings: pairings.count ?? 0,
         totalResults: results.count ?? 0,
+        totalBuddies: buddies.count ?? 0,
+        totalConversations: convos.count ?? 0,
+        totalTeeBookings: teeBookings.count ?? 0,
+        totalRangeBays: rangeBays.count ?? 0,
         eventsByStatus,
       };
     },
@@ -107,9 +117,13 @@ const AdminDashboard = () => {
         {/* Primary Stats */}
         <div className="grid grid-cols-2 gap-3">
           <StatCard icon={Users} label="Total Users" value={stats?.totalUsers ?? 0} />
-          <StatCard icon={Building2} label="Golf Clubs" value={stats?.golfClubs ?? 0} sub={`${stats?.totalClubs ?? 0} total incl. personal`} color="text-accent" />
+          <StatCard icon={Building2} label="Golf Clubs" value={stats?.golfClubs ?? 0} sub={`${stats?.drivingRanges ?? 0} ranges · ${stats?.totalClubs ?? 0} total`} color="text-accent" />
           <StatCard icon={Trophy} label="Tours" value={stats?.totalTours ?? 0} />
           <StatCard icon={Calendar} label="Events" value={stats?.totalEvents ?? 0} />
+          <StatCard icon={UserCheck} label="Buddies" value={stats?.totalBuddies ?? 0} color="text-accent" />
+          <StatCard icon={MessageSquare} label="Conversations" value={stats?.totalConversations ?? 0} />
+          <StatCard icon={MapPin} label="Tee Bookings" value={stats?.totalTeeBookings ?? 0} color="text-accent" />
+          <StatCard icon={Dumbbell} label="Range Bays" value={stats?.totalRangeBays ?? 0} />
         </div>
 
         {/* Activity Stats */}
