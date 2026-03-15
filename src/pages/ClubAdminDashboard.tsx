@@ -37,6 +37,7 @@ const ClubAdminDashboard = () => {
   const [userId, setUserId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("members");
   const [memberSearch, setMemberSearch] = useState("");
+  const [sortBy, setSortBy] = useState<"role" | "name">("role");
   const [showInvite, setShowInvite] = useState(false);
   const [selectedClubId, setSelectedClubId] = useState(paramClubId ?? "");
   const [expandedTours, setExpandedTours] = useState<Set<string>>(new Set());
@@ -136,8 +137,7 @@ const ClubAdminDashboard = () => {
       const { data } = await supabase
         .from("members")
         .select("*, profiles(full_name, avatar_url, handicap)")
-        .eq("club_id", clubId)
-        .order("joined_at");
+        .eq("club_id", clubId);
       return data ?? [];
     },
     enabled: !!clubId,
@@ -362,6 +362,19 @@ const ClubAdminDashboard = () => {
     (m.profiles?.full_name ?? "").toLowerCase().includes(memberSearch.toLowerCase())
   ) ?? [];
 
+  const displayMembers = filteredMembers.slice().sort((a: any, b: any) => {
+    if (sortBy === "name") {
+      return (a.profiles?.full_name ?? "").toLowerCase()
+        .localeCompare((b.profiles?.full_name ?? "").toLowerCase(), "id");
+    }
+    const roleOrder: Record<string, number> = { owner: 0, admin: 1, member: 2 };
+    const roleA = roleOrder[a.role] ?? 3;
+    const roleB = roleOrder[b.role] ?? 3;
+    if (roleA !== roleB) return roleA - roleB;
+    return (a.profiles?.full_name ?? "").toLowerCase()
+      .localeCompare((b.profiles?.full_name ?? "").toLowerCase(), "id");
+  });
+
   const renderMembersTab = () => (
     <TabsContent value="members" className="space-y-2 pt-2">
       <Button size="sm" variant="outline" className="w-full gap-1 text-xs mb-2" onClick={() => setShowInvite(true)}>
@@ -373,7 +386,36 @@ const ClubAdminDashboard = () => {
         onChange={e => setMemberSearch(e.target.value)}
         className="h-8 text-xs"
       />
-      {filteredMembers.map((m: any) => (
+      <div className="flex items-center justify-between mb-1">
+        <p className="text-[10px] text-muted-foreground">
+          {memberSearch
+            ? `${filteredMembers.length} dari ${members?.length ?? 0} member`
+            : `${members?.length ?? 0} member`}
+        </p>
+        <div className="flex gap-1">
+          <button
+            onClick={() => setSortBy("role")}
+            className={`text-[10px] px-2 py-0.5 rounded transition-colors ${
+              sortBy === "role"
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            By Role
+          </button>
+          <button
+            onClick={() => setSortBy("name")}
+            className={`text-[10px] px-2 py-0.5 rounded transition-colors ${
+              sortBy === "name"
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            A-Z
+          </button>
+        </div>
+      </div>
+      {displayMembers.map((m: any) => (
         <div key={m.id} className="golf-card flex items-center gap-3 p-3">
           <Avatar className="h-9 w-9">
             <AvatarImage src={m.profiles?.avatar_url ?? ""} />
@@ -412,7 +454,7 @@ const ClubAdminDashboard = () => {
           </DropdownMenu>
         </div>
       ))}
-      {filteredMembers.length === 0 && memberSearch && (
+      {displayMembers.length === 0 && memberSearch && (
         <p className="text-xs text-muted-foreground text-center py-4">Tidak ditemukan</p>
       )}
     </TabsContent>

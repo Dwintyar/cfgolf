@@ -67,10 +67,16 @@ const RegisterPlayerDialog = ({ tourId, tourType, organizerClubId, callerClubId,
     enabled: !!clubId,
   });
 
-  const filteredMembers = members?.filter(m =>
-    (m.profiles as any)?.full_name?.toLowerCase()
-      .includes(playerSearch.toLowerCase())
-  ) ?? [];
+  const sortedAndFiltered = (members ?? [])
+    .filter(m =>
+      (m.profiles as any)?.full_name?.toLowerCase()
+        .includes(playerSearch.toLowerCase())
+    )
+    .sort((a, b) => {
+      const nameA = ((a.profiles as any)?.full_name ?? "").toLowerCase();
+      const nameB = ((b.profiles as any)?.full_name ?? "").toLowerCase();
+      return nameA.localeCompare(nameB, "id");
+    });
 
   const handleSubmit = async () => {
     if (!playerId || !clubId) { toast.error("Select a player"); return; }
@@ -116,13 +122,18 @@ const RegisterPlayerDialog = ({ tourId, tourType, organizerClubId, callerClubId,
               onChange={e => setPlayerSearch(e.target.value)}
               className="h-8 text-xs mt-1 mb-1"
             />
+            <p className="text-[10px] text-muted-foreground mb-1">
+              {playerSearch
+                ? `${sortedAndFiltered.length} dari ${members?.length ?? 0} member`
+                : `${members?.length ?? 0} member — pilih satu`}
+            </p>
             <div className="max-h-48 overflow-y-auto border rounded-lg divide-y divide-border/30">
-              {filteredMembers.length === 0 && (
+              {sortedAndFiltered.length === 0 && (
                 <p className="text-xs text-muted-foreground text-center py-3">
                   {playerSearch ? "Tidak ditemukan" : "Tidak ada member"}
                 </p>
               )}
-              {filteredMembers.map(m => {
+              {sortedAndFiltered.map(m => {
                 const profile = m.profiles as any;
                 const isSelected = playerId === m.user_id;
                 return (
