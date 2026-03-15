@@ -444,19 +444,24 @@ const ClubAdminDashboard = () => {
         return (
           <Collapsible key={tour.id} open={isExpanded} onOpenChange={() => toggleTour(tour.id)}>
             <div className="golf-card overflow-hidden">
-              <CollapsibleTrigger asChild>
-                <button className="w-full text-left p-3 flex items-center gap-3 hover:bg-muted/30 transition-colors">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold truncate">{tour.name}</p>
-                    <div className="flex items-center gap-2 mt-1 flex-wrap">
-                      <Badge variant="outline" className="text-[9px]">{tour.tournament_type}</Badge>
-                      <Badge variant="secondary" className="text-[9px]">{tour.year}</Badge>
-                      <span className="text-[10px] text-muted-foreground">{events.length} events · {totalPlayers} players</span>
-                    </div>
+              <div className="w-full flex items-center gap-3 p-3">
+                <button
+                  className="min-w-0 flex-1 text-left hover:opacity-70 transition-opacity"
+                  onClick={() => navigate(`/tour/${tour.id}`)}
+                >
+                  <p className="text-sm font-semibold truncate">{tour.name}</p>
+                  <div className="flex items-center gap-2 mt-1 flex-wrap">
+                    <Badge variant="outline" className="text-[9px]">{tour.tournament_type}</Badge>
+                    <Badge variant="secondary" className="text-[9px]">{tour.year}</Badge>
+                    <span className="text-[10px] text-muted-foreground">{events.length} events · {totalPlayers} players</span>
                   </div>
-                  {isExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0" /> : <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />}
                 </button>
-              </CollapsibleTrigger>
+                <CollapsibleTrigger asChild>
+                  <button className="rounded-full p-1 hover:bg-muted transition-colors shrink-0">
+                    {isExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                  </button>
+                </CollapsibleTrigger>
+              </div>
               <CollapsibleContent>
                 <div className="border-t border-border">
                   {events.length === 0 && (
@@ -480,6 +485,16 @@ const ClubAdminDashboard = () => {
                       </button>
                     </div>
                   ))}
+                </div>
+                <div className="px-3 pb-3 pt-1">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full gap-1 text-xs h-7"
+                    onClick={() => navigate(`/tour/${tour.id}`)}
+                  >
+                    <Plus className="h-3 w-3" /> Add Event to this Tour
+                  </Button>
                 </div>
               </CollapsibleContent>
             </div>
