@@ -456,18 +456,22 @@ const ClubAdminDashboard = () => {
                     <p className="p-3 text-xs text-muted-foreground text-center">No events in this tour</p>
                   )}
                   {events.map((e: any) => (
-                    <button
-                      key={e.id}
-                      onClick={() => navigate(`/event/${e.id}`)}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-muted/20 transition-colors text-left border-b border-border last:border-b-0"
-                    >
-                      <div className="min-w-0 flex-1">
+                    <div key={e.id} className="flex items-center gap-2 px-3 py-2.5 border-b border-border last:border-b-0">
+                      <button
+                        onClick={() => navigate(`/event/${e.id}`)}
+                        className="min-w-0 flex-1 text-left hover:opacity-70 transition-opacity"
+                      >
                         <p className="text-xs font-medium truncate">{e.name}</p>
                         <p className="text-[10px] text-muted-foreground">{e.event_date}</p>
-                      </div>
+                      </button>
                       <Badge variant="outline" className="text-[9px] shrink-0">{e.status}</Badge>
-                      <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                    </button>
+                      <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 shrink-0" onClick={() => setRolesEventId(e.id)}>
+                        <Shield className="h-3 w-3" />
+                      </Button>
+                      <button onClick={() => navigate(`/event/${e.id}`)} className="shrink-0">
+                        <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+                      </button>
+                    </div>
                   ))}
                 </div>
               </CollapsibleContent>
