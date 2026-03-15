@@ -16,6 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import AssignContestantDialog from "@/components/tour/AssignContestantDialog";
+import WinnerResultsDialog from "@/components/event/WinnerResultsDialog";
 
 const EventDetail = () => {
   const { id } = useParams<{ id: string }>();
