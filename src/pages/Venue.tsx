@@ -14,8 +14,8 @@ const TEE_TIMES = ["07.00", "07.30", "08.00", "08.30", "09.00", "09.30", "13.00"
 const Venue = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const [selectedTime, setSelectedTime] = useState("09.15");
-  const [distUnit, setDistUnit] = useState<"yd" | "m">("yd");
+  const [selectedTime, setSelectedTime] = useState("07.00");
+  const [distUnit, setDistUnit] = useState<"yd" | "m">("m");
 
   const { data: course, isLoading } = useQuery({
     queryKey: ["course", id],
