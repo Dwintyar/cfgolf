@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.setup-admin-accounts]
 verify_jwt = false
+
+[functions.reset-all-passwords]
+verify_jwt = false
