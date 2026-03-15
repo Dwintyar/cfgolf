@@ -172,8 +172,23 @@ const queries = [
   { category: 'Cross-Table Analytics', no: 106, description: 'Member lengkap dengan staff role', query: 'SELECT m.role, m.joined_at, p.full_name, p.handicap, cs.staff_role, cs.status AS staff_status, c.name AS club_name FROM members m JOIN profiles p ON p.id = m.user_id JOIN clubs c ON c.id = m.club_id LEFT JOIN club_staff cs ON cs.user_id = m.user_id AND cs.club_id = m.club_id' },
 ];
 
+const allPages = [
+  { path: '/login', name: 'Login' },
+  { path: '/news', name: 'NewsFeed' },
+  { path: '/clubs', name: 'Clubs' },
+  { path: '/tour', name: 'TourList' },
+  { path: '/venue', name: 'VenueList' },
+  { path: '/play', name: 'Play' },
+  { path: '/profile', name: 'GolferProfile' },
+  { path: '/settings', name: 'Settings' },
+  { path: '/chat', name: 'ChatList' },
+  { path: '/admin', name: 'AdminDashboard' },
+];
+
 const ExportQueries = () => {
   const [loading, setLoading] = useState(false);
+  const [loadingPng, setLoadingPng] = useState(false);
+  const [pngProgress, setPngProgress] = useState('');
 
   const handleDownload = () => {
     const wsData = queries.map(q => ({
@@ -252,12 +267,87 @@ const ExportQueries = () => {
     }
   };
 
+  const capturePageAsCanvas = (pagePath: string): Promise<HTMLCanvasElement> => {
+    return new Promise((resolve, reject) => {
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'fixed';
+      iframe.style.top = '-10000px';
+      iframe.style.left = '-10000px';
+      iframe.style.width = '430px';
+      iframe.style.height = '932px';
+      iframe.style.border = 'none';
+      iframe.src = pagePath;
+      document.body.appendChild(iframe);
+
+      iframe.onload = async () => {
+        try {
+          await new Promise(r => setTimeout(r, 2000));
+          const doc = iframe.contentDocument;
+          if (!doc || !doc.body) throw new Error('Cannot access iframe');
+          const canvas = await html2canvas(doc.body, {
+            width: 430,
+            height: 932,
+            scale: 2,
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: '#000000',
+          });
+          resolve(canvas);
+        } catch (err) {
+          reject(err);
+        } finally {
+          document.body.removeChild(iframe);
+        }
+      };
+
+      iframe.onerror = () => {
+        document.body.removeChild(iframe);
+        reject(new Error(`Failed to load ${pagePath}`));
+      };
+    });
+  };
+
+  const handleExportPng = async () => {
+    setLoadingPng(true);
+    const zip = new JSZip();
+
+    try {
+      for (let i = 0; i < allPages.length; i++) {
+        const page = allPages[i];
+        setPngProgress(`Capturing ${page.name} (${i + 1}/${allPages.length})...`);
+        try {
+          const canvas = await capturePageAsCanvas(page.path);
+          const blob = await new Promise<Blob>((resolve) => {
+            canvas.toBlob((b) => resolve(b!), 'image/png');
+          });
+          zip.file(`${String(i + 1).padStart(2, '0')}_${page.name}.png`, blob);
+        } catch (err) {
+          console.warn(`Failed to capture ${page.name}:`, err);
+        }
+      }
+
+      setPngProgress('Creating ZIP...');
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'CFGolf_Pages_Screenshots.zip';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error('PNG export failed:', e);
+    } finally {
+      setLoadingPng(false);
+      setPngProgress('');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="text-center space-y-6 max-w-md">
         <h1 className="text-2xl font-bold text-foreground">Export Data</h1>
         <p className="text-muted-foreground">
-          Download referensi SQL queries atau export seluruh data tabel
+          Download referensi SQL queries, export data tabel, atau screenshot semua halaman
         </p>
         <div className="flex flex-col gap-3">
           <Button onClick={handleDownload} size="lg" className="gap-2">
@@ -268,7 +358,14 @@ const ExportQueries = () => {
             {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Database className="h-5 w-5" />}
             {loading ? 'Exporting...' : 'Export Semua Data (SQL)'}
           </Button>
+          <Button onClick={handleExportPng} size="lg" variant="outline" className="gap-2" disabled={loadingPng}>
+            {loadingPng ? <Loader2 className="h-5 w-5 animate-spin" /> : <Image className="h-5 w-5" />}
+            {loadingPng ? pngProgress : 'Export Semua Halaman (PNG)'}
+          </Button>
         </div>
+        {loadingPng && (
+          <p className="text-xs text-muted-foreground animate-pulse">{pngProgress}</p>
+        )}
       </div>
     </div>
   );
