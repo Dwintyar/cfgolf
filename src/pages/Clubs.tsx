@@ -94,25 +94,25 @@ const Clubs = () => {
     },
   });
 
-  const membershipSet = myMemberships ? new Set(myMemberships.keys()) : undefined;
-
   const applySearch = (list: ClubData[]) =>
     search ? list.filter((c) => c.name.toLowerCase().includes(search.toLowerCase())) : list;
 
-  const myClubs = applySearch(clubs?.filter((c) => membershipSet?.has(c.id)) ?? []);
+  const isMember = (id: string) => myMemberships ? id in myMemberships : false;
+
+  const myClubs = applySearch(clubs?.filter((c) => isMember(c.id)) ?? []);
   const communityClubs = applySearch(
     clubs?.filter(
       (c) =>
-        !membershipSet?.has(c.id) &&
+        !isMember(c.id) &&
         !clubsWithCourses?.has(c.id) &&
         c.facility_type !== "driving_range"
     ) ?? []
   );
   const courseClubs = applySearch(
-    clubs?.filter((c) => !membershipSet?.has(c.id) && clubsWithCourses?.has(c.id)) ?? []
+    clubs?.filter((c) => !isMember(c.id) && clubsWithCourses?.has(c.id)) ?? []
   );
   const rangeClubs = applySearch(
-    clubs?.filter((c) => !membershipSet?.has(c.id) && c.facility_type === "driving_range") ?? []
+    clubs?.filter((c) => !isMember(c.id) && c.facility_type === "driving_range") ?? []
   );
 
   const facilityBadgeColors: Record<string, string> = {
