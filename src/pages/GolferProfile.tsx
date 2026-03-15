@@ -125,10 +125,10 @@ const GolferProfile = () => {
     queryFn: async () => {
       const { data } = await supabase
         .from("handicap_history")
-        .select("new_hcp, old_hcp, created_at, events(name)")
+        .select("new_hcp, old_hcp, created_at, tour_id, events(name), tours(name, tournament_type)")
         .eq("player_id", targetId!)
         .order("created_at", { ascending: true })
-        .limit(20);
+        .limit(50);
       return data ?? [];
     },
     enabled: !!targetId,
