@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import InviteClubDialog from "@/components/tour/InviteClubDialog";
 import RegisterPlayerDialog from "@/components/tour/RegisterPlayerDialog";
 import ManageFlightsDialog from "@/components/tour/ManageFlightsDialog";
@@ -21,7 +21,13 @@ const TourDetail = () => {
   const [showFlights, setShowFlights] = useState(false);
   const [showCategories, setShowCategories] = useState(false);
   const [showCreateEvent, setShowCreateEvent] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
 
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) setUserId(user.id);
+    });
+  }, []);
   const { data: tour, isLoading } = useQuery({
     queryKey: ["tour", id],
     queryFn: async () => {
@@ -90,6 +96,22 @@ const TourDetail = () => {
     enabled: !!id,
   });
 
+  const { data: isOrganizer } = useQuery({
+    queryKey: ["tour-organizer-check", id, userId],
+    queryFn: async () => {
+      if (!userId || !tour?.organizer_club_id) return false;
+      const { data } = await supabase
+        .from("members")
+        .select("role")
+        .eq("club_id", tour.organizer_club_id)
+        .eq("user_id", userId)
+        .in("role", ["owner", "admin"])
+        .maybeSingle();
+      return !!data;
+    },
+    enabled: !!userId && !!tour?.organizer_club_id,
+  });
+
   const statusColors: Record<string, string> = {
     draft: "border-muted-foreground/30 text-muted-foreground",
     registration: "border-accent/40 text-accent",
@@ -129,26 +151,37 @@ const TourDetail = () => {
         {tour.description && <p className="mt-2 text-xs text-muted-foreground">{tour.description}</p>}
       </div>
 
-      {/* Admin Actions */}
-      <div className="flex gap-2 overflow-x-auto px-4 pb-3 scrollbar-none">
-        {tour.tournament_type === "interclub" && (
-          <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowInvite(true)}>
-            <UserPlus className="h-3 w-3" /> Invite Club
+      {/* Organizer Actions */}
+      {isOrganizer && (
+        <div className="flex gap-2 overflow-x-auto px-4 pb-3 scrollbar-none">
+          {tour.tournament_type === "interclub" && (
+            <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowInvite(true)}>
+              <UserPlus className="h-3 w-3" /> Invite Club
+            </Button>
+          )}
+          <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowRegister(true)}>
+            <UserPlus className="h-3 w-3" /> Register Player
           </Button>
-        )}
-        <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowRegister(true)}>
-          <UserPlus className="h-3 w-3" /> Register Player
-        </Button>
-        <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowFlights(true)}>
-          <Layers className="h-3 w-3" /> Flights
-        </Button>
-        <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowCategories(true)}>
-          <Award className="h-3 w-3" /> Categories
-        </Button>
-        <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowCreateEvent(true)}>
-          <Calendar className="h-3 w-3" /> New Event
-        </Button>
-      </div>
+          <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowFlights(true)}>
+            <Layers className="h-3 w-3" /> Flights
+          </Button>
+          <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowCategories(true)}>
+            <Award className="h-3 w-3" /> Categories
+          </Button>
+          <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowCreateEvent(true)}>
+            <Calendar className="h-3 w-3" /> New Event
+          </Button>
+        </div>
+      )}
+
+      {/* Participant Actions (non-organizer) */}
+      {!isOrganizer && userId && (
+        <div className="flex gap-2 overflow-x-auto px-4 pb-3 scrollbar-none">
+          <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowRegister(true)}>
+            <UserPlus className="h-3 w-3" /> Register Player
+          </Button>
+        </div>
+      )}
 
       <Tabs defaultValue="events" className="px-4">
         <TabsList className="w-full">
