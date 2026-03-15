@@ -5,7 +5,6 @@ import { useQuery } from "@tanstack/react-query";
 import { Mail, Plus } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
-import { v4 as uuidv4 } from "uuid";
 
 const ChatList = () => {
   const navigate = useNavigate();
