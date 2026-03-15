@@ -105,10 +105,10 @@ const ManageCategoriesDialog = ({ tourId, open, onOpenChange }: Props) => {
           </div>
           <div>
             <Label className="text-[10px]">Flight (optional)</Label>
-            <Select value={flightId} onValueChange={setFlightId}>
+            <Select value={flightId || "none"} onValueChange={(v) => setFlightId(v === "none" ? "" : v)}>
               <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="All flights" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All flights</SelectItem>
+                <SelectItem value="none">All flights</SelectItem>
                 {flights?.map(f => <SelectItem key={f.id} value={f.id}>{f.flight_name}</SelectItem>)}
               </SelectContent>
             </Select>
