@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import * as XLSX from 'xlsx';
 import { Button } from '@/components/ui/button';
-import { Download } from 'lucide-react';
+import { Download, Database, Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const queries = [
   // 1. PROFILES & USERS
@@ -169,6 +171,8 @@ const queries = [
 ];
 
 const ExportQueries = () => {
+  const [loading, setLoading] = useState(false);
+
   const handleDownload = () => {
     const wsData = queries.map(q => ({
       'No': q.no,
@@ -179,30 +183,90 @@ const ExportQueries = () => {
 
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.json_to_sheet(wsData);
-
-    // Set column widths
     ws['!cols'] = [
-      { wch: 5 },   // No
-      { wch: 25 },  // Kategori
-      { wch: 45 },  // Deskripsi
-      { wch: 120 }, // SQL Query
+      { wch: 5 },
+      { wch: 25 },
+      { wch: 45 },
+      { wch: 120 },
     ];
-
     XLSX.utils.book_append_sheet(wb, ws, 'SQL Queries');
     XLSX.writeFile(wb, 'CFGolf_SQL_Queries.xlsx');
+  };
+
+  const escapeSQL = (val: unknown): string => {
+    if (val === null || val === undefined) return 'NULL';
+    if (typeof val === 'number' || typeof val === 'boolean') return String(val);
+    return `'${String(val).replace(/'/g, "''")}'`;
+  };
+
+  const handleExportData = async () => {
+    setLoading(true);
+    const tableNames = [
+      'profiles', 'clubs', 'members', 'club_staff', 'club_invitations',
+      'buddy_connections', 'courses', 'course_holes', 'course_tees',
+      'tours', 'tour_clubs', 'tour_players', 'tournament_flights',
+      'tournament_winner_categories', 'events', 'tickets', 'contestants',
+      'pairings', 'pairing_players', 'event_checkins', 'caddy_assignments',
+      'golf_cart_assignments', 'scorecards', 'hole_scores', 'handicap_history',
+      'event_results', 'rounds', 'round_players', 'tee_time_bookings',
+      'conversations', 'conversation_participants', 'chat_messages',
+    ] as const;
+
+    let sql = `-- CFGolf Database Export\n-- Generated: ${new Date().toISOString()}\n\n`;
+
+    try {
+      for (const table of tableNames) {
+        const { data, error } = await supabase.from(table).select('*');
+        if (error) {
+          sql += `-- ERROR fetching ${table}: ${error.message}\n\n`;
+          continue;
+        }
+        if (!data || data.length === 0) {
+          sql += `-- Table: ${table} (empty)\n\n`;
+          continue;
+        }
+
+        sql += `-- Table: ${table} (${data.length} rows)\n`;
+        const columns = Object.keys(data[0]);
+
+        for (const row of data) {
+          const values = columns.map(col => escapeSQL((row as Record<string, unknown>)[col]));
+          sql += `INSERT INTO ${table} (${columns.join(', ')}) VALUES (${values.join(', ')});\n`;
+        }
+        sql += '\n';
+      }
+
+      const blob = new Blob([sql], { type: 'text/sql;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'CFGolf_Data_Export.sql';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error('Export failed:', e);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="text-center space-y-6 max-w-md">
-        <h1 className="text-2xl font-bold text-foreground">Export SQL Queries</h1>
+        <h1 className="text-2xl font-bold text-foreground">Export Data</h1>
         <p className="text-muted-foreground">
-          Download seluruh 106 SQL query dalam format XLSX
+          Download referensi SQL queries atau export seluruh data tabel
         </p>
-        <Button onClick={handleDownload} size="lg" className="gap-2">
-          <Download className="h-5 w-5" />
-          Download XLSX
-        </Button>
+        <div className="flex flex-col gap-3">
+          <Button onClick={handleDownload} size="lg" className="gap-2">
+            <Download className="h-5 w-5" />
+            Download SQL Queries (XLSX)
+          </Button>
+          <Button onClick={handleExportData} size="lg" variant="secondary" className="gap-2" disabled={loading}>
+            {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Database className="h-5 w-5" />}
+            {loading ? 'Exporting...' : 'Export Semua Data (SQL)'}
+          </Button>
+        </div>
       </div>
     </div>
   );
