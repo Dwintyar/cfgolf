@@ -134,7 +134,7 @@ const ChatRoom = () => {
   }
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex flex-col h-screen pb-16">
       {/* Header */}
       <div className="flex items-center gap-3 border-b border-border/50 p-4 bg-card">
         <button onClick={() => navigate(-1)} className="rounded-full p-1.5 hover:bg-muted">
