@@ -299,6 +299,31 @@ const ClubAdminDashboard = () => {
     navigate("/clubs");
   };
 
+  const handleCreateAnnouncement = async () => {
+    if (!clubId || !userId || !annTitle.trim() || !annContent.trim()) return;
+    const { error } = await supabase.from("club_announcements").insert({
+      club_id: clubId,
+      author_id: userId,
+      title: annTitle.trim(),
+      content: annContent.trim(),
+      is_pinned: annPinned,
+    });
+    if (error) { toast.error(error.message); return; }
+    toast.success("Announcement published");
+    setShowCreateAnnouncement(false);
+    setAnnTitle("");
+    setAnnContent("");
+    setAnnPinned(false);
+    refetchAnnouncements();
+  };
+
+  const handleDeleteAnnouncement = async (annId: string) => {
+    const { error } = await supabase.from("club_announcements").delete().eq("id", annId);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Announcement deleted");
+    refetchAnnouncements();
+  };
+
   const toggleTour = (tourId: string) => {
     setExpandedTours((prev) => {
       const next = new Set(prev);
