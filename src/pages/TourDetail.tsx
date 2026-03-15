@@ -112,6 +112,7 @@ const TourDetail = () => {
     enabled: !!userId && !!tour?.organizer_club_id,
   });
 
+  const statusColors: Record<string, string> = {
     draft: "border-muted-foreground/30 text-muted-foreground",
     registration: "border-accent/40 text-accent",
     checkin: "border-accent/40 text-accent",
