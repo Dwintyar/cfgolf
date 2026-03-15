@@ -772,6 +772,30 @@ const EventDetail = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Finalize Confirmation Dialog */}
+      <Dialog open={showFinalizeConfirm} onOpenChange={setShowFinalizeConfirm}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Finalize Event?</DialogTitle>
+            <DialogDescription className="text-xs space-y-1 pt-2">
+              <p>Tindakan ini akan:</p>
+              <ul className="list-disc pl-4 space-y-0.5">
+                <li>Menghitung dan menyimpan pemenang</li>
+                <li>Mengkoreksi Tournament HCP semua peserta</li>
+                <li>Menutup event (tidak bisa dibuka lagi)</li>
+              </ul>
+              <p className="font-semibold pt-1">Pastikan semua scorecard sudah diinput.</p>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowFinalizeConfirm(false)}>Batalkan</Button>
+            <Button onClick={handleFinalizeEvent} disabled={finalizing}>
+              {finalizing ? "Finalizing…" : "Ya, Finalize"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
