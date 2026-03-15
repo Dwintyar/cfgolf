@@ -1055,6 +1055,17 @@ const ClubAdminDashboard = () => {
           onOpenChange={(open) => { if (!open) setRolesEventId(null); }}
         />
       )}
+
+      {/* Create Tour Dialog */}
+      <CreateTourDialog
+        open={showCreateTour}
+        onOpenChange={setShowCreateTour}
+        onCreated={() => {
+          setShowCreateTour(false);
+          queryClient.invalidateQueries({ queryKey: ["club-admin-tours", clubId] });
+        }}
+        defaultOrganizerClubId={clubId}
+      />
     </div>
   );
 };

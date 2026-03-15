@@ -16,13 +16,17 @@ interface Props {
   defaultOrganizerClubId?: string;
 }
 
-const CreateTourDialog = ({ open, onOpenChange, onCreated }: Props) => {
+const CreateTourDialog = ({ open, onOpenChange, onCreated, defaultOrganizerClubId }: Props) => {
   const [name, setName] = useState("");
   const [type, setType] = useState("internal");
-  const [clubId, setClubId] = useState("");
+  const [clubId, setClubId] = useState(defaultOrganizerClubId ?? "");
   const [year, setYear] = useState(new Date().getFullYear().toString());
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (defaultOrganizerClubId) setClubId(defaultOrganizerClubId);
+  }, [defaultOrganizerClubId]);
 
   const { data: clubs } = useQuery({
     queryKey: ["all-clubs"],
