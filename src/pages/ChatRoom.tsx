@@ -2,10 +2,11 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Send } from "lucide-react";
+import { ArrowLeft, Send, Loader2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 const ChatRoom = () => {
   const navigate = useNavigate();
@@ -13,13 +14,24 @@ const ChatRoom = () => {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<any[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
+  const [authReady, setAuthReady] = useState(false);
+  const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) navigate("/login", { replace: true });
       else setUserId(session.user.id);
+      setAuthReady(true);
     });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setUserId(session?.user?.id ?? null);
+      }
+    );
+
+    return () => subscription.unsubscribe();
   }, [navigate]);
 
   // Load other participant
@@ -33,26 +45,30 @@ const ChatRoom = () => {
         .neq("user_id", userId!);
       return (data?.[0]?.profiles as any) ?? null;
     },
-    enabled: !!conversationId && !!userId,
+    enabled: authReady && !!conversationId && !!userId,
   });
 
-  // Load initial messages (wait for userId so RLS auth is ready)
+  // Load initial messages (wait for auth to be ready)
   useEffect(() => {
-    if (!conversationId || !userId) return;
+    if (!conversationId || !userId || !authReady) return;
     const load = async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("chat_messages")
         .select("*, profiles:sender_id(full_name, avatar_url)")
         .eq("conversation_id", conversationId)
         .order("created_at", { ascending: true });
+      if (error) {
+        console.error("Failed to load messages:", error);
+        return;
+      }
       if (data) setMessages(data);
     };
     load();
-  }, [conversationId, userId]);
+  }, [conversationId, userId, authReady]);
 
   // Realtime subscription
   useEffect(() => {
-    if (!conversationId) return;
+    if (!conversationId || !authReady) return;
     const channel = supabase
       .channel(`chat-${conversationId}`)
       .on(
@@ -69,7 +85,11 @@ const ChatRoom = () => {
             .select("full_name, avatar_url")
             .eq("id", payload.new.sender_id)
             .single();
-          setMessages((prev) => [...prev, { ...payload.new, profiles: data }]);
+          setMessages((prev) => {
+            // Avoid duplicate messages
+            if (prev.some((m) => m.id === payload.new.id)) return prev;
+            return [...prev, { ...payload.new, profiles: data }];
+          });
         }
       )
       .subscribe();
@@ -77,7 +97,7 @@ const ChatRoom = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [conversationId]);
+  }, [conversationId, authReady]);
 
   // Auto-scroll
   useEffect(() => {
@@ -88,20 +108,35 @@ const ChatRoom = () => {
     if (!message.trim() || !userId || !conversationId) return;
     const text = message.trim();
     setMessage("");
-    await supabase.from("chat_messages").insert({
+    setSending(true);
+    const { error } = await supabase.from("chat_messages").insert({
       conversation_id: conversationId,
       sender_id: userId,
       content: text,
     });
+    setSending(false);
+    if (error) {
+      console.error("Send failed:", error);
+      toast.error("Gagal mengirim pesan: " + error.message);
+      setMessage(text); // Restore message
+    }
   };
 
   const getInitials = (name: string | null) =>
     name ? name.split(" ").slice(0, 2).map((w) => w[0]).join("").toUpperCase() : "?";
 
+  if (!authReady) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-screen">
       {/* Header */}
-      <div className="flex items-center gap-3 border-b border-border/50 p-4">
+      <div className="flex items-center gap-3 border-b border-border/50 p-4 bg-card">
         <button onClick={() => navigate(-1)} className="rounded-full p-1.5 hover:bg-muted">
           <ArrowLeft className="h-5 w-5" />
         </button>
@@ -112,17 +147,21 @@ const ChatRoom = () => {
           </AvatarFallback>
         </Avatar>
         <div>
-          <p className="text-sm font-bold">{otherUser?.full_name ?? "Chat"}</p>
+          <p className="text-sm font-bold">{otherUser?.full_name ?? "Loading..."}</p>
           <p className="text-[10px] text-primary">Online</p>
         </div>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+      <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-background">
         {messages.length === 0 && (
-          <p className="text-center text-sm text-muted-foreground py-8">
-            Mulai percakapan! 💬
-          </p>
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+              <Send className="h-7 w-7 text-primary" />
+            </div>
+            <p className="text-sm font-semibold text-foreground">Mulai percakapan! 💬</p>
+            <p className="text-xs text-muted-foreground mt-1">Ketik pesan di bawah untuk memulai chat</p>
+          </div>
         )}
         {messages.map((msg) => {
           const isMine = msg.sender_id === userId;
@@ -131,7 +170,7 @@ const ChatRoom = () => {
               <div className={`max-w-[75%] rounded-2xl px-4 py-2.5 ${
                 isMine
                   ? "bg-primary text-primary-foreground rounded-br-md"
-                  : "golf-card rounded-bl-md"
+                  : "bg-card border border-border/50 rounded-bl-md"
               }`}>
                 {!isMine && (
                   <p className="text-[10px] font-semibold text-primary mb-0.5">
@@ -150,21 +189,21 @@ const ChatRoom = () => {
       </div>
 
       {/* Input */}
-      <div className="border-t border-border/50 p-3 flex gap-2">
+      <div className="border-t border-border/50 p-3 flex gap-2 bg-card">
         <Input
           placeholder="Ketik pesan..."
           value={message}
           onChange={(e) => setMessage(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleSend()}
-          className="flex-1 h-10 rounded-xl border-border/50 bg-card/80"
+          onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
+          className="flex-1 h-10 rounded-xl border-border/50 bg-background"
         />
         <Button
           size="icon"
           className="h-10 w-10 rounded-xl"
           onClick={handleSend}
-          disabled={!message.trim()}
+          disabled={!message.trim() || sending}
         >
-          <Send className="h-4 w-4" />
+          {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
         </Button>
       </div>
     </div>
