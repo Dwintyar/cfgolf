@@ -342,6 +342,40 @@ const ExportQueries = () => {
     }
   };
 
+  const [loadingSavedPng, setLoadingSavedPng] = useState(false);
+
+  const savedPngFiles = [
+    '01-news-feed.png', '02-buddies.png', '03-clubs.png', '04-events.png',
+    '05-venues.png', '06-profile.png', '07-settings.png', '08-event-detail.png',
+    '09-event-pairings.png', '10-event-board.png', '11-event-checkin.png',
+    '12-venue-detail.png', '13-club-detail.png', '14-tour-detail.png',
+  ];
+
+  const handleDownloadSavedPngs = async () => {
+    setLoadingSavedPng(true);
+    try {
+      const zip = new JSZip();
+      for (const file of savedPngFiles) {
+        const res = await fetch(`/exports/${file}`);
+        if (res.ok) {
+          const blob = await res.blob();
+          zip.file(file, blob);
+        }
+      }
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'CFGolf_Saved_Screenshots.zip';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error('Download saved PNGs failed:', e);
+    } finally {
+      setLoadingSavedPng(false);
+    }
+  };
+
   const [loggedIn, setLoggedIn] = useState(false);
   const [loginLoading, setLoginLoading] = useState(false);
 
