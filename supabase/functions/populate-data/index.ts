@@ -107,20 +107,26 @@ Deno.serve(async (req) => {
       const { data: users } = await supabase.from("profiles").select("id").order("created_at").limit(30);
       if (users && users.length >= 10) {
         const connections: any[] = [];
+        const seen = new Set<string>();
         for (let i = 0; i < 25; i++) {
           for (let j = i + 1; j <= Math.min(i + 5, users.length - 1); j++) {
-            connections.push({
-              requester_id: users[i].id,
-              addressee_id: users[j].id,
-              status: "accepted",
-            });
+            const key = `${users[i].id}-${users[j].id}`;
+            if (!seen.has(key)) {
+              seen.add(key);
+              connections.push({
+                requester_id: users[i].id,
+                addressee_id: users[j].id,
+                status: "accepted",
+              });
+            }
           }
         }
-        // Insert in batches to avoid conflicts
+        // Batch insert in chunks of 50
         let inserted = 0;
-        for (const conn of connections) {
-          const { error } = await supabase.from("buddy_connections").insert(conn);
-          if (!error) inserted++;
+        for (let b = 0; b < connections.length; b += 50) {
+          const batch = connections.slice(b, b + 50);
+          const { error, count } = await supabase.from("buddy_connections").insert(batch);
+          if (!error) inserted += batch.length;
         }
         results.D = `OK - ${inserted} buddy connections inserted`;
       } else {
