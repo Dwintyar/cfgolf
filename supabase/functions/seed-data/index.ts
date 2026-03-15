@@ -1082,6 +1082,34 @@ Deno.serve(async (req) => {
         console.log('Course ratings updated')
       }
 
+      // --- SEED POSTS ---
+      const postContents = [
+        { content: 'Incredible round at Pondok Indah today! The greens were in perfect condition 🏌️‍♂️', category: 'general' },
+        { content: 'Tips: Always warm up with short game before heading to the first tee. Your scores will thank you!', category: 'tips' },
+        { content: 'CFGolf Championship Leg 3 results are in. Congratulations to all the winners! 🏆', category: 'tournament' },
+        { content: 'New driving range just opened in BSD City. Has simulator bays and great facilities!', category: 'things_to_do' },
+        { content: 'Just upgraded to the new Titleist TSR3 driver. The ball flight is so much more consistent.', category: 'gear' },
+        { content: 'Beautiful sunset round at Sentul Highlands. Nothing beats golf with a view like this.', category: 'general' },
+        { content: 'Reminder: March Monthly at Royal Jakarta is this Saturday. Register now before slots run out!', category: 'tournament' },
+        { content: 'Tip of the day: When chipping, keep your weight forward and let the club do the work. #golftips', category: 'tips' },
+        { content: 'Looking for buddies to play at Modern Golf BSD this weekend. Any takers? 🙋‍♂️', category: 'things_to_do' },
+        { content: 'Just got fitted for new irons. The difference custom fitting makes is insane! Highly recommend it.', category: 'gear' },
+        { content: 'Congratulations to Budi Santoso for breaking 80 for the first time! 🎉', category: 'general' },
+        { content: 'The new putting green at Damai Indah is absolutely world-class. Worth the visit!', category: 'things_to_do' },
+        { content: 'Pro tip: Track your stats hole by hole. Use the CFGolf scorecard feature to spot weaknesses in your game.', category: 'tips' },
+        { content: 'Anyone tried the new Callaway Paradym Ai Smoke? Curious about the reviews from fellow golfers.', category: 'gear' },
+        { content: 'Season finale coming up! Who is leading the CFGolf Tour standings? Check the leaderboard 📊', category: 'tournament' },
+      ]
+      const postInserts = postContents.map((p, idx) => ({
+        author_id: profileIds[idx % profileIds.length],
+        content: p.content,
+        category: p.category,
+        likes_count: Math.floor(Math.random() * 40),
+        comments_count: Math.floor(Math.random() * 15),
+      }))
+      await supabase.from('posts').insert(postInserts)
+      console.log(`${postInserts.length} posts created`)
+
       return new Response(JSON.stringify({ success: true, phase: 4, results }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
