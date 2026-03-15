@@ -112,6 +112,36 @@ const TourDetail = () => {
     enabled: !!userId && !!tour?.organizer_club_id,
   });
 
+  // Determine caller's club in this tour
+  const { data: callerClubId } = useQuery({
+    queryKey: ["tour-caller-club", id, userId],
+    queryFn: async () => {
+      if (!userId) return null;
+      // Find which club(s) in this tour the user belongs to
+      const { data: userMemberships } = await supabase
+        .from("members")
+        .select("club_id")
+        .eq("user_id", userId)
+        .in("role", ["owner", "admin"]);
+      if (!userMemberships?.length) return null;
+      const clubIds = userMemberships.map(m => m.club_id);
+      // Check which of those clubs participate in this tour
+      const { data: tourClubMatch } = await supabase
+        .from("tour_clubs")
+        .select("club_id")
+        .eq("tour_id", id!)
+        .in("club_id", clubIds)
+        .limit(1);
+      if (tourClubMatch?.length) return tourClubMatch[0].club_id;
+      // Fallback: check if user is organizer club member
+      if (tour?.organizer_club_id && clubIds.includes(tour.organizer_club_id)) {
+        return tour.organizer_club_id;
+      }
+      return null;
+    },
+    enabled: !!userId && !!id,
+  });
+
   const statusColors: Record<string, string> = {
     draft: "border-muted-foreground/30 text-muted-foreground",
     registration: "border-accent/40 text-accent",
