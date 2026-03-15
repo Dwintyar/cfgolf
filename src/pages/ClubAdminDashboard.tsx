@@ -557,7 +557,42 @@ const ClubAdminDashboard = () => {
                     </div>
                   ))}
                 </div>
-                <div className="px-3 pb-3 pt-1">
+                {/* Players from this club in this tournament */}
+                {(() => {
+                  const tourPlayers = clubTourPlayers?.filter(
+                    (p: any) => (p.tours as any)?.id === tour.id
+                  ) ?? [];
+                  if (tourPlayers.length === 0) return null;
+                  return (
+                    <div className="border-t border-border px-3 py-2">
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                        My Players ({tourPlayers.length})
+                      </p>
+                      {tourPlayers.map((p: any) => (
+                        <div key={p.id} className="flex items-center justify-between py-1.5 text-xs border-b border-border/50 last:border-0">
+                          <span className="truncate flex-1">
+                            {(p.profiles as any)?.full_name ?? "Unknown"}
+                            <span className="text-muted-foreground ml-1">
+                              HCP {(p.profiles as any)?.handicap ?? "—"}
+                            </span>
+                          </span>
+                          <Badge
+                            variant="outline"
+                            className={`text-[9px] ml-2 shrink-0 ${
+                              p.status === "registered" || p.status === "active"
+                                ? "text-primary border-primary/30"
+                                : p.status === "pending"
+                                ? "text-accent border-accent/30"
+                                : "text-muted-foreground"
+                            }`}
+                          >
+                            {p.status === "registered" || p.status === "active" ? "✓ registered" : p.status}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
                   <Button
                     size="sm"
                     variant="outline"
