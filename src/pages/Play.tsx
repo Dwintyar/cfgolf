@@ -185,34 +185,60 @@ const Play = () => {
 
   const startConversation = async (otherUserId: string) => {
     if (!currentUserId) return;
-    const { data: myConvs } = await supabase
+
+    const { data: myConvs, error: myConvsError } = await supabase
       .from("conversation_participants")
       .select("conversation_id")
       .eq("user_id", currentUserId);
+
+    if (myConvsError) {
+      toast({ title: "Gagal membuka percakapan", description: myConvsError.message, variant: "destructive" });
+      return;
+    }
+
     if (myConvs && myConvs.length > 0) {
-      const myConvIds = myConvs.map(c => c.conversation_id);
-      const { data: shared } = await supabase
+      const myConvIds = myConvs.map((c) => c.conversation_id);
+      const { data: shared, error: sharedError } = await supabase
         .from("conversation_participants")
         .select("conversation_id")
         .eq("user_id", otherUserId)
         .in("conversation_id", myConvIds)
         .limit(1);
+
+      if (sharedError) {
+        toast({ title: "Gagal membuka percakapan", description: sharedError.message, variant: "destructive" });
+        return;
+      }
+
       if (shared && shared.length > 0) {
         navigate(`/chat/${shared[0].conversation_id}`);
         return;
       }
     }
-    const { data: newConv } = await supabase
+
+    const newConversationId = crypto.randomUUID();
+    const { error: createConversationError } = await supabase
       .from("conversations")
-      .insert({})
-      .select("id")
-      .single();
-    if (!newConv) return;
-    await supabase.from("conversation_participants").insert([
-      { conversation_id: newConv.id, user_id: currentUserId },
-      { conversation_id: newConv.id, user_id: otherUserId },
-    ]);
-    navigate(`/chat/${newConv.id}`);
+      .insert({ id: newConversationId });
+
+    if (createConversationError) {
+      toast({ title: "Gagal membuat percakapan", description: createConversationError.message, variant: "destructive" });
+      return;
+    }
+
+    const { error: participantsError } = await supabase
+      .from("conversation_participants")
+      .insert([
+        { conversation_id: newConversationId, user_id: currentUserId },
+        { conversation_id: newConversationId, user_id: otherUserId },
+      ]);
+
+    if (participantsError) {
+      toast({ title: "Gagal menambahkan peserta", description: participantsError.message, variant: "destructive" });
+      return;
+    }
+
+    navigate(`/chat/${newConversationId}`);
   };
 
   const getInitials = (name: string | null) => {
