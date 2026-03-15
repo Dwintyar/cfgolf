@@ -103,7 +103,7 @@ const AssignContestantDialog = ({ eventId, tourId, open, onOpenChange, onDone }:
             <Select value={flightId} onValueChange={setFlightId}>
               <SelectTrigger><SelectValue placeholder="Auto or select" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="">None</SelectItem>
+                <SelectItem value="none">None</SelectItem>
                 {flights?.map(f => <SelectItem key={f.id} value={f.id}>{f.flight_name} ({f.hcp_min}–{f.hcp_max})</SelectItem>)}
               </SelectContent>
             </Select>
