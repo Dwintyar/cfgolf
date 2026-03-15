@@ -182,7 +182,7 @@ const EventDetail = () => {
     queryFn: async () => {
       const clubId = (event?.tours as any)?.organizer_club_id;
       if (!clubId || !userId) return false;
-      // Check club admin
+      // 1. Check club admin (owner/admin)
       const { data: memberRole } = await supabase
         .from("members")
         .select("role")
@@ -191,7 +191,16 @@ const EventDetail = () => {
         .in("role", ["owner", "admin"])
         .maybeSingle();
       if (memberRole) return true;
-      // Check platform admin
+      // 2. Check event role (tournament_director or event_coordinator)
+      const { data: eventRole } = await supabase
+        .from("event_roles")
+        .select("role")
+        .eq("event_id", id!)
+        .eq("user_id", userId)
+        .in("role", ["tournament_director", "event_coordinator"])
+        .maybeSingle();
+      if (eventRole) return true;
+      // 3. Fallback: platform super admin
       const { data: sysAdmin } = await supabase
         .from("system_admins")
         .select("id")
@@ -201,6 +210,22 @@ const EventDetail = () => {
       return !!sysAdmin;
     },
     enabled: !!event && !!userId,
+  });
+
+  // Check if user is HCP Officer for this event
+  const { data: isHcpOfficer } = useQuery({
+    queryKey: ["hcp-officer-check", id, userId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("event_roles")
+        .select("id")
+        .eq("event_id", id!)
+        .eq("user_id", userId!)
+        .eq("role", "hcp_officer")
+        .maybeSingle();
+      return !!data;
+    },
+    enabled: !!id && !!userId,
   });
 
   const showAdminActions = !!isEventAdmin;
