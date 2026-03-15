@@ -24,6 +24,10 @@ import {
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
 import InviteMemberDialog from "@/components/InviteMemberDialog";
+import AssignEventRolesDialog from "@/components/tour/AssignEventRolesDialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
+import { Pin, MoreVertical } from "lucide-react";
 
 const ClubAdminDashboard = () => {
   const { clubId: paramClubId } = useParams<{ clubId: string }>();
@@ -45,6 +49,15 @@ const ClubAdminDashboard = () => {
   // Succession
   const [successionUserId, setSuccessionUserId] = useState("");
   const [transferTargetId, setTransferTargetId] = useState("");
+
+  // Announcements
+  const [showCreateAnnouncement, setShowCreateAnnouncement] = useState(false);
+  const [annTitle, setAnnTitle] = useState("");
+  const [annContent, setAnnContent] = useState("");
+  const [annPinned, setAnnPinned] = useState(false);
+
+  // Event roles
+  const [rolesEventId, setRolesEventId] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -167,7 +180,21 @@ const ClubAdminDashboard = () => {
     enabled: !!clubId,
   });
 
-  // Course bookings (for Golf Course venue tab)
+  // Announcements
+  const { data: announcements, refetch: refetchAnnouncements } = useQuery({
+    queryKey: ["club-announcements", clubId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("club_announcements")
+        .select("*, profiles:author_id(full_name)")
+        .eq("club_id", clubId)
+        .order("is_pinned", { ascending: false })
+        .order("created_at", { ascending: false });
+      return data ?? [];
+    },
+    enabled: !!clubId,
+  });
+
   const { data: courseBookings } = useQuery({
     queryKey: ["club-venue-bookings", linkedCourse?.id],
     queryFn: async () => {
@@ -270,6 +297,31 @@ const ClubAdminDashboard = () => {
     if (error) { toast.error(error.message); return; }
     toast.success("Club archived");
     navigate("/clubs");
+  };
+
+  const handleCreateAnnouncement = async () => {
+    if (!clubId || !userId || !annTitle.trim() || !annContent.trim()) return;
+    const { error } = await supabase.from("club_announcements").insert({
+      club_id: clubId,
+      author_id: userId,
+      title: annTitle.trim(),
+      content: annContent.trim(),
+      is_pinned: annPinned,
+    });
+    if (error) { toast.error(error.message); return; }
+    toast.success("Announcement published");
+    setShowCreateAnnouncement(false);
+    setAnnTitle("");
+    setAnnContent("");
+    setAnnPinned(false);
+    refetchAnnouncements();
+  };
+
+  const handleDeleteAnnouncement = async (annId: string) => {
+    const { error } = await supabase.from("club_announcements").delete().eq("id", annId);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Announcement deleted");
+    refetchAnnouncements();
   };
 
   const toggleTour = (tourId: string) => {
@@ -404,18 +456,22 @@ const ClubAdminDashboard = () => {
                     <p className="p-3 text-xs text-muted-foreground text-center">No events in this tour</p>
                   )}
                   {events.map((e: any) => (
-                    <button
-                      key={e.id}
-                      onClick={() => navigate(`/event/${e.id}`)}
-                      className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-muted/20 transition-colors text-left border-b border-border last:border-b-0"
-                    >
-                      <div className="min-w-0 flex-1">
+                    <div key={e.id} className="flex items-center gap-2 px-3 py-2.5 border-b border-border last:border-b-0">
+                      <button
+                        onClick={() => navigate(`/event/${e.id}`)}
+                        className="min-w-0 flex-1 text-left hover:opacity-70 transition-opacity"
+                      >
                         <p className="text-xs font-medium truncate">{e.name}</p>
                         <p className="text-[10px] text-muted-foreground">{e.event_date}</p>
-                      </div>
+                      </button>
                       <Badge variant="outline" className="text-[9px] shrink-0">{e.status}</Badge>
-                      <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                    </button>
+                      <Button variant="ghost" size="sm" className="h-6 text-[10px] px-1.5 shrink-0" onClick={() => setRolesEventId(e.id)}>
+                        <Shield className="h-3 w-3" />
+                      </Button>
+                      <button onClick={() => navigate(`/event/${e.id}`)} className="shrink-0">
+                        <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+                      </button>
+                    </div>
                   ))}
                 </div>
               </CollapsibleContent>
@@ -507,15 +563,78 @@ const ClubAdminDashboard = () => {
     </TabsContent>
   );
 
-  const renderAnnouncementsTab = () => (
-    <TabsContent value="announcements" className="space-y-2 pt-2">
-      <div className="golf-card p-6 text-center text-sm text-muted-foreground">
-        <Megaphone className="mx-auto h-8 w-8 text-muted-foreground/40 mb-2" />
-        <p>Announcements coming soon</p>
-        <p className="text-xs mt-1">Post updates and news for your club members</p>
+  const renderAnnouncementsTab = () => {
+    const pinnedAnnouncements = announcements?.filter((a: any) => a.is_pinned) ?? [];
+    const regularAnnouncements = announcements?.filter((a: any) => !a.is_pinned) ?? [];
+    const isAdminOrOwner = isOwner || admins.some((a) => a.user_id === userId);
+
+    const timeAgo = (date: string) => {
+      const diff = Date.now() - new Date(date).getTime();
+      const days = Math.floor(diff / 86400000);
+      if (days === 0) return "Today";
+      if (days === 1) return "Yesterday";
+      return `${days} days ago`;
+    };
+
+    const renderAnnCard = (ann: any) => (
+      <div key={ann.id} className="golf-card p-3">
+        <div className="flex items-start gap-2">
+          {ann.is_pinned && <Pin className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />}
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold">{ann.title}</p>
+            <p className="text-xs text-muted-foreground mt-1 line-clamp-3">{ann.content}</p>
+            <p className="text-[10px] text-muted-foreground mt-2">
+              {(ann.profiles as any)?.full_name ?? "Admin"} · {timeAgo(ann.created_at)}
+            </p>
+          </div>
+          {ann.author_id === userId && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-6 w-6 p-0 shrink-0">
+                  <MoreVertical className="h-3.5 w-3.5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleDeleteAnnouncement(ann.id)} className="text-destructive">
+                  <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
       </div>
-    </TabsContent>
-  );
+    );
+
+    return (
+      <TabsContent value="announcements" className="space-y-2 pt-2">
+        {isAdminOrOwner && (
+          <Button size="sm" variant="outline" className="w-full gap-1 text-xs mb-2" onClick={() => setShowCreateAnnouncement(true)}>
+            <Plus className="h-3.5 w-3.5" /> New Announcement
+          </Button>
+        )}
+        {announcements?.length === 0 && (
+          <div className="golf-card p-6 text-center text-sm text-muted-foreground">
+            <Megaphone className="mx-auto h-8 w-8 text-muted-foreground/40 mb-2" />
+            <p>No announcements yet</p>
+          </div>
+        )}
+        {pinnedAnnouncements.length > 0 && (
+          <>
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">📌 Pinned</p>
+            {pinnedAnnouncements.map(renderAnnCard)}
+          </>
+        )}
+        {regularAnnouncements.length > 0 && (
+          <>
+            {pinnedAnnouncements.length > 0 && (
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mt-2">All Announcements</p>
+            )}
+            {regularAnnouncements.map(renderAnnCard)}
+          </>
+        )}
+      </TabsContent>
+    );
+  };
 
   const renderSettingsTab = () => (
     <TabsContent value="settings" className="space-y-4 pt-2 pb-6">
@@ -889,6 +1008,44 @@ const ClubAdminDashboard = () => {
           open={showInvite}
           onOpenChange={setShowInvite}
           onDone={() => { setShowInvite(false); refetchMembers(); }}
+        />
+      )}
+
+      {/* Create Announcement Dialog */}
+      <Dialog open={showCreateAnnouncement} onOpenChange={setShowCreateAnnouncement}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-base">New Announcement</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div>
+              <Label className="text-xs text-muted-foreground">Title</Label>
+              <Input value={annTitle} onChange={(e) => setAnnTitle(e.target.value)} className="mt-1" placeholder="Announcement title" />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Content</Label>
+              <Textarea value={annContent} onChange={(e) => setAnnContent(e.target.value)} className="mt-1" rows={4} placeholder="Write your announcement..." />
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch checked={annPinned} onCheckedChange={setAnnPinned} />
+              <Label className="text-xs">📌 Pin to top</Label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={handleCreateAnnouncement} disabled={!annTitle.trim() || !annContent.trim()} className="w-full">
+              Publish
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Assign Event Roles Dialog */}
+      {rolesEventId && clubId && (
+        <AssignEventRolesDialog
+          eventId={rolesEventId}
+          clubId={clubId}
+          open={!!rolesEventId}
+          onOpenChange={(open) => { if (!open) setRolesEventId(null); }}
         />
       )}
     </div>
