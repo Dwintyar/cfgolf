@@ -183,6 +183,38 @@ const Play = () => {
     setActionLoading(null);
   };
 
+  const startConversation = async (otherUserId: string) => {
+    if (!currentUserId) return;
+    const { data: myConvs } = await supabase
+      .from("conversation_participants")
+      .select("conversation_id")
+      .eq("user_id", currentUserId);
+    if (myConvs && myConvs.length > 0) {
+      const myConvIds = myConvs.map(c => c.conversation_id);
+      const { data: shared } = await supabase
+        .from("conversation_participants")
+        .select("conversation_id")
+        .eq("user_id", otherUserId)
+        .in("conversation_id", myConvIds)
+        .limit(1);
+      if (shared && shared.length > 0) {
+        navigate(`/chat/${shared[0].conversation_id}`);
+        return;
+      }
+    }
+    const { data: newConv } = await supabase
+      .from("conversations")
+      .insert({})
+      .select("id")
+      .single();
+    if (!newConv) return;
+    await supabase.from("conversation_participants").insert([
+      { conversation_id: newConv.id, user_id: currentUserId },
+      { conversation_id: newConv.id, user_id: otherUserId },
+    ]);
+    navigate(`/chat/${newConv.id}`);
+  };
+
   const getInitials = (name: string | null) => {
     if (!name) return "?";
     return name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
@@ -403,7 +435,7 @@ const Play = () => {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => navigate(`/chat`)}
+                        onClick={() => startConversation(b.profile.id)}
                         className="h-9 w-9 rounded-lg p-0"
                       >
                         <MessageCircle className="h-4 w-4" />
