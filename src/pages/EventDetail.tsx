@@ -176,6 +176,35 @@ const EventDetail = () => {
   const myCheckin = checkins?.find(ci => ci.contestant_id === myContestant?.id);
   const isCheckedIn = !!myCheckin;
 
+  // Check if user is club admin for the event's organizing club
+  const { data: isEventAdmin } = useQuery({
+    queryKey: ["event-admin-check", id, userId],
+    queryFn: async () => {
+      const clubId = (event?.tours as any)?.organizer_club_id;
+      if (!clubId || !userId) return false;
+      // Check club admin
+      const { data: memberRole } = await supabase
+        .from("members")
+        .select("role")
+        .eq("club_id", clubId)
+        .eq("user_id", userId)
+        .in("role", ["owner", "admin"])
+        .maybeSingle();
+      if (memberRole) return true;
+      // Check platform admin
+      const { data: sysAdmin } = await supabase
+        .from("system_admins")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("is_active", true)
+        .maybeSingle();
+      return !!sysAdmin;
+    },
+    enabled: !!event && !!userId,
+  });
+
+  const showAdminActions = !!isEventAdmin;
+
   // --- Handlers ---
   const invokeWithAuth = async (fnName: string, body: any) => {
     const { data: sessionData } = await supabase.auth.getSession();
@@ -371,17 +400,22 @@ const EventDetail = () => {
             <PenLine className="h-3 w-3" /> Input Score
           </Button>
         )}
-        <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowAssign(true)}>
-          <Users className="h-3 w-3" /> Assign
-        </Button>
-        <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={handleCalculateWinners} disabled={calculating}>
-          <Award className="h-3 w-3" /> {calculating ? "…" : "Winners"}
-        </Button>
+        {/* Admin-only buttons */}
+        {showAdminActions && (
+          <>
+            <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowAssign(true)}>
+              <Users className="h-3 w-3" /> Assign
+            </Button>
+            <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={handleCalculateWinners} disabled={calculating}>
+              <Award className="h-3 w-3" /> {calculating ? "…" : "Winners"}
+            </Button>
+            <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={handleUpdateHandicaps} disabled={updatingHcp}>
+              <TrendingDown className="h-3 w-3" /> {updatingHcp ? "…" : "HCP Update"}
+            </Button>
+          </>
+        )}
         <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowWinners(true)}>
           <Trophy className="h-3 w-3" /> Results
-        </Button>
-        <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={handleUpdateHandicaps} disabled={updatingHcp}>
-          <TrendingDown className="h-3 w-3" /> {updatingHcp ? "…" : "HCP Update"}
         </Button>
       </div>
 
@@ -463,9 +497,11 @@ const EventDetail = () => {
           </Section>
 
           <Section title="Golf Cart" icon={Car} count={cartAssignments?.length}>
-            <Button size="sm" variant="outline" className="w-full h-7 gap-1 text-[11px] mb-2" onClick={() => setShowCartDialog(true)}>
-              <Plus className="h-3 w-3" /> Assign Cart
-            </Button>
+            {showAdminActions && (
+              <Button size="sm" variant="outline" className="w-full h-7 gap-1 text-[11px] mb-2" onClick={() => setShowCartDialog(true)}>
+                <Plus className="h-3 w-3" /> Assign Cart
+              </Button>
+            )}
             {cartAssignments?.length === 0 && <EmptyState text="No carts assigned" />}
             {cartAssignments?.map((ca) => (
               <div key={ca.id} className="golf-card flex items-center justify-between p-3">
@@ -478,9 +514,11 @@ const EventDetail = () => {
           </Section>
 
           <Section title="Caddy" icon={UserCheck} count={caddyAssignments?.length}>
-            <Button size="sm" variant="outline" className="w-full h-7 gap-1 text-[11px] mb-2" onClick={() => setShowCaddyDialog(true)}>
-              <Plus className="h-3 w-3" /> Assign Caddy
-            </Button>
+            {showAdminActions && (
+              <Button size="sm" variant="outline" className="w-full h-7 gap-1 text-[11px] mb-2" onClick={() => setShowCaddyDialog(true)}>
+                <Plus className="h-3 w-3" /> Assign Caddy
+              </Button>
+            )}
             {caddyAssignments?.length === 0 && <EmptyState text="No caddies assigned" />}
             {caddyAssignments?.map((ca) => (
               <div key={ca.id} className="golf-card flex items-center justify-between p-3">

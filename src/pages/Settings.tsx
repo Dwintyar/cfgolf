@@ -12,6 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
 
 type Section = "main" | "profile" | "club" | "password";
+type AdminAccess = "none" | "platform" | "club";
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -89,6 +90,56 @@ const Settings = () => {
     },
     enabled: !!userId,
   });
+
+  // Check admin access
+  const { data: adminAccess } = useQuery<AdminAccess>({
+    queryKey: ["admin-access-check", userId],
+    queryFn: async () => {
+      // Check platform admin
+      const { data: sysAdmin } = await supabase
+        .from("system_admins")
+        .select("admin_level")
+        .eq("user_id", userId!)
+        .eq("is_active", true)
+        .maybeSingle();
+      if (sysAdmin) return "platform" as AdminAccess;
+
+      // Check club admin
+      const { data: clubRole } = await supabase
+        .from("members")
+        .select("club_id, role")
+        .eq("user_id", userId!)
+        .in("role", ["owner", "admin"])
+        .limit(1);
+      if (clubRole && clubRole.length > 0) return "club" as AdminAccess;
+
+      return "none" as AdminAccess;
+    },
+    enabled: !!userId,
+  });
+
+  const firstAdminClubId = useQuery({
+    queryKey: ["admin-first-club", userId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("members")
+        .select("club_id")
+        .eq("user_id", userId!)
+        .in("role", ["owner", "admin"])
+        .limit(1)
+        .maybeSingle();
+      return data?.club_id ?? null;
+    },
+    enabled: !!userId && adminAccess === "club",
+  });
+
+  const handleAdminDashboard = () => {
+    if (adminAccess === "platform") {
+      navigate("/admin");
+    } else if (adminAccess === "club" && firstAdminClubId.data) {
+      navigate(`/admin/club/${firstAdminClubId.data}`);
+    }
+  };
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -319,7 +370,9 @@ const Settings = () => {
         <SettingsItem icon={User} label="Edit Profile" onClick={() => setSection("profile")} />
         <SettingsItem icon={Building2} label="My Clubs" onClick={() => setSection("club")} />
         <SettingsItem icon={Lock} label="Change Password" onClick={() => setSection("password")} />
-        <SettingsItem icon={LayoutDashboard} label="Admin Dashboard" onClick={() => navigate("/admin")} />
+        {adminAccess && adminAccess !== "none" && (
+          <SettingsItem icon={LayoutDashboard} label="Admin Dashboard" onClick={handleAdminDashboard} />
+        )}
 
         <Separator className="my-3" />
 
