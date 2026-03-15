@@ -95,7 +95,7 @@ export function useChatNotifications() {
     };
   }, [userId]);
 
-  // Subscribe to club invitations
+  // Subscribe to club invitations (both incoming invites AND join requests for owners)
   useEffect(() => {
     if (!userId) return;
 
@@ -111,28 +111,54 @@ export function useChatNotifications() {
         async (payload) => {
           const inv = payload.new as any;
 
-          // Only notify the invited user
-          if (inv.invited_user_id !== userId) return;
+          // Case 1: Someone invited this user to a club
+          if (inv.invited_user_id === userId && inv.invited_by !== userId) {
+            const { data: club } = await supabase
+              .from("clubs")
+              .select("name")
+              .eq("id", inv.club_id)
+              .single();
 
-          // Get club name
-          const { data: club } = await supabase
-            .from("clubs")
-            .select("name")
-            .eq("id", inv.club_id)
-            .single();
-
-          const clubName = club?.name ?? "A club";
-
-          toast.message(`🏌️ Undangan Club`, {
-            description: `${clubName} mengundang kamu untuk bergabung!`,
-            action: {
-              label: "Lihat",
-              onClick: () => {
-                window.location.href = "/notifications";
+            toast.message(`🏌️ Undangan Club`, {
+              description: `${club?.name ?? "A club"} mengundang kamu untuk bergabung!`,
+              action: {
+                label: "Lihat",
+                onClick: () => {
+                  window.location.href = "/notifications";
+                },
               },
-            },
-            duration: 6000,
-          });
+              duration: 6000,
+            });
+            return;
+          }
+
+          // Case 2: Someone requested to join a club this user owns (invited_by === invited_user_id)
+          if (inv.invited_by === inv.invited_user_id && inv.invited_user_id !== userId) {
+            const { data: club } = await supabase
+              .from("clubs")
+              .select("name, owner_id")
+              .eq("id", inv.club_id)
+              .single();
+
+            if (!club || club.owner_id !== userId) return;
+
+            const { data: requester } = await supabase
+              .from("profiles")
+              .select("full_name")
+              .eq("id", inv.invited_user_id)
+              .single();
+
+            toast.message(`📋 Permintaan Bergabung`, {
+              description: `${requester?.full_name ?? "Seseorang"} ingin bergabung ke ${club.name}`,
+              action: {
+                label: "Lihat",
+                onClick: () => {
+                  window.location.href = `/clubs/${inv.club_id}`;
+                },
+              },
+              duration: 6000,
+            });
+          }
         }
       )
       .subscribe();
