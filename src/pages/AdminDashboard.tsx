@@ -117,9 +117,13 @@ const AdminDashboard = () => {
         {/* Primary Stats */}
         <div className="grid grid-cols-2 gap-3">
           <StatCard icon={Users} label="Total Users" value={stats?.totalUsers ?? 0} />
-          <StatCard icon={Building2} label="Golf Clubs" value={stats?.golfClubs ?? 0} sub={`${stats?.totalClubs ?? 0} total incl. personal`} color="text-accent" />
+          <StatCard icon={Building2} label="Golf Clubs" value={stats?.golfClubs ?? 0} sub={`${stats?.drivingRanges ?? 0} ranges · ${stats?.totalClubs ?? 0} total`} color="text-accent" />
           <StatCard icon={Trophy} label="Tours" value={stats?.totalTours ?? 0} />
           <StatCard icon={Calendar} label="Events" value={stats?.totalEvents ?? 0} />
+          <StatCard icon={UserCheck} label="Buddies" value={stats?.totalBuddies ?? 0} color="text-accent" />
+          <StatCard icon={MessageSquare} label="Conversations" value={stats?.totalConversations ?? 0} />
+          <StatCard icon={MapPin} label="Tee Bookings" value={stats?.totalTeeBookings ?? 0} color="text-accent" />
+          <StatCard icon={Dumbbell} label="Range Bays" value={stats?.totalRangeBays ?? 0} />
         </div>
 
         {/* Activity Stats */}
