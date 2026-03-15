@@ -255,28 +255,42 @@ const EventDetail = () => {
     finally { setGenerating(false); }
   };
 
-  const handleCalculateWinners = async () => {
+  const handleFinalizeEvent = async () => {
     if (!id) return;
-    setCalculating(true);
+    setFinalizing(true);
+    setShowFinalizeConfirm(false);
     try {
-      const { data, error } = await invokeWithAuth("calculate-event-winners", { event_id: id });
-      if (error) toast.error(error.message || "Failed");
-      else if (data?.error) toast.error(data.error);
-      else { toast.success(`Calculated ${data.winners_calculated} winners`); refetchResults(); }
-    } catch (err: any) { toast.error(err.message); }
-    finally { setCalculating(false); }
-  };
+      // Step 1: Calculate winners
+      const { data: winnersData, error: winnersErr } =
+        await invokeWithAuth("calculate-event-winners", { event_id: id });
+      if (winnersErr || winnersData?.error) {
+        toast.error("Gagal menghitung pemenang: " + (winnersErr?.message || winnersData?.error));
+        return;
+      }
 
-  const handleUpdateHandicaps = async () => {
-    if (!id) return;
-    setUpdatingHcp(true);
-    try {
-      const { data, error } = await invokeWithAuth("update-player-handicap", { event_id: id });
-      if (error) toast.error(error.message || "Failed");
-      else if (data?.error) toast.error(data.error);
-      else toast.success(`Updated ${data.players_updated} handicaps`);
-    } catch (err: any) { toast.error(err.message); }
-    finally { setUpdatingHcp(false); }
+      // Step 2: Update tournament HCP (automatic after winners)
+      const { data: hcpData, error: hcpErr } =
+        await invokeWithAuth("update-player-handicap", { event_id: id });
+      if (hcpErr || hcpData?.error) {
+        toast.error("Pemenang tersimpan, tapi HCP update gagal: " + (hcpErr?.message || hcpData?.error));
+        // Continue to step 3 anyway
+      }
+
+      // Step 3: Mark event completed
+      await supabase.from("events").update({ status: "completed" }).eq("id", id);
+
+      toast.success(
+        `Event selesai! ${winnersData.winners_calculated} pemenang, ` +
+        `${hcpData?.players_updated ?? 0} tournament HCP dikoreksi.`
+      );
+
+      refetchResults();
+      queryClient.invalidateQueries({ queryKey: ["event", id] });
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setFinalizing(false);
+    }
   };
 
   const handleSelfCheckin = async () => {
