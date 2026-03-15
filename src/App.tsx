@@ -1,10 +1,14 @@
-import { useEffect } from "react";
+import { useEffect, createContext, useContext } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import BottomNav from "@/components/BottomNav";
+import AdminRoute from "@/components/AdminRoute";
+import { useChatNotifications } from "@/hooks/use-chat-notifications";
+
+export const ChatNotifContext = createContext<{ unreadCount: number }>({ unreadCount: 0 });
 import AdminRoute from "@/components/AdminRoute";
 import Login from "./pages/Login";
 import ResetPassword from "./pages/ResetPassword";
