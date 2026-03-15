@@ -25,6 +25,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { toast } from "sonner";
 import InviteMemberDialog from "@/components/InviteMemberDialog";
 import AssignEventRolesDialog from "@/components/tour/AssignEventRolesDialog";
+import CreateTourDialog from "@/components/tour/CreateTourDialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { Pin, MoreVertical } from "lucide-react";
@@ -58,6 +59,9 @@ const ClubAdminDashboard = () => {
 
   // Event roles
   const [rolesEventId, setRolesEventId] = useState<string | null>(null);
+
+  // Create tour
+  const [showCreateTour, setShowCreateTour] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -423,11 +427,14 @@ const ClubAdminDashboard = () => {
 
   const renderTournamentsTab = () => (
     <TabsContent value="tournaments" className="space-y-2 pt-2">
-      <Button size="sm" variant="outline" className="w-full gap-1 text-xs mb-2" onClick={() => navigate("/tour", { state: { prefilledClubId: clubId } })}>
+      <Button size="sm" variant="outline" className="w-full gap-1 text-xs mb-2" onClick={() => setShowCreateTour(true)}>
         <Plus className="h-3.5 w-3.5" /> Create Tournament
       </Button>
+      {!clubTours && (
+        <div className="golf-card p-4 text-center text-xs text-muted-foreground">Loading tournaments...</div>
+      )}
       {clubTours?.length === 0 && (
-        <div className="golf-card p-6 text-center text-sm text-muted-foreground">No tournaments yet</div>
+        <div className="golf-card p-6 text-center text-sm text-muted-foreground">No tournaments yet. Create your first tournament.</div>
       )}
       {clubTours?.map((tour: any) => {
         const events = tour.events ?? [];
@@ -1048,6 +1055,17 @@ const ClubAdminDashboard = () => {
           onOpenChange={(open) => { if (!open) setRolesEventId(null); }}
         />
       )}
+
+      {/* Create Tour Dialog */}
+      <CreateTourDialog
+        open={showCreateTour}
+        onOpenChange={setShowCreateTour}
+        onCreated={() => {
+          setShowCreateTour(false);
+          queryClient.invalidateQueries({ queryKey: ["club-admin-tours", clubId] });
+        }}
+        defaultOrganizerClubId={clubId}
+      />
     </div>
   );
 };

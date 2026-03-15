@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -13,15 +13,20 @@ interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   onCreated: () => void;
+  defaultOrganizerClubId?: string;
 }
 
-const CreateTourDialog = ({ open, onOpenChange, onCreated }: Props) => {
+const CreateTourDialog = ({ open, onOpenChange, onCreated, defaultOrganizerClubId }: Props) => {
   const [name, setName] = useState("");
   const [type, setType] = useState("internal");
-  const [clubId, setClubId] = useState("");
+  const [clubId, setClubId] = useState(defaultOrganizerClubId ?? "");
   const [year, setYear] = useState(new Date().getFullYear().toString());
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (defaultOrganizerClubId) setClubId(defaultOrganizerClubId);
+  }, [defaultOrganizerClubId]);
 
   const { data: clubs } = useQuery({
     queryKey: ["all-clubs"],
