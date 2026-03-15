@@ -36,6 +36,7 @@ const ClubAdminDashboard = () => {
   const queryClient = useQueryClient();
   const [userId, setUserId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("members");
+  const [memberSearch, setMemberSearch] = useState("");
   const [showInvite, setShowInvite] = useState(false);
   const [selectedClubId, setSelectedClubId] = useState(paramClubId ?? "");
   const [expandedTours, setExpandedTours] = useState<Set<string>>(new Set());
@@ -356,12 +357,23 @@ const ClubAdminDashboard = () => {
 
   // ── Render helpers ──
 
+
+  const filteredMembers = members?.filter((m: any) =>
+    (m.profiles?.full_name ?? "").toLowerCase().includes(memberSearch.toLowerCase())
+  ) ?? [];
+
   const renderMembersTab = () => (
     <TabsContent value="members" className="space-y-2 pt-2">
       <Button size="sm" variant="outline" className="w-full gap-1 text-xs mb-2" onClick={() => setShowInvite(true)}>
         <Plus className="h-3.5 w-3.5" /> Invite Member
       </Button>
-      {members?.map((m: any) => (
+      <Input
+        placeholder="Cari member..."
+        value={memberSearch}
+        onChange={e => setMemberSearch(e.target.value)}
+        className="h-8 text-xs"
+      />
+      {filteredMembers.map((m: any) => (
         <div key={m.id} className="golf-card flex items-center gap-3 p-3">
           <Avatar className="h-9 w-9">
             <AvatarImage src={m.profiles?.avatar_url ?? ""} />
@@ -400,6 +412,9 @@ const ClubAdminDashboard = () => {
           </DropdownMenu>
         </div>
       ))}
+      {filteredMembers.length === 0 && memberSearch && (
+        <p className="text-xs text-muted-foreground text-center py-4">Tidak ditemukan</p>
+      )}
     </TabsContent>
   );
 
