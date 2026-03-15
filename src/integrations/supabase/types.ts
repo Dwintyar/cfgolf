@@ -1926,6 +1926,7 @@ export type Database = {
     }
     Functions: {
       get_admin_level: { Args: { check_user_id?: string }; Returns: string }
+      get_my_conversation_ids: { Args: never; Returns: string[] }
       is_club_admin: {
         Args: { check_club_id: string; check_user_id?: string }
         Returns: boolean
