@@ -626,16 +626,18 @@ const ClubAdminDashboard = () => {
                     </div>
                   );
                 })()}
-                <div className="px-3 pb-3 pt-1">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="w-full gap-1 text-xs h-7"
-                    onClick={() => navigate(`/tour/${tour.id}`)}
-                  >
-                    <Plus className="h-3 w-3" /> Add Event to this Tour
-                  </Button>
-                </div>
+                {tour.clubRole === "organizer" && (
+                  <div className="px-3 pb-3 pt-1">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full gap-1 text-xs h-7"
+                      onClick={() => navigate(`/tour/${tour.id}`)}
+                    >
+                      <Plus className="h-3 w-3" /> Add Event to this Tour
+                    </Button>
+                  </div>
+                )}
               </CollapsibleContent>
             </div>
           </Collapsible>
