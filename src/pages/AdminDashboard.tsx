@@ -38,7 +38,8 @@ const AdminDashboard = () => {
         supabase.from("range_bays").select("id", { count: "exact", head: true }),
       ]);
 
-      const golfClubs = clubs.data?.filter(c => !c.is_personal).length ?? 0;
+      const golfClubs = clubs.data?.filter(c => !c.is_personal && (c as any).facility_type === 'golf_club').length ?? 0;
+      const drivingRanges = clubs.data?.filter(c => (c as any).facility_type === 'driving_range').length ?? 0;
       const eventsByStatus: Record<string, number> = {};
       events.data?.forEach((e: any) => {
         eventsByStatus[e.status] = (eventsByStatus[e.status] || 0) + 1;
@@ -48,12 +49,17 @@ const AdminDashboard = () => {
         totalUsers: users.count ?? 0,
         totalClubs: clubs.count ?? 0,
         golfClubs,
+        drivingRanges,
         totalEvents: events.count ?? 0,
         totalTours: tours.count ?? 0,
         totalContestants: contestants.count ?? 0,
         totalCheckins: checkins.count ?? 0,
         totalPairings: pairings.count ?? 0,
         totalResults: results.count ?? 0,
+        totalBuddies: buddies.count ?? 0,
+        totalConversations: convos.count ?? 0,
+        totalTeeBookings: teeBookings.count ?? 0,
+        totalRangeBays: rangeBays.count ?? 0,
         eventsByStatus,
       };
     },
