@@ -9,7 +9,7 @@ import venueImg from "@/assets/golf-venue.jpg";
 import heroImg from "@/assets/golf-hero.jpg";
 import { useState } from "react";
 
-const TEE_TIMES = ["08.30", "09.15", "09.45", "12.40", "13.15", "14.40", "15.10", "15.30"];
+const TEE_TIMES = ["07.00", "07.30", "08.00", "08.30", "09.00", "09.30", "13.00", "14.00", "15.00"];
 
 const Venue = () => {
   const navigate = useNavigate();
