@@ -63,7 +63,7 @@ const Clubs = () => {
         .select("club_id, role")
         .eq("user_id", currentUserId!);
       if (error) throw error;
-      return new Map(data.map((m) => [m.club_id, m.role]));
+      return Object.fromEntries(data.map((m) => [m.club_id, m.role])) as Record<string, string>;
     },
     enabled: !!currentUserId,
   });
