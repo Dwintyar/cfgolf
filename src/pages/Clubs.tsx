@@ -63,7 +63,7 @@ const Clubs = () => {
         .select("club_id, role")
         .eq("user_id", currentUserId!);
       if (error) throw error;
-      return new Map(data.map((m) => [m.club_id, m.role]));
+      return Object.fromEntries(data.map((m) => [m.club_id, m.role])) as Record<string, string>;
     },
     enabled: !!currentUserId,
   });
@@ -94,25 +94,25 @@ const Clubs = () => {
     },
   });
 
-  const membershipSet = myMemberships ? new Set(myMemberships.keys()) : undefined;
-
   const applySearch = (list: ClubData[]) =>
     search ? list.filter((c) => c.name.toLowerCase().includes(search.toLowerCase())) : list;
 
-  const myClubs = applySearch(clubs?.filter((c) => membershipSet?.has(c.id)) ?? []);
+  const isMember = (id: string) => myMemberships ? id in myMemberships : false;
+
+  const myClubs = applySearch(clubs?.filter((c) => isMember(c.id)) ?? []);
   const communityClubs = applySearch(
     clubs?.filter(
       (c) =>
-        !membershipSet?.has(c.id) &&
+        !isMember(c.id) &&
         !clubsWithCourses?.has(c.id) &&
         c.facility_type !== "driving_range"
     ) ?? []
   );
   const courseClubs = applySearch(
-    clubs?.filter((c) => !membershipSet?.has(c.id) && clubsWithCourses?.has(c.id)) ?? []
+    clubs?.filter((c) => !isMember(c.id) && clubsWithCourses?.has(c.id)) ?? []
   );
   const rangeClubs = applySearch(
-    clubs?.filter((c) => !membershipSet?.has(c.id) && c.facility_type === "driving_range") ?? []
+    clubs?.filter((c) => !isMember(c.id) && c.facility_type === "driving_range") ?? []
   );
 
   const facilityBadgeColors: Record<string, string> = {
@@ -131,7 +131,7 @@ const Clubs = () => {
     if (club.owner_id === currentUserId) {
       return <Badge className="mt-1.5 text-[10px] bg-yellow-500/15 text-yellow-600 border-yellow-500/30">👑 Owner</Badge>;
     }
-    const role = myMemberships?.get(club.id);
+    const role = myMemberships?.[club.id];
     if (role === "admin") {
       return <Badge className="mt-1.5 text-[10px] bg-blue-500/15 text-blue-500 border-blue-500/30">🛡️ Admin</Badge>;
     }
@@ -139,7 +139,7 @@ const Clubs = () => {
   };
 
   const renderClubCard = (club: ClubData, index: number, isMyClub: boolean) => {
-    const isOwnerOrAdmin = club.owner_id === currentUserId || myMemberships?.get(club.id) === "admin";
+    const isOwnerOrAdmin = club.owner_id === currentUserId || myMemberships?.[club.id] === "admin";
     const isPending = myPendingRequests?.has(club.id);
 
     return (
