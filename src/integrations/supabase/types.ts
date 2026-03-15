@@ -195,6 +195,54 @@ export type Database = {
           },
         ]
       }
+      club_announcements: {
+        Row: {
+          author_id: string
+          club_id: string
+          content: string
+          created_at: string
+          id: string
+          is_pinned: boolean
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          club_id: string
+          content: string
+          created_at?: string
+          id?: string
+          is_pinned?: boolean
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          club_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          is_pinned?: boolean
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_announcements_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "club_announcements_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       club_invitations: {
         Row: {
           club_id: string
@@ -704,6 +752,55 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_roles: {
+        Row: {
+          assigned_by: string | null
+          created_at: string
+          event_id: string
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          assigned_by?: string | null
+          created_at?: string
+          event_id: string
+          id?: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          assigned_by?: string | null
+          created_at?: string
+          event_id?: string
+          id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_roles_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_roles_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_roles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
