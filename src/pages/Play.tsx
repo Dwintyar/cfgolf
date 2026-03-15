@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { v4 as uuidv4 } from "uuid";
 
 type BuddyTab = "suggestions" | "requests" | "buddies";
 
@@ -216,21 +217,21 @@ const Play = () => {
       }
     }
 
-    const newConversationId = crypto.randomUUID();
-    const { error: createConversationError } = await supabase
+    const newConvId = uuidv4();
+    const { error: convError } = await supabase
       .from("conversations")
-      .insert({ id: newConversationId });
+      .insert({ id: newConvId });
 
-    if (createConversationError) {
-      toast({ title: "Gagal membuat percakapan", description: createConversationError.message, variant: "destructive" });
+    if (convError) {
+      toast({ title: "Gagal membuat percakapan", description: convError.message, variant: "destructive" });
       return;
     }
 
     const { error: participantsError } = await supabase
       .from("conversation_participants")
       .insert([
-        { conversation_id: newConversationId, user_id: currentUserId },
-        { conversation_id: newConversationId, user_id: otherUserId },
+        { conversation_id: newConvId, user_id: currentUserId },
+        { conversation_id: newConvId, user_id: otherUserId },
       ]);
 
     if (participantsError) {
@@ -238,7 +239,7 @@ const Play = () => {
       return;
     }
 
-    navigate(`/chat/${newConversationId}`);
+    navigate(`/chat/${newConvId}`);
   };
 
   const getInitials = (name: string | null) => {
