@@ -67,10 +67,16 @@ const RegisterPlayerDialog = ({ tourId, tourType, organizerClubId, callerClubId,
     enabled: !!clubId,
   });
 
-  const filteredMembers = members?.filter(m =>
-    (m.profiles as any)?.full_name?.toLowerCase()
-      .includes(playerSearch.toLowerCase())
-  ) ?? [];
+  const sortedAndFiltered = (members ?? [])
+    .filter(m =>
+      (m.profiles as any)?.full_name?.toLowerCase()
+        .includes(playerSearch.toLowerCase())
+    )
+    .sort((a, b) => {
+      const nameA = ((a.profiles as any)?.full_name ?? "").toLowerCase();
+      const nameB = ((b.profiles as any)?.full_name ?? "").toLowerCase();
+      return nameA.localeCompare(nameB, "id");
+    });
 
   const handleSubmit = async () => {
     if (!playerId || !clubId) { toast.error("Select a player"); return; }

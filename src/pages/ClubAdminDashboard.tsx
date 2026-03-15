@@ -386,7 +386,36 @@ const ClubAdminDashboard = () => {
         onChange={e => setMemberSearch(e.target.value)}
         className="h-8 text-xs"
       />
-      {filteredMembers.map((m: any) => (
+      <div className="flex items-center justify-between mb-1">
+        <p className="text-[10px] text-muted-foreground">
+          {memberSearch
+            ? `${filteredMembers.length} dari ${members?.length ?? 0} member`
+            : `${members?.length ?? 0} member`}
+        </p>
+        <div className="flex gap-1">
+          <button
+            onClick={() => setSortBy("role")}
+            className={`text-[10px] px-2 py-0.5 rounded transition-colors ${
+              sortBy === "role"
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            By Role
+          </button>
+          <button
+            onClick={() => setSortBy("name")}
+            className={`text-[10px] px-2 py-0.5 rounded transition-colors ${
+              sortBy === "name"
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            A-Z
+          </button>
+        </div>
+      </div>
+      {displayMembers.map((m: any) => (
         <div key={m.id} className="golf-card flex items-center gap-3 p-3">
           <Avatar className="h-9 w-9">
             <AvatarImage src={m.profiles?.avatar_url ?? ""} />
@@ -425,7 +454,7 @@ const ClubAdminDashboard = () => {
           </DropdownMenu>
         </div>
       ))}
-      {filteredMembers.length === 0 && memberSearch && (
+      {displayMembers.length === 0 && memberSearch && (
         <p className="text-xs text-muted-foreground text-center py-4">Tidak ditemukan</p>
       )}
     </TabsContent>
