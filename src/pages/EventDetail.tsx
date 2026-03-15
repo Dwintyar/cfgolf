@@ -446,19 +446,21 @@ const EventDetail = () => {
             <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowAssign(true)}>
               <Users className="h-3 w-3" /> Assign
             </Button>
-            <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={handleCalculateWinners} disabled={calculating}>
-              <Award className="h-3 w-3" /> {calculating ? "…" : "Winners"}
-            </Button>
-            <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={handleUpdateHandicaps} disabled={updatingHcp}>
-              <TrendingDown className="h-3 w-3" /> {updatingHcp ? "…" : "HCP Update"}
-            </Button>
-          </>
-        )}
-        {!showAdminActions && isHcpOfficer && (
-          <>
-            <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={handleUpdateHandicaps} disabled={updatingHcp}>
-              <TrendingDown className="h-3 w-3" /> {updatingHcp ? "…" : "HCP Update"}
-            </Button>
+            {event?.status !== "completed" ? (
+              <Button
+                size="sm"
+                className="h-7 shrink-0 gap-1 text-[11px] bg-primary"
+                onClick={() => setShowFinalizeConfirm(true)}
+                disabled={finalizing}
+              >
+                <Trophy className="h-3 w-3" />
+                {finalizing ? "Finalizing…" : "Finalize Event"}
+              </Button>
+            ) : (
+              <Badge className="text-[10px] bg-primary/20 text-primary border-primary/30">
+                ✓ Completed
+              </Badge>
+            )}
           </>
         )}
         <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowWinners(true)}>
