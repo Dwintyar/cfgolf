@@ -50,6 +50,7 @@ const App = () => {
           <Routes>
             <Route path="/" element={<Navigate to="/login" replace />} />
             <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/export-queries" element={<ExportQueries />} />
             <Route path="/login" element={<Login />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/news" element={<NewsFeed />} />
