@@ -254,52 +254,63 @@ const TourDetail = () => {
         </TabsContent>
 
         <TabsContent value="players" className="space-y-3 pt-2">
+          <p className="text-[10px] text-muted-foreground italic">
+            Tournament HCP berkembang setiap event. Personal HCP tidak terpengaruh.
+          </p>
+
           {/* SECTION: Pending Approval */}
           {(players?.filter(p => p.status === "pending").length ?? 0) > 0 && (
             <div>
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
                 ⏳ Pending Approval ({players?.filter(p => p.status === "pending").length})
               </p>
-              {players?.filter(p => p.status === "pending").map(p => (
-                <div key={p.id} className="golf-card flex items-center gap-3 p-3 mb-2 border-accent/30">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent/10 text-xs font-semibold text-accent">
-                    {(p.profiles as any)?.full_name?.charAt(0) ?? "?"}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium truncate">{(p.profiles as any)?.full_name ?? "Unknown"}</p>
-                    <p className="text-xs text-muted-foreground">{(p.clubs as any)?.name} · HCP {(p.profiles as any)?.handicap ?? "—"}</p>
-                  </div>
-                  {isOrganizer ? (
-                    <div className="flex gap-1 shrink-0">
-                      <Button
-                        size="sm"
-                        className="h-7 px-2 text-[10px] gap-1"
-                        onClick={async () => {
-                          await supabase.from("tour_players").update({ status: "registered" }).eq("id", p.id);
-                          toast.success(`${(p.profiles as any)?.full_name} registered!`);
-                          refetchPlayers();
-                        }}
-                      >
-                        <Check className="h-3 w-3" /> Accept
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-7 px-2 text-[10px] gap-1 text-destructive border-destructive/30"
-                        onClick={async () => {
-                          await supabase.from("tour_players").delete().eq("id", p.id);
-                          toast.success("Player removed");
-                          refetchPlayers();
-                        }}
-                      >
-                        <X className="h-3 w-3" /> Reject
-                      </Button>
+              {players?.filter(p => p.status === "pending").map(p => {
+                const personalHcp = (p.profiles as any)?.handicap;
+                const tourHcp = p.hcp_tour ?? p.hcp_at_registration;
+                return (
+                  <div key={p.id} className="golf-card flex items-center gap-3 p-3 mb-2 border-accent/30">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent/10 text-xs font-semibold text-accent">
+                      {(p.profiles as any)?.full_name?.charAt(0) ?? "?"}
                     </div>
-                  ) : (
-                    <Badge variant="outline" className="text-[10px] text-accent border-accent/30">pending</Badge>
-                  )}
-                </div>
-              ))}
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium truncate">{(p.profiles as any)?.full_name ?? "Unknown"}</p>
+                      <p className="text-xs text-muted-foreground">{(p.clubs as any)?.name}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        Personal: {personalHcp ?? "—"} · Tournament: <span className="font-semibold text-foreground">{tourHcp ?? "—"}</span>
+                      </p>
+                    </div>
+                    {isOrganizer ? (
+                      <div className="flex gap-1 shrink-0">
+                        <Button
+                          size="sm"
+                          className="h-7 px-2 text-[10px] gap-1"
+                          onClick={async () => {
+                            await supabase.from("tour_players").update({ status: "registered" }).eq("id", p.id);
+                            toast.success(`${(p.profiles as any)?.full_name} registered!`);
+                            refetchPlayers();
+                          }}
+                        >
+                          <Check className="h-3 w-3" /> Accept
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 px-2 text-[10px] gap-1 text-destructive border-destructive/30"
+                          onClick={async () => {
+                            await supabase.from("tour_players").delete().eq("id", p.id);
+                            toast.success("Player removed");
+                            refetchPlayers();
+                          }}
+                        >
+                          <X className="h-3 w-3" /> Reject
+                        </Button>
+                      </div>
+                    ) : (
+                      <Badge variant="outline" className="text-[10px] text-accent border-accent/30">pending</Badge>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
 
@@ -309,18 +320,27 @@ const TourDetail = () => {
               <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
                 ✅ Registered ({players?.filter(p => p.status !== "pending").length})
               </p>
-              {players?.filter(p => p.status !== "pending").map(p => (
-                <div key={p.id} className="golf-card flex items-center gap-3 p-3 mb-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
-                    {(p.profiles as any)?.full_name?.charAt(0) ?? "?"}
+              {players?.filter(p => p.status !== "pending").map(p => {
+                const personalHcp = (p.profiles as any)?.handicap;
+                const tourHcp = p.hcp_tour ?? p.hcp_at_registration;
+                const hcpAtReg = p.hcp_at_registration;
+                return (
+                  <div key={p.id} className="golf-card flex items-center gap-3 p-3 mb-2">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                      {(p.profiles as any)?.full_name?.charAt(0) ?? "?"}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium truncate">{(p.profiles as any)?.full_name ?? "Unknown"}</p>
+                      <p className="text-xs text-muted-foreground">{(p.clubs as any)?.name}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        Personal: {personalHcp ?? "—"} · Tournament: <span className="font-semibold text-foreground">{tourHcp ?? "—"}</span>
+                      </p>
+                      <p className="text-[9px] text-muted-foreground/70">Registered at HCP {hcpAtReg ?? "—"}</p>
+                    </div>
+                    <Badge variant="outline" className="text-[10px] text-primary border-primary/30 shrink-0">{p.status}</Badge>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium truncate">{(p.profiles as any)?.full_name ?? "Unknown"}</p>
-                    <p className="text-xs text-muted-foreground">{(p.clubs as any)?.name} · HCP {(p.profiles as any)?.handicap ?? "—"}</p>
-                  </div>
-                  <Badge variant="outline" className="text-[10px] text-primary border-primary/30 shrink-0">{p.status}</Badge>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
 

@@ -125,10 +125,10 @@ const GolferProfile = () => {
     queryFn: async () => {
       const { data } = await supabase
         .from("handicap_history")
-        .select("new_hcp, old_hcp, created_at, events(name)")
+        .select("new_hcp, old_hcp, created_at, tour_id, events(name), tours(name, tournament_type)")
         .eq("player_id", targetId!)
         .order("created_at", { ascending: true })
-        .limit(20);
+        .limit(50);
       return data ?? [];
     },
     enabled: !!targetId,
@@ -370,26 +370,43 @@ const GolferProfile = () => {
               </div>
             )}
 
-            {hcpHistory && hcpHistory.length > 0 && (
-              <div className="golf-card p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <TrendingDown className="h-4 w-4 text-primary" />
-                  <p className="text-sm font-semibold">Handicap Trend</p>
-                </div>
-                <div className="space-y-2">
-                  {hcpHistory.map((h: any, i: number) => (
-                    <div key={i} className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">{(h.events as any)?.name ?? "Event"}</span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-muted-foreground">{h.old_hcp ?? "?"}</span>
-                        <span>→</span>
-                        <span className="font-bold">{h.new_hcp ?? "?"}</span>
+            {hcpHistory && hcpHistory.length > 0 && (() => {
+              // Group by tour
+              const byTour: Record<string, { tourName: string; entries: any[] }> = {};
+              hcpHistory.forEach((h: any) => {
+                const key = h.tour_id ?? "personal";
+                if (!byTour[key]) {
+                  byTour[key] = {
+                    tourName: h.tour_id ? ((h.tours as any)?.name ?? "Tournament") : "Personal",
+                    entries: [],
+                  };
+                }
+                byTour[key].entries.push(h);
+              });
+              return Object.entries(byTour).map(([key, group]) => (
+                <div key={key} className="golf-card p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <TrendingDown className="h-4 w-4 text-primary" />
+                    <p className="text-sm font-semibold">{group.tourName}</p>
+                    {key !== "personal" && (
+                      <Badge variant="outline" className="text-[9px]">Tournament HCP</Badge>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    {group.entries.map((h: any, i: number) => (
+                      <div key={i} className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground truncate flex-1">{(h.events as any)?.name ?? "Event"}</span>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="text-muted-foreground">{h.old_hcp ?? "?"}</span>
+                          <span>→</span>
+                          <span className="font-bold">{h.new_hcp ?? "?"}</span>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              ));
+            })()}
           </div>
         )}
 
