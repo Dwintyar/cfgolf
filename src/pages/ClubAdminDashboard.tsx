@@ -59,6 +59,9 @@ const ClubAdminDashboard = () => {
   // Event roles
   const [rolesEventId, setRolesEventId] = useState<string | null>(null);
 
+  // Create tour
+  const [showCreateTour, setShowCreateTour] = useState(false);
+
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) setUserId(user.id);
