@@ -1023,6 +1023,96 @@ export type Database = {
           },
         ]
       }
+      post_likes: {
+        Row: {
+          created_at: string
+          id: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_likes_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_likes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      posts: {
+        Row: {
+          author_id: string
+          category: string
+          comments_count: number
+          content: string
+          course_id: string | null
+          created_at: string
+          id: string
+          image_url: string | null
+          likes_count: number
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          category?: string
+          comments_count?: number
+          content: string
+          course_id?: string | null
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          likes_count?: number
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          category?: string
+          comments_count?: number
+          content?: string
+          course_id?: string | null
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          likes_count?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "posts_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "posts_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
