@@ -497,9 +497,11 @@ const EventDetail = () => {
           </Section>
 
           <Section title="Golf Cart" icon={Car} count={cartAssignments?.length}>
-            <Button size="sm" variant="outline" className="w-full h-7 gap-1 text-[11px] mb-2" onClick={() => setShowCartDialog(true)}>
-              <Plus className="h-3 w-3" /> Assign Cart
-            </Button>
+            {showAdminActions && (
+              <Button size="sm" variant="outline" className="w-full h-7 gap-1 text-[11px] mb-2" onClick={() => setShowCartDialog(true)}>
+                <Plus className="h-3 w-3" /> Assign Cart
+              </Button>
+            )}
             {cartAssignments?.length === 0 && <EmptyState text="No carts assigned" />}
             {cartAssignments?.map((ca) => (
               <div key={ca.id} className="golf-card flex items-center justify-between p-3">
@@ -512,9 +514,11 @@ const EventDetail = () => {
           </Section>
 
           <Section title="Caddy" icon={UserCheck} count={caddyAssignments?.length}>
-            <Button size="sm" variant="outline" className="w-full h-7 gap-1 text-[11px] mb-2" onClick={() => setShowCaddyDialog(true)}>
-              <Plus className="h-3 w-3" /> Assign Caddy
-            </Button>
+            {showAdminActions && (
+              <Button size="sm" variant="outline" className="w-full h-7 gap-1 text-[11px] mb-2" onClick={() => setShowCaddyDialog(true)}>
+                <Plus className="h-3 w-3" /> Assign Caddy
+              </Button>
+            )}
             {caddyAssignments?.length === 0 && <EmptyState text="No caddies assigned" />}
             {caddyAssignments?.map((ca) => (
               <div key={ca.id} className="golf-card flex items-center justify-between p-3">
