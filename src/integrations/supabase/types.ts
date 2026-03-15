@@ -1925,7 +1925,12 @@ export type Database = {
       }
     }
     Functions: {
-      [_ in never]: never
+      get_admin_level: { Args: { check_user_id?: string }; Returns: string }
+      is_club_admin: {
+        Args: { check_club_id: string; check_user_id?: string }
+        Returns: boolean
+      }
+      is_platform_admin: { Args: { check_user_id?: string }; Returns: boolean }
     }
     Enums: {
       invitation_status: "pending" | "accepted" | "declined"
