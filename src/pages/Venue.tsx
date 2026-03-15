@@ -22,7 +22,7 @@ const Venue = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("courses")
-        .select("*, course_holes(*)")
+        .select("*, course_holes(*), course_tees(*)")
         .eq("id", id!)
         .single();
       if (error) throw error;
