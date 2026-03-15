@@ -342,6 +342,29 @@ const ExportQueries = () => {
     }
   };
 
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [loginLoading, setLoginLoading] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setLoggedIn(!!session);
+    });
+  }, []);
+
+  const handleAutoLogin = async () => {
+    setLoginLoading(true);
+    const { error } = await supabase.auth.signInWithPassword({
+      email: 'carl.ramos.277@test.com',
+      password: 'GolfTest2025!',
+    });
+    setLoginLoading(false);
+    if (error) {
+      console.error('Login failed:', error.message);
+    } else {
+      setLoggedIn(true);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="text-center space-y-6 max-w-md">
@@ -349,16 +372,31 @@ const ExportQueries = () => {
         <p className="text-muted-foreground">
           Download referensi SQL queries, export data tabel, atau screenshot semua halaman
         </p>
+
+        {!loggedIn && (
+          <div className="golf-card p-4 space-y-2">
+            <p className="text-sm text-muted-foreground">Login sebagai <strong>Carl Ramos</strong> (data paling lengkap: 4 klub, 14 event, 8 scorecard)</p>
+            <Button onClick={handleAutoLogin} size="sm" variant="secondary" className="gap-2" disabled={loginLoading}>
+              {loginLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              {loginLoading ? 'Logging in...' : 'Quick Login sebagai Carl Ramos'}
+            </Button>
+          </div>
+        )}
+
+        {loggedIn && (
+          <p className="text-xs text-primary font-medium">✓ Logged in — data export akan menyertakan data user</p>
+        )}
+
         <div className="flex flex-col gap-3">
           <Button onClick={handleDownload} size="lg" className="gap-2">
             <Download className="h-5 w-5" />
             Download SQL Queries (XLSX)
           </Button>
-          <Button onClick={handleExportData} size="lg" variant="secondary" className="gap-2" disabled={loading}>
+          <Button onClick={handleExportData} size="lg" variant="secondary" className="gap-2" disabled={loading || !loggedIn}>
             {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Database className="h-5 w-5" />}
             {loading ? 'Exporting...' : 'Export Semua Data (SQL)'}
           </Button>
-          <Button onClick={handleExportPng} size="lg" variant="outline" className="gap-2" disabled={loadingPng}>
+          <Button onClick={handleExportPng} size="lg" variant="outline" className="gap-2" disabled={loadingPng || !loggedIn}>
             {loadingPng ? <Loader2 className="h-5 w-5 animate-spin" /> : <Image className="h-5 w-5" />}
             {loadingPng ? pngProgress : 'Export Semua Halaman (PNG)'}
           </Button>
