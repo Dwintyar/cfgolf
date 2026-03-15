@@ -42,7 +42,12 @@ const Venue = () => {
     0
   ) ?? 0;
 
-  const price = course?.green_fee_price ? Number(course.green_fee_price).toFixed(2) : null;
+  const formatPrice = (price: number | null) => {
+    if (!price) return null;
+    return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(Number(price));
+  };
+
+  const price = course?.green_fee_price ? formatPrice(Number(course.green_fee_price)) : null;
 
   return (
     <div className="bottom-nav-safe">
