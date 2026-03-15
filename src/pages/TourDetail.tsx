@@ -21,7 +21,13 @@ const TourDetail = () => {
   const [showFlights, setShowFlights] = useState(false);
   const [showCategories, setShowCategories] = useState(false);
   const [showCreateEvent, setShowCreateEvent] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
 
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) setUserId(user.id);
+    });
+  }, []);
   const { data: tour, isLoading } = useQuery({
     queryKey: ["tour", id],
     queryFn: async () => {
