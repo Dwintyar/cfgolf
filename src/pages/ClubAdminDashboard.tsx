@@ -362,6 +362,19 @@ const ClubAdminDashboard = () => {
     (m.profiles?.full_name ?? "").toLowerCase().includes(memberSearch.toLowerCase())
   ) ?? [];
 
+  const displayMembers = filteredMembers.slice().sort((a: any, b: any) => {
+    if (sortBy === "name") {
+      return (a.profiles?.full_name ?? "").toLowerCase()
+        .localeCompare((b.profiles?.full_name ?? "").toLowerCase(), "id");
+    }
+    const roleOrder: Record<string, number> = { owner: 0, admin: 1, member: 2 };
+    const roleA = roleOrder[a.role] ?? 3;
+    const roleB = roleOrder[b.role] ?? 3;
+    if (roleA !== roleB) return roleA - roleB;
+    return (a.profiles?.full_name ?? "").toLowerCase()
+      .localeCompare((b.profiles?.full_name ?? "").toLowerCase(), "id");
+  });
+
   const renderMembersTab = () => (
     <TabsContent value="members" className="space-y-2 pt-2">
       <Button size="sm" variant="outline" className="w-full gap-1 text-xs mb-2" onClick={() => setShowInvite(true)}>
