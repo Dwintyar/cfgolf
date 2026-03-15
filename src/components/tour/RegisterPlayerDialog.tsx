@@ -85,11 +85,11 @@ const RegisterPlayerDialog = ({ tourId, tourType, organizerClubId, callerClubId,
       tour_id: tourId,
       club_id: clubId,
       player_id: playerId,
-      status: "active",
+      status: "pending",
     });
     setLoading(false);
     if (error) { toast.error(error.message); return; }
-    toast.success("Player registered");
+    toast.success("Player registered — menunggu persetujuan tournament admin");
     onDone();
   };
 

@@ -1,12 +1,13 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Trophy, Calendar, Users, MapPin, ChevronRight, Settings, UserPlus, Layers, Award } from "lucide-react";
+import { Trophy, Calendar, Users, MapPin, ChevronRight, Settings, UserPlus, Layers, Award, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import InviteClubDialog from "@/components/tour/InviteClubDialog";
 import RegisterPlayerDialog from "@/components/tour/RegisterPlayerDialog";
 import ManageFlightsDialog from "@/components/tour/ManageFlightsDialog";
@@ -252,24 +253,80 @@ const TourDetail = () => {
           ))}
         </TabsContent>
 
-        <TabsContent value="players" className="space-y-2 pt-2">
-          {players?.length === 0 && (
-            <div className="golf-card p-6 text-center text-sm text-muted-foreground">No players registered</div>
-          )}
-          {players?.map((p) => (
-            <div key={p.id} className="golf-card flex items-center gap-3 p-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
-                {(p.profiles as any)?.full_name?.charAt(0) ?? "?"}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium truncate">{(p.profiles as any)?.full_name ?? "Unknown"}</p>
-                <p className="text-xs text-muted-foreground">{(p.clubs as any)?.name} · HCP {(p.profiles as any)?.handicap ?? "—"}</p>
-              </div>
-              <Badge variant="outline" className={`text-[10px] ${p.status === "active" ? "text-primary border-primary/30" : "text-muted-foreground"}`}>
-                {p.status}
-              </Badge>
+        <TabsContent value="players" className="space-y-3 pt-2">
+          {/* SECTION: Pending Approval */}
+          {(players?.filter(p => p.status === "pending").length ?? 0) > 0 && (
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                ⏳ Pending Approval ({players?.filter(p => p.status === "pending").length})
+              </p>
+              {players?.filter(p => p.status === "pending").map(p => (
+                <div key={p.id} className="golf-card flex items-center gap-3 p-3 mb-2 border-accent/30">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent/10 text-xs font-semibold text-accent">
+                    {(p.profiles as any)?.full_name?.charAt(0) ?? "?"}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium truncate">{(p.profiles as any)?.full_name ?? "Unknown"}</p>
+                    <p className="text-xs text-muted-foreground">{(p.clubs as any)?.name} · HCP {(p.profiles as any)?.handicap ?? "—"}</p>
+                  </div>
+                  {isOrganizer ? (
+                    <div className="flex gap-1 shrink-0">
+                      <Button
+                        size="sm"
+                        className="h-7 px-2 text-[10px] gap-1"
+                        onClick={async () => {
+                          await supabase.from("tour_players").update({ status: "registered" }).eq("id", p.id);
+                          toast.success(`${(p.profiles as any)?.full_name} registered!`);
+                          refetchPlayers();
+                        }}
+                      >
+                        <Check className="h-3 w-3" /> Accept
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 px-2 text-[10px] gap-1 text-destructive border-destructive/30"
+                        onClick={async () => {
+                          await supabase.from("tour_players").delete().eq("id", p.id);
+                          toast.success("Player removed");
+                          refetchPlayers();
+                        }}
+                      >
+                        <X className="h-3 w-3" /> Reject
+                      </Button>
+                    </div>
+                  ) : (
+                    <Badge variant="outline" className="text-[10px] text-accent border-accent/30">pending</Badge>
+                  )}
+                </div>
+              ))}
             </div>
-          ))}
+          )}
+
+          {/* SECTION: Registered Players */}
+          {(players?.filter(p => p.status !== "pending").length ?? 0) > 0 && (
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                ✅ Registered ({players?.filter(p => p.status !== "pending").length})
+              </p>
+              {players?.filter(p => p.status !== "pending").map(p => (
+                <div key={p.id} className="golf-card flex items-center gap-3 p-3 mb-2">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                    {(p.profiles as any)?.full_name?.charAt(0) ?? "?"}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium truncate">{(p.profiles as any)?.full_name ?? "Unknown"}</p>
+                    <p className="text-xs text-muted-foreground">{(p.clubs as any)?.name} · HCP {(p.profiles as any)?.handicap ?? "—"}</p>
+                  </div>
+                  <Badge variant="outline" className="text-[10px] text-primary border-primary/30 shrink-0">{p.status}</Badge>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {(!players || players.length === 0) && (
+            <div className="golf-card p-6 text-center text-sm text-muted-foreground">No players registered yet</div>
+          )}
         </TabsContent>
 
         {tour.tournament_type === "interclub" && (
