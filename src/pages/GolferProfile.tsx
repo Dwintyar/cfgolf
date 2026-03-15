@@ -402,7 +402,7 @@ const GolferProfile = () => {
         )}
       </div>
 
-      <CreateClubDialog open={showCreateClub} onOpenChange={setShowCreateClub} onCreated={async (id) => { setShowCreateClub(false); if (targetId) await fetchClubs(targetId); navigate(`/clubs/${id}`); }} />
+      <CreateClubDialog open={showCreateClub} onOpenChange={setShowCreateClub} onCreated={async () => { setShowCreateClub(false); if (targetId) await fetchClubs(targetId); }} />
     </div>
   );
 };
