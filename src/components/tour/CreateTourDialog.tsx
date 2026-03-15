@@ -13,6 +13,7 @@ interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   onCreated: () => void;
+  defaultOrganizerClubId?: string;
 }
 
 const CreateTourDialog = ({ open, onOpenChange, onCreated }: Props) => {
