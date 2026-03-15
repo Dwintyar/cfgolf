@@ -180,7 +180,21 @@ const ClubAdminDashboard = () => {
     enabled: !!clubId,
   });
 
-  // Course bookings (for Golf Course venue tab)
+  // Announcements
+  const { data: announcements, refetch: refetchAnnouncements } = useQuery({
+    queryKey: ["club-announcements", clubId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("club_announcements")
+        .select("*, profiles:author_id(full_name)")
+        .eq("club_id", clubId)
+        .order("is_pinned", { ascending: false })
+        .order("created_at", { ascending: false });
+      return data ?? [];
+    },
+    enabled: !!clubId,
+  });
+
   const { data: courseBookings } = useQuery({
     queryKey: ["club-venue-bookings", linkedCourse?.id],
     queryFn: async () => {
