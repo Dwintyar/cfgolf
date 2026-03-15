@@ -137,8 +137,7 @@ const ClubAdminDashboard = () => {
       const { data } = await supabase
         .from("members")
         .select("*, profiles(full_name, avatar_url, handicap)")
-        .eq("club_id", clubId)
-        .order("joined_at");
+        .eq("club_id", clubId);
       return data ?? [];
     },
     enabled: !!clubId,
