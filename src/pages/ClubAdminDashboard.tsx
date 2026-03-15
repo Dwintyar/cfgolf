@@ -24,6 +24,10 @@ import {
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
 import InviteMemberDialog from "@/components/InviteMemberDialog";
+import AssignEventRolesDialog from "@/components/tour/AssignEventRolesDialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
+import { Pin, MoreVertical } from "lucide-react";
 
 const ClubAdminDashboard = () => {
   const { clubId: paramClubId } = useParams<{ clubId: string }>();
