@@ -23,15 +23,19 @@ const AdminDashboard = () => {
   const { data: stats, isLoading } = useQuery({
     queryKey: ["admin-stats"],
     queryFn: async () => {
-      const [users, clubs, events, tours, contestants, checkins, pairings, results] = await Promise.all([
+      const [users, clubs, events, tours, contestants, checkins, pairings, results, buddies, convos, teeBookings, rangeBays] = await Promise.all([
         supabase.from("profiles").select("id", { count: "exact", head: true }),
-        supabase.from("clubs").select("id, is_personal", { count: "exact" }),
+        supabase.from("clubs").select("id, is_personal, facility_type", { count: "exact" }),
         supabase.from("events").select("id, status", { count: "exact" }),
         supabase.from("tours").select("id", { count: "exact", head: true }),
         supabase.from("contestants").select("id", { count: "exact", head: true }),
         supabase.from("event_checkins").select("id", { count: "exact", head: true }),
         supabase.from("pairings").select("id", { count: "exact", head: true }),
         supabase.from("event_results").select("id", { count: "exact", head: true }),
+        supabase.from("buddy_connections").select("id", { count: "exact", head: true }),
+        supabase.from("conversations").select("id", { count: "exact", head: true }),
+        supabase.from("tee_time_bookings").select("id", { count: "exact", head: true }),
+        supabase.from("range_bays").select("id", { count: "exact", head: true }),
       ]);
 
       const golfClubs = clubs.data?.filter(c => !c.is_personal).length ?? 0;
