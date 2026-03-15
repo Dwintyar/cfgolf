@@ -377,6 +377,9 @@ const EventDetail = () => {
         <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={handleCalculateWinners} disabled={calculating}>
           <Award className="h-3 w-3" /> {calculating ? "…" : "Winners"}
         </Button>
+        <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowWinners(true)}>
+          <Trophy className="h-3 w-3" /> Results
+        </Button>
         <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={handleUpdateHandicaps} disabled={updatingHcp}>
           <TrendingDown className="h-3 w-3" /> {updatingHcp ? "…" : "HCP Update"}
         </Button>
