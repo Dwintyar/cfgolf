@@ -400,17 +400,22 @@ const EventDetail = () => {
             <PenLine className="h-3 w-3" /> Input Score
           </Button>
         )}
-        <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowAssign(true)}>
-          <Users className="h-3 w-3" /> Assign
-        </Button>
-        <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={handleCalculateWinners} disabled={calculating}>
-          <Award className="h-3 w-3" /> {calculating ? "…" : "Winners"}
-        </Button>
+        {/* Admin-only buttons */}
+        {showAdminActions && (
+          <>
+            <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowAssign(true)}>
+              <Users className="h-3 w-3" /> Assign
+            </Button>
+            <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={handleCalculateWinners} disabled={calculating}>
+              <Award className="h-3 w-3" /> {calculating ? "…" : "Winners"}
+            </Button>
+            <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={handleUpdateHandicaps} disabled={updatingHcp}>
+              <TrendingDown className="h-3 w-3" /> {updatingHcp ? "…" : "HCP Update"}
+            </Button>
+          </>
+        )}
         <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowWinners(true)}>
           <Trophy className="h-3 w-3" /> Results
-        </Button>
-        <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={handleUpdateHandicaps} disabled={updatingHcp}>
-          <TrendingDown className="h-3 w-3" /> {updatingHcp ? "…" : "HCP Update"}
         </Button>
       </div>
 
