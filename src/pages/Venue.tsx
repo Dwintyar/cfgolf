@@ -9,20 +9,20 @@ import venueImg from "@/assets/golf-venue.jpg";
 import heroImg from "@/assets/golf-hero.jpg";
 import { useState } from "react";
 
-const TEE_TIMES = ["08.30", "09.15", "09.45", "12.40", "13.15", "14.40", "15.10", "15.30"];
+const TEE_TIMES = ["07.00", "07.30", "08.00", "08.30", "09.00", "09.30", "13.00", "14.00", "15.00"];
 
 const Venue = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const [selectedTime, setSelectedTime] = useState("09.15");
-  const [distUnit, setDistUnit] = useState<"yd" | "m">("yd");
+  const [selectedTime, setSelectedTime] = useState("07.00");
+  const [distUnit, setDistUnit] = useState<"yd" | "m">("m");
 
   const { data: course, isLoading } = useQuery({
     queryKey: ["course", id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("courses")
-        .select("*, course_holes(*)")
+        .select("*, course_holes(*), course_tees(*)")
         .eq("id", id!)
         .single();
       if (error) throw error;
@@ -42,7 +42,12 @@ const Venue = () => {
     0
   ) ?? 0;
 
-  const price = course?.green_fee_price ? Number(course.green_fee_price).toFixed(2) : null;
+  const formatPrice = (price: number | null) => {
+    if (!price) return null;
+    return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(Number(price));
+  };
+
+  const price = course?.green_fee_price ? formatPrice(Number(course.green_fee_price)) : null;
 
   return (
     <div className="bottom-nav-safe">
@@ -98,7 +103,7 @@ const Venue = () => {
             <div className="flex gap-4">
               <div>
                 {price && (
-                  <p className="text-3xl font-bold text-primary">${price}</p>
+                  <p className="text-3xl font-bold text-primary">{price}</p>
                 )}
                 <Badge variant="outline" className="mt-2 border-primary/30 text-xs uppercase tracking-wider">
                   {new Date().toLocaleDateString("en-US", { weekday: "short", day: "numeric", month: "short" })}
@@ -107,13 +112,13 @@ const Venue = () => {
               <div className="flex-1 space-y-1.5">
                 <p className="text-sm font-semibold">Tips</p>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Wifi className="h-3.5 w-3.5 text-primary" /> Free Wifi
+                  <Wifi className="h-3.5 w-3.5 text-primary" /> WiFi tersedia
                 </div>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Ship className="h-3.5 w-3.5 text-primary" /> Cart available
+                  <Ship className="h-3.5 w-3.5 text-primary" /> Cart tersedia
                 </div>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Clock className="h-3.5 w-3.5 text-primary" /> Less busy before 2pm
+                  <Clock className="h-3.5 w-3.5 text-primary" /> Lebih sepi sebelum jam 12
                 </div>
               </div>
               {/* Favorite button */}
@@ -143,10 +148,33 @@ const Venue = () => {
               </div>
             </div>
 
-            {/* Tee time selection like reference */}
+            {/* Course Tees */}
+            {course?.course_tees && (course.course_tees as any[]).length > 0 && (
+              <div className="mt-6">
+                <p className="text-sm font-semibold mb-3">Tee Options</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {(course.course_tees as any[]).map((tee: any) => (
+                    <div key={tee.id} className="golf-card p-3">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="h-3 w-3 rounded-full border border-border"
+                          style={{ backgroundColor: tee.color === "white" ? "#f0f0f0" : tee.color }}
+                        />
+                        <span className="text-sm font-semibold">{tee.tee_name}</span>
+                      </div>
+                      <div className="mt-1 text-[10px] text-muted-foreground">
+                        Rating {tee.rating ?? "—"} · Slope {tee.slope ?? "—"}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Tee time selection */}
             <div className="mt-6">
-              <p className="text-sm font-semibold mb-3">Choose tee-off time</p>
-              <div className="grid grid-cols-4 gap-2">
+              <p className="text-sm font-semibold mb-3">Pilih waktu tee-off</p>
+              <div className="grid grid-cols-3 gap-2">
                 {TEE_TIMES.map((time) => (
                   <button
                     key={time}
@@ -208,7 +236,7 @@ const Venue = () => {
               className="mt-6 h-14 w-full rounded-xl text-base font-bold uppercase tracking-wider golf-glow"
               onClick={() => navigate(`/book/${id}`)}
             >
-              Book This For {price ? `$${price}` : "Free"}
+              Book This For {price ?? "Free"}
             </Button>
           </>
         )}
