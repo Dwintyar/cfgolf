@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Calendar, MapPin, Users, Ticket, Trophy, Award, Shuffle, TrendingDown,
-  ClipboardCheck, Package, Lock, Car, UserCheck, ChevronRight
+  ClipboardCheck, Package, Lock, Car, UserCheck, ChevronRight, PenLine, Plus, RefreshCw
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import AssignContestantDialog from "@/components/tour/AssignContestantDialog";
 
@@ -27,6 +28,21 @@ const EventDetail = () => {
   const [firstTee, setFirstTee] = useState("07:00");
   const [interval, setInterval] = useState("8");
   const [activeTab, setActiveTab] = useState("overview");
+  const [userId, setUserId] = useState<string | null>(null);
+  const [checkingIn, setCheckingIn] = useState(false);
+  const [showCheckinDialog, setShowCheckinDialog] = useState(false);
+  const [showCartDialog, setShowCartDialog] = useState(false);
+  const [showCaddyDialog, setShowCaddyDialog] = useState(false);
+  const [cartNumber, setCartNumber] = useState("");
+  const [selectedContestantForCart, setSelectedContestantForCart] = useState("");
+  const [selectedContestantForCaddy, setSelectedContestantForCaddy] = useState("");
+  const [selectedCaddy, setSelectedCaddy] = useState("");
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) setUserId(user.id);
+    });
+  }, []);
 
   // --- Queries ---
   const { data: event, isLoading } = useQuery({
@@ -34,7 +50,7 @@ const EventDetail = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("events")
-        .select("*, courses(name, location, par), tours(name, id)")
+        .select("*, courses(name, location, par, id), tours(name, id, organizer_club_id)")
         .eq("id", id!)
         .single();
       if (error) throw error;
@@ -70,7 +86,7 @@ const EventDetail = () => {
     enabled: !!id,
   });
 
-  const { data: checkins } = useQuery({
+  const { data: checkins, refetch: refetchCheckins } = useQuery({
     queryKey: ["event-checkins", id],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -84,7 +100,7 @@ const EventDetail = () => {
     enabled: !!id,
   });
 
-  const { data: cartAssignments } = useQuery({
+  const { data: cartAssignments, refetch: refetchCarts } = useQuery({
     queryKey: ["event-carts", id],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -98,7 +114,7 @@ const EventDetail = () => {
     enabled: !!id,
   });
 
-  const { data: caddyAssignments } = useQuery({
+  const { data: caddyAssignments, refetch: refetchCaddies } = useQuery({
     queryKey: ["event-caddies", id],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -125,7 +141,7 @@ const EventDetail = () => {
     enabled: !!id,
   });
 
-  const { data: leaderboard } = useQuery({
+  const { data: leaderboard, refetch: refetchLeaderboard } = useQuery({
     queryKey: ["event-leaderboard", id],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -152,6 +168,11 @@ const EventDetail = () => {
     },
     enabled: !!id,
   });
+
+  // Check if user is contestant & checked in
+  const myContestant = contestants?.find(c => c.player_id === userId);
+  const myCheckin = checkins?.find(ci => ci.contestant_id === myContestant?.id);
+  const isCheckedIn = !!myCheckin;
 
   // --- Handlers ---
   const invokeWithAuth = async (fnName: string, body: any) => {
@@ -200,6 +221,69 @@ const EventDetail = () => {
     } catch (err: any) { toast.error(err.message); }
     finally { setUpdatingHcp(false); }
   };
+
+  const handleSelfCheckin = async () => {
+    if (!myContestant || !id) return;
+    setCheckingIn(true);
+    try {
+      const nextBagDrop = (checkins?.length ?? 0) + 1;
+      const nextLocker = (checkins?.length ?? 0) + 101;
+      await supabase.from("event_checkins").insert({
+        event_id: id,
+        contestant_id: myContestant.id,
+        bag_drop_number: nextBagDrop,
+        locker_number: nextLocker,
+      });
+      toast.success(`Checked in! Bag #${nextBagDrop}, Locker #${nextLocker}`);
+      refetchCheckins();
+      setShowCheckinDialog(false);
+    } catch (err: any) { toast.error(err.message); }
+    finally { setCheckingIn(false); }
+  };
+
+  const handleAssignCart = async () => {
+    if (!id || !selectedContestantForCart || !cartNumber) return;
+    await supabase.from("golf_cart_assignments").insert({
+      event_id: id,
+      contestant_id: selectedContestantForCart,
+      cart_number: parseInt(cartNumber),
+    });
+    toast.success("Cart assigned!");
+    refetchCarts();
+    setShowCartDialog(false);
+    setCartNumber("");
+    setSelectedContestantForCart("");
+  };
+
+  const handleAssignCaddy = async () => {
+    if (!id || !selectedContestantForCaddy || !selectedCaddy) return;
+    await supabase.from("caddy_assignments").insert({
+      event_id: id,
+      contestant_id: selectedContestantForCaddy,
+      caddy_id: selectedCaddy,
+    });
+    toast.success("Caddy assigned!");
+    refetchCaddies();
+    setShowCaddyDialog(false);
+    setSelectedContestantForCaddy("");
+    setSelectedCaddy("");
+  };
+
+  // Fetch staff for caddy dropdown
+  const { data: clubStaff } = useQuery({
+    queryKey: ["club-staff-caddies", event?.tours],
+    queryFn: async () => {
+      const clubId = (event?.tours as any)?.organizer_club_id;
+      if (!clubId) return [];
+      const { data } = await supabase
+        .from("club_staff")
+        .select("*, profiles(full_name)")
+        .eq("club_id", clubId)
+        .eq("status", "active");
+      return data ?? [];
+    },
+    enabled: !!event,
+  });
 
   const statusColors: Record<string, string> = {
     draft: "border-muted-foreground/30 text-muted-foreground",
@@ -271,8 +355,20 @@ const EventDetail = () => {
         </div>
       </div>
 
-      {/* Admin Actions */}
+      {/* Action Buttons */}
       <div className="flex gap-2 overflow-x-auto px-4 pb-3 scrollbar-none">
+        {/* Self check-in button */}
+        {myContestant && !isCheckedIn && (
+          <Button size="sm" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowCheckinDialog(true)}>
+            <ClipboardCheck className="h-3 w-3" /> Check In
+          </Button>
+        )}
+        {/* Scorecard button */}
+        {myContestant && isCheckedIn && (
+          <Button size="sm" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => navigate(`/event/${id}/scorecard`)}>
+            <PenLine className="h-3 w-3" /> Input Score
+          </Button>
+        )}
         <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowAssign(true)}>
           <Users className="h-3 w-3" /> Assign
         </Button>
@@ -295,7 +391,6 @@ const EventDetail = () => {
 
         {/* OVERVIEW */}
         <TabsContent value="overview" className="space-y-4 pt-2">
-          {/* Contestants */}
           <Section title="Contestants" icon={Users} count={contestants?.length}>
             {contestants?.length === 0 && <EmptyState text="No contestants" />}
             {contestants?.slice(0, 10).map((c) => (
@@ -313,7 +408,6 @@ const EventDetail = () => {
             {(contestants?.length ?? 0) > 10 && <p className="text-xs text-muted-foreground text-center py-1">+{(contestants!.length) - 10} more</p>}
           </Section>
 
-          {/* Tickets */}
           <Section title="Tickets" icon={Ticket} count={tickets?.length} sub={`${usedTickets} assigned`}>
             {tickets?.length === 0 && <EmptyState text="No tickets" />}
             {tickets?.slice(0, 6).map((t) => (
@@ -327,7 +421,6 @@ const EventDetail = () => {
             ))}
           </Section>
 
-          {/* Results */}
           <Section title="Results" icon={Award} count={results?.length}>
             {results?.length === 0 && <EmptyState text="No results yet" />}
             {results?.map((r) => (
@@ -344,7 +437,6 @@ const EventDetail = () => {
 
         {/* CHECK-IN */}
         <TabsContent value="checkin" className="space-y-4 pt-2">
-          {/* Check-ins */}
           <Section title="Check-ins" icon={ClipboardCheck} count={checkins?.length}>
             {checkins?.length === 0 && <EmptyState text="No check-ins yet" />}
             {checkins?.map((ci) => (
@@ -361,13 +453,14 @@ const EventDetail = () => {
                     <span className="flex items-center gap-1"><Lock className="h-3 w-3" /> Locker #{ci.locker_number}</span>
                   )}
                 </div>
-                {ci.notes && <p className="text-[10px] text-muted-foreground/70">{ci.notes}</p>}
               </div>
             ))}
           </Section>
 
-          {/* Cart Assignments */}
           <Section title="Golf Cart" icon={Car} count={cartAssignments?.length}>
+            <Button size="sm" variant="outline" className="w-full h-7 gap-1 text-[11px] mb-2" onClick={() => setShowCartDialog(true)}>
+              <Plus className="h-3 w-3" /> Assign Cart
+            </Button>
             {cartAssignments?.length === 0 && <EmptyState text="No carts assigned" />}
             {cartAssignments?.map((ca) => (
               <div key={ca.id} className="golf-card flex items-center justify-between p-3">
@@ -379,8 +472,10 @@ const EventDetail = () => {
             ))}
           </Section>
 
-          {/* Caddy Assignments */}
           <Section title="Caddy" icon={UserCheck} count={caddyAssignments?.length}>
+            <Button size="sm" variant="outline" className="w-full h-7 gap-1 text-[11px] mb-2" onClick={() => setShowCaddyDialog(true)}>
+              <Plus className="h-3 w-3" /> Assign Caddy
+            </Button>
             {caddyAssignments?.length === 0 && <EmptyState text="No caddies assigned" />}
             {caddyAssignments?.map((ca) => (
               <div key={ca.id} className="golf-card flex items-center justify-between p-3">
@@ -453,7 +548,25 @@ const EventDetail = () => {
 
         {/* LEADERBOARD */}
         <TabsContent value="leaderboard" className="space-y-2 pt-2">
-          {(!leaderboard || leaderboard.length === 0) && <EmptyState text="No scores yet" />}
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs text-muted-foreground">{leaderboard?.length ?? 0} players</p>
+            <Button size="sm" variant="ghost" className="h-7 gap-1 text-[10px]" onClick={() => refetchLeaderboard()}>
+              <RefreshCw className="h-3 w-3" /> Refresh
+            </Button>
+          </div>
+
+          {(!leaderboard || leaderboard.length === 0) && (
+            <div className="golf-card p-6 text-center">
+              <Trophy className="mx-auto h-8 w-8 text-muted-foreground/40" />
+              <p className="mt-2 text-sm text-muted-foreground">No scores yet</p>
+              {myContestant && isCheckedIn && (
+                <Button size="sm" className="mt-3 gap-1" onClick={() => navigate(`/event/${id}/scorecard`)}>
+                  <PenLine className="h-3.5 w-3.5" /> Be the first to enter scores
+                </Button>
+              )}
+            </div>
+          )}
+
           {leaderboard?.map((row, i) => (
             <div key={row.contestant_id} className="golf-card flex items-center gap-3 p-3">
               <div className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
@@ -478,7 +591,94 @@ const EventDetail = () => {
         </TabsContent>
       </Tabs>
 
+      {/* Dialogs */}
       <AssignContestantDialog eventId={event.id} tourId={event.tour_id} open={showAssign} onOpenChange={setShowAssign} onDone={() => { setShowAssign(false); refetchContestants(); }} />
+
+      {/* Self Check-in Dialog */}
+      <Dialog open={showCheckinDialog} onOpenChange={setShowCheckinDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Check-in</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 text-sm">
+            <p className="font-medium">{event.name}</p>
+            <p className="text-muted-foreground">{(myContestant?.profiles as any)?.full_name}</p>
+            <div className="golf-card p-3 space-y-1 mt-3">
+              <p className="text-xs">Locker #: <span className="font-bold">{(checkins?.length ?? 0) + 101}</span></p>
+              <p className="text-xs">Bag Drop #: <span className="font-bold">{(checkins?.length ?? 0) + 1}</span></p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCheckinDialog(false)}>Cancel</Button>
+            <Button onClick={handleSelfCheckin} disabled={checkingIn}>
+              {checkingIn ? "Checking in…" : "Confirm Check-in"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Assign Cart Dialog */}
+      <Dialog open={showCartDialog} onOpenChange={setShowCartDialog}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Assign Golf Cart</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label className="text-xs">Contestant</Label>
+              <Select value={selectedContestantForCart} onValueChange={setSelectedContestantForCart}>
+                <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Select player" /></SelectTrigger>
+                <SelectContent>
+                  {contestants?.map(c => (
+                    <SelectItem key={c.id} value={c.id}>{(c.profiles as any)?.full_name ?? "Unknown"}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs">Cart Number</Label>
+              <Input type="number" value={cartNumber} onChange={e => setCartNumber(e.target.value)} placeholder="e.g. 1" className="h-9 text-xs" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCartDialog(false)}>Cancel</Button>
+            <Button onClick={handleAssignCart} disabled={!selectedContestantForCart || !cartNumber}>Assign</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Assign Caddy Dialog */}
+      <Dialog open={showCaddyDialog} onOpenChange={setShowCaddyDialog}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Assign Caddy</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label className="text-xs">Contestant</Label>
+              <Select value={selectedContestantForCaddy} onValueChange={setSelectedContestantForCaddy}>
+                <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Select player" /></SelectTrigger>
+                <SelectContent>
+                  {contestants?.map(c => (
+                    <SelectItem key={c.id} value={c.id}>{(c.profiles as any)?.full_name ?? "Unknown"}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs">Caddy</Label>
+              <Select value={selectedCaddy} onValueChange={setSelectedCaddy}>
+                <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Select caddy" /></SelectTrigger>
+                <SelectContent>
+                  {clubStaff?.map((s: any) => (
+                    <SelectItem key={s.user_id} value={s.user_id}>{(s.profiles as any)?.full_name ?? "Staff"} ({s.staff_role})</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCaddyDialog(false)}>Cancel</Button>
+            <Button onClick={handleAssignCaddy} disabled={!selectedContestantForCaddy || !selectedCaddy}>Assign</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
