@@ -112,13 +112,13 @@ const Venue = () => {
               <div className="flex-1 space-y-1.5">
                 <p className="text-sm font-semibold">Tips</p>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Wifi className="h-3.5 w-3.5 text-primary" /> Free Wifi
+                  <Wifi className="h-3.5 w-3.5 text-primary" /> WiFi tersedia
                 </div>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Ship className="h-3.5 w-3.5 text-primary" /> Cart available
+                  <Ship className="h-3.5 w-3.5 text-primary" /> Cart tersedia
                 </div>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Clock className="h-3.5 w-3.5 text-primary" /> Less busy before 2pm
+                  <Clock className="h-3.5 w-3.5 text-primary" /> Lebih sepi sebelum jam 12
                 </div>
               </div>
               {/* Favorite button */}
