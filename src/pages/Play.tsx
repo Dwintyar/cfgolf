@@ -248,9 +248,29 @@ const Play = () => {
     return name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
   };
 
-  const filteredSuggestions = suggestions.filter((p) =>
-    !search || p.full_name?.toLowerCase().includes(search.toLowerCase())
-  );
+  // Live search from database when user types
+  useEffect(() => {
+    if (!search.trim() || !currentUserId) {
+      setSearchResults([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setSearching(true);
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, full_name, avatar_url, location, handicap")
+        .neq("id", currentUserId)
+        .ilike("full_name", `%${search.trim()}%`)
+        .limit(30);
+      setSearchResults(data || []);
+      setSearching(false);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search, currentUserId]);
+
+  const filteredSuggestions = search.trim()
+    ? searchResults
+    : suggestions;
 
   const filteredBuddies = buddies.filter((b) =>
     !search || b.profile.full_name?.toLowerCase().includes(search.toLowerCase())
