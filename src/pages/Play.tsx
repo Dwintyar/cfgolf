@@ -31,6 +31,8 @@ const Play = () => {
   const navigate = useNavigate();
   const [tab, setTab] = useState<BuddyTab>("suggestions");
   const [search, setSearch] = useState("");
+  const [searchResults, setSearchResults] = useState<Profile[]>([]);
+  const [searching, setSearching] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
