@@ -12,6 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
 
 type Section = "main" | "profile" | "club" | "password";
+type AdminAccess = "none" | "platform" | "club";
 
 const Settings = () => {
   const navigate = useNavigate();
