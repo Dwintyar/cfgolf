@@ -11,7 +11,7 @@ import AppHeader from "@/components/AppHeader";
 
 interface NotificationItem {
   id: string;
-  type: "buddy_request" | "club_invite" | "upcoming_event" | "handicap_update" | "event_result";
+  type: "buddy_request" | "club_invite" | "upcoming_event" | "handicap_update" | "event_result" | "tournament_invite";
   title: string;
   subtitle: string;
   time: string;
@@ -32,6 +32,13 @@ const Notifications = () => {
       else setUserId(user.id);
     });
   }, [navigate]);
+
+  const formatTime = (date: string) => {
+    const diff = (Date.now() - new Date(date).getTime()) / 1000;
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    return `${Math.floor(diff / 86400)}d ago`;
+  };
 
   const { data: notifications, isLoading, refetch } = useQuery({
     queryKey: ["notifications", userId],
@@ -80,7 +87,46 @@ const Notifications = () => {
         });
       });
 
-      // 3. Upcoming events (within 7 days)
+      // 3. Tournament interclub invitations (for club owner/admin)
+      const { data: myAdminClubs } = await supabase
+        .from("members")
+        .select("club_id, clubs(name, logo_url)")
+        .eq("user_id", userId!)
+        .in("role", ["owner", "admin"]);
+
+      if (myAdminClubs && myAdminClubs.length > 0) {
+        const myClubIds = myAdminClubs.map(m => m.club_id);
+
+        const { data: tourInvites } = await supabase
+          .from("tour_clubs")
+          .select("*, tours(id, name, tournament_type, clubs!tours_organizer_club_id_fkey(name))")
+          .in("club_id", myClubIds)
+          .eq("status", "invited")
+          .order("created_at", { ascending: false });
+
+        tourInvites?.forEach((inv: any) => {
+          const tour = inv.tours;
+          const organizerName = tour?.clubs?.name ?? "A club";
+          const invitedClub = myAdminClubs.find(m => m.club_id === inv.club_id);
+          const invitedClubName = (invitedClub?.clubs as any)?.name ?? "Your club";
+
+          items.push({
+            id: `tour-invite-${inv.id}`,
+            type: "tournament_invite",
+            title: `${invitedClubName} diundang ke ${tour?.name ?? "tournament"}`,
+            subtitle: `Oleh ${organizerName} · ${tour?.tournament_type ?? "interclub"} · Quota: ${inv.ticket_quota} tiket`,
+            time: formatTime(inv.created_at),
+            actionable: true,
+            meta: {
+              tourClubId: inv.id,
+              tourId: tour?.id,
+              clubId: inv.club_id,
+            },
+          });
+        });
+      }
+
+      // 4. Upcoming events (within 7 days)
       const { data: myContestants } = await supabase
         .from("contestants")
         .select("event_id, events(id, name, event_date, status)")
@@ -104,7 +150,7 @@ const Notifications = () => {
         }
       });
 
-      // 4. Recent handicap updates
+      // 5. Recent handicap updates
       const { data: hcpUpdates } = await supabase
         .from("handicap_history")
         .select("*, events(name)")
@@ -122,7 +168,7 @@ const Notifications = () => {
         });
       });
 
-      // 5. Recent event results
+      // 6. Recent event results
       const { data: recentResults } = await supabase
         .from("event_results")
         .select("*, events(name), contestants(player_id), tournament_winner_categories(category_name)")
@@ -146,13 +192,6 @@ const Notifications = () => {
     },
     enabled: !!userId,
   });
-
-  const formatTime = (date: string) => {
-    const diff = (Date.now() - new Date(date).getTime()) / 1000;
-    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-    return `${Math.floor(diff / 86400)}d ago`;
-  };
 
   const handleAcceptBuddy = async (connectionId: string) => {
     setActionLoading(connectionId);
@@ -188,17 +227,38 @@ const Notifications = () => {
     setActionLoading(null);
   };
 
+  const handleAcceptTourInvite = async (tourClubId: string, tourId: string) => {
+    setActionLoading(tourClubId);
+    await supabase.from("tour_clubs").update({ status: "accepted" }).eq("id", tourClubId);
+    toast.success("Tournament invitation accepted!");
+    navigate(`/tour/${tourId}`);
+    refetch();
+    setActionLoading(null);
+  };
+
+  const handleDeclineTourInvite = async (tourClubId: string) => {
+    setActionLoading(tourClubId);
+    await supabase.from("tour_clubs").update({ status: "declined" }).eq("id", tourClubId);
+    toast.success("Invitation declined");
+    refetch();
+    setActionLoading(null);
+  };
+
   const iconMap: Record<string, React.ElementType> = {
     buddy_request: UserPlus,
     club_invite: Building2,
     upcoming_event: Calendar,
     handicap_update: TrendingDown,
     event_result: Trophy,
+    tournament_invite: Trophy,
   };
 
   const handleTap = (n: NotificationItem) => {
     if (n.type === "upcoming_event" || n.type === "event_result") {
       navigate(`/event/${n.meta?.eventId}`);
+    }
+    if (n.type === "tournament_invite") {
+      navigate(`/tour/${n.meta?.tourId}`);
     }
   };
 
@@ -264,6 +324,23 @@ const Notifications = () => {
                     </Button>
                     <Button size="sm" variant="outline" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); handleDeclineClub(n.meta.inviteId); }} disabled={actionLoading === n.meta.inviteId}>
                       Decline
+                    </Button>
+                  </div>
+                )}
+
+                {n.type === "tournament_invite" && n.actionable && (
+                  <div className="flex gap-2 mt-2">
+                    <Button size="sm" className="h-7 text-xs gap-1"
+                      onClick={(e) => { e.stopPropagation(); handleAcceptTourInvite(n.meta.tourClubId, n.meta.tourId); }}
+                      disabled={actionLoading === n.meta.tourClubId}
+                    >
+                      <Check className="h-3 w-3" /> Terima
+                    </Button>
+                    <Button size="sm" variant="outline" className="h-7 text-xs gap-1"
+                      onClick={(e) => { e.stopPropagation(); handleDeclineTourInvite(n.meta.tourClubId); }}
+                      disabled={actionLoading === n.meta.tourClubId}
+                    >
+                      <X className="h-3 w-3" /> Tolak
                     </Button>
                   </div>
                 )}
