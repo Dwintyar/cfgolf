@@ -139,7 +139,7 @@ const Clubs = () => {
   };
 
   const renderClubCard = (club: ClubData, index: number, isMyClub: boolean) => {
-    const isOwnerOrAdmin = club.owner_id === currentUserId || myMemberships?.get(club.id) === "admin";
+    const isOwnerOrAdmin = club.owner_id === currentUserId || myMemberships?.[club.id] === "admin";
     const isPending = myPendingRequests?.has(club.id);
 
     return (
