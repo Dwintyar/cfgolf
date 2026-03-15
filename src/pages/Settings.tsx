@@ -370,7 +370,9 @@ const Settings = () => {
         <SettingsItem icon={User} label="Edit Profile" onClick={() => setSection("profile")} />
         <SettingsItem icon={Building2} label="My Clubs" onClick={() => setSection("club")} />
         <SettingsItem icon={Lock} label="Change Password" onClick={() => setSection("password")} />
-        <SettingsItem icon={LayoutDashboard} label="Admin Dashboard" onClick={() => navigate("/admin")} />
+        {adminAccess && adminAccess !== "none" && (
+          <SettingsItem icon={LayoutDashboard} label="Admin Dashboard" onClick={handleAdminDashboard} />
+        )}
 
         <Separator className="my-3" />
 
