@@ -303,6 +303,7 @@ export type Database = {
           logo_url: string | null
           name: string
           owner_id: string | null
+          succession_user_id: string | null
         }
         Insert: {
           contact_email?: string | null
@@ -317,6 +318,7 @@ export type Database = {
           logo_url?: string | null
           name: string
           owner_id?: string | null
+          succession_user_id?: string | null
         }
         Update: {
           contact_email?: string | null
@@ -331,11 +333,19 @@ export type Database = {
           logo_url?: string | null
           name?: string
           owner_id?: string | null
+          succession_user_id?: string | null
         }
         Relationships: [
           {
             foreignKeyName: "clubs_owner_id_fkey"
             columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clubs_succession_user_id_fkey"
+            columns: ["succession_user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
