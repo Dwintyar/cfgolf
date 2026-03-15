@@ -81,11 +81,15 @@ const RegisterPlayerDialog = ({ tourId, tourType, organizerClubId, callerClubId,
   const handleSubmit = async () => {
     if (!playerId || !clubId) { toast.error("Select a player"); return; }
     setLoading(true);
+    const selectedMember = sortedAndFiltered.find(m => m.user_id === playerId);
+    const hcpAtReg = (selectedMember?.profiles as any)?.handicap ?? 0;
     const { error } = await supabase.from("tour_players").insert({
       tour_id: tourId,
       club_id: clubId,
       player_id: playerId,
       status: "pending",
+      hcp_at_registration: hcpAtReg,
+      hcp_tour: hcpAtReg,
     });
     setLoading(false);
     if (error) { toast.error(error.message); return; }

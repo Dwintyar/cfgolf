@@ -6,7 +6,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const SANDBAGGING_THRESHOLD = 5; // net score beats expected by this many strokes
+const SANDBAGGING_THRESHOLD = 5;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -26,6 +26,7 @@ Deno.serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceKey);
 
+    // Verify caller
     const anonClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!);
     const { data: { user }, error: authError } = await anonClient.auth.getUser(
       authHeader.replace("Bearer ", "")
@@ -37,31 +38,29 @@ Deno.serve(async (req) => {
       });
     }
 
-    const body = await req.json();
-    const eventId: string = body.event_id;
-
-    if (!eventId) {
+    const { event_id } = await req.json();
+    if (!event_id) {
       return new Response(JSON.stringify({ error: "event_id required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // 1. Get event with course par and tour's organizer club
-    const { data: event, error: eventErr } = await supabase
+    // Get event with tour and course
+    const { data: event } = await supabase
       .from("events")
-      .select("id, tour_id, course_id, courses(par), tours(organizer_club_id)")
-      .eq("id", eventId)
+      .select("id, tour_id, courses(par), tours(organizer_club_id, tournament_type)")
+      .eq("id", event_id)
       .single();
 
-    if (eventErr || !event) {
+    if (!event) {
       return new Response(JSON.stringify({ error: "Event not found" }), {
         status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Authorization: caller must be owner/admin of the organizer club
+    // Auth check: must be club admin of organizer
     const organizerClubId = (event.tours as any)?.organizer_club_id;
     if (!organizerClubId) {
       return new Response(JSON.stringify({ error: "Tour configuration error" }), {
@@ -76,6 +75,7 @@ Deno.serve(async (req) => {
       .eq("club_id", organizerClubId)
       .in("role", ["owner", "admin"])
       .maybeSingle();
+
     if (!membership) {
       return new Response(JSON.stringify({ error: "Forbidden" }), {
         status: 403,
@@ -84,19 +84,20 @@ Deno.serve(async (req) => {
     }
 
     const coursePar = (event.courses as any)?.par ?? 72;
+    const tourId = event.tour_id;
 
-    // 2. Get leaderboard data for this event
-    const { data: leaderboard, error: lbErr } = await supabase
+    // Get leaderboard for this event
+    const { data: leaderboard } = await supabase
       .from("event_leaderboard")
       .select("*")
-      .eq("event_id", eventId)
+      .eq("event_id", event_id)
       .eq("status", "competitor");
 
-    if (lbErr || !leaderboard || leaderboard.length === 0) {
-      return new Response(
-        JSON.stringify({ error: "No competitor scores found" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    if (!leaderboard?.length) {
+      return new Response(JSON.stringify({ error: "No scores found" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const results: Array<{
@@ -108,78 +109,85 @@ Deno.serve(async (req) => {
 
     for (const entry of leaderboard) {
       const playerId = entry.player_id;
-      const oldHcp = entry.hcp ?? 0;
       const grossScore = entry.total_gross;
       const netScore = entry.total_net;
 
-      // 3. Get last 10 handicap history records for this player
-      const { data: history } = await supabase
+      // Get current tournament HCP (from tour_players, NOT profiles)
+      const { data: tourPlayer } = await supabase
+        .from("tour_players")
+        .select("hcp_tour, hcp_at_registration")
+        .eq("tour_id", tourId)
+        .eq("player_id", playerId)
+        .maybeSingle();
+
+      const currentTourHcp = tourPlayer?.hcp_tour
+        ?? tourPlayer?.hcp_at_registration
+        ?? entry.hcp
+        ?? 0;
+
+      // Get previous net scores IN THIS TOURNAMENT ONLY
+      const { data: tourHistory } = await supabase
         .from("handicap_history")
         .select("net_score")
         .eq("player_id", playerId)
+        .eq("tour_id", tourId)
         .order("created_at", { ascending: false })
-        .limit(9); // last 9 + current = 10
+        .limit(9);
 
-      // Collect net scores (including current)
+      // Calculate new tournament HCP
       const allNetScores = [
         netScore,
-        ...(history ?? []).map((h: any) => h.net_score).filter((s: any) => s != null),
+        ...(tourHistory ?? []).map((h: any) => h.net_score).filter((s: any) => s != null),
       ];
 
-      // MVP formula: new_hcp = average(net_scores) - course_par
       const avgNet = allNetScores.reduce((a: number, b: number) => a + b, 0) / allNetScores.length;
-      const newHcp = Math.round(avgNet - coursePar);
-      const clampedHcp = Math.max(0, Math.min(54, newHcp)); // clamp 0-54
+      const newTourHcp = Math.max(0, Math.min(54, Math.round(avgNet - coursePar)));
 
-      // 4. Sandbagging detection
-      // Expected net score ≈ coursePar (since net = gross - hcp, good play = par)
-      // If actual net is significantly below par, flag it
-      const expectedNet = coursePar;
-      const sandbaggingFlag = netScore < (expectedNet - SANDBAGGING_THRESHOLD);
+      // Sandbagging check against tournament HCP
+      const sandbaggingFlag = netScore < (coursePar - SANDBAGGING_THRESHOLD);
 
-      // 5. Insert handicap history
-      const { error: insertErr } = await supabase.from("handicap_history").insert({
+      // Insert to handicap_history WITH tour_id
+      await supabase.from("handicap_history").insert({
         player_id: playerId,
-        event_id: eventId,
-        old_hcp: oldHcp,
-        new_hcp: clampedHcp,
+        event_id: event_id,
+        tour_id: tourId,
+        old_hcp: currentTourHcp,
+        new_hcp: newTourHcp,
         gross_score: grossScore,
         net_score: netScore,
         sandbagging_flag: sandbaggingFlag,
       });
 
-      if (insertErr) {
-        console.error(`Failed to insert history for ${playerId}:`, insertErr);
-        continue;
-      }
-
-      // 6. Update player profile handicap
+      // Update ONLY tournament HCP, NOT personal HCP
       await supabase
-        .from("profiles")
-        .update({ handicap: clampedHcp })
-        .eq("id", playerId);
+        .from("tour_players")
+        .update({ hcp_tour: newTourHcp })
+        .eq("tour_id", tourId)
+        .eq("player_id", playerId);
+
+      // DO NOT update profiles.handicap
 
       results.push({
         player_id: playerId,
-        old_hcp: oldHcp,
-        new_hcp: clampedHcp,
+        old_hcp: currentTourHcp,
+        new_hcp: newTourHcp,
         sandbagging_flag: sandbaggingFlag,
       });
     }
 
-    const flaggedCount = results.filter((r) => r.sandbagging_flag).length;
-
     return new Response(
       JSON.stringify({
         success: true,
-        event_id: eventId,
+        event_id,
+        tour_id: tourId,
         players_updated: results.length,
-        sandbagging_flags: flaggedCount,
+        sandbagging_flags: results.filter((r) => r.sandbagging_flag).length,
+        note: "Tournament HCP updated. Personal HCP unchanged.",
         results,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-  } catch (err) {
+  } catch (err: any) {
     console.error("Unexpected error:", err);
     return new Response(
       JSON.stringify({ error: err.message ?? "Internal server error" }),
