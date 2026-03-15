@@ -50,6 +50,15 @@ const ClubAdminDashboard = () => {
   const [successionUserId, setSuccessionUserId] = useState("");
   const [transferTargetId, setTransferTargetId] = useState("");
 
+  // Announcements
+  const [showCreateAnnouncement, setShowCreateAnnouncement] = useState(false);
+  const [annTitle, setAnnTitle] = useState("");
+  const [annContent, setAnnContent] = useState("");
+  const [annPinned, setAnnPinned] = useState(false);
+
+  // Event roles
+  const [rolesEventId, setRolesEventId] = useState<string | null>(null);
+
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) setUserId(user.id);
