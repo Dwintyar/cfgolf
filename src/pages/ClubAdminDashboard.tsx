@@ -593,6 +593,7 @@ const ClubAdminDashboard = () => {
                     </div>
                   );
                 })()}
+                <div className="px-3 pb-3 pt-1">
                   <Button
                     size="sm"
                     variant="outline"
