@@ -131,7 +131,7 @@ const Clubs = () => {
     if (club.owner_id === currentUserId) {
       return <Badge className="mt-1.5 text-[10px] bg-yellow-500/15 text-yellow-600 border-yellow-500/30">👑 Owner</Badge>;
     }
-    const role = myMemberships?.get(club.id);
+    const role = myMemberships?.[club.id];
     if (role === "admin") {
       return <Badge className="mt-1.5 text-[10px] bg-blue-500/15 text-blue-500 border-blue-500/30">🛡️ Admin</Badge>;
     }
