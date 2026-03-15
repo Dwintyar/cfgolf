@@ -292,8 +292,40 @@ const ScorecardInput = () => {
         await supabase.from("rounds").update({ status: "completed", finished_at: new Date().toISOString() }).eq("id", roundId);
       }
 
+      // Check if all contestants have submitted scorecards
+      const { data: allContestants } = await supabase
+        .from("contestants")
+        .select("id")
+        .eq("event_id", eventId!)
+        .eq("status", "competitor");
+
+      const contestantIds = allContestants?.map(c => c.id) ?? [];
+      const totalContestants = contestantIds.length;
+
+      // Count scorecards that exist for these contestants' players
+      // We check rounds completed for this course
+      let totalSubmitted = 0;
+      if (totalContestants > 0) {
+        const { count } = await supabase
+          .from("rounds")
+          .select("id", { count: "exact", head: true })
+          .eq("course_id", courseId)
+          .eq("status", "completed");
+        totalSubmitted = count ?? 0;
+      }
+
       queryClient.invalidateQueries({ queryKey: ["event-leaderboard"] });
-      toast.success(allFilled ? "Scorecard submitted!" : "Scorecard saved!");
+
+      if (allFilled && totalSubmitted >= totalContestants && totalContestants > 0) {
+        toast.success(
+          `Scorecard tersimpan! Semua ${totalContestants} peserta sudah submit. Event siap di-finalize oleh admin.`,
+          { duration: 5000 }
+        );
+      } else if (allFilled) {
+        toast.success(`Scorecard submitted! (${totalSubmitted}/${totalContestants} peserta selesai)`);
+      } else {
+        toast.success("Scorecard saved!");
+      }
       navigate(`/event/${eventId}`);
     } catch (err: any) {
       toast.error(err.message || "Failed to save scorecard");

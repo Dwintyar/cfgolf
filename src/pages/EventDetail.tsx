@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Calendar, MapPin, Users, Ticket, Trophy, Award, Shuffle, TrendingDown,
@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import AssignContestantDialog from "@/components/tour/AssignContestantDialog";
@@ -21,10 +21,11 @@ import WinnerResultsDialog from "@/components/event/WinnerResultsDialog";
 const EventDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [showAssign, setShowAssign] = useState(false);
   const [generating, setGenerating] = useState(false);
-  const [calculating, setCalculating] = useState(false);
-  const [updatingHcp, setUpdatingHcp] = useState(false);
+  const [finalizing, setFinalizing] = useState(false);
+  const [showFinalizeConfirm, setShowFinalizeConfirm] = useState(false);
   const [startType, setStartType] = useState("tee_time");
   const [firstTee, setFirstTee] = useState("07:00");
   const [interval, setInterval] = useState("8");
@@ -212,21 +213,6 @@ const EventDetail = () => {
     enabled: !!event && !!userId,
   });
 
-  // Check if user is HCP Officer for this event
-  const { data: isHcpOfficer } = useQuery({
-    queryKey: ["hcp-officer-check", id, userId],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("event_roles")
-        .select("id")
-        .eq("event_id", id!)
-        .eq("user_id", userId!)
-        .eq("role", "hcp_officer")
-        .maybeSingle();
-      return !!data;
-    },
-    enabled: !!id && !!userId,
-  });
 
   const showAdminActions = !!isEventAdmin;
 
@@ -254,28 +240,42 @@ const EventDetail = () => {
     finally { setGenerating(false); }
   };
 
-  const handleCalculateWinners = async () => {
+  const handleFinalizeEvent = async () => {
     if (!id) return;
-    setCalculating(true);
+    setFinalizing(true);
+    setShowFinalizeConfirm(false);
     try {
-      const { data, error } = await invokeWithAuth("calculate-event-winners", { event_id: id });
-      if (error) toast.error(error.message || "Failed");
-      else if (data?.error) toast.error(data.error);
-      else { toast.success(`Calculated ${data.winners_calculated} winners`); refetchResults(); }
-    } catch (err: any) { toast.error(err.message); }
-    finally { setCalculating(false); }
-  };
+      // Step 1: Calculate winners
+      const { data: winnersData, error: winnersErr } =
+        await invokeWithAuth("calculate-event-winners", { event_id: id });
+      if (winnersErr || winnersData?.error) {
+        toast.error("Gagal menghitung pemenang: " + (winnersErr?.message || winnersData?.error));
+        return;
+      }
 
-  const handleUpdateHandicaps = async () => {
-    if (!id) return;
-    setUpdatingHcp(true);
-    try {
-      const { data, error } = await invokeWithAuth("update-player-handicap", { event_id: id });
-      if (error) toast.error(error.message || "Failed");
-      else if (data?.error) toast.error(data.error);
-      else toast.success(`Updated ${data.players_updated} handicaps`);
-    } catch (err: any) { toast.error(err.message); }
-    finally { setUpdatingHcp(false); }
+      // Step 2: Update tournament HCP (automatic after winners)
+      const { data: hcpData, error: hcpErr } =
+        await invokeWithAuth("update-player-handicap", { event_id: id });
+      if (hcpErr || hcpData?.error) {
+        toast.error("Pemenang tersimpan, tapi HCP update gagal: " + (hcpErr?.message || hcpData?.error));
+        // Continue to step 3 anyway
+      }
+
+      // Step 3: Mark event completed
+      await supabase.from("events").update({ status: "completed" }).eq("id", id);
+
+      toast.success(
+        `Event selesai! ${winnersData.winners_calculated} pemenang, ` +
+        `${hcpData?.players_updated ?? 0} tournament HCP dikoreksi.`
+      );
+
+      refetchResults();
+      queryClient.invalidateQueries({ queryKey: ["event", id] });
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setFinalizing(false);
+    }
   };
 
   const handleSelfCheckin = async () => {
@@ -431,19 +431,21 @@ const EventDetail = () => {
             <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowAssign(true)}>
               <Users className="h-3 w-3" /> Assign
             </Button>
-            <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={handleCalculateWinners} disabled={calculating}>
-              <Award className="h-3 w-3" /> {calculating ? "…" : "Winners"}
-            </Button>
-            <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={handleUpdateHandicaps} disabled={updatingHcp}>
-              <TrendingDown className="h-3 w-3" /> {updatingHcp ? "…" : "HCP Update"}
-            </Button>
-          </>
-        )}
-        {!showAdminActions && isHcpOfficer && (
-          <>
-            <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={handleUpdateHandicaps} disabled={updatingHcp}>
-              <TrendingDown className="h-3 w-3" /> {updatingHcp ? "…" : "HCP Update"}
-            </Button>
+            {event?.status !== "completed" ? (
+              <Button
+                size="sm"
+                className="h-7 shrink-0 gap-1 text-[11px] bg-primary"
+                onClick={() => setShowFinalizeConfirm(true)}
+                disabled={finalizing}
+              >
+                <Trophy className="h-3 w-3" />
+                {finalizing ? "Finalizing…" : "Finalize Event"}
+              </Button>
+            ) : (
+              <Badge className="text-[10px] bg-primary/20 text-primary border-primary/30">
+                ✓ Completed
+              </Badge>
+            )}
           </>
         )}
         <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowWinners(true)}>
@@ -752,6 +754,30 @@ const EventDetail = () => {
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCaddyDialog(false)}>Cancel</Button>
             <Button onClick={handleAssignCaddy} disabled={!selectedContestantForCaddy || !selectedCaddy}>Assign</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Finalize Confirmation Dialog */}
+      <Dialog open={showFinalizeConfirm} onOpenChange={setShowFinalizeConfirm}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Finalize Event?</DialogTitle>
+            <DialogDescription className="text-xs space-y-1 pt-2">
+              <p>Tindakan ini akan:</p>
+              <ul className="list-disc pl-4 space-y-0.5">
+                <li>Menghitung dan menyimpan pemenang</li>
+                <li>Mengkoreksi Tournament HCP semua peserta</li>
+                <li>Menutup event (tidak bisa dibuka lagi)</li>
+              </ul>
+              <p className="font-semibold pt-1">Pastikan semua scorecard sudah diinput.</p>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowFinalizeConfirm(false)}>Batalkan</Button>
+            <Button onClick={handleFinalizeEvent} disabled={finalizing}>
+              {finalizing ? "Finalizing…" : "Ya, Finalize"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
