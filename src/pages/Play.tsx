@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { v4 as uuidv4 } from "uuid";
 
 type BuddyTab = "suggestions" | "requests" | "buddies";
 
@@ -217,10 +216,10 @@ const Play = () => {
       }
     }
 
-    const newConvId = uuidv4();
+    const newId = crypto.randomUUID();
     const { error: convError } = await supabase
       .from("conversations")
-      .insert({ id: newConvId });
+      .insert({ id: newId });
 
     if (convError) {
       toast({ title: "Gagal membuat percakapan", description: convError.message, variant: "destructive" });
@@ -230,8 +229,8 @@ const Play = () => {
     const { error: participantsError } = await supabase
       .from("conversation_participants")
       .insert([
-        { conversation_id: newConvId, user_id: currentUserId },
-        { conversation_id: newConvId, user_id: otherUserId },
+        { conversation_id: newId, user_id: currentUserId },
+        { conversation_id: newId, user_id: otherUserId },
       ]);
 
     if (participantsError) {
@@ -239,7 +238,7 @@ const Play = () => {
       return;
     }
 
-    navigate(`/chat/${newConvId}`);
+    navigate(`/chat/${newId}`);
   };
 
   const getInitials = (name: string | null) => {

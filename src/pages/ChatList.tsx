@@ -5,7 +5,6 @@ import { useQuery } from "@tanstack/react-query";
 import { Mail, Plus } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
-import { v4 as uuidv4 } from "uuid";
 
 const ChatList = () => {
   const navigate = useNavigate();
@@ -104,10 +103,10 @@ const ChatList = () => {
     }
 
     // Create new conversation
-    const newConvId = uuidv4();
+    const newId = crypto.randomUUID();
     const { error: convError } = await supabase
       .from("conversations")
-      .insert({ id: newConvId });
+      .insert({ id: newId });
 
     if (convError) {
       toast.error("Failed to create chat");
@@ -115,12 +114,12 @@ const ChatList = () => {
     }
 
     await supabase.from("conversation_participants").insert([
-      { conversation_id: newConvId, user_id: userId },
-      { conversation_id: newConvId, user_id: randomProfile.id },
+      { conversation_id: newId, user_id: userId },
+      { conversation_id: newId, user_id: randomProfile.id },
     ]);
 
     toast.success(`Chat started with ${randomProfile.full_name}`);
-    navigate(`/chat/${newConvId}`);
+    navigate(`/chat/${newId}`);
   };
 
   const getInitials = (name: string | null) =>
