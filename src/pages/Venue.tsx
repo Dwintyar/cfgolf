@@ -148,10 +148,33 @@ const Venue = () => {
               </div>
             </div>
 
-            {/* Tee time selection like reference */}
+            {/* Course Tees */}
+            {course?.course_tees && (course.course_tees as any[]).length > 0 && (
+              <div className="mt-6">
+                <p className="text-sm font-semibold mb-3">Tee Options</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {(course.course_tees as any[]).map((tee: any) => (
+                    <div key={tee.id} className="golf-card p-3">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="h-3 w-3 rounded-full border border-border"
+                          style={{ backgroundColor: tee.color === "white" ? "#f0f0f0" : tee.color }}
+                        />
+                        <span className="text-sm font-semibold">{tee.tee_name}</span>
+                      </div>
+                      <div className="mt-1 text-[10px] text-muted-foreground">
+                        Rating {tee.rating ?? "—"} · Slope {tee.slope ?? "—"}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Tee time selection */}
             <div className="mt-6">
-              <p className="text-sm font-semibold mb-3">Choose tee-off time</p>
-              <div className="grid grid-cols-4 gap-2">
+              <p className="text-sm font-semibold mb-3">Pilih waktu tee-off</p>
+              <div className="grid grid-cols-3 gap-2">
                 {TEE_TIMES.map((time) => (
                   <button
                     key={time}
