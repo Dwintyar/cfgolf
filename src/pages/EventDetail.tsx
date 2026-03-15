@@ -213,21 +213,6 @@ const EventDetail = () => {
     enabled: !!event && !!userId,
   });
 
-  // Check if user is HCP Officer for this event
-  const { data: isHcpOfficer } = useQuery({
-    queryKey: ["hcp-officer-check", id, userId],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("event_roles")
-        .select("id")
-        .eq("event_id", id!)
-        .eq("user_id", userId!)
-        .eq("role", "hcp_officer")
-        .maybeSingle();
-      return !!data;
-    },
-    enabled: !!id && !!userId,
-  });
 
   const showAdminActions = !!isEventAdmin;
 
