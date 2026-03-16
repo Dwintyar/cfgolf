@@ -1,4 +1,4 @@
-import { ArrowLeft, Globe, Mail, Camera, UserPlus, UserCheck, MessageCircle, Crown, Check, X, BarChart3, TrendingDown } from "lucide-react";
+import { ArrowLeft, Globe, Mail, Camera, UserPlus, UserCheck, MessageCircle, Crown, Check, X, BarChart3, TrendingDown, Trophy } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -148,6 +148,40 @@ const GolferProfile = () => {
       const bestRound = Math.min(...scorecards.map(c => c.gross_score ?? 999));
       const avgPutts = scorecards.reduce((s, c) => s + (c.total_putts ?? 0), 0) / rounds;
       return { rounds, avgGross: avgGross.toFixed(1), bestRound: bestRound === 999 ? null : bestRound, avgPutts: avgPutts.toFixed(1) };
+    },
+    enabled: !!targetId,
+  });
+
+  const { data: tournamentHistory } = useQuery({
+    queryKey: ["tournament-history", targetId],
+    queryFn: async () => {
+      const { data: tourPlayers } = await supabase
+        .from("tour_players")
+        .select("tour_id, hcp_at_registration, hcp_tour, status, created_at, clubs(name), tours(id, name, tournament_type, year)")
+        .eq("player_id", targetId!)
+        .in("status", ["registered", "active"])
+        .order("created_at", { ascending: false });
+      if (!tourPlayers?.length) return [];
+      const results = await Promise.all(
+        tourPlayers.map(async (tp: any) => {
+          const { data: contestantData } = await supabase
+            .from("contestants")
+            .select("hcp, events(id, name, event_date, status, courses(name))")
+            .eq("player_id", targetId!)
+            .filter("events.tour_id", "eq", tp.tour_id);
+          const events = (contestantData ?? [])
+            .filter(c => (c.events as any)?.status === "completed")
+            .map(c => ({ event: c.events as any, hcp: c.hcp }));
+          return {
+            tour: tp.tours as any,
+            club: tp.clubs as any,
+            hcpAtReg: tp.hcp_at_registration,
+            hcpCurrent: tp.hcp_tour,
+            events,
+          };
+        })
+      );
+      return results.filter(r => r.tour);
     },
     enabled: !!targetId,
   });
@@ -347,6 +381,63 @@ const GolferProfile = () => {
 
         {tab === "stats" && (
           <div className="space-y-4 animate-fade-in">
+            {/* Tournament History */}
+            {tournamentHistory && tournamentHistory.length > 0 && (
+              <div className="golf-card p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Trophy className="h-4 w-4 text-primary" />
+                  <p className="text-sm font-semibold">Tournament History</p>
+                  <span className="text-xs text-muted-foreground ml-auto">
+                    {tournamentHistory.length} tournament
+                  </span>
+                </div>
+                <div className="space-y-3">
+                  {tournamentHistory.map((t: any, i: number) => (
+                    <div key={i} className="border border-border/50 rounded-lg overflow-hidden">
+                      <div className="flex items-center justify-between bg-secondary/50 px-3 py-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-semibold truncate">{t.tour?.name ?? "Tournament"}</p>
+                          <p className="text-[10px] text-muted-foreground">
+                            {t.tour?.year} · {t.tour?.tournament_type} · {t.club?.name}
+                          </p>
+                        </div>
+                        <div className="text-right shrink-0 ml-2">
+                          <p className="text-[10px] text-muted-foreground">Tour HCP</p>
+                          <p className="text-xs font-bold text-primary">{t.hcpAtReg ?? "—"} → {t.hcpCurrent ?? "—"}</p>
+                        </div>
+                      </div>
+                      {t.events.length > 0 ? (
+                        <div className="divide-y divide-border/30">
+                          {t.events.map((e: any, j: number) => (
+                            <div key={j} className="flex items-center justify-between px-3 py-2">
+                              <div className="min-w-0 flex-1">
+                                <p className="text-xs truncate">{e.event?.name}</p>
+                                <p className="text-[10px] text-muted-foreground">
+                                  {e.event?.event_date} · {(e.event?.courses as any)?.name}
+                                </p>
+                              </div>
+                              <div className="text-right shrink-0 ml-2">
+                                <p className="text-[10px] text-muted-foreground">HCP used</p>
+                                <p className="text-xs font-medium">{e.hcp ?? "—"}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-[10px] text-muted-foreground text-center py-2">Belum ada event selesai</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {tournamentHistory?.length === 0 && (
+              <div className="golf-card p-6 text-center">
+                <Trophy className="mx-auto h-8 w-8 text-muted-foreground/40" />
+                <p className="mt-2 text-sm text-muted-foreground">Belum mengikuti tournament</p>
+              </div>
+            )}
+
             {playerStats ? (
               <>
                 <div className="golf-card p-4">
