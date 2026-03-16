@@ -29,6 +29,36 @@ const Venue = () => {
     enabled: !!id,
   });
 
+  const { data: slotConfig } = useQuery({
+    queryKey: ["tee-slot-config-public", id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("tee_time_slots")
+        .select("*")
+        .eq("course_id", id!)
+        .eq("is_active", true)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!id,
+  });
+
+  const teeTimes = useMemo(() => {
+    if (!slotConfig) return ["07:00", "07:30", "08:00", "08:30", "09:00", "09:30", "13:00", "14:00", "15:00"];
+    const slots: string[] = [];
+    const [sh, sm] = slotConfig.start_time.split(":").map(Number);
+    const [eh, em] = slotConfig.end_time.split(":").map(Number);
+    let mins = sh * 60 + sm;
+    const endMins = eh * 60 + em;
+    while (mins <= endMins) {
+      const h = Math.floor(mins / 60).toString().padStart(2, "0");
+      const m = (mins % 60).toString().padStart(2, "0");
+      slots.push(`${h}:${m}`);
+      mins += slotConfig.interval_mins;
+    }
+    return slots;
+  }, [slotConfig]);
+
   const convertDist = (yards: number | null) => {
     if (!yards) return "—";
     if (distUnit === "m") return Math.round(yards * 0.9144).toLocaleString();
