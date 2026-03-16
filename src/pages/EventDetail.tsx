@@ -485,6 +485,31 @@ const EventDetail = () => {
 
         {/* OVERVIEW */}
         <TabsContent value="overview" className="space-y-4 pt-2">
+          {/* Pairing Approval Setting */}
+          {showAdminActions && event?.status !== "completed" && (
+            <div className="golf-card p-3 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-medium">Pairing Approval</p>
+                <p className="text-[9px] text-muted-foreground">
+                  Review sebelum dipublikasikan ke pemain
+                </p>
+              </div>
+              <Switch
+                checked={event?.pairing_approval_required ?? false}
+                onCheckedChange={async (val) => {
+                  await supabase
+                    .from("events")
+                    .update({ pairing_approval_required: val })
+                    .eq("id", id!);
+                  queryClient.invalidateQueries({ queryKey: ["event", id] });
+                  toast.success(val
+                    ? "Pairing approval aktif"
+                    : "Pairing langsung dipublikasikan");
+                }}
+              />
+            </div>
+          )}
+
           <Section title="Contestants" icon={Users} count={contestants?.length}>
             {contestants?.length === 0 && <EmptyState text="No contestants" />}
             {contestants?.slice(0, 10).map((c) => (
