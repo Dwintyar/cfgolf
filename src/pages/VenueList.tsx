@@ -62,24 +62,19 @@ const VenueList = () => {
     enabled: !!userId,
   });
 
-  const { data: myClubsWithoutCourse } = useQuery({
-    queryKey: ["my-clubs-without-course", myClubIds],
+  const { data: myAdminClubsData } = useQuery({
+    queryKey: ["my-admin-clubs-data", userId],
     queryFn: async () => {
-      if (!myClubIds?.length) return [];
-      const { data: clubsWithCourse } = await supabase
-        .from("courses")
-        .select("club_id")
-        .in("club_id", myClubIds);
-      const hasCourse = new Set((clubsWithCourse ?? []).map(c => c.club_id));
-      if (hasCourse.size === myClubIds.length) return [];
-      const missingIds = myClubIds.filter(id => !hasCourse.has(id));
-      const { data: clubs } = await supabase
-        .from("clubs")
-        .select("id, name, facility_type")
-        .in("id", missingIds);
-      return clubs ?? [];
+      if (!userId) return [];
+      const { data } = await supabase
+        .from("members")
+        .select("club_id, clubs(id, name, facility_type)")
+        .eq("user_id", userId)
+        .in("role", ["owner", "admin"]);
+      return (data ?? []).map(m => m.clubs).filter(Boolean) as { id: string; name: string; facility_type: string }[];
     },
-    enabled: !!myClubIds?.length,
+    enabled: !!userId,
+  });
   });
 
   const searchFiltered = courses?.filter((c) =>
