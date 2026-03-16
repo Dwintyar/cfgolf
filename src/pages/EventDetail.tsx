@@ -735,7 +735,7 @@ const EventDetail = () => {
               <p className="mt-2 text-sm text-muted-foreground">No scores yet</p>
               {myContestant && isCheckedIn && (
                 <Button size="sm" className="mt-3 gap-1" onClick={() => navigate(`/event/${id}/scorecard`)}>
-                  <PenLine className="h-3.5 w-3.5" /> Be the first to enter scores
+                  <Pencil className="h-3.5 w-3.5" /> Be the first to enter scores
                 </Button>
               )}
             </div>
