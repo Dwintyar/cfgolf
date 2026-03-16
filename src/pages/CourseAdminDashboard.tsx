@@ -404,6 +404,24 @@ const CourseAdminDashboard = () => {
         {/* ═══ HOLES ═══ */}
         {tab === "holes" && !isNew && (
           <div className="space-y-3">
+            {isCourseLocked && (
+              <div className="golf-card border-accent/30 p-3">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="h-4 w-4 text-accent shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-xs font-semibold text-accent">Course sedang digunakan</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                      Ada {activeEvents?.length} event aktif. Perubahan holes berlaku untuk event mendatang saja — event yang sedang berjalan menggunakan snapshot yang sudah terkunci.
+                    </p>
+                    {activeEvents?.map(e => (
+                      <p key={e.id} className="text-[10px] text-muted-foreground/70 mt-0.5">
+                        • {e.name} ({e.event_date}) — {e.status}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
             {holes.length === 0 && !holesEditing && (
               <div className="golf-card p-8 text-center">
                 <Grid3X3 className="mx-auto h-10 w-10 text-muted-foreground/40" />
