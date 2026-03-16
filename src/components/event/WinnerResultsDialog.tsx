@@ -11,6 +11,7 @@ interface Props {
   eventId: string;
   eventName: string;
   eventStatus: string;
+  isOrganizer?: boolean;
   open: boolean;
   onOpenChange: (v: boolean) => void;
   onDone: () => void;

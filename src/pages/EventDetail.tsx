@@ -690,7 +690,7 @@ const EventDetail = () => {
 
       {/* Dialogs */}
       <AssignContestantDialog eventId={event.id} tourId={event.tour_id} open={showAssign} onOpenChange={setShowAssign} onDone={() => { setShowAssign(false); refetchContestants(); }} />
-      <WinnerResultsDialog eventId={event.id} eventName={event.name} eventStatus={event.status} open={showWinners} onOpenChange={setShowWinners} onDone={() => { setShowWinners(false); refetchResults(); }} />
+      <WinnerResultsDialog eventId={event.id} eventName={event.name} eventStatus={event.status} isOrganizer={!!isEventAdmin} open={showWinners} onOpenChange={setShowWinners} onDone={() => { setShowWinners(false); refetchResults(); }} />
 
       {/* Self Check-in Dialog */}
       <Dialog open={showCheckinDialog} onOpenChange={setShowCheckinDialog}>
