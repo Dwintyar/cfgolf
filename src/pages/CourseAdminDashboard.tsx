@@ -632,12 +632,39 @@ const CourseAdminDashboard = () => {
                 </div>
               </div>
             </div>
-            <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending || !form.name} className="w-full">
+            <Button onClick={() => {
+              if (isCourseLocked && !isNew) {
+                setShowLockConfirm(true);
+              } else {
+                saveMutation.mutate();
+              }
+            }} disabled={saveMutation.isPending || !form.name} className="w-full">
               <Save className="h-4 w-4 mr-2" />
               {isNew ? "Create Course" : "Save Changes"}
             </Button>
+            {isCourseLocked && !isNew && (
+              <p className="text-[10px] text-accent text-center">
+                ⚠️ Perubahan tidak mempengaruhi event yang sedang berjalan
+              </p>
+            )}
           </div>
         )}
+
+        {/* Lock Confirmation Dialog */}
+        <Dialog open={showLockConfirm} onOpenChange={setShowLockConfirm}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle>Update Course Settings?</DialogTitle>
+            </DialogHeader>
+            <p className="text-sm text-muted-foreground">
+              Ada {activeEvents?.length} event aktif menggunakan course ini. Perubahan settings (nama, green fee, dll) akan berlaku segera, tapi data holes event yang sedang berjalan tidak berubah karena sudah menggunakan snapshot.
+            </p>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowLockConfirm(false)}>Batalkan</Button>
+              <Button onClick={() => { setShowLockConfirm(false); saveMutation.mutate(); }}>Ya, Update</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
