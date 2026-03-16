@@ -152,6 +152,40 @@ const GolferProfile = () => {
     enabled: !!targetId,
   });
 
+  const { data: tournamentHistory } = useQuery({
+    queryKey: ["tournament-history", targetId],
+    queryFn: async () => {
+      const { data: tourPlayers } = await supabase
+        .from("tour_players")
+        .select("tour_id, hcp_at_registration, hcp_tour, status, created_at, clubs(name), tours(id, name, tournament_type, year)")
+        .eq("player_id", targetId!)
+        .in("status", ["registered", "active"])
+        .order("created_at", { ascending: false });
+      if (!tourPlayers?.length) return [];
+      const results = await Promise.all(
+        tourPlayers.map(async (tp: any) => {
+          const { data: contestantData } = await supabase
+            .from("contestants")
+            .select("hcp, events(id, name, event_date, status, courses(name))")
+            .eq("player_id", targetId!)
+            .filter("events.tour_id", "eq", tp.tour_id);
+          const events = (contestantData ?? [])
+            .filter(c => (c.events as any)?.status === "completed")
+            .map(c => ({ event: c.events as any, hcp: c.hcp }));
+          return {
+            tour: tp.tours as any,
+            club: tp.clubs as any,
+            hcpAtReg: tp.hcp_at_registration,
+            hcpCurrent: tp.hcp_tour,
+            events,
+          };
+        })
+      );
+      return results.filter(r => r.tour);
+    },
+    enabled: !!targetId,
+  });
+
   const handleAddBuddy = async () => {
     if (!profile || !currentUserId) return;
     const { error } = await supabase.from("buddy_connections").insert({ requester_id: currentUserId, addressee_id: profile.id });
