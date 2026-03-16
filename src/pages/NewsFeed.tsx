@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Heart, MessageCircle, Share2, Plus, Image, MapPin, Tag, X } from "lucide-react";
+import { Heart, MessageCircle, Share2, Plus, Image, MapPin, Tag, X, MessageSquare } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
 import heroImg from "@/assets/golf-hero.jpg";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
