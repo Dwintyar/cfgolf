@@ -315,7 +315,7 @@ const TourList = () => {
                     <Badge variant="outline" className={`text-[9px] shrink-0 ${
                       tour.playerRole === "organizer"
                         ? "text-primary border-primary/30"
-                        : "text-accent-foreground border-accent"
+                        : "text-muted-foreground border-muted-foreground/30"
                     }`}>
                       {tour.playerRole === "organizer" ? "Organizer" :
                        tour.myStatus === "pending" ? "Pending" : "Player"}
