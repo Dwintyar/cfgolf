@@ -59,7 +59,7 @@ const TourList = () => {
         .in("role", ["owner", "admin"]);
 
       if (!myClubs?.length) return [];
-      const myClubIds = myClubs.map(m => m.club_id);
+      const myClubIds = [...new Set(myClubs.map(m => m.club_id))];
 
       const { data } = await supabase
         .from("tour_clubs")
