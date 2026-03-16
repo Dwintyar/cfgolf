@@ -10,6 +10,7 @@ import { useChatNotifications } from "@/hooks/use-chat-notifications";
 
 export const ChatNotifContext = createContext<{ unreadCount: number }>({ unreadCount: 0 });
 import Login from "./pages/Login";
+import Onboarding from "./pages/Onboarding";
 import ResetPassword from "./pages/ResetPassword";
 import NewsFeed from "./pages/NewsFeed";
 import Clubs from "./pages/Clubs";
@@ -73,6 +74,7 @@ const AppInner = () => {
           <Route path="/admin/course/:courseId" element={<CourseAdminDashboard />} />
           <Route path="/export-queries" element={<ExportQueries />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/news" element={<NewsFeed />} />
           <Route path="/clubs" element={<Clubs />} />

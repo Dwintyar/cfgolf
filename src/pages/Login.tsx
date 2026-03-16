@@ -17,17 +17,30 @@ const Login = () => {
   const [isForgot, setIsForgot] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const checkOnboarding = async (userId: string) => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("onboarding_completed")
+      .eq("id", userId)
+      .single();
+    if (!data?.onboarding_completed) {
+      navigate("/onboarding", { replace: true });
+    } else {
+      navigate("/news", { replace: true });
+    }
+  };
+
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if (session) {
-          navigate("/news", { replace: true });
+          checkOnboarding(session.user.id);
         }
       }
     );
 
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) navigate("/news", { replace: true });
+      if (session) checkOnboarding(session.user.id);
     });
 
     return () => subscription.unsubscribe();
