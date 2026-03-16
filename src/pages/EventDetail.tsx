@@ -434,8 +434,15 @@ const EventDetail = () => {
         )}
         {/* Scorecard button */}
         {myContestant && isCheckedIn && (
-          <Button size="sm" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => navigate(`/event/${id}/scorecard`)}>
-            <PenLine className="h-3 w-3" /> Input Score
+          <Button
+            size="sm"
+            className={`h-7 shrink-0 gap-1 text-[11px] ${event?.status === "completed" ? "opacity-50 cursor-not-allowed" : ""}`}
+            onClick={() => navigate(`/event/${id}/scorecard`)}
+            disabled={event?.status === "completed"}
+            variant={event?.status === "completed" ? "outline" : "default"}
+          >
+            <PenLine className="h-3 w-3" />
+            {event?.status === "completed" ? "Score Locked" : "Input Score"}
           </Button>
         )}
         {/* Admin-only buttons */}
@@ -683,7 +690,7 @@ const EventDetail = () => {
 
       {/* Dialogs */}
       <AssignContestantDialog eventId={event.id} tourId={event.tour_id} open={showAssign} onOpenChange={setShowAssign} onDone={() => { setShowAssign(false); refetchContestants(); }} />
-      <WinnerResultsDialog eventId={event.id} eventName={event.name} eventStatus={event.status} open={showWinners} onOpenChange={setShowWinners} onDone={() => { setShowWinners(false); refetchResults(); }} />
+      <WinnerResultsDialog eventId={event.id} eventName={event.name} eventStatus={event.status} isOrganizer={!!isEventAdmin} open={showWinners} onOpenChange={setShowWinners} onDone={() => { setShowWinners(false); refetchResults(); }} />
 
       {/* Self Check-in Dialog */}
       <Dialog open={showCheckinDialog} onOpenChange={setShowCheckinDialog}>

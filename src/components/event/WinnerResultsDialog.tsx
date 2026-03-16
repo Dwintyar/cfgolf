@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 import { useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -11,13 +12,16 @@ interface Props {
   eventId: string;
   eventName: string;
   eventStatus: string;
+  isOrganizer?: boolean;
   open: boolean;
   onOpenChange: (v: boolean) => void;
   onDone: () => void;
 }
 
-const WinnerResultsDialog = ({ eventId, eventName, eventStatus, open, onOpenChange, onDone }: Props) => {
+const WinnerResultsDialog = ({ eventId, eventName, eventStatus, isOrganizer, open, onOpenChange, onDone }: Props) => {
   const [finalizing, setFinalizing] = useState(false);
+  const [calculating, setCalculating] = useState(false);
+  const queryClient = useQueryClient();
 
   const { data: results } = useQuery({
     queryKey: ["event-results-dialog", eventId],
@@ -74,7 +78,36 @@ const WinnerResultsDialog = ({ eventId, eventName, eventStatus, open, onOpenChan
           <div className="text-center py-6">
             <Trophy className="mx-auto h-10 w-10 text-muted-foreground/30" />
             <p className="mt-2 text-sm text-muted-foreground">No results calculated yet</p>
-            <p className="text-xs text-muted-foreground mt-1">Use "Winners" button to calculate first</p>
+            <p className="text-xs text-muted-foreground mt-1">Use "Calculate Results" below to calculate</p>
+            {isOrganizer && (
+              <Button
+                className="w-full mt-4 gap-2"
+                disabled={calculating}
+                onClick={async () => {
+                  setCalculating(true);
+                  try {
+                    const { data: sessionData } = await supabase.auth.getSession();
+                    const token = sessionData?.session?.access_token;
+                    const { data, error } = await supabase.functions.invoke("calculate-event-winners", {
+                      body: { event_id: eventId },
+                      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+                    });
+                    if (error) { toast.error("Gagal: " + error.message); return; }
+                    if (data?.error) { toast.error("Gagal: " + data.error); return; }
+                    toast.success(`${data.winners_calculated} pemenang dihitung`);
+                    queryClient.invalidateQueries({ queryKey: ["event-results-dialog", eventId] });
+                    queryClient.invalidateQueries({ queryKey: ["event-results", eventId] });
+                  } catch (err: any) {
+                    toast.error(err.message);
+                  } finally {
+                    setCalculating(false);
+                  }
+                }}
+              >
+                <Trophy className="h-4 w-4" />
+                {calculating ? "Calculating…" : "Calculate Results Now"}
+              </Button>
+            )}
           </div>
         )}
 
