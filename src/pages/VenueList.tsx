@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { MapPin, Flag, Search } from "lucide-react";
+import { MapPin, Flag, Search, Plus } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import venueImg from "@/assets/golf-venue.jpg";
 import { useState, useEffect } from "react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 const VenueList = () => {
   const navigate = useNavigate();
@@ -109,9 +110,6 @@ const VenueList = () => {
     return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(Number(price));
   };
 
-  const addCourseClubs = myClubsWithoutCourse?.filter(club =>
-    club.facility_type !== "driving_range"
-  ) ?? [];
 
   return (
     <div className="bottom-nav-safe">
@@ -156,7 +154,7 @@ const VenueList = () => {
               <Skeleton key={i} className="h-32 w-full rounded-xl" />
             ))}
 
-          {!isLoading && sortedGolfCourses.length === 0 && addCourseClubs.length === 0 && (
+          {!isLoading && sortedGolfCourses.length === 0 && (
             <div className="golf-card p-8 text-center">
               <MapPin className="mx-auto h-10 w-10 text-muted-foreground/40" />
               <p className="mt-3 text-sm text-muted-foreground">No venues found</p>
@@ -213,21 +211,6 @@ const VenueList = () => {
             );
           })}
 
-          {addCourseClubs.map(club => (
-            <button
-              key={club.id}
-              onClick={() => navigate(`/admin/course/new?clubId=${club.id}`)}
-              className="golf-card w-full flex items-center gap-4 p-4 border-dashed border-primary/30 hover:border-primary/60 transition-colors"
-            >
-              <div className="h-16 w-16 rounded-xl bg-secondary flex items-center justify-center shrink-0 border border-dashed border-primary/30">
-                <span className="text-xl text-primary font-bold">+</span>
-              </div>
-              <div className="flex-1 text-left">
-                <p className="text-sm font-semibold text-primary">Add New Course</p>
-                <p className="text-xs text-muted-foreground">{club.name}</p>
-              </div>
-            </button>
-          ))}
         </div>
       )}
 
@@ -294,6 +277,58 @@ const VenueList = () => {
                 {search ? "No driving ranges found" : "No driving ranges yet"}
               </p>
             </div>
+          )}
+        </div>
+      )}
+      {/* FAB — hanya tampil jika user punya klub tanpa course */}
+      {myClubsWithoutCourse && myClubsWithoutCourse
+        .filter(club =>
+          venueTab === "range"
+            ? club.facility_type === "driving_range"
+            : club.facility_type !== "driving_range"
+        ).length > 0 && (
+        <div className="fixed bottom-20 right-4 z-50">
+          {myClubsWithoutCourse
+            .filter(club =>
+              venueTab === "range"
+                ? club.facility_type === "driving_range"
+                : club.facility_type !== "driving_range"
+            ).length === 1 ? (
+            <button
+              onClick={() => {
+                const club = myClubsWithoutCourse.filter(c =>
+                  venueTab === "range"
+                    ? c.facility_type === "driving_range"
+                    : c.facility_type !== "driving_range"
+                )[0];
+                navigate(`/admin/course/new?clubId=${club.id}`);
+              }}
+              className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors"
+            >
+              <Plus className="h-5 w-5" />
+            </button>
+          ) : (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors">
+                  <Plus className="h-5 w-5" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="mb-2">
+                <p className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Add course for:</p>
+                {myClubsWithoutCourse
+                  .filter(c =>
+                    venueTab === "range"
+                      ? c.facility_type === "driving_range"
+                      : c.facility_type !== "driving_range"
+                  )
+                  .map(club => (
+                    <DropdownMenuItem key={club.id} onClick={() => navigate(`/admin/course/new?clubId=${club.id}`)}>
+                      {club.name}
+                    </DropdownMenuItem>
+                  ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </div>
       )}
