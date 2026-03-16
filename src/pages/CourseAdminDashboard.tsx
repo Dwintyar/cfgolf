@@ -72,6 +72,92 @@ const CourseAdminDashboard = () => {
     enabled: !isNew,
   });
 
+  // Tee time slot config
+  const { data: slotConfig, refetch: refetchSlots } = useQuery({
+    queryKey: ["tee-slot-config", courseId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("tee_time_slots")
+        .select("*")
+        .eq("course_id", courseId!)
+        .eq("is_active", true)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!courseId && !isNew,
+  });
+
+  // Upcoming bookings
+  const { data: upcomingBookings } = useQuery({
+    queryKey: ["course-bookings", courseId],
+    queryFn: async () => {
+      const today = new Date().toISOString().split("T")[0];
+      const { data } = await supabase
+        .from("tee_time_bookings")
+        .select("*, profiles:user_id(full_name)")
+        .eq("course_id", courseId!)
+        .gte("booking_date", today)
+        .order("booking_date")
+        .order("tee_time");
+      return data ?? [];
+    },
+    enabled: !!courseId && !isNew,
+  });
+
+  // ═══ TEE TIME FORM STATE ═══
+  const [startTime, setStartTime] = useState("06:00");
+  const [endTime, setEndTime] = useState("15:00");
+  const [slotInterval, setSlotInterval] = useState(30);
+  const [maxPlayers, setMaxPlayers] = useState(4);
+  const [priceWeekday, setPriceWeekday] = useState("");
+  const [priceWeekend, setPriceWeekend] = useState("");
+  const [savingSlots, setSavingSlots] = useState(false);
+
+  useEffect(() => {
+    if (slotConfig) {
+      setStartTime(slotConfig.start_time?.slice(0, 5) ?? "06:00");
+      setEndTime(slotConfig.end_time?.slice(0, 5) ?? "15:00");
+      setSlotInterval(slotConfig.interval_mins ?? 30);
+      setMaxPlayers(slotConfig.max_players ?? 4);
+      setPriceWeekday(String(slotConfig.price_weekday ?? ""));
+      setPriceWeekend(String(slotConfig.price_weekend ?? ""));
+    }
+  }, [slotConfig]);
+
+  const handleSaveSlots = async () => {
+    if (!courseId) return;
+    setSavingSlots(true);
+    await supabase.from("tee_time_slots").upsert({
+      ...(slotConfig?.id ? { id: slotConfig.id } : {}),
+      course_id: courseId,
+      start_time: startTime,
+      end_time: endTime,
+      interval_mins: slotInterval,
+      max_players: maxPlayers,
+      price_weekday: parseFloat(priceWeekday) || 0,
+      price_weekend: parseFloat(priceWeekend) || 0,
+      is_active: true,
+    }, { onConflict: "id" });
+    toast({ title: "Tee time schedule saved!" });
+    refetchSlots();
+    setSavingSlots(false);
+  };
+
+  const generateSlotPreviews = () => {
+    const slots: string[] = [];
+    const [sh, sm] = startTime.split(":").map(Number);
+    const [eh, em] = endTime.split(":").map(Number);
+    let mins = sh * 60 + sm;
+    const endMins = eh * 60 + em;
+    while (mins <= endMins) {
+      const h = Math.floor(mins / 60).toString().padStart(2, "0");
+      const m = (mins % 60).toString().padStart(2, "0");
+      slots.push(`${h}:${m}`);
+      mins += slotInterval;
+    }
+    return slots;
+  };
+
   // ═══ SETTINGS FORM ═══
   const [form, setForm] = useState({
     name: "",
