@@ -297,44 +297,74 @@ const TourList = () => {
                 })
           )}
 
-          {/* Tab: My Tours */}
+          {/* Tab: My Tours / My Events */}
           {tourTab === "mine" && (
-            myTours?.length === 0
-              ? <p className="text-xs text-muted-foreground text-center py-4">
-                  No tournaments yet.
-                </p>
-              : myTours?.map((tour: any, i: number) => (
-                  <button key={tour.id}
-                    onClick={() => navigate(`/tour/${tour.id}`)}
-                    className="flex w-full items-center gap-3 rounded-xl py-3 text-left hover:opacity-80 transition-opacity animate-fade-in"
-                    style={{ animationDelay: `${i * 60}ms` }}>
-                    <Avatar className="h-10 w-10 border-2 border-primary/20">
-                      <AvatarImage src={tour.clubs?.logo_url ?? ""} />
-                      <AvatarFallback className="bg-primary/10 text-xs font-bold text-primary">
-                        {tour.name?.charAt(0)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold truncate">{tour.name}</p>
-                      <p className="text-[10px] text-muted-foreground">
-                        {tour.year} · {tour.clubs?.name ?? "—"}
-                      </p>
-                      {tour.playerRole === "participant" && tour.myTourHcp != null && (
-                        <p className="text-[10px] text-primary">
-                          Tournament HCP: {tour.myTourHcp}
+            isOrganizer ? (
+              myTours?.filter(t => t.playerRole === "organizer").length === 0
+                ? <p className="text-xs text-muted-foreground text-center py-4">
+                    No tournaments yet. Create one!
+                  </p>
+                : myTours?.filter(t => t.playerRole === "organizer").map((tour: any, i: number) => (
+                    <button key={tour.id}
+                      onClick={() => navigate(`/tour/${tour.id}`)}
+                      className="flex w-full items-center gap-3 rounded-xl py-3 text-left hover:opacity-80 transition-opacity animate-fade-in"
+                      style={{ animationDelay: `${i * 60}ms` }}>
+                      <Avatar className="h-10 w-10 border-2 border-primary/20">
+                        <AvatarImage src={tour.clubs?.logo_url ?? ""} />
+                        <AvatarFallback className="bg-primary/10 text-xs font-bold text-primary">
+                          {tour.name?.charAt(0)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold truncate">{tour.name}</p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {tour.year} · {tour.clubs?.name ?? "—"}
                         </p>
-                      )}
-                    </div>
-                    <Badge variant="outline" className={`text-[9px] shrink-0 ${
-                      tour.playerRole === "organizer"
-                        ? "text-primary border-primary/30"
-                        : "text-muted-foreground border-muted-foreground/30"
-                    }`}>
-                      {tour.playerRole === "organizer" ? "Organizer" :
-                       tour.myStatus === "pending" ? "Pending" : "Player"}
-                    </Badge>
-                  </button>
-                ))
+                      </div>
+                      <Badge variant="outline" className="text-[9px] text-primary border-primary/30">
+                        Organizer →
+                      </Badge>
+                    </button>
+                  ))
+            ) : (
+              myEvents?.length === 0
+                ? <p className="text-xs text-muted-foreground text-center py-4">
+                    You have not been assigned to any events yet.
+                  </p>
+                : myEvents?.map((c: any, i: number) => {
+                    const ev = c.events;
+                    if (!ev) return null;
+                    const statusColors: Record<string, string> = {
+                      draft: "text-muted-foreground border-muted-foreground/30",
+                      registration: "text-accent-foreground border-accent/30",
+                      playing: "text-primary border-primary/30",
+                      completed: "text-primary border-primary/60",
+                    };
+                    return (
+                      <button key={c.id}
+                        onClick={() => navigate(`/event/${ev.id}`)}
+                        className="flex w-full items-center gap-3 rounded-xl py-3 text-left hover:opacity-80 transition-opacity animate-fade-in"
+                        style={{ animationDelay: `${i * 60}ms` }}>
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary border-2 border-primary/20">
+                          {ev.name?.charAt(0)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold truncate">{ev.name}</p>
+                          <p className="text-[10px] text-muted-foreground">
+                            {ev.event_date} · {(ev.courses as any)?.name ?? "—"}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground/60">
+                            {(ev.tours as any)?.name ?? ""}
+                          </p>
+                        </div>
+                        <Badge variant="outline"
+                          className={`text-[9px] shrink-0 ${statusColors[ev.status] ?? ""}`}>
+                          {ev.status}
+                        </Badge>
+                      </button>
+                    );
+                  })
+            )
           )}
 
           {/* Tab: All */}
