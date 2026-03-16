@@ -42,7 +42,7 @@ const GolfersNearby = () => {
 
   return (
     <div className="bottom-nav-safe">
-      <AppHeader />
+      <AppHeader title="Golfers Nearby" />
       <div className="px-4 pt-2 pb-3">
         <h1 className="font-display text-xl font-bold mb-3">Golfers Nearby</h1>
         <div className="relative">
