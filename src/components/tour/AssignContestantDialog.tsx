@@ -80,20 +80,34 @@ const AssignContestantDialog = ({ eventId, tourId, open, onOpenChange, onDone }:
         <div className="space-y-3">
           <div>
             <Label className="text-xs">Player</Label>
-            <Select value={playerId} onValueChange={(v) => {
-              setPlayerId(v);
-              const p = players?.find(pp => pp.player_id === v);
-              if (p && (p.profiles as any)?.handicap != null) setHcp(String((p.profiles as any).handicap));
-            }}>
-              <SelectTrigger><SelectValue placeholder="Select player" /></SelectTrigger>
-              <SelectContent>
-                {players?.map(p => (
-                  <SelectItem key={p.player_id} value={p.player_id}>
-                    {(p.profiles as any)?.full_name ?? "Unknown"} (HCP {(p.profiles as any)?.handicap ?? "—"})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <p className="text-[10px] text-muted-foreground mb-1">
+              {players?.length ?? 0} player tersedia untuk di-assign
+            </p>
+            {players?.length === 0 ? (
+              <p className="text-xs text-muted-foreground text-center py-2">
+                Semua player tournament sudah menjadi contestant.
+              </p>
+            ) : (
+              <Select value={playerId} onValueChange={(v) => {
+                setPlayerId(v);
+                const p = players?.find(pp => pp.player_id === v);
+                if (p) {
+                  const tournamentHcp = (p as any).hcp_tour
+                    ?? (p as any).hcp_at_registration
+                    ?? (p.profiles as any)?.handicap;
+                  if (tournamentHcp != null) setHcp(String(tournamentHcp));
+                }
+              }}>
+                <SelectTrigger><SelectValue placeholder="Select player" /></SelectTrigger>
+                <SelectContent>
+                  {players?.map(p => (
+                    <SelectItem key={p.player_id} value={p.player_id}>
+                      {(p.profiles as any)?.full_name ?? "Unknown"} (Tour HCP {(p as any).hcp_tour ?? (p as any).hcp_at_registration ?? "—"})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
           <div>
             <Label className="text-xs">Status</Label>
@@ -107,8 +121,16 @@ const AssignContestantDialog = ({ eventId, tourId, open, onOpenChange, onDone }:
             </Select>
           </div>
           <div>
-            <Label className="text-xs">HCP for this event</Label>
+            <Label className="text-xs">HCP for this event (Tournament HCP)</Label>
             <Input type="number" value={hcp} onChange={e => setHcp(e.target.value)} />
+            {playerId && (
+              <p className="text-[10px] text-muted-foreground mt-1">
+                Personal HCP: {players?.find(p => p.player_id === playerId)
+                  ? (players.find(p => p.player_id === playerId)?.profiles as any)?.handicap ?? "—"
+                  : "—"}
+              </p>
+            )}
+          </div>
           </div>
           <div>
             <Label className="text-xs">Flight</Label>
