@@ -75,7 +75,6 @@ const VenueList = () => {
     },
     enabled: !!userId,
   });
-  });
 
   const searchFiltered = courses?.filter((c) =>
     !search ||
