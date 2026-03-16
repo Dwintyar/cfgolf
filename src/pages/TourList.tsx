@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { Trophy, Plus } from "lucide-react";
+import { Trophy, Plus, Calendar } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -188,9 +188,13 @@ const TourList = () => {
           ))}
 
           {!eventsLoading && displayEvents.length === 0 && (
-            <p className="text-center text-xs text-muted-foreground py-4">
-              {tab === "upcoming" ? "No upcoming events" : "No completed events"}
-            </p>
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <Calendar className="h-10 w-10 text-muted-foreground/40 mb-3" />
+              <p className="text-sm font-semibold">
+                {tab === "upcoming" ? "Tidak ada event mendatang" : "Belum ada event selesai"}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">Event akan muncul setelah dibuat oleh organizer</p>
+            </div>
           )}
 
           {displayEvents.map((event, i) => (
@@ -301,9 +305,12 @@ const TourList = () => {
           {tourTab === "mine" && (
             isOrganizer ? (
               myTours?.filter(t => t.playerRole === "organizer").length === 0
-                ? <p className="text-xs text-muted-foreground text-center py-4">
-                    No tournaments yet. Create one!
-                  </p>
+                ? <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <Trophy className="h-10 w-10 text-muted-foreground/40 mb-3" />
+                    <p className="text-sm font-semibold">Belum ada tournament</p>
+                    <p className="text-xs text-muted-foreground mt-1">Buat tournament baru untuk memulai</p>
+                    <Button size="sm" className="mt-3" onClick={() => setShowCreate(true)}>Buat Tournament</Button>
+                  </div>
                 : myTours?.filter(t => t.playerRole === "organizer").map((tour: any, i: number) => (
                     <button key={tour.id}
                       onClick={() => navigate(`/tour/${tour.id}`)}
@@ -328,9 +335,12 @@ const TourList = () => {
                   ))
             ) : (
               myEvents?.length === 0
-                ? <p className="text-xs text-muted-foreground text-center py-4">
-                    You have not been assigned to any events yet.
-                  </p>
+                ? <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <Trophy className="h-10 w-10 text-muted-foreground/40 mb-3" />
+                    <p className="text-sm font-semibold">Belum mengikuti tournament</p>
+                    <p className="text-xs text-muted-foreground mt-1">Daftar ke tournament atau buat tournament baru</p>
+                    <Button size="sm" variant="outline" className="mt-3" onClick={() => setTourTab("all")}>Browse All</Button>
+                  </div>
                 : myEvents?.map((c: any, i: number) => {
                     const ev = c.events;
                     if (!ev) return null;
@@ -375,7 +385,11 @@ const TourList = () => {
               ))}
 
               {!isLoading && tours?.length === 0 && (
-                <p className="text-xs text-muted-foreground text-center py-4">No tours available</p>
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <Trophy className="h-10 w-10 text-muted-foreground/40 mb-3" />
+                  <p className="text-sm font-semibold">Belum ada tournament</p>
+                  <p className="text-xs text-muted-foreground mt-1">Tournament akan muncul setelah dibuat</p>
+                </div>
               )}
 
               {tours?.map((tour, i) => (

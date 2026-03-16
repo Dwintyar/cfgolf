@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -8,13 +8,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import venueImg from "@/assets/golf-venue.jpg";
 import { toast } from "sonner";
-
-const TIME_SLOTS = [
-  "06:00", "06:30", "07:00", "07:30", "08:00", "08:30",
-  "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
-  "12:00", "12:30", "13:00", "13:30", "14:00", "14:30",
-  "15:00", "15:30", "16:00", "16:30",
-];
 
 const BookTeeTime = () => {
   const navigate = useNavigate();
@@ -52,6 +45,45 @@ const BookTeeTime = () => {
     enabled: !!courseId,
   });
 
+  const { data: slotConfig } = useQuery({
+    queryKey: ["slot-config-book", courseId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("tee_time_slots")
+        .select("*")
+        .eq("course_id", courseId!)
+        .eq("is_active", true)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!courseId,
+  });
+
+  const timeSlots = useMemo(() => {
+    if (!slotConfig) return [
+      "06:00","06:30","07:00","07:30","08:00","08:30",
+      "09:00","09:30","10:00","10:30","11:00","11:30",
+      "12:00","12:30","13:00","13:30","14:00","14:30","15:00"
+    ];
+    const slots: string[] = [];
+    const [sh, sm] = slotConfig.start_time.split(":").map(Number);
+    const [eh, em] = slotConfig.end_time.split(":").map(Number);
+    let mins = sh * 60 + sm;
+    const endMins = eh * 60 + em;
+    while (mins <= endMins) {
+      const h = Math.floor(mins / 60).toString().padStart(2, "0");
+      const m = (mins % 60).toString().padStart(2, "0");
+      slots.push(`${h}:${m}`);
+      mins += slotConfig.interval_mins;
+    }
+    return slots;
+  }, [slotConfig]);
+
+  const isWeekend = useMemo(() => {
+    const d = new Date(selectedDate);
+    return d.getDay() === 0 || d.getDay() === 6;
+  }, [selectedDate]);
+
   // Get existing bookings for the selected date to show availability
   const { data: existingBookings } = useQuery({
     queryKey: ["bookings", courseId, selectedDate],
@@ -68,11 +100,18 @@ const BookTeeTime = () => {
   });
 
   const bookedTimes = new Set(
-    existingBookings?.filter((b) => b.players_count >= 4).map((b) => b.tee_time.slice(0, 5)) ?? []
+    existingBookings?.filter((b) => b.players_count >= (slotConfig?.max_players ?? 4)).map((b) => b.tee_time.slice(0, 5)) ?? []
   );
 
-  const price = course?.green_fee_price ? Number(course.green_fee_price) : 0;
-  const totalPrice = price * players;
+  const formatPrice = (price: number | null | undefined) => {
+    if (!price) return null;
+    return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(Number(price));
+  };
+
+  const displayPrice = isWeekend
+    ? (slotConfig?.price_weekend ?? (course?.green_fee_price ? Number(course.green_fee_price) : 0))
+    : (slotConfig?.price_weekday ?? (course?.green_fee_price ? Number(course.green_fee_price) : 0));
+  const totalPrice = displayPrice * players;
 
   const handleBook = async () => {
     if (!userId || !courseId || !selectedTime) return;
@@ -110,7 +149,7 @@ const BookTeeTime = () => {
           </p>
           <p className="mt-1 text-lg font-bold text-primary">{selectedTime} · {players} player{players > 1 ? "s" : ""}</p>
           {totalPrice > 0 && (
-            <p className="mt-1 text-sm text-muted-foreground">Total: ${totalPrice.toFixed(2)}</p>
+            <p className="mt-1 text-sm text-muted-foreground">Total: {formatPrice(totalPrice)}</p>
           )}
           <div className="mt-6 flex gap-3">
             <Button variant="outline" className="flex-1" onClick={() => navigate(`/venue/${courseId}`)}>
@@ -167,8 +206,13 @@ const BookTeeTime = () => {
           <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
             Pilih Waktu Tee-Off
           </Label>
+          {displayPrice > 0 && (
+            <p className="text-[11px] text-muted-foreground mt-1">
+              {formatPrice(displayPrice)} · {isWeekend ? "Weekend" : "Weekday"}
+            </p>
+          )}
           <div className="mt-2 grid grid-cols-4 gap-2">
-            {TIME_SLOTS.map((time) => {
+            {timeSlots.map((time) => {
               const isBooked = bookedTimes.has(time);
               const isSelected = selectedTime === time;
               return (
@@ -197,7 +241,7 @@ const BookTeeTime = () => {
             <Users className="h-3.5 w-3.5" /> Jumlah Pemain
           </Label>
           <div className="mt-2 flex gap-2">
-            {[1, 2, 3, 4].map((n) => (
+            {Array.from({ length: slotConfig?.max_players ?? 4 }, (_, i) => i + 1).map((n) => (
               <button
                 key={n}
                 onClick={() => setPlayers(n)}
@@ -227,13 +271,15 @@ const BookTeeTime = () => {
         </div>
 
         {/* Price summary */}
-        {price > 0 && (
+        {displayPrice > 0 && (
           <div className="golf-card p-4 flex items-center justify-between">
             <div>
-              <p className="text-xs text-muted-foreground">Green Fee × {players}</p>
-              <p className="text-sm font-semibold">${price.toFixed(0)} × {players} player{players > 1 ? "s" : ""}</p>
+              <p className="text-xs text-muted-foreground">
+                Green Fee × {players} · {isWeekend ? "Weekend" : "Weekday"}
+              </p>
+              <p className="text-sm font-semibold">{formatPrice(displayPrice)} × {players} player{players > 1 ? "s" : ""}</p>
             </div>
-            <p className="text-2xl font-bold text-primary">${totalPrice.toFixed(2)}</p>
+            <p className="text-2xl font-bold text-primary">{formatPrice(totalPrice)}</p>
           </div>
         )}
 
@@ -244,7 +290,7 @@ const BookTeeTime = () => {
           onClick={handleBook}
         >
           {booking ? "Booking..." : selectedTime
-            ? `Book ${selectedTime} ${totalPrice > 0 ? `· $${totalPrice.toFixed(2)}` : ""}`
+            ? `Book ${selectedTime} ${totalPrice > 0 ? `· ${formatPrice(totalPrice)}` : ""}`
             : "Pilih waktu terlebih dahulu"}
         </Button>
       </div>

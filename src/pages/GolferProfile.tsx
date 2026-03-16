@@ -502,10 +502,14 @@ const GolferProfile = () => {
         )}
 
         {tab === "gallery" && (
-          <div className="grid grid-cols-4 gap-1 animate-fade-in">
-            {[heroImg, venueImg, heroImg, venueImg, heroImg, venueImg, heroImg, venueImg, heroImg, venueImg, heroImg, venueImg].map((img, i) => (
-              <img key={i} src={img} alt={`Gallery ${i + 1}`} className="aspect-square w-full object-cover animate-fade-in" style={{ animationDelay: `${i * 30}ms` }} loading="lazy" />
-            ))}
+          <div className="flex flex-col items-center justify-center py-16 text-center animate-fade-in">
+            <div className="h-16 w-16 rounded-full bg-secondary flex items-center justify-center mb-4">
+              <Camera className="h-8 w-8 text-muted-foreground/40" />
+            </div>
+            <p className="text-base font-semibold">Belum ada foto</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Foto akan muncul setelah mengikuti event
+            </p>
           </div>
         )}
       </div>

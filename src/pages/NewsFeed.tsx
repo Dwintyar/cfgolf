@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Heart, MessageCircle, Share2, Plus, Image, MapPin, Tag, X } from "lucide-react";
+import { Heart, MessageCircle, Share2, Plus, Image, MapPin, Tag, X, MessageSquare } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
 import heroImg from "@/assets/golf-hero.jpg";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -88,31 +88,49 @@ const NewsFeed = () => {
     return `${Math.floor(hrs / 24)}d ago`;
   };
 
-  // Fallback static posts when no DB posts
-  const staticPosts = [
-    {
-      id: "static-1", author_id: "", content: "When setting up major championship courses, length matters less than you think. At more than 7,300 yards, the Robert Trent Jones design known locally as the \"Green Monster of Ladue\" is feared for its crowned fairways, deep bunkers and huge greens.", category: "things_to_do", likes_count: 24, comments_count: 5, created_at: new Date(Date.now() - 2 * 3600000).toISOString(), image_url: null,
-      profiles: { full_name: "Sarah Parmenter", avatar_url: null },
-      hasImage: true,
-    },
-    {
-      id: "static-2", author_id: "", content: "Amazing round at Pine Valley today! Shot my personal best 🏌️‍♂️ The greens were in perfect condition.", category: "tips", likes_count: 12, comments_count: 8, created_at: new Date(Date.now() - 5 * 3600000).toISOString(), image_url: null,
-      profiles: { full_name: "James Walker", avatar_url: null },
-    },
-  ];
-
-  const allPosts = (posts && posts.length > 0) ? posts : staticPosts;
-
   return (
     <div className="bottom-nav-safe">
       <AppHeader title="Feeds" />
 
       <div className="space-y-4 px-4 pb-20">
-        {isLoading && <p className="text-center text-sm text-muted-foreground py-8">Loading feed...</p>}
+        {isLoading && (
+          <div className="space-y-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="golf-card p-4 space-y-3 animate-pulse">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-secondary" />
+                  <div className="space-y-1.5 flex-1">
+                    <div className="h-3 w-32 bg-secondary rounded" />
+                    <div className="h-2.5 w-20 bg-secondary rounded" />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="h-3 w-full bg-secondary rounded" />
+                  <div className="h-3 w-3/4 bg-secondary rounded" />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
-        {allPosts.map((post: any, i: number) => {
+        {!isLoading && (!posts || posts.length === 0) && (
+          <div className="flex flex-col items-center justify-center py-16 px-8 text-center">
+            <div className="h-16 w-16 rounded-full bg-secondary flex items-center justify-center mb-4">
+              <MessageSquare className="h-8 w-8 text-muted-foreground/40" />
+            </div>
+            <p className="text-base font-semibold">Belum ada post</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Jadilah yang pertama berbagi cerita golf Anda!
+            </p>
+            <Button className="mt-4" onClick={() => setShowCreate(true)}>
+              Buat Post Pertama
+            </Button>
+          </div>
+        )}
+
+        {(posts ?? []).map((post: any, i: number) => {
           const profile = post.profiles as any;
-          const showImage = post.hasImage || (i === 0 && !posts?.length);
+          const showImage = !!post.image_url || i === 0;
           return (
             <article key={post.id} className="overflow-hidden animate-fade-in" style={{ animationDelay: `${i * 80}ms` }}>
               {showImage && (

@@ -1,4 +1,4 @@
-import { ArrowLeft, Search, Mail, Mic, Settings, UserPlus, Check, X, LogIn } from "lucide-react";
+import { ArrowLeft, Search, Mail, Mic, Settings, UserPlus, Check, X, LogIn, Users } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
@@ -297,6 +297,16 @@ const ClubProfile = () => {
                     </div>
                   </div>
                 ))}
+
+              {!membersLoading && (!filteredMembers || filteredMembers.length === 0) && (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <Users className="h-10 w-10 text-muted-foreground/40 mb-3" />
+                  <p className="text-sm font-semibold">Belum ada anggota</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {search ? "Tidak ditemukan" : "Undang golfer untuk bergabung ke klub ini"}
+                  </p>
+                </div>
+              )}
 
               {filteredMembers?.map((m, i) => {
                 const profile = m.profiles as any;
