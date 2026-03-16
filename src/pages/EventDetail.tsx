@@ -245,34 +245,47 @@ const EventDetail = () => {
     setFinalizing(true);
     setShowFinalizeConfirm(false);
     try {
-      // Step 1: Calculate winners
+      // Step 1: Hitung pemenang
       const { data: winnersData, error: winnersErr } =
         await invokeWithAuth("calculate-event-winners", { event_id: id });
-      if (winnersErr || winnersData?.error) {
-        toast.error("Gagal menghitung pemenang: " + (winnersErr?.message || winnersData?.error));
+      if (winnersErr) {
+        toast.error(
+          "Edge function tidak tersedia. Event akan di-set completed tanpa kalkulasi pemenang."
+        );
+        // Tetap lanjut ke step 3
+      } else if (winnersData?.error) {
+        toast.error("Gagal menghitung pemenang: " + winnersData.error);
+        setFinalizing(false);
         return;
       }
 
-      // Step 2: Update tournament HCP (automatic after winners)
-      const { data: hcpData, error: hcpErr } =
-        await invokeWithAuth("update-player-handicap", { event_id: id });
-      if (hcpErr || hcpData?.error) {
-        toast.error("Pemenang tersimpan, tapi HCP update gagal: " + (hcpErr?.message || hcpData?.error));
-        // Continue to step 3 anyway
+      // Step 2: Update tournament HCP (hanya jika step 1 berhasil)
+      if (!winnersErr) {
+        const { error: hcpErr } = await invokeWithAuth(
+          "update-player-handicap",
+          { event_id: id }
+        );
+        if (hcpErr) {
+          toast.error("HCP update gagal: " + hcpErr.message);
+        }
       }
 
-      // Step 3: Mark event completed
-      await supabase.from("events").update({ status: "completed" }).eq("id", id);
+      // Step 3: Set event completed (selalu dijalankan)
+      const { error: statusErr } = await supabase
+        .from("events")
+        .update({ status: "completed" })
+        .eq("id", id);
+      if (statusErr) {
+        toast.error("Gagal update status: " + statusErr.message);
+        setFinalizing(false);
+        return;
+      }
 
-      toast.success(
-        `Event selesai! ${winnersData.winners_calculated} pemenang, ` +
-        `${hcpData?.players_updated ?? 0} tournament HCP dikoreksi.`
-      );
-
-      refetchResults();
+      toast.success("Event berhasil di-finalize!");
       queryClient.invalidateQueries({ queryKey: ["event", id] });
+      refetchResults();
     } catch (err: any) {
-      toast.error(err.message);
+      toast.error(err.message ?? "Terjadi kesalahan");
     } finally {
       setFinalizing(false);
     }
