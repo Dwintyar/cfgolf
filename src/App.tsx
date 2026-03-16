@@ -74,6 +74,7 @@ const AppInner = () => {
           <Route path="/admin/course/:courseId" element={<CourseAdminDashboard />} />
           <Route path="/export-queries" element={<ExportQueries />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/news" element={<NewsFeed />} />
           <Route path="/clubs" element={<Clubs />} />
