@@ -110,9 +110,6 @@ const VenueList = () => {
     return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(Number(price));
   };
 
-  const addCourseClubs = myClubsWithoutCourse?.filter(club =>
-    club.facility_type !== "driving_range"
-  ) ?? [];
 
   return (
     <div className="bottom-nav-safe">
