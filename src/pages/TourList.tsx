@@ -188,9 +188,13 @@ const TourList = () => {
           ))}
 
           {!eventsLoading && displayEvents.length === 0 && (
-            <p className="text-center text-xs text-muted-foreground py-4">
-              {tab === "upcoming" ? "No upcoming events" : "No completed events"}
-            </p>
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <Calendar className="h-10 w-10 text-muted-foreground/40 mb-3" />
+              <p className="text-sm font-semibold">
+                {tab === "upcoming" ? "Tidak ada event mendatang" : "Belum ada event selesai"}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">Event akan muncul setelah dibuat oleh organizer</p>
+            </div>
           )}
 
           {displayEvents.map((event, i) => (
