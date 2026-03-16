@@ -2,7 +2,8 @@ import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Check, ChevronLeft, ChevronRight, Trophy } from "lucide-react";
+import { ArrowLeft, Check, ChevronLeft, ChevronRight, Trophy, Download } from "lucide-react";
+import html2canvas from "html2canvas";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
@@ -436,6 +437,63 @@ const ScorecardInput = () => {
             onClick={() => navigate(`/event/${eventId}`)}
           >
             Lihat Leaderboard
+          </Button>
+          <Button
+            variant="outline"
+            className="mt-2 gap-2"
+            onClick={async () => {
+              try {
+                const { data: holeScores } = await supabase
+                  .from("hole_scores")
+                  .select("*")
+                  .eq("scorecard_id", myScorecard?.id ?? "")
+                  .order("hole_number");
+
+                const content = document.createElement("div");
+                content.style.cssText = `width:800px;padding:40px;background:white;font-family:sans-serif;color:#1a1a1a;`;
+                const outScore = holeScores?.slice(0,9).reduce((s,h) => s + (h.strokes ?? 0), 0) ?? 0;
+                const inScore = holeScores?.slice(9).reduce((s,h) => s + (h.strokes ?? 0), 0) ?? 0;
+                content.innerHTML = `
+                  <div style="border-bottom:2px solid #1a6b3c;padding-bottom:16px;margin-bottom:20px">
+                    <h1 style="font-size:20px;font-weight:700;color:#1a6b3c;margin:0">${event?.name}</h1>
+                    <p style="color:#666;margin:4px 0;font-size:13px">${event?.event_date} · ${(event?.courses as any)?.name}</p>
+                  </div>
+                  <table style="width:100%;border-collapse:collapse;font-size:12px">
+                    <thead><tr style="background:#1a6b3c;color:white">
+                      <th style="padding:6px 8px">Hole</th>
+                      ${holeScores?.map(h => `<th style="padding:6px 4px;text-align:center">${h.hole_number}</th>`).join('')}
+                      <th style="padding:6px 8px">Total</th>
+                    </tr></thead>
+                    <tbody><tr style="background:#f0f9f4">
+                      <td style="padding:6px 8px;font-weight:600">Score</td>
+                      ${holeScores?.map(h => `<td style="padding:6px 4px;text-align:center">${h.strokes ?? '-'}</td>`).join('')}
+                      <td style="padding:6px 8px;font-weight:700">${myScorecard?.gross_score ?? '-'}</td>
+                    </tr></tbody>
+                  </table>
+                  <div style="display:flex;gap:24px;margin-top:20px;padding:16px;background:#f9f9f9;border-radius:8px">
+                    <div><strong>OUT:</strong> ${outScore}</div>
+                    <div><strong>IN:</strong> ${inScore}</div>
+                    <div><strong>Gross:</strong> ${myScorecard?.gross_score}</div>
+                    <div><strong>Net:</strong> ${myScorecard?.net_score}</div>
+                    <div><strong>HCP:</strong> ${contestant?.hcp ?? '-'}</div>
+                  </div>
+                  <p style="font-size:11px;color:#999;text-align:center;margin-top:24px">CFGolf · ${new Date().toLocaleDateString('id-ID')}</p>
+                `;
+                document.body.appendChild(content);
+                const canvas = await html2canvas(content, { scale: 2, backgroundColor: '#ffffff' });
+                document.body.removeChild(content);
+                const link = document.createElement("a");
+                link.download = `scorecard-${event?.name}.png`;
+                link.href = canvas.toDataURL("image/png");
+                link.click();
+                toast.success("Scorecard tersimpan!");
+              } catch (err: any) {
+                toast.error("Gagal: " + err.message);
+              }
+            }}
+          >
+            <Download className="h-4 w-4" />
+            Simpan Scorecard
           </Button>
         </div>
       </div>
