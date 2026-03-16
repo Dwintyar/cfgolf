@@ -18,8 +18,10 @@ interface Props {
   onDone: () => void;
 }
 
-const WinnerResultsDialog = ({ eventId, eventName, eventStatus, open, onOpenChange, onDone }: Props) => {
+const WinnerResultsDialog = ({ eventId, eventName, eventStatus, isOrganizer, open, onOpenChange, onDone }: Props) => {
   const [finalizing, setFinalizing] = useState(false);
+  const [calculating, setCalculating] = useState(false);
+  const queryClient = useQueryClient();
 
   const { data: results } = useQuery({
     queryKey: ["event-results-dialog", eventId],
