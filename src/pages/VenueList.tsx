@@ -214,21 +214,6 @@ const VenueList = () => {
             );
           })}
 
-          {addCourseClubs.map(club => (
-            <button
-              key={club.id}
-              onClick={() => navigate(`/admin/course/new?clubId=${club.id}`)}
-              className="golf-card w-full flex items-center gap-4 p-4 border-dashed border-primary/30 hover:border-primary/60 transition-colors"
-            >
-              <div className="h-16 w-16 rounded-xl bg-secondary flex items-center justify-center shrink-0 border border-dashed border-primary/30">
-                <span className="text-xl text-primary font-bold">+</span>
-              </div>
-              <div className="flex-1 text-left">
-                <p className="text-sm font-semibold text-primary">Add New Course</p>
-                <p className="text-xs text-muted-foreground">{club.name}</p>
-              </div>
-            </button>
-          ))}
         </div>
       )}
 
