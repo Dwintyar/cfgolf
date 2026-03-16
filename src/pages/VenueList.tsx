@@ -34,6 +34,19 @@ const VenueList = () => {
     },
   });
 
+  const { data: drivingRangeClubs, isLoading: loadingRanges } = useQuery({
+    queryKey: ["driving-ranges"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("clubs")
+        .select("id, name, description, logo_url, contact_phone, contact_email")
+        .eq("facility_type", "driving_range")
+        .eq("is_personal", false)
+        .order("name");
+      return data ?? [];
+    },
+  });
+
   const { data: myClubIds } = useQuery({
     queryKey: ["my-admin-clubs", userId],
     queryFn: async () => {
@@ -80,19 +93,15 @@ const VenueList = () => {
       (c.clubs as any)?.facility_type !== "driving_range"
   ) ?? [];
 
-  const drivingRanges = searchFiltered?.filter(
-    (c) =>
-      (c as any).facility_type === "driving_range" ||
-      (c.clubs as any)?.facility_type === "driving_range"
+  const filteredRanges = drivingRangeClubs?.filter(c =>
+    !search || c.name.toLowerCase().includes(search.toLowerCase())
   ) ?? [];
-
-  const displayCourses = venueTab === "golf" ? golfCourses : drivingRanges;
 
   const isMyCourse = (c: any) => myClubIds?.includes(c.club_id);
 
-  const sortedCourses = [
-    ...(displayCourses?.filter(isMyCourse) ?? []),
-    ...(displayCourses?.filter(c => !isMyCourse(c)) ?? []),
+  const sortedGolfCourses = [
+    ...(golfCourses.filter(isMyCourse)),
+    ...(golfCourses.filter(c => !isMyCourse(c))),
   ];
 
   const formatPrice = (price: number | null) => {
@@ -101,16 +110,13 @@ const VenueList = () => {
   };
 
   const addCourseClubs = myClubsWithoutCourse?.filter(club =>
-    venueTab === "range"
-      ? club.facility_type === "driving_range"
-      : club.facility_type !== "driving_range"
+    club.facility_type !== "driving_range"
   ) ?? [];
 
   return (
     <div className="bottom-nav-safe">
       <AppHeader title="Venues" icon={<MapPin className="h-5 w-5 text-primary" />} />
 
-      {/* Search */}
       <div className="px-4 pb-2">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -123,11 +129,10 @@ const VenueList = () => {
         </div>
       </div>
 
-      {/* Tabs */}
       <div className="flex mx-4 mb-3 rounded-xl overflow-hidden border border-border/50">
         {[
           { id: "golf" as const, label: "Golf Courses", count: golfCourses.length },
-          { id: "range" as const, label: "Driving Ranges", count: drivingRanges.length },
+          { id: "range" as const, label: "Driving Ranges", count: filteredRanges.length },
         ].map((t) => (
           <button
             key={t.id}
@@ -143,107 +148,155 @@ const VenueList = () => {
         ))}
       </div>
 
-      <div className="space-y-3 px-4">
-        {isLoading &&
-          Array.from({ length: 3 }).map((_, i) => (
-            <Skeleton key={i} className="h-32 w-full rounded-xl" />
-          ))}
+      {/* Golf Courses Tab */}
+      {venueTab === "golf" && (
+        <div className="space-y-3 px-4">
+          {isLoading &&
+            Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} className="h-32 w-full rounded-xl" />
+            ))}
 
-        {!isLoading && sortedCourses.length === 0 && addCourseClubs.length === 0 && (
-          <div className="golf-card p-8 text-center">
-            <MapPin className="mx-auto h-10 w-10 text-muted-foreground/40" />
-            <p className="mt-3 text-sm text-muted-foreground">No venues found</p>
-          </div>
-        )}
+          {!isLoading && sortedGolfCourses.length === 0 && addCourseClubs.length === 0 && (
+            <div className="golf-card p-8 text-center">
+              <MapPin className="mx-auto h-10 w-10 text-muted-foreground/40" />
+              <p className="mt-3 text-sm text-muted-foreground">No venues found</p>
+            </div>
+          )}
 
-        {sortedCourses.map((course, i) => {
-          const isOwned = isMyCourse(course);
-          return (
-            <div
-              key={course.id}
-              className={`golf-card flex items-center gap-4 p-4 animate-fade-in transition-all ${
-                isOwned ? "border-primary/40 bg-primary/5" : ""
-              }`}
-              style={{ animationDelay: `${i * 60}ms` }}
-            >
-              <div className="h-16 w-16 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden">
-                {course.image_url
-                  ? <img src={course.image_url} alt={course.name} className="h-full w-full rounded-xl object-cover" />
-                  : <img src={venueImg} alt={course.name} className="h-full w-full rounded-xl object-cover" />
-                }
-              </div>
-
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-semibold truncate">{course.name}</p>
-                  {isOwned && (
-                    <Badge className="text-[9px] bg-primary/15 text-primary border-primary/30 shrink-0">
-                      My Course
-                    </Badge>
-                  )}
+          {sortedGolfCourses.map((course, i) => {
+            const isOwned = isMyCourse(course);
+            return (
+              <div
+                key={course.id}
+                className={`golf-card flex items-center gap-4 p-4 animate-fade-in transition-all ${
+                  isOwned ? "border-primary/40 bg-primary/5" : ""
+                }`}
+                style={{ animationDelay: `${i * 60}ms` }}
+              >
+                <div className="h-16 w-16 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden">
+                  <img src={course.image_url || venueImg} alt={course.name} className="h-full w-full rounded-xl object-cover" />
                 </div>
-                <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
-                  {course.location && (
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-semibold truncate">{course.name}</p>
+                    {isOwned && (
+                      <Badge className="text-[9px] bg-primary/15 text-primary border-primary/30 shrink-0">My Course</Badge>
+                    )}
+                  </div>
+                  <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+                    {course.location && (
+                      <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {course.location}</span>
+                    )}
                     <span className="flex items-center gap-1">
-                      <MapPin className="h-3 w-3" /> {course.location}
+                      <Flag className="h-3 w-3" /> {course.holes_count} holes · Par {course.par ?? "—"}
                     </span>
-                  )}
-                  <span className="flex items-center gap-1">
-                    <Flag className="h-3 w-3" /> {course.holes_count} holes · Par {course.par ?? "—"}
-                  </span>
-                </div>
-                <div className="mt-0.5 flex items-center gap-1.5">
-                  <Badge variant="outline" className="text-[9px] capitalize">
-                    {course.course_type ?? "golf course"}
-                  </Badge>
-                  {course.green_fee_price && (
-                    <Badge variant="outline" className="text-[10px] border-primary/30 text-primary">
-                      {formatPrice(course.green_fee_price)}
-                    </Badge>
+                  </div>
+                  <div className="mt-0.5 flex items-center gap-1.5">
+                    <Badge variant="outline" className="text-[9px] capitalize">{course.course_type ?? "golf course"}</Badge>
+                    {course.green_fee_price && (
+                      <Badge variant="outline" className="text-[10px] border-primary/30 text-primary">{formatPrice(course.green_fee_price)}</Badge>
+                    )}
+                  </div>
+                  {(course.clubs as any)?.name && (
+                    <p className="mt-0.5 text-[10px] text-muted-foreground/70">{(course.clubs as any).name}</p>
                   )}
                 </div>
-                {(course.clubs as any)?.name && (
-                  <p className="mt-0.5 text-[10px] text-muted-foreground/70">{(course.clubs as any).name}</p>
+                {isOwned ? (
+                  <div className="flex flex-col gap-1.5 shrink-0">
+                    <Button size="sm" className="h-7 px-3 text-[10px] font-bold" onClick={() => navigate(`/admin/course/${course.id}`)}>Manage</Button>
+                    <Button size="sm" variant="outline" className="h-7 px-3 text-[10px]" onClick={() => navigate(`/venue/${course.id}`)}>View</Button>
+                  </div>
+                ) : (
+                  <Button size="sm" variant="outline" className="h-7 px-3 text-[10px] shrink-0" onClick={() => navigate(`/venue/${course.id}`)}>View</Button>
                 )}
               </div>
+            );
+          })}
 
-              {isOwned ? (
-                <div className="flex flex-col gap-1.5 shrink-0">
-                  <Button size="sm" className="h-7 px-3 text-[10px] font-bold"
-                    onClick={() => navigate(`/admin/course/${course.id}`)}>
-                    Manage
-                  </Button>
-                  <Button size="sm" variant="outline" className="h-7 px-3 text-[10px]"
-                    onClick={() => navigate(`/venue/${course.id}`)}>
-                    View
-                  </Button>
+          {addCourseClubs.map(club => (
+            <button
+              key={club.id}
+              onClick={() => navigate(`/admin/course/new?clubId=${club.id}`)}
+              className="golf-card w-full flex items-center gap-4 p-4 border-dashed border-primary/30 hover:border-primary/60 transition-colors"
+            >
+              <div className="h-16 w-16 rounded-xl bg-secondary flex items-center justify-center shrink-0 border border-dashed border-primary/30">
+                <span className="text-xl text-primary font-bold">+</span>
+              </div>
+              <div className="flex-1 text-left">
+                <p className="text-sm font-semibold text-primary">Add New Course</p>
+                <p className="text-xs text-muted-foreground">{club.name}</p>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Driving Ranges Tab */}
+      {venueTab === "range" && (
+        <div className="space-y-3 px-4">
+          {loadingRanges &&
+            Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} className="h-20 w-full rounded-xl" />
+            ))}
+
+          {/* Owned driving ranges */}
+          {filteredRanges
+            .filter(c => myClubIds?.includes(c.id))
+            .map(club => (
+              <div key={club.id} className="golf-card flex items-center gap-4 p-4 border-primary/40 bg-primary/5">
+                <div className="h-16 w-16 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden">
+                  {club.logo_url
+                    ? <img src={club.logo_url} className="h-full w-full rounded-xl object-cover" alt={club.name} />
+                    : <span className="text-2xl font-bold text-primary">{club.name.charAt(0)}</span>
+                  }
                 </div>
-              ) : (
-                <Button size="sm" variant="outline" className="h-7 px-3 text-[10px] shrink-0"
-                  onClick={() => navigate(`/venue/${course.id}`)}>
-                  View
-                </Button>
-              )}
-            </div>
-          );
-        })}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-semibold truncate">{club.name}</p>
+                    <Badge className="text-[9px] bg-primary/15 text-primary border-primary/30 shrink-0">My Range</Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground truncate">{club.description ?? "Driving Range"}</p>
+                </div>
+                <div className="flex flex-col gap-1.5 shrink-0">
+                  <Button size="sm" className="h-7 px-3 text-[10px] font-bold" onClick={() => navigate(`/clubs/${club.id}`)}>Manage</Button>
+                </div>
+              </div>
+            ))
+          }
 
-        {addCourseClubs.map(club => (
-          <button
-            key={club.id}
-            onClick={() => navigate(`/admin/course/new?clubId=${club.id}`)}
-            className="golf-card w-full flex items-center gap-4 p-4 border-dashed border-primary/30 hover:border-primary/60 transition-colors"
-          >
-            <div className="h-16 w-16 rounded-xl bg-secondary flex items-center justify-center shrink-0 border border-dashed border-primary/30">
-              <span className="text-xl text-primary font-bold">+</span>
+          {/* Other driving ranges */}
+          {filteredRanges
+            .filter(c => !myClubIds?.includes(c.id))
+            .map((club, i) => (
+              <div key={club.id} className="golf-card flex items-center gap-4 p-4 animate-fade-in" style={{ animationDelay: `${i * 60}ms` }}>
+                <div className="h-16 w-16 rounded-xl bg-secondary flex items-center justify-center shrink-0 overflow-hidden">
+                  {club.logo_url
+                    ? <img src={club.logo_url} className="h-full w-full rounded-xl object-cover" alt={club.name} />
+                    : <span className="text-2xl font-bold text-muted-foreground">{club.name.charAt(0)}</span>
+                  }
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold truncate">{club.name}</p>
+                  <p className="text-xs text-muted-foreground truncate">{club.description ?? "Driving Range"}</p>
+                  {club.contact_phone && (
+                    <p className="text-[10px] text-muted-foreground/70">{club.contact_phone}</p>
+                  )}
+                </div>
+                <Button size="sm" variant="outline" className="h-7 px-3 text-[10px] shrink-0" onClick={() => navigate(`/clubs/${club.id}`)}>View</Button>
+              </div>
+            ))
+          }
+
+          {!loadingRanges && filteredRanges.length === 0 && (
+            <div className="golf-card p-8 text-center">
+              <MapPin className="mx-auto h-10 w-10 text-muted-foreground/40" />
+              <p className="mt-3 text-sm text-muted-foreground">
+                {search ? "No driving ranges found" : "No driving ranges yet"}
+              </p>
             </div>
-            <div className="flex-1 text-left">
-              <p className="text-sm font-semibold text-primary">Add New Course</p>
-              <p className="text-xs text-muted-foreground">{club.name}</p>
-            </div>
-          </button>
-        ))}
-      </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
