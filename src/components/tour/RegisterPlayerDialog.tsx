@@ -55,6 +55,19 @@ const RegisterPlayerDialog = ({ tourId, tourType, organizerClubId, callerClubId,
     enabled: !!tourId && isOrganizer,
   });
 
+  const { data: registeredPlayerIds } = useQuery({
+    queryKey: ["tour-registered-players", tourId, clubId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("tour_players")
+        .select("player_id")
+        .eq("tour_id", tourId)
+        .eq("club_id", clubId);
+      return new Set(data?.map(p => p.player_id) ?? []);
+    },
+    enabled: !!tourId && !!clubId,
+  });
+
   const { data: members } = useQuery({
     queryKey: ["dialog-members", clubId],
     queryFn: async () => {
@@ -68,10 +81,14 @@ const RegisterPlayerDialog = ({ tourId, tourType, organizerClubId, callerClubId,
   });
 
   const sortedAndFiltered = (members ?? [])
-    .filter(m =>
-      (m.profiles as any)?.full_name?.toLowerCase()
-        .includes(playerSearch.toLowerCase())
-    )
+    .filter(m => {
+      if (registeredPlayerIds?.has(m.user_id)) return false;
+      if (playerSearch) {
+        return (m.profiles as any)?.full_name?.toLowerCase()
+          .includes(playerSearch.toLowerCase());
+      }
+      return true;
+    })
     .sort((a, b) => {
       const nameA = ((a.profiles as any)?.full_name ?? "").toLowerCase();
       const nameB = ((b.profiles as any)?.full_name ?? "").toLowerCase();
@@ -128,13 +145,13 @@ const RegisterPlayerDialog = ({ tourId, tourType, organizerClubId, callerClubId,
             />
             <p className="text-[10px] text-muted-foreground mb-1">
               {playerSearch
-                ? `${sortedAndFiltered.length} dari ${members?.length ?? 0} member`
-                : `${members?.length ?? 0} member — pilih satu`}
+                ? `${sortedAndFiltered.length} hasil pencarian`
+                : `${sortedAndFiltered.length} tersedia · ${registeredPlayerIds?.size ?? 0} sudah terdaftar`}
             </p>
             <div className="max-h-48 overflow-y-auto border rounded-lg divide-y divide-border/30">
               {sortedAndFiltered.length === 0 && (
                 <p className="text-xs text-muted-foreground text-center py-3">
-                  {playerSearch ? "Tidak ditemukan" : "Tidak ada member"}
+                  {playerSearch ? "Tidak ditemukan" : (registeredPlayerIds?.size ?? 0) > 0 && (members?.length ?? 0) > 0 ? "Semua member klub sudah terdaftar di tournament ini." : "Tidak ada member"}
                 </p>
               )}
               {sortedAndFiltered.map(m => {
