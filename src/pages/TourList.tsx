@@ -77,7 +77,6 @@ const TourList = () => {
     queryFn: async () => {
       if (!userId) return [];
 
-      // Cek apakah user adalah owner/admin di klub manapun
       const { data: myAdminClubs } = await supabase
         .from("members")
         .select("club_id")
@@ -88,7 +87,6 @@ const TourList = () => {
         (myAdminClubs ?? []).map(m => m.club_id)
       )];
 
-      // Tour yang diselenggarakan klub yang user admin-i
       let organizedTours: any[] = [];
       if (myClubIds.length > 0) {
         const { data } = await supabase
@@ -101,7 +99,6 @@ const TourList = () => {
         }));
       }
 
-      // Tour yang user ikuti sebagai player (tour_players)
       const { data: myTourPlayers } = await supabase
         .from("tour_players")
         .select("tour_id, status, hcp_tour, tours(*, clubs!tours_organizer_club_id_fkey(name, logo_url))")
@@ -119,6 +116,22 @@ const TourList = () => {
         }));
 
       return [...organizedTours, ...participatingTours];
+    },
+    enabled: !!userId,
+  });
+
+  const isOrganizer = myTours?.some(t => t.playerRole === "organizer");
+
+  const { data: myEvents } = useQuery({
+    queryKey: ["my-events-as-player", userId],
+    queryFn: async () => {
+      if (!userId) return [];
+      const { data } = await supabase
+        .from("contestants")
+        .select("*, events(id, name, event_date, status, courses(name), tours(name))")
+        .eq("player_id", userId)
+        .order("created_at", { ascending: false });
+      return data ?? [];
     },
     enabled: !!userId,
   });
