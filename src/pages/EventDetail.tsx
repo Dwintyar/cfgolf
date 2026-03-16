@@ -3,8 +3,9 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Calendar, MapPin, Users, Ticket, Trophy, Award, Shuffle, TrendingDown,
-  ClipboardCheck, Package, Lock, Car, UserCheck, ChevronRight, Pencil, Plus, RefreshCw, Clock
+  ClipboardCheck, Package, Lock, Car, UserCheck, ChevronRight, Pencil, Plus, RefreshCw, Clock, Download
 } from "lucide-react";
+import html2canvas from "html2canvas";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
