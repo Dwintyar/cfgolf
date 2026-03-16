@@ -437,12 +437,16 @@ const EventDetail = () => {
         {myContestant && isCheckedIn && (
           <Button
             size="sm"
-            className={`h-7 shrink-0 gap-1 text-[11px] ${event?.status === "completed" ? "opacity-50 cursor-not-allowed" : ""}`}
+            variant={event?.status === "completed" ? "outline" : "default"}
+            className={`h-7 shrink-0 gap-1 text-[11px] ${
+              event?.status === "completed"
+                ? "opacity-50 cursor-not-allowed border-muted-foreground/30 text-muted-foreground"
+                : ""
+            }`}
             onClick={() => navigate(`/event/${id}/scorecard`)}
             disabled={event?.status === "completed"}
-            variant={event?.status === "completed" ? "outline" : "default"}
           >
-            <PenLine className="h-3 w-3" />
+            <Pencil className="h-3 w-3" />
             {event?.status === "completed" ? "Score Locked" : "Input Score"}
           </Button>
         )}
