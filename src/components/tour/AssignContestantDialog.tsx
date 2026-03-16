@@ -24,16 +24,28 @@ const AssignContestantDialog = ({ eventId, tourId, open, onOpenChange, onDone }:
   const [loading, setLoading] = useState(false);
 
   const { data: players } = useQuery({
-    queryKey: ["tour-players", tourId],
+    queryKey: ["tour-players-for-assign", tourId, eventId],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data: tourPlayers } = await supabase
         .from("tour_players")
-        .select("player_id, profiles(full_name, handicap)")
+        .select("player_id, hcp_tour, hcp_at_registration, profiles(full_name, handicap)")
         .eq("tour_id", tourId)
-        .eq("status", "active");
-      return data ?? [];
+        .in("status", ["registered", "active"]);
+
+      const { data: existingContestants } = await supabase
+        .from("contestants")
+        .select("player_id")
+        .eq("event_id", eventId);
+
+      const alreadyAssigned = new Set(
+        existingContestants?.map(c => c.player_id) ?? []
+      );
+
+      return (tourPlayers ?? []).filter(
+        p => !alreadyAssigned.has(p.player_id)
+      );
     },
-    enabled: open,
+    enabled: open && !!tourId && !!eventId,
   });
 
   const { data: flights } = useQuery({
