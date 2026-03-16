@@ -60,12 +60,15 @@ const AssignContestantDialog = ({ eventId, tourId, open, onOpenChange, onDone }:
   const handleSubmit = async () => {
     if (!playerId) { toast.error("Select a player"); return; }
     setLoading(true);
-    const { error } = await supabase.from("contestants").insert({
+    const { error } = await supabase.from("contestants").upsert({
       event_id: eventId,
       player_id: playerId,
       status,
       hcp: hcp ? parseInt(hcp) : null,
       flight_id: flightId || null,
+    }, {
+      onConflict: "event_id,player_id",
+      ignoreDuplicates: true,
     });
     setLoading(false);
     if (error) { toast.error(error.message); return; }
