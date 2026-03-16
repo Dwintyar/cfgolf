@@ -10,6 +10,7 @@ import { useChatNotifications } from "@/hooks/use-chat-notifications";
 
 export const ChatNotifContext = createContext<{ unreadCount: number }>({ unreadCount: 0 });
 import Login from "./pages/Login";
+import Onboarding from "./pages/Onboarding";
 import ResetPassword from "./pages/ResetPassword";
 import NewsFeed from "./pages/NewsFeed";
 import Clubs from "./pages/Clubs";
