@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, LayoutDashboard, Grid3X3, Clock, Settings, Save, Plus } from "lucide-react";
+import { ArrowLeft, LayoutDashboard, Grid3X3, Clock, Settings, Save, Plus, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 
 const TABS = [
@@ -39,6 +40,7 @@ const CourseAdminDashboard = () => {
   const clubId = new URLSearchParams(location.search).get("clubId");
 
   const [tab, setTab] = useState<TabId>(isNew ? "settings" : "overview");
+  const [showLockConfirm, setShowLockConfirm] = useState(false);
 
   // Course data
   const { data: course, isLoading } = useQuery({
@@ -55,6 +57,23 @@ const CourseAdminDashboard = () => {
     },
     enabled: !isNew,
   });
+
+  // Active events check for course lock
+  const { data: activeEvents } = useQuery({
+    queryKey: ["active-events-for-course", courseId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("events")
+        .select("id, name, event_date, status")
+        .eq("course_id", courseId!)
+        .in("status", ["registration", "checkin", "playing"])
+        .order("event_date");
+      return data ?? [];
+    },
+    enabled: !!courseId && !isNew,
+  });
+
+  const isCourseLocked = (activeEvents?.length ?? 0) > 0;
 
   // Today's bookings count
   const { data: todayBookings } = useQuery({
@@ -385,6 +404,24 @@ const CourseAdminDashboard = () => {
         {/* ═══ HOLES ═══ */}
         {tab === "holes" && !isNew && (
           <div className="space-y-3">
+            {isCourseLocked && (
+              <div className="golf-card border-accent/30 p-3">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="h-4 w-4 text-accent shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-xs font-semibold text-accent">Course sedang digunakan</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                      Ada {activeEvents?.length} event aktif. Perubahan holes berlaku untuk event mendatang saja — event yang sedang berjalan menggunakan snapshot yang sudah terkunci.
+                    </p>
+                    {activeEvents?.map(e => (
+                      <p key={e.id} className="text-[10px] text-muted-foreground/70 mt-0.5">
+                        • {e.name} ({e.event_date}) — {e.status}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
             {holes.length === 0 && !holesEditing && (
               <div className="golf-card p-8 text-center">
                 <Grid3X3 className="mx-auto h-10 w-10 text-muted-foreground/40" />
@@ -595,12 +632,39 @@ const CourseAdminDashboard = () => {
                 </div>
               </div>
             </div>
-            <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending || !form.name} className="w-full">
+            <Button onClick={() => {
+              if (isCourseLocked && !isNew) {
+                setShowLockConfirm(true);
+              } else {
+                saveMutation.mutate();
+              }
+            }} disabled={saveMutation.isPending || !form.name} className="w-full">
               <Save className="h-4 w-4 mr-2" />
               {isNew ? "Create Course" : "Save Changes"}
             </Button>
+            {isCourseLocked && !isNew && (
+              <p className="text-[10px] text-accent text-center">
+                ⚠️ Perubahan tidak mempengaruhi event yang sedang berjalan
+              </p>
+            )}
           </div>
         )}
+
+        {/* Lock Confirmation Dialog */}
+        <Dialog open={showLockConfirm} onOpenChange={setShowLockConfirm}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle>Update Course Settings?</DialogTitle>
+            </DialogHeader>
+            <p className="text-sm text-muted-foreground">
+              Ada {activeEvents?.length} event aktif menggunakan course ini. Perubahan settings (nama, green fee, dll) akan berlaku segera, tapi data holes event yang sedang berjalan tidak berubah karena sudah menggunakan snapshot.
+            </p>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowLockConfirm(false)}>Batalkan</Button>
+              <Button onClick={() => { setShowLockConfirm(false); saveMutation.mutate(); }}>Ya, Update</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

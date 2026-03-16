@@ -85,10 +85,42 @@ const ScorecardInput = () => {
     enabled: !!event && !!userId,
   });
 
+  // Fetch event_holes snapshot first, fallback to course_holes
+  const { data: eventHolesData } = useQuery({
+    queryKey: ["event-holes-scorecard", eventId],
+    queryFn: async () => {
+      const { data: eventHoles } = await supabase
+        .from("event_holes")
+        .select("hole_number, par, distance_yards, stroke_index")
+        .eq("event_id", eventId!)
+        .order("hole_number");
+
+      if (eventHoles && eventHoles.length > 0) {
+        return eventHoles.map(h => ({
+          hole_number: h.hole_number,
+          par: h.par,
+          distance_yards: h.distance_yards,
+          handicap_index: h.stroke_index,
+        }));
+      }
+
+      // Fallback to course_holes
+      const courseId = (event?.courses as any)?.id;
+      if (!courseId) return [];
+      const { data: courseHoles } = await supabase
+        .from("course_holes")
+        .select("hole_number, par, distance_yards, handicap_index")
+        .eq("course_id", courseId)
+        .order("hole_number");
+
+      return courseHoles ?? [];
+    },
+    enabled: !!eventId && !!event,
+  });
+
   const holes = useMemo(() => {
-    const courseHoles = (event?.courses as any)?.course_holes ?? [];
-    return [...courseHoles].sort((a: any, b: any) => a.hole_number - b.hole_number);
-  }, [event]);
+    return eventHolesData ?? [];
+  }, [eventHolesData]);
 
   const holesCount = (event?.courses as any)?.holes_count ?? 18;
 

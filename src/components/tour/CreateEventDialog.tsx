@@ -35,7 +35,7 @@ const CreateEventDialog = ({ tourId, open, onOpenChange, onDone }: Props) => {
   const handleSubmit = async () => {
     if (!name || !courseId || !date) { toast.error("Fill all required fields"); return; }
     setLoading(true);
-    const { error } = await supabase.from("events").insert({
+    const { data: newEvent, error } = await supabase.from("events").insert({
       tour_id: tourId,
       course_id: courseId,
       name,
@@ -43,9 +43,29 @@ const CreateEventDialog = ({ tourId, open, onOpenChange, onDone }: Props) => {
       ticket_total: parseInt(ticketTotal) || 0,
       status: "draft",
       pairing_approval_required: pairingApproval,
-    });
+    }).select("id").single();
+    if (error || !newEvent) { setLoading(false); toast.error(error?.message ?? "Failed"); return; }
+
+    // Snapshot holes dari course ke event
+    const { data: courseHoles } = await supabase
+      .from("course_holes")
+      .select("hole_number, par, distance_yards, handicap_index")
+      .eq("course_id", courseId)
+      .order("hole_number");
+
+    if (courseHoles && courseHoles.length > 0) {
+      await supabase.from("event_holes").insert(
+        courseHoles.map(h => ({
+          event_id: newEvent.id,
+          hole_number: h.hole_number,
+          par: h.par,
+          distance_yards: h.distance_yards,
+          stroke_index: h.handicap_index,
+        }))
+      );
+    }
+
     setLoading(false);
-    if (error) { toast.error(error.message); return; }
     toast.success("Event created");
     setName(""); setDate(""); setPairingApproval(false);
     onDone();
