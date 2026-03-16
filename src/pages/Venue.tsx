@@ -12,7 +12,7 @@ import { useState, useMemo } from "react";
 const Venue = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const [selectedTime, setSelectedTime] = useState("07.00");
+  const [selectedTime, setSelectedTime] = useState("07:00");
   const [distUnit, setDistUnit] = useState<"yd" | "m">("m");
 
   const { data: course, isLoading } = useQuery({
