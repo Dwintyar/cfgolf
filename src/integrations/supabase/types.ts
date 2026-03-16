@@ -813,6 +813,7 @@ export type Database = {
           event_date: string
           id: string
           name: string
+          pairing_approval_required: boolean
           status: string
           ticket_total: number
           tour_id: string
@@ -824,6 +825,7 @@ export type Database = {
           event_date: string
           id?: string
           name: string
+          pairing_approval_required?: boolean
           status?: string
           ticket_total?: number
           tour_id: string
@@ -835,6 +837,7 @@ export type Database = {
           event_date?: string
           id?: string
           name?: string
+          pairing_approval_required?: boolean
           status?: string
           ticket_total?: number
           tour_id?: string
