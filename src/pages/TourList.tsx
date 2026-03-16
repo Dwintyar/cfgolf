@@ -76,22 +76,49 @@ const TourList = () => {
     queryKey: ["my-tours", userId],
     queryFn: async () => {
       if (!userId) return [];
-      const { data: myClubs } = await supabase
+
+      // Cek apakah user adalah owner/admin di klub manapun
+      const { data: myAdminClubs } = await supabase
         .from("members")
         .select("club_id")
         .eq("user_id", userId)
         .in("role", ["owner", "admin"]);
 
-      if (!myClubs?.length) return [];
-      const myClubIds = [...new Set(myClubs.map(m => m.club_id))];
+      const myClubIds = [...new Set(
+        (myAdminClubs ?? []).map(m => m.club_id)
+      )];
 
-      const { data } = await supabase
-        .from("tours")
-        .select("*, clubs!tours_organizer_club_id_fkey(name, logo_url)")
-        .in("organizer_club_id", myClubIds)
-        .order("year", { ascending: false });
+      // Tour yang diselenggarakan klub yang user admin-i
+      let organizedTours: any[] = [];
+      if (myClubIds.length > 0) {
+        const { data } = await supabase
+          .from("tours")
+          .select("*, clubs!tours_organizer_club_id_fkey(name, logo_url)")
+          .in("organizer_club_id", myClubIds)
+          .order("year", { ascending: false });
+        organizedTours = (data ?? []).map(t => ({
+          ...t, playerRole: "organizer"
+        }));
+      }
 
-      return data ?? [];
+      // Tour yang user ikuti sebagai player (tour_players)
+      const { data: myTourPlayers } = await supabase
+        .from("tour_players")
+        .select("tour_id, status, hcp_tour, tours(*, clubs!tours_organizer_club_id_fkey(name, logo_url))")
+        .eq("player_id", userId)
+        .in("status", ["registered", "active", "pending"]);
+
+      const organizedIds = new Set(organizedTours.map(t => t.id));
+      const participatingTours = (myTourPlayers ?? [])
+        .filter(tp => !organizedIds.has(tp.tour_id))
+        .map(tp => ({
+          ...(tp.tours as any),
+          playerRole: "participant",
+          myStatus: tp.status,
+          myTourHcp: tp.hcp_tour,
+        }));
+
+      return [...organizedTours, ...participatingTours];
     },
     enabled: !!userId,
   });
@@ -261,26 +288,37 @@ const TourList = () => {
           {tourTab === "mine" && (
             myTours?.length === 0
               ? <p className="text-xs text-muted-foreground text-center py-4">
-                  No tournaments yet. Create one!
+                  No tournaments yet.
                 </p>
               : myTours?.map((tour: any, i: number) => (
-                  <button key={tour.id} onClick={() => navigate(`/tour/${tour.id}`)}
+                  <button key={tour.id}
+                    onClick={() => navigate(`/tour/${tour.id}`)}
                     className="flex w-full items-center gap-3 rounded-xl py-3 text-left hover:opacity-80 transition-opacity animate-fade-in"
                     style={{ animationDelay: `${i * 60}ms` }}>
                     <Avatar className="h-10 w-10 border-2 border-primary/20">
                       <AvatarImage src={tour.clubs?.logo_url ?? ""} />
                       <AvatarFallback className="bg-primary/10 text-xs font-bold text-primary">
-                        {tour.name.charAt(0)}
+                        {tour.name?.charAt(0)}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold truncate">{tour.name}</p>
                       <p className="text-[10px] text-muted-foreground">
-                        {tour.year} · {tour.clubs?.name ?? "—"} · {tour.tournament_type}
+                        {tour.year} · {tour.clubs?.name ?? "—"}
                       </p>
+                      {tour.playerRole === "participant" && tour.myTourHcp != null && (
+                        <p className="text-[10px] text-primary">
+                          Tournament HCP: {tour.myTourHcp}
+                        </p>
+                      )}
                     </div>
-                    <Badge variant="outline" className="text-[9px] text-primary border-primary/30 shrink-0">
-                      Manage →
+                    <Badge variant="outline" className={`text-[9px] shrink-0 ${
+                      tour.playerRole === "organizer"
+                        ? "text-primary border-primary/30"
+                        : "text-accent-foreground border-accent"
+                    }`}>
+                      {tour.playerRole === "organizer" ? "Organizer" :
+                       tour.myStatus === "pending" ? "Pending" : "Player"}
                     </Badge>
                   </button>
                 ))
