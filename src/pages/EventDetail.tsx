@@ -3,8 +3,9 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Calendar, MapPin, Users, Ticket, Trophy, Award, Shuffle, TrendingDown,
-  ClipboardCheck, Package, Lock, Car, UserCheck, ChevronRight, PenLine, Plus, RefreshCw
+  ClipboardCheck, Package, Lock, Car, UserCheck, ChevronRight, PenLine, Plus, RefreshCw, Clock
 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -484,6 +485,31 @@ const EventDetail = () => {
 
         {/* OVERVIEW */}
         <TabsContent value="overview" className="space-y-4 pt-2">
+          {/* Pairing Approval Setting */}
+          {showAdminActions && event?.status !== "completed" && (
+            <div className="golf-card p-3 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-medium">Pairing Approval</p>
+                <p className="text-[9px] text-muted-foreground">
+                  Review sebelum dipublikasikan ke pemain
+                </p>
+              </div>
+              <Switch
+                checked={event?.pairing_approval_required ?? false}
+                onCheckedChange={async (val) => {
+                  await supabase
+                    .from("events")
+                    .update({ pairing_approval_required: val })
+                    .eq("id", id!);
+                  queryClient.invalidateQueries({ queryKey: ["event", id] });
+                  toast.success(val
+                    ? "Pairing approval aktif"
+                    : "Pairing langsung dipublikasikan");
+                }}
+              />
+            </div>
+          )}
+
           <Section title="Contestants" icon={Users} count={contestants?.length}>
             {contestants?.length === 0 && <EmptyState text="No contestants" />}
             {contestants?.slice(0, 10).map((c) => (
@@ -587,60 +613,107 @@ const EventDetail = () => {
 
         {/* PAIRINGS */}
         <TabsContent value="pairings" className="space-y-3 pt-2">
-          <div className="golf-card space-y-3 p-4">
-            <h3 className="text-sm font-semibold flex items-center gap-2">
-              <Shuffle className="h-4 w-4 text-primary" /> Generate Pairings
-            </h3>
-            <div className="grid grid-cols-3 gap-2">
-              <div>
-                <Label className="text-[10px]">Start Type</Label>
-                <Select value={startType} onValueChange={setStartType}>
-                  <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="tee_time">Tee Time</SelectItem>
-                    <SelectItem value="shotgun">Shotgun</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="text-[10px]">First Tee</Label>
-                <Input type="time" value={firstTee} onChange={e => setFirstTee(e.target.value)} className="h-8 text-xs" />
-              </div>
-              <div>
-                <Label className="text-[10px]">Interval</Label>
-                <Input type="number" value={interval} onChange={e => setInterval(e.target.value)} className="h-8 text-xs" disabled={startType === "shotgun"} />
-              </div>
-            </div>
-            <Button size="sm" className="w-full gap-1" onClick={handleGeneratePairings} disabled={generating}>
-              <Shuffle className="h-3.5 w-3.5" /> {generating ? "Generating…" : "Generate Pairings"}
-            </Button>
-          </div>
-
-          {(!pairings || pairings.length === 0) && <EmptyState text="No pairings generated yet" />}
-          {pairings?.map((p) => (
-            <div key={p.id} className="golf-card p-3 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold">Group {p.group_number}</span>
-                <div className="flex items-center gap-2">
-                  {p.start_type === "shotgun" && p.start_hole && (
-                    <Badge variant="outline" className="text-[10px] border-accent/30 text-accent">Hole {p.start_hole}</Badge>
-                  )}
-                  <span className="text-xs text-muted-foreground">{formatTeeTime(p.tee_time)}</span>
+          {showAdminActions && (
+            <div className="golf-card space-y-3 p-4">
+              <h3 className="text-sm font-semibold flex items-center gap-2">
+                <Shuffle className="h-4 w-4 text-primary" /> Generate Pairings
+              </h3>
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <Label className="text-[10px]">Start Type</Label>
+                  <Select value={startType} onValueChange={setStartType}>
+                    <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="tee_time">Tee Time</SelectItem>
+                      <SelectItem value="shotgun">Shotgun</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-[10px]">First Tee</Label>
+                  <Input type="time" value={firstTee} onChange={e => setFirstTee(e.target.value)} className="h-8 text-xs" />
+                </div>
+                <div>
+                  <Label className="text-[10px]">Interval</Label>
+                  <Input type="number" value={interval} onChange={e => setInterval(e.target.value)} className="h-8 text-xs" disabled={startType === "shotgun"} />
                 </div>
               </div>
-              <div className="space-y-1">
-                {((p.pairing_players as any[]) ?? [])
-                  .sort((a: any, b: any) => (a.position ?? 0) - (b.position ?? 0))
-                  .map((pp: any) => (
-                    <div key={pp.id} className="flex items-center gap-2 text-xs">
-                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">{pp.position}</span>
-                      <span className="truncate">{pp.contestants?.profiles?.full_name ?? "Unknown"}</span>
-                      <span className="ml-auto text-muted-foreground">HCP {pp.contestants?.hcp ?? "—"}</span>
-                    </div>
-                  ))}
+              <Button size="sm" className="w-full gap-1" onClick={handleGeneratePairings} disabled={generating}>
+                <Shuffle className="h-3.5 w-3.5" />
+                {generating ? "Generating…" : (event?.pairing_approval_required ? "Generate (Draft)" : "Generate & Publish")}
+              </Button>
+            </div>
+          )}
+
+          {/* Draft notice for organizer */}
+          {event?.pairing_approval_required && pairings && pairings.length > 0 && showAdminActions && (
+            <div className="golf-card border-accent/30 p-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-semibold text-accent">
+                    Pairing dalam status Draft
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">
+                    Pemain belum bisa melihat group mereka
+                  </p>
+                </div>
+                <Button size="sm" className="h-7 text-xs"
+                  onClick={async () => {
+                    await supabase
+                      .from("events")
+                      .update({ pairing_approval_required: false })
+                      .eq("id", id!);
+                    toast.success("Pairings dipublikasikan!");
+                    queryClient.invalidateQueries({ queryKey: ["event", id] });
+                  }}>
+                  Publish
+                </Button>
               </div>
             </div>
-          ))}
+          )}
+
+          {/* Non-organizer: show message if approval required */}
+          {!showAdminActions && event?.pairing_approval_required && (
+            <div className="golf-card p-6 text-center">
+              <Clock className="mx-auto h-8 w-8 text-muted-foreground/40" />
+              <p className="mt-2 text-sm text-muted-foreground">
+                Pairing sedang dalam review
+              </p>
+              <p className="text-xs text-muted-foreground/60 mt-1">
+                Tournament director akan segera mempublikasikan grup Anda
+              </p>
+            </div>
+          )}
+
+          {(!event?.pairing_approval_required || showAdminActions) && (
+            <>
+              {(!pairings || pairings.length === 0) && <EmptyState text="No pairings generated yet" />}
+              {pairings?.map((p) => (
+                <div key={p.id} className="golf-card p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-semibold">Group {p.group_number}</span>
+                    <div className="flex items-center gap-2">
+                      {p.start_type === "shotgun" && p.start_hole && (
+                        <Badge variant="outline" className="text-[10px] border-accent/30 text-accent">Hole {p.start_hole}</Badge>
+                      )}
+                      <span className="text-xs text-muted-foreground">{formatTeeTime(p.tee_time)}</span>
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    {((p.pairing_players as any[]) ?? [])
+                      .sort((a: any, b: any) => (a.position ?? 0) - (b.position ?? 0))
+                      .map((pp: any) => (
+                        <div key={pp.id} className="flex items-center gap-2 text-xs">
+                          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">{pp.position}</span>
+                          <span className="truncate">{pp.contestants?.profiles?.full_name ?? "Unknown"}</span>
+                          <span className="ml-auto text-muted-foreground">HCP {pp.contestants?.hcp ?? "—"}</span>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
         </TabsContent>
 
         {/* LEADERBOARD */}

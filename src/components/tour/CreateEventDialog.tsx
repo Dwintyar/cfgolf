@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -20,6 +21,7 @@ const CreateEventDialog = ({ tourId, open, onOpenChange, onDone }: Props) => {
   const [courseId, setCourseId] = useState("");
   const [date, setDate] = useState("");
   const [ticketTotal, setTicketTotal] = useState("60");
+  const [pairingApproval, setPairingApproval] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const { data: courses } = useQuery({
@@ -40,11 +42,12 @@ const CreateEventDialog = ({ tourId, open, onOpenChange, onDone }: Props) => {
       event_date: date,
       ticket_total: parseInt(ticketTotal) || 0,
       status: "draft",
+      pairing_approval_required: pairingApproval,
     });
     setLoading(false);
     if (error) { toast.error(error.message); return; }
     toast.success("Event created");
-    setName(""); setDate("");
+    setName(""); setDate(""); setPairingApproval(false);
     onDone();
   };
 
@@ -73,6 +76,18 @@ const CreateEventDialog = ({ tourId, open, onOpenChange, onDone }: Props) => {
           <div>
             <Label className="text-xs">Total Tickets</Label>
             <Input type="number" value={ticketTotal} onChange={e => setTicketTotal(e.target.value)} />
+          </div>
+          <div className="golf-card p-3 flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium">Pairing Approval</p>
+              <p className="text-xs text-muted-foreground">
+                Pairing perlu di-review sebelum dipublikasikan ke pemain
+              </p>
+            </div>
+            <Switch
+              checked={pairingApproval}
+              onCheckedChange={setPairingApproval}
+            />
           </div>
           <Button className="w-full" onClick={handleSubmit} disabled={loading}>
             {loading ? "Creating…" : "Create Event"}
