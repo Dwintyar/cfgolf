@@ -105,6 +105,11 @@ const VenueList = () => {
     return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(Number(price));
   };
 
+  const eligibleClubs = myAdminClubsData?.filter(club =>
+    venueTab === "range"
+      ? club.facility_type === "driving_range"
+      : club.facility_type !== "driving_range"
+  ) ?? [];
 
   return (
     <div className="bottom-nav-safe">
