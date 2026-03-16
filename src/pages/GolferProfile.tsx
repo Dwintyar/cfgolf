@@ -381,6 +381,63 @@ const GolferProfile = () => {
 
         {tab === "stats" && (
           <div className="space-y-4 animate-fade-in">
+            {/* Tournament History */}
+            {tournamentHistory && tournamentHistory.length > 0 && (
+              <div className="golf-card p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Trophy className="h-4 w-4 text-primary" />
+                  <p className="text-sm font-semibold">Tournament History</p>
+                  <span className="text-xs text-muted-foreground ml-auto">
+                    {tournamentHistory.length} tournament
+                  </span>
+                </div>
+                <div className="space-y-3">
+                  {tournamentHistory.map((t: any, i: number) => (
+                    <div key={i} className="border border-border/50 rounded-lg overflow-hidden">
+                      <div className="flex items-center justify-between bg-secondary/50 px-3 py-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-semibold truncate">{t.tour?.name ?? "Tournament"}</p>
+                          <p className="text-[10px] text-muted-foreground">
+                            {t.tour?.year} · {t.tour?.tournament_type} · {t.club?.name}
+                          </p>
+                        </div>
+                        <div className="text-right shrink-0 ml-2">
+                          <p className="text-[10px] text-muted-foreground">Tour HCP</p>
+                          <p className="text-xs font-bold text-primary">{t.hcpAtReg ?? "—"} → {t.hcpCurrent ?? "—"}</p>
+                        </div>
+                      </div>
+                      {t.events.length > 0 ? (
+                        <div className="divide-y divide-border/30">
+                          {t.events.map((e: any, j: number) => (
+                            <div key={j} className="flex items-center justify-between px-3 py-2">
+                              <div className="min-w-0 flex-1">
+                                <p className="text-xs truncate">{e.event?.name}</p>
+                                <p className="text-[10px] text-muted-foreground">
+                                  {e.event?.event_date} · {(e.event?.courses as any)?.name}
+                                </p>
+                              </div>
+                              <div className="text-right shrink-0 ml-2">
+                                <p className="text-[10px] text-muted-foreground">HCP used</p>
+                                <p className="text-xs font-medium">{e.hcp ?? "—"}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-[10px] text-muted-foreground text-center py-2">Belum ada event selesai</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {tournamentHistory?.length === 0 && (
+              <div className="golf-card p-6 text-center">
+                <Trophy className="mx-auto h-8 w-8 text-muted-foreground/40" />
+                <p className="mt-2 text-sm text-muted-foreground">Belum mengikuti tournament</p>
+              </div>
+            )}
+
             {playerStats ? (
               <>
                 <div className="golf-card p-4">
