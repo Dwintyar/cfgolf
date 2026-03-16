@@ -285,7 +285,12 @@ const TourDetail = () => {
                           size="sm"
                           className="h-7 px-2 text-[10px] gap-1"
                           onClick={async () => {
-                            await supabase.from("tour_players").update({ status: "registered" }).eq("id", p.id);
+                            const { error } = await supabase.from("tour_players").update({ status: "registered" }).eq("id", p.id);
+                            if (error) {
+                              toast.error("Gagal: " + error.message);
+                              console.error("Accept error:", error);
+                              return;
+                            }
                             toast.success(`${(p.profiles as any)?.full_name} registered!`);
                             refetchPlayers();
                           }}
@@ -297,7 +302,12 @@ const TourDetail = () => {
                           variant="outline"
                           className="h-7 px-2 text-[10px] gap-1 text-destructive border-destructive/30"
                           onClick={async () => {
-                            await supabase.from("tour_players").delete().eq("id", p.id);
+                            const { error } = await supabase.from("tour_players").delete().eq("id", p.id);
+                            if (error) {
+                              toast.error("Gagal: " + error.message);
+                              console.error("Reject error:", error);
+                              return;
+                            }
                             toast.success("Player removed");
                             refetchPlayers();
                           }}
