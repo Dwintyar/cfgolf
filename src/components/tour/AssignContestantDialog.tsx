@@ -131,7 +131,6 @@ const AssignContestantDialog = ({ eventId, tourId, open, onOpenChange, onDone }:
               </p>
             )}
           </div>
-          </div>
           <div>
             <Label className="text-xs">Flight</Label>
             <Select value={flightId || "none"} onValueChange={(v) => setFlightId(v === "none" ? "" : v)}>
