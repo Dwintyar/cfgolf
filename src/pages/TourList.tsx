@@ -153,7 +153,7 @@ const TourList = () => {
 
   const tourTabs = [
     { id: "invited" as const, label: "Invited", count: invitedTours?.length },
-    { id: "mine" as const, label: "My Tours", count: myTours?.length },
+    { id: "mine" as const, label: isOrganizer ? "My Tours" : "My Events", count: isOrganizer ? myTours?.length : myEvents?.length },
     { id: "all" as const, label: "All" },
   ];
 
