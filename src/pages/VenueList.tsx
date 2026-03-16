@@ -258,7 +258,7 @@ const VenueList = () => {
                   <p className="text-xs text-muted-foreground truncate">{club.description ?? "Driving Range"}</p>
                 </div>
                 <div className="flex flex-col gap-1.5 shrink-0">
-                  <Button size="sm" className="h-7 px-3 text-[10px] font-bold" onClick={() => navigate(`/clubs/${club.id}`)}>Manage</Button>
+                  <Button size="sm" className="h-7 px-3 text-[10px] font-bold" onClick={() => navigate(`/admin/club/${club.id}`)}>Manage</Button>
                 </div>
               </div>
             ))
