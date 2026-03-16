@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Check, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, Check, ChevronLeft, ChevronRight, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
@@ -334,11 +334,78 @@ const ScorecardInput = () => {
     }
   };
 
+  const isEventCompleted = event?.status === "completed";
+
   if (!event || !contestant || scores.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
         <p className="mt-3 text-sm text-muted-foreground">Loading scorecard...</p>
+      </div>
+    );
+  }
+
+  if (isEventCompleted) {
+    const myScorecard = existingScorecard;
+    return (
+      <div className="flex flex-col h-screen">
+        <div className="flex items-center justify-between border-b border-border/50 p-4">
+          <button onClick={() => navigate(-1)} className="rounded-full p-1.5 hover:bg-muted">
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+          <div className="text-center">
+            <p className="text-sm font-bold">{event?.name ?? "Event"}</p>
+            <p className="text-xs text-muted-foreground">
+              {(event?.courses as any)?.name}
+            </p>
+          </div>
+          <div className="w-8" />
+        </div>
+
+        <div className="flex-1 flex flex-col items-center justify-center p-8 text-center gap-4">
+          <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+            <Trophy className="h-8 w-8 text-primary" />
+          </div>
+          <div>
+            <p className="text-base font-bold">Event Selesai</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Event ini sudah di-finalize. Scorecard tidak bisa diubah.
+            </p>
+          </div>
+
+          {myScorecard && (
+            <div className="golf-card w-full max-w-xs p-4 mt-2">
+              <p className="text-xs text-muted-foreground mb-3 text-center">
+                Skor Akhir Anda
+              </p>
+              <div className="grid grid-cols-3 gap-3 text-center">
+                <div>
+                  <p className="text-2xl font-bold">{myScorecard.gross_score ?? "—"}</p>
+                  <p className="text-[10px] text-muted-foreground">GROSS</p>
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-primary">
+                    {myScorecard.net_score ?? "—"}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">NET</p>
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">
+                    {myScorecard.total_putts ?? "—"}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">PUTTS</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <Button
+            className="mt-2"
+            onClick={() => navigate(`/event/${eventId}`)}
+          >
+            Lihat Leaderboard
+          </Button>
+        </div>
       </div>
     );
   }
