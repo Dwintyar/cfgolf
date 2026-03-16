@@ -335,9 +335,12 @@ const TourList = () => {
                   ))
             ) : (
               myEvents?.length === 0
-                ? <p className="text-xs text-muted-foreground text-center py-4">
-                    You have not been assigned to any events yet.
-                  </p>
+                ? <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <Trophy className="h-10 w-10 text-muted-foreground/40 mb-3" />
+                    <p className="text-sm font-semibold">Belum mengikuti tournament</p>
+                    <p className="text-xs text-muted-foreground mt-1">Daftar ke tournament atau buat tournament baru</p>
+                    <Button size="sm" variant="outline" className="mt-3" onClick={() => setTourTab("all")}>Browse All</Button>
+                  </div>
                 : myEvents?.map((c: any, i: number) => {
                     const ev = c.events;
                     if (!ev) return null;
