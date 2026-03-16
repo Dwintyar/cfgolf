@@ -154,7 +154,7 @@ const VenueList = () => {
               <Skeleton key={i} className="h-32 w-full rounded-xl" />
             ))}
 
-          {!isLoading && sortedGolfCourses.length === 0 && addCourseClubs.length === 0 && (
+          {!isLoading && sortedGolfCourses.length === 0 && (
             <div className="golf-card p-8 text-center">
               <MapPin className="mx-auto h-10 w-10 text-muted-foreground/40" />
               <p className="mt-3 text-sm text-muted-foreground">No venues found</p>
