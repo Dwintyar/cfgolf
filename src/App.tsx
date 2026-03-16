@@ -35,6 +35,7 @@ import ClubAdminDashboard from "./pages/ClubAdminDashboard";
 import ExportQueries from "./pages/ExportQueries";
 import ScorecardInput from "./pages/ScorecardInput";
 import Notifications from "./pages/Notifications";
+import CourseAdminDashboard from "./pages/CourseAdminDashboard";
 
 const queryClient = new QueryClient();
 
@@ -69,6 +70,7 @@ const AppInner = () => {
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/admin" element={<AdminRoute requirePlatformAdmin><PlatformAdminDashboard /></AdminRoute>} />
           <Route path="/admin/club/:clubId" element={<AdminRoute><ClubAdminDashboard /></AdminRoute>} />
+          <Route path="/admin/course/:courseId" element={<CourseAdminDashboard />} />
           <Route path="/export-queries" element={<ExportQueries />} />
           <Route path="/login" element={<Login />} />
           <Route path="/reset-password" element={<ResetPassword />} />
