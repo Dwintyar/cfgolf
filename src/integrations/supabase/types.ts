@@ -1280,6 +1280,7 @@ export type Database = {
           handicap: number | null
           id: string
           location: string | null
+          onboarding_completed: boolean | null
           updated_at: string
         }
         Insert: {
@@ -1290,6 +1291,7 @@ export type Database = {
           handicap?: number | null
           id: string
           location?: string | null
+          onboarding_completed?: boolean | null
           updated_at?: string
         }
         Update: {
@@ -1300,6 +1302,7 @@ export type Database = {
           handicap?: number | null
           id?: string
           location?: string | null
+          onboarding_completed?: boolean | null
           updated_at?: string
         }
         Relationships: []
@@ -2085,6 +2088,64 @@ export type Database = {
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      handicap_history_public: {
+        Row: {
+          created_at: string | null
+          event_id: string | null
+          gross_score: number | null
+          id: string | null
+          net_score: number | null
+          new_hcp: number | null
+          old_hcp: number | null
+          player_id: string | null
+          tour_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          event_id?: string | null
+          gross_score?: number | null
+          id?: string | null
+          net_score?: number | null
+          new_hcp?: number | null
+          old_hcp?: number | null
+          player_id?: string | null
+          tour_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          event_id?: string | null
+          gross_score?: number | null
+          id?: string | null
+          net_score?: number | null
+          new_hcp?: number | null
+          old_hcp?: number | null
+          player_id?: string | null
+          tour_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "handicap_history_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "handicap_history_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "handicap_history_tour_id_fkey"
+            columns: ["tour_id"]
+            isOneToOne: false
+            referencedRelation: "tours"
             referencedColumns: ["id"]
           },
         ]
