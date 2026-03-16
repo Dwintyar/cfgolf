@@ -58,6 +58,23 @@ const CourseAdminDashboard = () => {
     enabled: !isNew,
   });
 
+  // Active events check for course lock
+  const { data: activeEvents } = useQuery({
+    queryKey: ["active-events-for-course", courseId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("events")
+        .select("id, name, event_date, status")
+        .eq("course_id", courseId!)
+        .in("status", ["registration", "checkin", "playing"])
+        .order("event_date");
+      return data ?? [];
+    },
+    enabled: !!courseId && !isNew,
+  });
+
+  const isCourseLocked = (activeEvents?.length ?? 0) > 0;
+
   // Today's bookings count
   const { data: todayBookings } = useQuery({
     queryKey: ["course-today-bookings", courseId],
