@@ -7,9 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import venueImg from "@/assets/golf-venue.jpg";
 import heroImg from "@/assets/golf-hero.jpg";
-import { useState } from "react";
-
-const TEE_TIMES = ["07.00", "07.30", "08.00", "08.30", "09.00", "09.30", "13.00", "14.00", "15.00"];
+import { useState, useMemo } from "react";
 
 const Venue = () => {
   const navigate = useNavigate();
