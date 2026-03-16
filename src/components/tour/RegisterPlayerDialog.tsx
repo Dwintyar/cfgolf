@@ -151,7 +151,7 @@ const RegisterPlayerDialog = ({ tourId, tourType, organizerClubId, callerClubId,
             <div className="max-h-48 overflow-y-auto border rounded-lg divide-y divide-border/30">
               {sortedAndFiltered.length === 0 && (
                 <p className="text-xs text-muted-foreground text-center py-3">
-                  {playerSearch ? "Tidak ditemukan" : "Tidak ada member"}
+                  {playerSearch ? "Tidak ditemukan" : (registeredPlayerIds?.size ?? 0) > 0 && (members?.length ?? 0) > 0 ? "Semua member klub sudah terdaftar di tournament ini." : "Tidak ada member"}
                 </p>
               )}
               {sortedAndFiltered.map(m => {
