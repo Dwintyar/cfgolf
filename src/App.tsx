@@ -35,6 +35,7 @@ import ClubAdminDashboard from "./pages/ClubAdminDashboard";
 import ExportQueries from "./pages/ExportQueries";
 import ScorecardInput from "./pages/ScorecardInput";
 import Notifications from "./pages/Notifications";
+import CourseAdminDashboard from "./pages/CourseAdminDashboard";
 
 const queryClient = new QueryClient();
 
