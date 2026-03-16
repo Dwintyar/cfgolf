@@ -697,6 +697,44 @@ export type Database = {
           },
         ]
       }
+      event_holes: {
+        Row: {
+          created_at: string
+          distance_yards: number | null
+          event_id: string
+          hole_number: number
+          id: string
+          par: number
+          stroke_index: number | null
+        }
+        Insert: {
+          created_at?: string
+          distance_yards?: number | null
+          event_id: string
+          hole_number: number
+          id?: string
+          par: number
+          stroke_index?: number | null
+        }
+        Update: {
+          created_at?: string
+          distance_yards?: number | null
+          event_id?: string
+          hole_number?: number
+          id?: string
+          par?: number
+          stroke_index?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_holes_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_results: {
         Row: {
           category_id: string
