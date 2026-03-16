@@ -40,6 +40,7 @@ const CourseAdminDashboard = () => {
   const clubId = new URLSearchParams(location.search).get("clubId");
 
   const [tab, setTab] = useState<TabId>(isNew ? "settings" : "overview");
+  const [showLockConfirm, setShowLockConfirm] = useState(false);
 
   // Course data
   const { data: course, isLoading } = useQuery({
