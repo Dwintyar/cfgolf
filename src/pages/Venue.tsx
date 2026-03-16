@@ -7,14 +7,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import venueImg from "@/assets/golf-venue.jpg";
 import heroImg from "@/assets/golf-hero.jpg";
-import { useState } from "react";
-
-const TEE_TIMES = ["07.00", "07.30", "08.00", "08.30", "09.00", "09.30", "13.00", "14.00", "15.00"];
+import { useState, useMemo } from "react";
 
 const Venue = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const [selectedTime, setSelectedTime] = useState("07.00");
+  const [selectedTime, setSelectedTime] = useState("07:00");
   const [distUnit, setDistUnit] = useState<"yd" | "m">("m");
 
   const { data: course, isLoading } = useQuery({
@@ -30,6 +28,36 @@ const Venue = () => {
     },
     enabled: !!id,
   });
+
+  const { data: slotConfig } = useQuery({
+    queryKey: ["tee-slot-config-public", id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("tee_time_slots")
+        .select("*")
+        .eq("course_id", id!)
+        .eq("is_active", true)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!id,
+  });
+
+  const teeTimes = useMemo(() => {
+    if (!slotConfig) return ["07:00", "07:30", "08:00", "08:30", "09:00", "09:30", "13:00", "14:00", "15:00"];
+    const slots: string[] = [];
+    const [sh, sm] = slotConfig.start_time.split(":").map(Number);
+    const [eh, em] = slotConfig.end_time.split(":").map(Number);
+    let mins = sh * 60 + sm;
+    const endMins = eh * 60 + em;
+    while (mins <= endMins) {
+      const h = Math.floor(mins / 60).toString().padStart(2, "0");
+      const m = (mins % 60).toString().padStart(2, "0");
+      slots.push(`${h}:${m}`);
+      mins += slotConfig.interval_mins;
+    }
+    return slots;
+  }, [slotConfig]);
 
   const convertDist = (yards: number | null) => {
     if (!yards) return "—";
@@ -175,7 +203,7 @@ const Venue = () => {
             <div className="mt-6">
               <p className="text-sm font-semibold mb-3">Pilih waktu tee-off</p>
               <div className="grid grid-cols-3 gap-2">
-                {TEE_TIMES.map((time) => (
+                {teeTimes.map((time) => (
                   <button
                     key={time}
                     onClick={() => setSelectedTime(time)}

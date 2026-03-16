@@ -6,6 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
@@ -69,6 +71,92 @@ const CourseAdminDashboard = () => {
     },
     enabled: !isNew,
   });
+
+  // Tee time slot config
+  const { data: slotConfig, refetch: refetchSlots } = useQuery({
+    queryKey: ["tee-slot-config", courseId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("tee_time_slots")
+        .select("*")
+        .eq("course_id", courseId!)
+        .eq("is_active", true)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!courseId && !isNew,
+  });
+
+  // Upcoming bookings
+  const { data: upcomingBookings } = useQuery({
+    queryKey: ["course-bookings", courseId],
+    queryFn: async () => {
+      const today = new Date().toISOString().split("T")[0];
+      const { data } = await supabase
+        .from("tee_time_bookings")
+        .select("*, profiles:user_id(full_name)")
+        .eq("course_id", courseId!)
+        .gte("booking_date", today)
+        .order("booking_date")
+        .order("tee_time");
+      return data ?? [];
+    },
+    enabled: !!courseId && !isNew,
+  });
+
+  // ═══ TEE TIME FORM STATE ═══
+  const [startTime, setStartTime] = useState("06:00");
+  const [endTime, setEndTime] = useState("15:00");
+  const [slotInterval, setSlotInterval] = useState(30);
+  const [maxPlayers, setMaxPlayers] = useState(4);
+  const [priceWeekday, setPriceWeekday] = useState("");
+  const [priceWeekend, setPriceWeekend] = useState("");
+  const [savingSlots, setSavingSlots] = useState(false);
+
+  useEffect(() => {
+    if (slotConfig) {
+      setStartTime(slotConfig.start_time?.slice(0, 5) ?? "06:00");
+      setEndTime(slotConfig.end_time?.slice(0, 5) ?? "15:00");
+      setSlotInterval(slotConfig.interval_mins ?? 30);
+      setMaxPlayers(slotConfig.max_players ?? 4);
+      setPriceWeekday(String(slotConfig.price_weekday ?? ""));
+      setPriceWeekend(String(slotConfig.price_weekend ?? ""));
+    }
+  }, [slotConfig]);
+
+  const handleSaveSlots = async () => {
+    if (!courseId) return;
+    setSavingSlots(true);
+    await supabase.from("tee_time_slots").upsert({
+      ...(slotConfig?.id ? { id: slotConfig.id } : {}),
+      course_id: courseId,
+      start_time: startTime,
+      end_time: endTime,
+      interval_mins: slotInterval,
+      max_players: maxPlayers,
+      price_weekday: parseFloat(priceWeekday) || 0,
+      price_weekend: parseFloat(priceWeekend) || 0,
+      is_active: true,
+    }, { onConflict: "id" });
+    toast({ title: "Tee time schedule saved!" });
+    refetchSlots();
+    setSavingSlots(false);
+  };
+
+  const generateSlotPreviews = () => {
+    const slots: string[] = [];
+    const [sh, sm] = startTime.split(":").map(Number);
+    const [eh, em] = endTime.split(":").map(Number);
+    let mins = sh * 60 + sm;
+    const endMins = eh * 60 + em;
+    while (mins <= endMins) {
+      const h = Math.floor(mins / 60).toString().padStart(2, "0");
+      const m = (mins % 60).toString().padStart(2, "0");
+      slots.push(`${h}:${m}`);
+      mins += slotInterval;
+    }
+    return slots;
+  };
 
   // ═══ SETTINGS FORM ═══
   const [form, setForm] = useState({
@@ -354,9 +442,98 @@ const CourseAdminDashboard = () => {
 
         {/* ═══ TEE TIMES ═══ */}
         {tab === "teetimes" && !isNew && (
-          <div className="golf-card p-8 text-center">
-            <Clock className="mx-auto h-10 w-10 text-muted-foreground/40" />
-            <p className="mt-3 text-sm text-muted-foreground">Tee time setup coming soon</p>
+          <div className="space-y-4">
+            {/* Schedule Template */}
+            <div className="golf-card p-4 space-y-3">
+              <p className="text-sm font-semibold">Schedule Template</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Open</Label>
+                  <Input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className="mt-1 h-9 text-sm" />
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Close</Label>
+                  <Input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className="mt-1 h-9 text-sm" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Interval (menit)</Label>
+                  <Select value={String(slotInterval)} onValueChange={v => setSlotInterval(Number(v))}>
+                    <SelectTrigger className="mt-1 h-9 text-sm"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="15">15 menit</SelectItem>
+                      <SelectItem value="30">30 menit</SelectItem>
+                      <SelectItem value="45">45 menit</SelectItem>
+                      <SelectItem value="60">60 menit</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Max players/slot</Label>
+                  <Select value={String(maxPlayers)} onValueChange={v => setMaxPlayers(Number(v))}>
+                    <SelectTrigger className="mt-1 h-9 text-sm"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {[1, 2, 3, 4, 5].map(n => (
+                        <SelectItem key={n} value={String(n)}>{n} players</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Harga Weekday (Rp)</Label>
+                  <Input type="number" value={priceWeekday} onChange={e => setPriceWeekday(e.target.value)} placeholder="500000" className="mt-1 h-9 text-sm" />
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Harga Weekend (Rp)</Label>
+                  <Input type="number" value={priceWeekend} onChange={e => setPriceWeekend(e.target.value)} placeholder="700000" className="mt-1 h-9 text-sm" />
+                </div>
+              </div>
+              {/* Preview slots */}
+              <div>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Preview — {generateSlotPreviews().length} slots/hari
+                </p>
+                <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
+                  {generateSlotPreviews().slice(0, 20).map(t => (
+                    <span key={t} className="text-[10px] bg-secondary rounded px-2 py-0.5">{t}</span>
+                  ))}
+                  {generateSlotPreviews().length > 20 && (
+                    <span className="text-[10px] text-muted-foreground px-1">+{generateSlotPreviews().length - 20} more</span>
+                  )}
+                </div>
+              </div>
+              <Button className="w-full" onClick={handleSaveSlots} disabled={savingSlots}>
+                {savingSlots ? "Saving..." : "Save Schedule"}
+              </Button>
+            </div>
+
+            {/* Upcoming Bookings */}
+            <div className="golf-card p-4">
+              <p className="text-sm font-semibold mb-3">
+                Upcoming Bookings ({upcomingBookings?.length ?? 0})
+              </p>
+              {upcomingBookings?.length === 0 && (
+                <p className="text-xs text-muted-foreground text-center py-4">No upcoming bookings</p>
+              )}
+              {upcomingBookings?.map(b => (
+                <div key={b.id} className="flex items-center justify-between py-2.5 border-b border-border/50 last:border-0">
+                  <div>
+                    <p className="text-sm font-medium">{(b.profiles as any)?.full_name ?? "Guest"}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {b.booking_date} · {b.tee_time?.slice(0, 5)} · {b.players_count} players
+                    </p>
+                  </div>
+                  <Badge variant="outline" className={`text-[10px] ${
+                    b.status === "confirmed" ? "text-primary border-primary/30" : "text-accent border-accent/30"
+                  }`}>
+                    {b.status}
+                  </Badge>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 

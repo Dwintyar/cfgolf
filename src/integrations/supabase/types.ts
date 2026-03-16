@@ -1676,6 +1676,56 @@ export type Database = {
           },
         ]
       }
+      tee_time_slots: {
+        Row: {
+          course_id: string
+          created_at: string
+          day_of_week: number[]
+          end_time: string
+          id: string
+          interval_mins: number
+          is_active: boolean
+          max_players: number
+          price_weekday: number
+          price_weekend: number
+          start_time: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          day_of_week?: number[]
+          end_time: string
+          id?: string
+          interval_mins?: number
+          is_active?: boolean
+          max_players?: number
+          price_weekday?: number
+          price_weekend?: number
+          start_time: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          day_of_week?: number[]
+          end_time?: string
+          id?: string
+          interval_mins?: number
+          is_active?: boolean
+          max_players?: number
+          price_weekday?: number
+          price_weekend?: number
+          start_time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tee_time_slots_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tickets: {
         Row: {
           assigned_player_id: string | null
