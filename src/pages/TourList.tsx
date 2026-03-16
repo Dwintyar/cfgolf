@@ -1,19 +1,28 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { Trophy, Calendar, Users, Plus } from "lucide-react";
+import { Trophy, Plus } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import CreateTourDialog from "@/components/tour/CreateTourDialog";
 
 const TourList = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
-  const [tab, setTab] = useState<"upcoming" | "completed" | "invited">("upcoming");
+  const [tab, setTab] = useState<"upcoming" | "completed">("upcoming");
+  const [tourTab, setTourTab] = useState<"invited" | "mine" | "all">("mine");
+
+  const [userId, setUserId] = useState<string | null>(null);
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) setUserId(user.id);
+    });
+  }, []);
 
   const { data: tours, isLoading, refetch } = useQuery({
     queryKey: ["tours"],
@@ -27,8 +36,7 @@ const TourList = () => {
     },
   });
 
-  // Load events for the tours
-  const { data: events } = useQuery({
+  const { data: events, isLoading: eventsLoading } = useQuery({
     queryKey: ["all-events"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -40,9 +48,73 @@ const TourList = () => {
     },
   });
 
-  const tabs = [
+  const { data: invitedTours } = useQuery({
+    queryKey: ["invited-tours", userId],
+    queryFn: async () => {
+      if (!userId) return [];
+      const { data: myClubs } = await supabase
+        .from("members")
+        .select("club_id")
+        .eq("user_id", userId)
+        .in("role", ["owner", "admin"]);
+
+      if (!myClubs?.length) return [];
+      const myClubIds = myClubs.map(m => m.club_id);
+
+      const { data } = await supabase
+        .from("tour_clubs")
+        .select("*, tours(*, clubs!tours_organizer_club_id_fkey(name))")
+        .in("club_id", myClubIds)
+        .eq("status", "invited");
+
+      return data ?? [];
+    },
+    enabled: !!userId,
+  });
+
+  const { data: myTours } = useQuery({
+    queryKey: ["my-tours", userId],
+    queryFn: async () => {
+      if (!userId) return [];
+      const { data: myClubs } = await supabase
+        .from("members")
+        .select("club_id")
+        .eq("user_id", userId)
+        .in("role", ["owner", "admin"]);
+
+      if (!myClubs?.length) return [];
+      const myClubIds = myClubs.map(m => m.club_id);
+
+      const { data } = await supabase
+        .from("tours")
+        .select("*, clubs!tours_organizer_club_id_fkey(name, logo_url)")
+        .in("organizer_club_id", myClubIds)
+        .order("year", { ascending: false });
+
+      return data ?? [];
+    },
+    enabled: !!userId,
+  });
+
+  const upcomingEvents = events?.filter(e =>
+    e.status !== "completed" && e.status !== "cancelled"
+  ) ?? [];
+
+  const completedEvents = events?.filter(e =>
+    e.status === "completed"
+  ) ?? [];
+
+  const displayEvents = tab === "upcoming" ? upcomingEvents : completedEvents;
+
+  const eventTabs = [
     { id: "upcoming" as const, label: "Upcoming Events" },
     { id: "completed" as const, label: "Completed" },
+  ];
+
+  const tourTabs = [
+    { id: "invited" as const, label: "Invited", count: invitedTours?.length },
+    { id: "mine" as const, label: "My Tours", count: myTours?.length },
+    { id: "all" as const, label: "All" },
   ];
 
   return (
@@ -52,10 +124,10 @@ const TourList = () => {
         icon={<Trophy className="h-5 w-5 text-primary" />}
       />
 
-      {/* Events section with tabs like reference GD_Mob_62 */}
+      {/* ═══ SECTION 1: EVENTS ═══ */}
       <div className="mx-4 golf-card overflow-hidden">
         <div className="flex">
-          {tabs.map((t) => (
+          {eventTabs.map((t) => (
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
@@ -70,8 +142,18 @@ const TourList = () => {
           ))}
         </div>
 
-        <div className="p-3 space-y-2 max-h-60 overflow-y-auto">
-          {events?.slice(0, 4).map((event, i) => (
+        <div className="p-3 space-y-2 max-h-80 overflow-y-auto">
+          {eventsLoading && Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-14 w-full rounded-lg" />
+          ))}
+
+          {!eventsLoading && displayEvents.length === 0 && (
+            <p className="text-center text-xs text-muted-foreground py-4">
+              {tab === "upcoming" ? "No upcoming events" : "No completed events"}
+            </p>
+          )}
+
+          {displayEvents.map((event, i) => (
             <div
               key={event.id}
               className="flex items-center gap-3 rounded-lg bg-background/50 p-3 animate-fade-in"
@@ -88,6 +170,12 @@ const TourList = () => {
                   {event.event_date} · {(event.courses as any)?.name ?? ""}
                 </p>
               </div>
+              <Badge
+                variant={event.status === "completed" ? "secondary" : "outline"}
+                className="text-[9px] shrink-0"
+              >
+                {event.status}
+              </Badge>
               <Button
                 size="sm"
                 variant="outline"
@@ -98,31 +186,28 @@ const TourList = () => {
               </Button>
             </div>
           ))}
-          {(!events || events.length === 0) && !isLoading && (
-            <p className="text-center text-xs text-muted-foreground py-4">No events yet</p>
-          )}
         </div>
       </div>
 
-      {/* Tours section with tabs like reference bottom section */}
+      {/* ═══ SECTION 2: TOURNAMENTS ═══ */}
       <div className="mt-6 px-4">
         <div className="flex items-center gap-3 mb-3">
-          {["invited", "completed"].map((t) => (
+          {tourTabs.map((t) => (
             <button
-              key={t}
+              key={t.id}
+              onClick={() => setTourTab(t.id)}
               className={`text-xs font-bold uppercase tracking-wider transition-colors ${
-                tab === t ? "text-foreground" : "text-muted-foreground"
+                tourTab === t.id
+                  ? "text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              {t}
+              {t.label}
+              {t.count != null && t.count > 0 && (
+                <span className="ml-1 text-primary">({t.count})</span>
+              )}
             </button>
           ))}
-          <button
-            className="text-xs font-bold uppercase tracking-wider text-muted-foreground"
-            onClick={() => setShowCreate(true)}
-          >
-            Create
-          </button>
           <button
             onClick={() => setShowCreate(true)}
             className="ml-auto flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground"
@@ -132,37 +217,116 @@ const TourList = () => {
         </div>
 
         <div className="space-y-2">
-          {isLoading && Array.from({ length: 3 }).map((_, i) => (
-            <Skeleton key={i} className="h-20 w-full rounded-xl" />
-          ))}
-
-          {tours?.map((tour, i) => (
-            <button
-              key={tour.id}
-              onClick={() => navigate(`/tour/${tour.id}`)}
-              className="flex w-full items-center gap-3 rounded-xl py-3 text-left animate-fade-in transition-colors"
-              style={{ animationDelay: `${i * 60}ms` }}
-            >
-              <Avatar className="h-10 w-10 border-2 border-primary/20">
-                <AvatarImage src={(tour.clubs as any)?.logo_url ?? ""} />
-                <AvatarFallback className="bg-primary/10 text-xs font-bold text-primary">
-                  {tour.name.charAt(0)}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold truncate">{tour.name}</p>
-                <p className="text-[10px] text-muted-foreground">
-                  {tour.year} · {(tour.clubs as any)?.name ?? "—"}
+          {/* Tab: Invited */}
+          {tourTab === "invited" && (
+            invitedTours?.length === 0
+              ? <p className="text-xs text-muted-foreground text-center py-4">
+                  No pending invitations
                 </p>
-              </div>
-              <Button
-                size="sm"
-                className="h-7 rounded-lg px-4 text-[10px] font-bold uppercase tracking-wider"
-              >
-                Register
-              </Button>
-            </button>
-          ))}
+              : invitedTours?.map((tc: any) => {
+                  const tour = tc.tours;
+                  return (
+                    <div key={tc.id} className="golf-card p-3 flex items-center gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold truncate">{tour?.name}</p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {tour?.year} · By {tour?.clubs?.name}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button size="sm" className="h-7 text-xs"
+                          onClick={async () => {
+                            await supabase.from("tour_clubs")
+                              .update({ status: "accepted" }).eq("id", tc.id);
+                            queryClient.invalidateQueries({ queryKey: ["invited-tours"] });
+                            navigate(`/tour/${tour?.id}`);
+                          }}>
+                          Accept
+                        </Button>
+                        <Button size="sm" variant="outline" className="h-7 text-xs"
+                          onClick={async () => {
+                            await supabase.from("tour_clubs")
+                              .update({ status: "declined" }).eq("id", tc.id);
+                            queryClient.invalidateQueries({ queryKey: ["invited-tours"] });
+                          }}>
+                          Decline
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })
+          )}
+
+          {/* Tab: My Tours */}
+          {tourTab === "mine" && (
+            myTours?.length === 0
+              ? <p className="text-xs text-muted-foreground text-center py-4">
+                  No tournaments yet. Create one!
+                </p>
+              : myTours?.map((tour: any, i: number) => (
+                  <button key={tour.id} onClick={() => navigate(`/tour/${tour.id}`)}
+                    className="flex w-full items-center gap-3 rounded-xl py-3 text-left hover:opacity-80 transition-opacity animate-fade-in"
+                    style={{ animationDelay: `${i * 60}ms` }}>
+                    <Avatar className="h-10 w-10 border-2 border-primary/20">
+                      <AvatarImage src={tour.clubs?.logo_url ?? ""} />
+                      <AvatarFallback className="bg-primary/10 text-xs font-bold text-primary">
+                        {tour.name.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold truncate">{tour.name}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {tour.year} · {tour.clubs?.name ?? "—"} · {tour.tournament_type}
+                      </p>
+                    </div>
+                    <Badge variant="outline" className="text-[9px] text-primary border-primary/30 shrink-0">
+                      Manage →
+                    </Badge>
+                  </button>
+                ))
+          )}
+
+          {/* Tab: All */}
+          {tourTab === "all" && (
+            <>
+              {isLoading && Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-20 w-full rounded-xl" />
+              ))}
+
+              {!isLoading && tours?.length === 0 && (
+                <p className="text-xs text-muted-foreground text-center py-4">No tours available</p>
+              )}
+
+              {tours?.map((tour, i) => (
+                <button
+                  key={tour.id}
+                  onClick={() => navigate(`/tour/${tour.id}`)}
+                  className="flex w-full items-center gap-3 rounded-xl py-3 text-left animate-fade-in transition-colors hover:opacity-80"
+                  style={{ animationDelay: `${i * 60}ms` }}
+                >
+                  <Avatar className="h-10 w-10 border-2 border-primary/20">
+                    <AvatarImage src={(tour.clubs as any)?.logo_url ?? ""} />
+                    <AvatarFallback className="bg-primary/10 text-xs font-bold text-primary">
+                      {tour.name.charAt(0)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold truncate">{tour.name}</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {tour.year} · {(tour.clubs as any)?.name ?? "—"}
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 rounded-lg px-4 text-[10px] font-bold uppercase tracking-wider"
+                  >
+                    View →
+                  </Button>
+                </button>
+              ))}
+            </>
+          )}
         </div>
       </div>
 
