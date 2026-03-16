@@ -55,6 +55,19 @@ const RegisterPlayerDialog = ({ tourId, tourType, organizerClubId, callerClubId,
     enabled: !!tourId && isOrganizer,
   });
 
+  const { data: registeredPlayerIds } = useQuery({
+    queryKey: ["tour-registered-players", tourId, clubId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("tour_players")
+        .select("player_id")
+        .eq("tour_id", tourId)
+        .eq("club_id", clubId);
+      return new Set(data?.map(p => p.player_id) ?? []);
+    },
+    enabled: !!tourId && !!clubId,
+  });
+
   const { data: members } = useQuery({
     queryKey: ["dialog-members", clubId],
     queryFn: async () => {
@@ -68,10 +81,14 @@ const RegisterPlayerDialog = ({ tourId, tourType, organizerClubId, callerClubId,
   });
 
   const sortedAndFiltered = (members ?? [])
-    .filter(m =>
-      (m.profiles as any)?.full_name?.toLowerCase()
-        .includes(playerSearch.toLowerCase())
-    )
+    .filter(m => {
+      if (registeredPlayerIds?.has(m.user_id)) return false;
+      if (playerSearch) {
+        return (m.profiles as any)?.full_name?.toLowerCase()
+          .includes(playerSearch.toLowerCase());
+      }
+      return true;
+    })
     .sort((a, b) => {
       const nameA = ((a.profiles as any)?.full_name ?? "").toLowerCase();
       const nameB = ((b.profiles as any)?.full_name ?? "").toLowerCase();
