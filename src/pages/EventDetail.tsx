@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Calendar, MapPin, Users, Ticket, Trophy, Award, Shuffle, TrendingDown,
-  ClipboardCheck, Package, Lock, Car, UserCheck, ChevronRight, PenLine, Plus, RefreshCw, Clock
+  ClipboardCheck, Package, Lock, Car, UserCheck, ChevronRight, Pencil, Plus, RefreshCw, Clock
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
@@ -437,12 +437,16 @@ const EventDetail = () => {
         {myContestant && isCheckedIn && (
           <Button
             size="sm"
-            className={`h-7 shrink-0 gap-1 text-[11px] ${event?.status === "completed" ? "opacity-50 cursor-not-allowed" : ""}`}
+            variant={event?.status === "completed" ? "outline" : "default"}
+            className={`h-7 shrink-0 gap-1 text-[11px] ${
+              event?.status === "completed"
+                ? "opacity-50 cursor-not-allowed border-muted-foreground/30 text-muted-foreground"
+                : ""
+            }`}
             onClick={() => navigate(`/event/${id}/scorecard`)}
             disabled={event?.status === "completed"}
-            variant={event?.status === "completed" ? "outline" : "default"}
           >
-            <PenLine className="h-3 w-3" />
+            <Pencil className="h-3 w-3" />
             {event?.status === "completed" ? "Score Locked" : "Input Score"}
           </Button>
         )}
@@ -731,7 +735,7 @@ const EventDetail = () => {
               <p className="mt-2 text-sm text-muted-foreground">No scores yet</p>
               {myContestant && isCheckedIn && (
                 <Button size="sm" className="mt-3 gap-1" onClick={() => navigate(`/event/${id}/scorecard`)}>
-                  <PenLine className="h-3.5 w-3.5" /> Be the first to enter scores
+                  <Pencil className="h-3.5 w-3.5" /> Be the first to enter scores
                 </Button>
               )}
             </div>
