@@ -275,10 +275,13 @@ const VenueList = () => {
           }
 
           {!loadingRanges && filteredRanges.length === 0 && (
-            <div className="golf-card p-8 text-center">
-              <MapPin className="mx-auto h-10 w-10 text-muted-foreground/40" />
-              <p className="mt-3 text-sm text-muted-foreground">
-                {search ? "No driving ranges found" : "No driving ranges yet"}
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <div className="h-16 w-16 rounded-full bg-secondary flex items-center justify-center mb-4">
+                <MapPin className="h-8 w-8 text-muted-foreground/40" />
+              </div>
+              <p className="text-base font-semibold">Belum ada driving range terdaftar</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                {search ? "Coba kata kunci lain" : "Driving range akan muncul setelah ditambahkan"}
               </p>
             </div>
           )}

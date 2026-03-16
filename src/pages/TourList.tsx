@@ -385,7 +385,11 @@ const TourList = () => {
               ))}
 
               {!isLoading && tours?.length === 0 && (
-                <p className="text-xs text-muted-foreground text-center py-4">No tours available</p>
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <Trophy className="h-10 w-10 text-muted-foreground/40 mb-3" />
+                  <p className="text-sm font-semibold">Belum ada tournament</p>
+                  <p className="text-xs text-muted-foreground mt-1">Tournament akan muncul setelah dibuat</p>
+                </div>
               )}
 
               {tours?.map((tour, i) => (

@@ -130,7 +130,7 @@ const NewsFeed = () => {
 
         {(posts ?? []).map((post: any, i: number) => {
           const profile = post.profiles as any;
-          const showImage = post.hasImage || (i === 0 && !posts?.length);
+          const showImage = !!post.image_url || i === 0;
           return (
             <article key={post.id} className="overflow-hidden animate-fade-in" style={{ animationDelay: `${i * 80}ms` }}>
               {showImage && (
