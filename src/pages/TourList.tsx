@@ -76,22 +76,49 @@ const TourList = () => {
     queryKey: ["my-tours", userId],
     queryFn: async () => {
       if (!userId) return [];
-      const { data: myClubs } = await supabase
+
+      // Cek apakah user adalah owner/admin di klub manapun
+      const { data: myAdminClubs } = await supabase
         .from("members")
         .select("club_id")
         .eq("user_id", userId)
         .in("role", ["owner", "admin"]);
 
-      if (!myClubs?.length) return [];
-      const myClubIds = [...new Set(myClubs.map(m => m.club_id))];
+      const myClubIds = [...new Set(
+        (myAdminClubs ?? []).map(m => m.club_id)
+      )];
 
-      const { data } = await supabase
-        .from("tours")
-        .select("*, clubs!tours_organizer_club_id_fkey(name, logo_url)")
-        .in("organizer_club_id", myClubIds)
-        .order("year", { ascending: false });
+      // Tour yang diselenggarakan klub yang user admin-i
+      let organizedTours: any[] = [];
+      if (myClubIds.length > 0) {
+        const { data } = await supabase
+          .from("tours")
+          .select("*, clubs!tours_organizer_club_id_fkey(name, logo_url)")
+          .in("organizer_club_id", myClubIds)
+          .order("year", { ascending: false });
+        organizedTours = (data ?? []).map(t => ({
+          ...t, playerRole: "organizer"
+        }));
+      }
 
-      return data ?? [];
+      // Tour yang user ikuti sebagai player (tour_players)
+      const { data: myTourPlayers } = await supabase
+        .from("tour_players")
+        .select("tour_id, status, hcp_tour, tours(*, clubs!tours_organizer_club_id_fkey(name, logo_url))")
+        .eq("player_id", userId)
+        .in("status", ["registered", "active", "pending"]);
+
+      const organizedIds = new Set(organizedTours.map(t => t.id));
+      const participatingTours = (myTourPlayers ?? [])
+        .filter(tp => !organizedIds.has(tp.tour_id))
+        .map(tp => ({
+          ...(tp.tours as any),
+          playerRole: "participant",
+          myStatus: tp.status,
+          myTourHcp: tp.hcp_tour,
+        }));
+
+      return [...organizedTours, ...participatingTours];
     },
     enabled: !!userId,
   });
