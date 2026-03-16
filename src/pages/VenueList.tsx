@@ -281,28 +281,11 @@ const VenueList = () => {
         </div>
       )}
       {/* FAB — hanya tampil jika user punya klub tanpa course */}
-      {myClubsWithoutCourse && myClubsWithoutCourse
-        .filter(club =>
-          venueTab === "range"
-            ? club.facility_type === "driving_range"
-            : club.facility_type !== "driving_range"
-        ).length > 0 && (
+      {eligibleClubs.length > 0 && (
         <div className="fixed bottom-20 right-4 z-50">
-          {myClubsWithoutCourse
-            .filter(club =>
-              venueTab === "range"
-                ? club.facility_type === "driving_range"
-                : club.facility_type !== "driving_range"
-            ).length === 1 ? (
+          {eligibleClubs.length === 1 ? (
             <button
-              onClick={() => {
-                const club = myClubsWithoutCourse.filter(c =>
-                  venueTab === "range"
-                    ? c.facility_type === "driving_range"
-                    : c.facility_type !== "driving_range"
-                )[0];
-                navigate(`/admin/course/new?clubId=${club.id}`);
-              }}
+              onClick={() => navigate(`/admin/course/new?clubId=${eligibleClubs[0].id}`)}
               className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors"
             >
               <Plus className="h-5 w-5" />
@@ -316,17 +299,11 @@ const VenueList = () => {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="mb-2">
                 <p className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Add course for:</p>
-                {myClubsWithoutCourse
-                  .filter(c =>
-                    venueTab === "range"
-                      ? c.facility_type === "driving_range"
-                      : c.facility_type !== "driving_range"
-                  )
-                  .map(club => (
-                    <DropdownMenuItem key={club.id} onClick={() => navigate(`/admin/course/new?clubId=${club.id}`)}>
-                      {club.name}
-                    </DropdownMenuItem>
-                  ))}
+                {eligibleClubs.map(club => (
+                  <DropdownMenuItem key={club.id} onClick={() => navigate(`/admin/course/new?clubId=${club.id}`)}>
+                    {club.name}
+                  </DropdownMenuItem>
+                ))}
               </DropdownMenuContent>
             </DropdownMenu>
           )}
