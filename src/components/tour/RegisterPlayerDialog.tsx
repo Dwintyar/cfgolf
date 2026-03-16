@@ -145,8 +145,8 @@ const RegisterPlayerDialog = ({ tourId, tourType, organizerClubId, callerClubId,
             />
             <p className="text-[10px] text-muted-foreground mb-1">
               {playerSearch
-                ? `${sortedAndFiltered.length} dari ${members?.length ?? 0} member`
-                : `${members?.length ?? 0} member — pilih satu`}
+                ? `${sortedAndFiltered.length} hasil pencarian`
+                : `${sortedAndFiltered.length} tersedia · ${registeredPlayerIds?.size ?? 0} sudah terdaftar`}
             </p>
             <div className="max-h-48 overflow-y-auto border rounded-lg divide-y divide-border/30">
               {sortedAndFiltered.length === 0 && (
