@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { MapPin, Flag, Search, DollarSign } from "lucide-react";
+import { MapPin, Flag, Search } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -9,17 +9,10 @@ import { Input } from "@/components/ui/input";
 import venueImg from "@/assets/golf-venue.jpg";
 import { useState } from "react";
 
-const FILTERS = [
-  { label: "All", value: "all" },
-  { label: "Golf Course", value: "championship" },
-  { label: "Executive", value: "executive" },
-  { label: "Links", value: "links" },
-];
-
 const VenueList = () => {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("all");
+  const [venueTab, setVenueTab] = useState<"golf" | "range">("golf");
 
   const { data: courses, isLoading } = useQuery({
     queryKey: ["courses"],
@@ -33,11 +26,25 @@ const VenueList = () => {
     },
   });
 
-  const filtered = courses?.filter((c) => {
-    const matchSearch = !search || c.name.toLowerCase().includes(search.toLowerCase()) || c.location?.toLowerCase().includes(search.toLowerCase());
-    const matchFilter = filter === "all" || c.course_type === filter;
-    return matchSearch && matchFilter;
-  });
+  const searchFiltered = courses?.filter((c) =>
+    !search ||
+    c.name.toLowerCase().includes(search.toLowerCase()) ||
+    c.location?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const golfCourses = searchFiltered?.filter(
+    (c) =>
+      (c as any).facility_type !== "driving_range" &&
+      (c.clubs as any)?.facility_type !== "driving_range"
+  ) ?? [];
+
+  const drivingRanges = searchFiltered?.filter(
+    (c) =>
+      (c as any).facility_type === "driving_range" ||
+      (c.clubs as any)?.facility_type === "driving_range"
+  ) ?? [];
+
+  const displayCourses = venueTab === "golf" ? golfCourses : drivingRanges;
 
   const formatPrice = (price: number | null) => {
     if (!price) return null;
@@ -61,19 +68,22 @@ const VenueList = () => {
         </div>
       </div>
 
-      {/* Filter pills */}
-      <div className="flex gap-2 overflow-x-auto px-4 pb-3 scrollbar-none">
-        {FILTERS.map((f) => (
+      {/* Tabs */}
+      <div className="flex mx-4 mb-3 rounded-xl overflow-hidden border border-border/50">
+        {[
+          { id: "golf" as const, label: "Golf Courses", count: golfCourses.length },
+          { id: "range" as const, label: "Driving Ranges", count: drivingRanges.length },
+        ].map((t) => (
           <button
-            key={f.value}
-            onClick={() => setFilter(f.value)}
-            className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-medium transition-all ${
-              filter === f.value
+            key={t.id}
+            onClick={() => setVenueTab(t.id)}
+            className={`flex-1 py-2.5 text-xs font-bold uppercase tracking-wider transition-colors ${
+              venueTab === t.id
                 ? "bg-primary text-primary-foreground"
-                : "bg-secondary text-muted-foreground hover:text-foreground"
+                : "bg-card text-muted-foreground hover:text-foreground"
             }`}
           >
-            {f.label}
+            {t.label} ({t.count})
           </button>
         ))}
       </div>
@@ -84,14 +94,14 @@ const VenueList = () => {
             <Skeleton key={i} className="h-32 w-full rounded-xl" />
           ))}
 
-        {!isLoading && filtered?.length === 0 && (
+        {!isLoading && displayCourses.length === 0 && (
           <div className="golf-card p-8 text-center">
             <MapPin className="mx-auto h-10 w-10 text-muted-foreground/40" />
             <p className="mt-3 text-sm text-muted-foreground">No venues found</p>
           </div>
         )}
 
-        {filtered?.map((course, i) => (
+        {displayCourses.map((course, i) => (
           <button
             key={course.id}
             onClick={() => navigate(`/venue/${course.id}`)}
@@ -109,11 +119,16 @@ const VenueList = () => {
                 <h3 className="font-display text-base font-semibold truncate flex-1">
                   {course.name}
                 </h3>
-                {course.green_fee_price && (
-                  <Badge variant="outline" className="text-[10px] shrink-0 border-primary/30 text-primary">
-                    {formatPrice(course.green_fee_price)}
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <Badge variant="outline" className="text-[9px] capitalize">
+                    {course.course_type ?? "golf course"}
                   </Badge>
-                )}
+                  {course.green_fee_price && (
+                    <Badge variant="outline" className="text-[10px] border-primary/30 text-primary">
+                      {formatPrice(course.green_fee_price)}
+                    </Badge>
+                  )}
+                </div>
               </div>
               <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
                 {course.location && (
