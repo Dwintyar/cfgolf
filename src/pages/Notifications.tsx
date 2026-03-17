@@ -276,6 +276,23 @@ const Notifications = () => {
     setActionLoading(null);
   };
 
+  const handleAcceptJoinRequest = async (inviteId: string, clubId: string, requestUserId: string) => {
+    setActionLoading(inviteId);
+    await supabase.from("club_invitations").update({ status: "accepted" }).eq("id", inviteId);
+    await supabase.from("members").upsert({ club_id: clubId, user_id: requestUserId, role: "member" }, { onConflict: "club_id,user_id", ignoreDuplicates: true });
+    toast.success("Member berhasil ditambahkan!");
+    refetch();
+    setActionLoading(null);
+  };
+
+  const handleDeclineJoinRequest = async (inviteId: string) => {
+    setActionLoading(inviteId);
+    await supabase.from("club_invitations").update({ status: "declined" }).eq("id", inviteId);
+    toast.success("Request ditolak");
+    refetch();
+    setActionLoading(null);
+  };
+
   const iconMap: Record<string, React.ElementType> = {
     buddy_request: UserPlus,
     club_invite: Building2,
@@ -283,6 +300,7 @@ const Notifications = () => {
     handicap_update: TrendingDown,
     event_result: Trophy,
     tournament_invite: Trophy,
+    join_request: UserPlus,
   };
 
   const handleTap = (n: NotificationItem) => {
@@ -291,6 +309,9 @@ const Notifications = () => {
     }
     if (n.type === "tournament_invite") {
       navigate(`/tour/${n.meta?.tourId}`);
+    }
+    if (n.type === "join_request") {
+      navigate(`/clubs/${n.meta?.clubId}`);
     }
   };
 
