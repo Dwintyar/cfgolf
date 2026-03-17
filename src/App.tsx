@@ -37,6 +37,7 @@ import ExportQueries from "./pages/ExportQueries";
 import ScorecardInput from "./pages/ScorecardInput";
 import Notifications from "./pages/Notifications";
 import CourseAdminDashboard from "./pages/CourseAdminDashboard";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 
 const queryClient = new QueryClient();
 
@@ -97,6 +98,7 @@ const AppInner = () => {
           <Route path="/chat/:id" element={<ChatRoom />} />
           <Route path="/book/:courseId" element={<BookTeeTime />} />
           <Route path="/notifications" element={<Notifications />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
         <BottomNav />
