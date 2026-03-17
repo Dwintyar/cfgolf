@@ -397,6 +397,27 @@ const Notifications = () => {
                     </Button>
                   </div>
                 )}
+
+                {n.type === "join_request" && n.actionable && (
+                  <div className="flex gap-2 mt-2">
+                    <Button size="sm" className="h-7 text-xs gap-1"
+                      onClick={(e) => { e.stopPropagation(); handleAcceptJoinRequest(n.meta.inviteId, n.meta.clubId, n.meta.userId); }}
+                      disabled={actionLoading === n.meta.inviteId}
+                    >
+                      <Check className="h-3 w-3" /> Terima
+                    </Button>
+                    <Button size="sm" variant="outline" className="h-7 text-xs gap-1"
+                      onClick={(e) => { e.stopPropagation(); handleDeclineJoinRequest(n.meta.inviteId); }}
+                      disabled={actionLoading === n.meta.inviteId}
+                    >
+                      <X className="h-3 w-3" /> Tolak
+                    </Button>
+                    <Button size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground"
+                      onClick={(e) => { e.stopPropagation(); navigate(`/clubs/${n.meta.clubId}`); }}
+                    >
+                      Lihat Club →
+                    </Button>
+                  </div>
               </div>
               <span className="text-[10px] text-muted-foreground shrink-0">{n.time}</span>
             </div>
