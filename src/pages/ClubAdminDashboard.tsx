@@ -291,7 +291,7 @@ const ClubAdminDashboard = () => {
   // KPI computations
   const memberCount = members?.length ?? 0;
   const staffCount = staff?.length ?? 0;
-  const pendingCount = pendingInvitations?.length ?? 0;
+  const pendingCount = (pendingInvitations?.length ?? 0) + (joinRequests?.length ?? 0);
   const totalTours = clubTours?.length ?? 0;
   const today = new Date().toISOString().split("T")[0];
   const todayBookings = courseBookings?.filter((b) => b.booking_date === today).length ?? 0;
