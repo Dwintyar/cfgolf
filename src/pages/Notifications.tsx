@@ -427,7 +427,7 @@ const Notifications = () => {
                   </div>
                 )}
 
-                {n.type === "join_request" && n.actionable && (
+                {n.type === "join_request" && n.actionable === true && (
                   <div className="flex gap-2 mt-2">
                     <Button size="sm" className="h-7 text-xs gap-1"
                       onClick={(e) => { e.stopPropagation(); handleAcceptJoinRequest(n.meta.inviteId, n.meta.clubId, n.meta.userId); }}
