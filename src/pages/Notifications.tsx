@@ -124,6 +124,38 @@ const Notifications = () => {
             },
           });
         });
+
+        // Join requests ke klub yang user adalah owner/admin
+        const { data: allPending } = await supabase
+          .from("club_invitations")
+          .select("*, profiles:invited_user_id(full_name, avatar_url), clubs(name)")
+          .in("club_id", myClubIds)
+          .eq("status", "pending")
+          .order("created_at", { ascending: false });
+
+        const selfRequests = (allPending ?? []).filter(
+          (r: any) => r.invited_by === r.invited_user_id
+        );
+
+        selfRequests.forEach((r: any) => {
+          const profile = r.profiles as any;
+          const clubName = (r.clubs as any)?.name ?? "klub Anda";
+
+          items.push({
+            id: `join-${r.id}`,
+            type: "join_request",
+            title: `${profile?.full_name ?? "Someone"} ingin bergabung`,
+            subtitle: `Request join ke ${clubName}`,
+            time: formatTime(r.created_at),
+            avatar: profile?.avatar_url,
+            actionable: true,
+            meta: {
+              inviteId: r.id,
+              clubId: r.club_id,
+              userId: r.invited_user_id,
+            },
+          });
+        });
       }
 
       // 4. Upcoming events (within 7 days)
