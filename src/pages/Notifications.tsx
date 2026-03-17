@@ -136,6 +136,7 @@ const Notifications = () => {
         const selfRequests = (allPending ?? []).filter(
           (r: any) => r.invited_by === r.invited_user_id
         );
+        console.log("Join requests found:", selfRequests.length, selfRequests);
 
         selfRequests.forEach((r: any) => {
           const profile = r.profiles as any;
