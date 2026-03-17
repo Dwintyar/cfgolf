@@ -244,12 +244,15 @@ const Login = () => {
           )}
         </p>
 
-        <p className="mt-3 text-center text-xs text-muted-foreground/70">
+        <p className="text-center text-[10px] text-muted-foreground mt-4">
           Dengan login, Anda menyetujui{" "}
-          <Link to="/privacy-policy" className="underline hover:text-primary transition-colors">
+          <button
+            onClick={() => navigate("/privacy-policy")}
+            className="underline hover:text-foreground transition-colors"
+          >
             Kebijakan Privasi
-          </Link>{" "}
-          kami.
+          </button>
+          {" "}kami
         </p>
       </div>
     </div>
