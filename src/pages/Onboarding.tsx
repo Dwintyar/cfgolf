@@ -344,7 +344,7 @@ const Onboarding = () => {
               </div>
 
               <p className="text-sm text-muted-foreground text-center mt-6 max-w-xs">
-                Selamat datang di CloudFairway.
+                Selamat datang di CFGolf.
                 <br />
                 Platform golf komunitas Indonesia.
               </p>
