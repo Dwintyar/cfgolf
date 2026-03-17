@@ -5,7 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   Users, UserCheck, Calendar, Bell, ChevronRight, Plus, ArrowLeft,
   Settings as SettingsIcon, Building2, Shield, Trash2, MessageSquare,
-  Crown, AlertTriangle, MapPin, ChevronDown, ChevronUp, Trophy, Megaphone, DollarSign, Clock
+  Crown, AlertTriangle, MapPin, ChevronDown, ChevronUp, Trophy, Megaphone, DollarSign, Clock,
+  Check, X
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
