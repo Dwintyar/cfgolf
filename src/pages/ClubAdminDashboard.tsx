@@ -435,6 +435,70 @@ const ClubAdminDashboard = () => {
 
   const renderMembersTab = () => (
     <TabsContent value="members" className="space-y-2 pt-2">
+      {/* Pending Join Requests */}
+      {joinRequests && joinRequests.length > 0 && (
+        <div className="mb-4">
+          <p className="text-xs font-semibold uppercase tracking-wider text-accent mb-2">
+            ⏳ Pending Requests ({joinRequests.length})
+          </p>
+          {joinRequests.map((req: any) => (
+            <div key={req.id} className="golf-card flex items-center gap-3 p-3 mb-2 border-accent/30">
+              <Avatar className="h-9 w-9">
+                <AvatarImage src={req.profiles?.avatar_url ?? ""} />
+                <AvatarFallback className="bg-accent/20 text-accent text-xs">
+                  {(req.profiles?.full_name ?? "U").charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">
+                  {req.profiles?.full_name ?? "Unknown"}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  HCP {req.profiles?.handicap ?? "N/A"} · Minta bergabung
+                </p>
+              </div>
+              <div className="flex gap-1.5 shrink-0">
+                <Button size="sm" className="h-7 px-2 text-xs gap-1"
+                  onClick={async () => {
+                    const { error } = await supabase
+                      .from("members")
+                      .insert({
+                        club_id: clubId,
+                        user_id: req.invited_user_id,
+                        role: "member",
+                        joined_at: new Date().toISOString()
+                      });
+                    if (error && error.code !== "23505") {
+                      toast.error(error.message);
+                      return;
+                    }
+                    await supabase
+                      .from("club_invitations")
+                      .update({ status: "accepted" })
+                      .eq("id", req.id);
+                    toast.success("Member diterima!");
+                    refetchRequests();
+                    refetchMembers();
+                  }}>
+                  <Check className="h-3 w-3" /> Terima
+                </Button>
+                <Button size="sm" variant="outline"
+                  className="h-7 px-2 text-xs gap-1 text-destructive border-destructive/30"
+                  onClick={async () => {
+                    await supabase
+                      .from("club_invitations")
+                      .update({ status: "declined" })
+                      .eq("id", req.id);
+                    toast.success("Request ditolak");
+                    refetchRequests();
+                  }}>
+                  <X className="h-3 w-3" /> Tolak
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
       <Button size="sm" variant="outline" className="w-full gap-1 text-xs mb-2" onClick={() => setShowInvite(true)}>
         <Plus className="h-3.5 w-3.5" /> Invite Member
       </Button>
