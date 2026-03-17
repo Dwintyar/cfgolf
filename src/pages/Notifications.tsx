@@ -278,10 +278,34 @@ const Notifications = () => {
 
   const handleAcceptJoinRequest = async (inviteId: string, clubId: string, requestUserId: string) => {
     setActionLoading(inviteId);
-    await supabase.from("club_invitations").update({ status: "accepted" }).eq("id", inviteId);
-    await supabase.from("members").upsert({ club_id: clubId, user_id: requestUserId, role: "member" }, { onConflict: "club_id,user_id", ignoreDuplicates: true });
-    toast.success("Member berhasil ditambahkan!");
-    refetch();
+    try {
+      // Insert member dulu
+      const { error: memberError } = await supabase
+        .from("members")
+        .insert({ 
+          club_id: clubId, 
+          user_id: requestUserId, 
+          role: "member",
+          joined_at: new Date().toISOString()
+        });
+
+      if (memberError && memberError.code !== "23505") {
+        toast.error("Gagal: " + memberError.message);
+        setActionLoading(null);
+        return;
+      }
+
+      // Baru update invitation ke accepted
+      await supabase
+        .from("club_invitations")
+        .update({ status: "accepted" })
+        .eq("id", inviteId);
+
+      toast.success("Member berhasil ditambahkan!");
+      refetch();
+    } catch (err: any) {
+      toast.error(err.message);
+    }
     setActionLoading(null);
   };
 
