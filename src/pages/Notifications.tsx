@@ -11,7 +11,7 @@ import AppHeader from "@/components/AppHeader";
 
 interface NotificationItem {
   id: string;
-  type: "buddy_request" | "club_invite" | "upcoming_event" | "handicap_update" | "event_result" | "tournament_invite";
+  type: "buddy_request" | "club_invite" | "upcoming_event" | "handicap_update" | "event_result" | "tournament_invite" | "join_request";
   title: string;
   subtitle: string;
   time: string;
@@ -121,6 +121,38 @@ const Notifications = () => {
               tourClubId: inv.id,
               tourId: tour?.id,
               clubId: inv.club_id,
+            },
+          });
+        });
+
+        // Join requests ke klub yang user adalah owner/admin
+        const { data: allPending } = await supabase
+          .from("club_invitations")
+          .select("*, profiles:invited_user_id(full_name, avatar_url), clubs(name)")
+          .in("club_id", myClubIds)
+          .eq("status", "pending")
+          .order("created_at", { ascending: false });
+
+        const selfRequests = (allPending ?? []).filter(
+          (r: any) => r.invited_by === r.invited_user_id
+        );
+
+        selfRequests.forEach((r: any) => {
+          const profile = r.profiles as any;
+          const clubName = (r.clubs as any)?.name ?? "klub Anda";
+
+          items.push({
+            id: `join-${r.id}`,
+            type: "join_request",
+            title: `${profile?.full_name ?? "Someone"} ingin bergabung`,
+            subtitle: `Request join ke ${clubName}`,
+            time: formatTime(r.created_at),
+            avatar: profile?.avatar_url,
+            actionable: true,
+            meta: {
+              inviteId: r.id,
+              clubId: r.club_id,
+              userId: r.invited_user_id,
             },
           });
         });
@@ -244,6 +276,23 @@ const Notifications = () => {
     setActionLoading(null);
   };
 
+  const handleAcceptJoinRequest = async (inviteId: string, clubId: string, requestUserId: string) => {
+    setActionLoading(inviteId);
+    await supabase.from("club_invitations").update({ status: "accepted" }).eq("id", inviteId);
+    await supabase.from("members").upsert({ club_id: clubId, user_id: requestUserId, role: "member" }, { onConflict: "club_id,user_id", ignoreDuplicates: true });
+    toast.success("Member berhasil ditambahkan!");
+    refetch();
+    setActionLoading(null);
+  };
+
+  const handleDeclineJoinRequest = async (inviteId: string) => {
+    setActionLoading(inviteId);
+    await supabase.from("club_invitations").update({ status: "declined" }).eq("id", inviteId);
+    toast.success("Request ditolak");
+    refetch();
+    setActionLoading(null);
+  };
+
   const iconMap: Record<string, React.ElementType> = {
     buddy_request: UserPlus,
     club_invite: Building2,
@@ -251,6 +300,7 @@ const Notifications = () => {
     handicap_update: TrendingDown,
     event_result: Trophy,
     tournament_invite: Trophy,
+    join_request: UserPlus,
   };
 
   const handleTap = (n: NotificationItem) => {
@@ -259,6 +309,9 @@ const Notifications = () => {
     }
     if (n.type === "tournament_invite") {
       navigate(`/tour/${n.meta?.tourId}`);
+    }
+    if (n.type === "join_request") {
+      navigate(`/clubs/${n.meta?.clubId}`);
     }
   };
 
@@ -341,6 +394,28 @@ const Notifications = () => {
                       disabled={actionLoading === n.meta.tourClubId}
                     >
                       <X className="h-3 w-3" /> Tolak
+                    </Button>
+                  </div>
+                )}
+
+                {n.type === "join_request" && n.actionable && (
+                  <div className="flex gap-2 mt-2">
+                    <Button size="sm" className="h-7 text-xs gap-1"
+                      onClick={(e) => { e.stopPropagation(); handleAcceptJoinRequest(n.meta.inviteId, n.meta.clubId, n.meta.userId); }}
+                      disabled={actionLoading === n.meta.inviteId}
+                    >
+                      <Check className="h-3 w-3" /> Terima
+                    </Button>
+                    <Button size="sm" variant="outline" className="h-7 text-xs gap-1"
+                      onClick={(e) => { e.stopPropagation(); handleDeclineJoinRequest(n.meta.inviteId); }}
+                      disabled={actionLoading === n.meta.inviteId}
+                    >
+                      <X className="h-3 w-3" /> Tolak
+                    </Button>
+                    <Button size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground"
+                      onClick={(e) => { e.stopPropagation(); navigate(`/clubs/${n.meta.clubId}`); }}
+                    >
+                      Lihat Club →
                     </Button>
                   </div>
                 )}
