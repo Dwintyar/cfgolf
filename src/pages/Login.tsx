@@ -243,6 +243,14 @@ const Login = () => {
             </>
           )}
         </p>
+
+        <p className="mt-3 text-center text-xs text-muted-foreground/70">
+          Dengan login, Anda menyetujui{" "}
+          <Link to="/privacy-policy" className="underline hover:text-primary transition-colors">
+            Kebijakan Privasi
+          </Link>{" "}
+          kami.
+        </p>
       </div>
     </div>
   );
