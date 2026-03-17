@@ -214,6 +214,21 @@ const ClubAdminDashboard = () => {
     enabled: !!clubId,
   });
 
+  // Pending join requests
+  const { data: joinRequests, refetch: refetchRequests } = useQuery({
+    queryKey: ["club-join-requests", clubId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("club_invitations")
+        .select("*, profiles:invited_user_id(full_name, avatar_url, handicap)")
+        .eq("club_id", clubId)
+        .eq("status", "pending")
+        .order("created_at", { ascending: false });
+      return (data ?? []).filter((r: any) => r.invited_by === r.invited_user_id);
+    },
+    enabled: !!clubId,
+  });
+
   // Announcements
   const { data: announcements, refetch: refetchAnnouncements } = useQuery({
     queryKey: ["club-announcements", clubId],
