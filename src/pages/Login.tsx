@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import loginBg from "@/assets/golf-login-bg.jpg";
 import logo from "@/assets/logo.png";
@@ -244,12 +244,15 @@ const Login = () => {
           )}
         </p>
 
-        <p className="mt-3 text-center text-xs text-muted-foreground/70">
+        <p className="text-center text-[10px] text-muted-foreground mt-4">
           Dengan login, Anda menyetujui{" "}
-          <Link to="/privacy-policy" className="underline hover:text-primary transition-colors">
+          <button
+            onClick={() => navigate("/privacy-policy")}
+            className="underline hover:text-foreground transition-colors"
+          >
             Kebijakan Privasi
-          </Link>{" "}
-          kami.
+          </button>
+          {" "}kami
         </p>
       </div>
     </div>
