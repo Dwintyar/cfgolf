@@ -479,6 +479,9 @@ const ClubAdminDashboard = () => {
                     toast.success("Member diterima!");
                     refetchRequests();
                     refetchMembers();
+                    queryClient.invalidateQueries({ queryKey: ["club-join-requests", clubId] });
+                    queryClient.invalidateQueries({ queryKey: ["club-admin-members", clubId] });
+                    queryClient.invalidateQueries({ queryKey: ["notifications"] });
                   }}>
                   <Check className="h-3 w-3" /> Terima
                 </Button>
@@ -491,6 +494,8 @@ const ClubAdminDashboard = () => {
                       .eq("id", req.id);
                     toast.success("Request ditolak");
                     refetchRequests();
+                    queryClient.invalidateQueries({ queryKey: ["club-join-requests", clubId] });
+                    queryClient.invalidateQueries({ queryKey: ["notifications"] });
                   }}>
                   <X className="h-3 w-3" /> Tolak
                 </Button>

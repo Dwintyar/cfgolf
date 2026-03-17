@@ -131,6 +131,37 @@ const ClubProfile = () => {
     if (!currentUserId || !id) return;
     setJoining(true);
     try {
+      // Cek apakah sudah ada pending request
+      const { data: existing } = await supabase
+        .from("club_invitations")
+        .select("id")
+        .eq("club_id", id)
+        .eq("invited_user_id", currentUserId)
+        .eq("invited_by", currentUserId)
+        .eq("status", "pending")
+        .maybeSingle();
+
+      if (existing) {
+        toast({ title: "Permintaan bergabung sudah dikirim, mohon tunggu persetujuan admin." });
+        setJoining(false);
+        return;
+      }
+
+      // Cek apakah sudah member
+      const { data: alreadyMember } = await supabase
+        .from("members")
+        .select("id")
+        .eq("club_id", id)
+        .eq("user_id", currentUserId)
+        .maybeSingle();
+
+      if (alreadyMember) {
+        toast({ title: "Anda sudah menjadi member klub ini." });
+        setJoining(false);
+        return;
+      }
+
+      // Baru insert request
       const { error } = await supabase.from("club_invitations").insert({
         club_id: id,
         invited_by: currentUserId,
