@@ -126,41 +126,52 @@ const Notifications = () => {
         });
 
         // Join requests ke klub yang user adalah owner/admin
-        const { data: pendingAll, error: pendingErr } = await supabase
-          .from("club_invitations")
-          .select("id, club_id, invited_by, invited_user_id, created_at, clubs(name), profiles:invited_user_id(full_name, avatar_url)")
-          .in("club_id", myClubIds)
-          .eq("status", "pending");
+        const { data: myManagedClubs } = await supabase
+          .from("members")
+          .select("club_id, clubs(name)")
+          .eq("user_id", userId!)
+          .in("role", ["owner", "admin"]);
 
-        if (pendingErr) console.error("pending error:", pendingErr);
-        console.log("All pending for my clubs:", pendingAll?.length, pendingAll);
+        if (myManagedClubs && myManagedClubs.length > 0) {
+          const myClubIds = myManagedClubs.map((m: any) => m.club_id);
 
-        // Filter join requests: invited_by === invited_user_id
-        const joinReqs = (pendingAll ?? []).filter(
-          (r: any) => r.invited_by === r.invited_user_id
-        );
+          // Ambil SEMUA pending invitations untuk klub ini
+          const { data: pendingAll, error: pendingErr } = await supabase
+            .from("club_invitations")
+            .select("id, club_id, invited_by, invited_user_id, created_at, clubs(name), profiles:invited_user_id(full_name, avatar_url)")
+            .in("club_id", myClubIds)
+            .eq("status", "pending");
 
-        console.log("Self join requests:", joinReqs.length);
+          if (pendingErr) console.error("pending error:", pendingErr);
+          console.log("All pending for my clubs:", pendingAll?.length, pendingAll);
 
-        joinReqs.forEach((r: any) => {
-          const profile = r.profiles as any;
-          const clubName = (r.clubs as any)?.name ?? "klub Anda";
+          // Filter join requests: invited_by === invited_user_id
+          const joinReqs = (pendingAll ?? []).filter(
+            (r: any) => r.invited_by === r.invited_user_id
+          );
 
-          items.push({
-            id: `join-${r.id}`,
-            type: "join_request",
-            title: `${profile?.full_name ?? "Someone"} ingin bergabung`,
-            subtitle: `Request join ke ${clubName}`,
-            time: formatTime(r.created_at),
-            avatar: profile?.avatar_url ?? null,
-            actionable: true,
-            meta: {
-              inviteId: r.id,
-              clubId: r.club_id,
-              userId: r.invited_user_id,
-            },
+          console.log("Self join requests:", joinReqs.length);
+
+          joinReqs.forEach((r: any) => {
+            const profile = r.profiles as any;
+            const clubName = (r.clubs as any)?.name ?? "klub Anda";
+
+            items.push({
+              id: `join-${r.id}`,
+              type: "join_request" as any,
+              title: `${profile?.full_name ?? "Someone"} ingin bergabung`,
+              subtitle: `Request join ke ${clubName}`,
+              time: formatTime(r.created_at),
+              avatar: profile?.avatar_url ?? null,
+              actionable: true,
+              meta: {
+                inviteId: r.id,
+                clubId: r.club_id,
+                userId: r.invited_user_id,
+              },
+            });
           });
-        });
+        }
       }
 
       // 4. Upcoming events (within 7 days)
