@@ -418,6 +418,7 @@ const Notifications = () => {
                       Lihat Club →
                     </Button>
                   </div>
+                )}
               </div>
               <span className="text-[10px] text-muted-foreground shrink-0">{n.time}</span>
             </div>
