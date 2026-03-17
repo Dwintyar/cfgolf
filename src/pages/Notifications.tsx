@@ -126,19 +126,23 @@ const Notifications = () => {
         });
 
         // Join requests ke klub yang user adalah owner/admin
-        const { data: allPending } = await supabase
+        const { data: pendingAll, error: pendingErr } = await supabase
           .from("club_invitations")
-          .select("*, profiles:invited_user_id(full_name, avatar_url), clubs(name)")
+          .select("id, club_id, invited_by, invited_user_id, created_at, clubs(name), profiles:invited_user_id(full_name, avatar_url)")
           .in("club_id", myClubIds)
-          .eq("status", "pending")
-          .order("created_at", { ascending: false });
+          .eq("status", "pending");
 
-        const selfRequests = (allPending ?? []).filter(
+        if (pendingErr) console.error("pending error:", pendingErr);
+        console.log("All pending for my clubs:", pendingAll?.length, pendingAll);
+
+        // Filter join requests: invited_by === invited_user_id
+        const joinReqs = (pendingAll ?? []).filter(
           (r: any) => r.invited_by === r.invited_user_id
         );
-        console.log("Join requests found:", selfRequests.length, selfRequests);
 
-        selfRequests.forEach((r: any) => {
+        console.log("Self join requests:", joinReqs.length);
+
+        joinReqs.forEach((r: any) => {
           const profile = r.profiles as any;
           const clubName = (r.clubs as any)?.name ?? "klub Anda";
 
@@ -148,7 +152,7 @@ const Notifications = () => {
             title: `${profile?.full_name ?? "Someone"} ingin bergabung`,
             subtitle: `Request join ke ${clubName}`,
             time: formatTime(r.created_at),
-            avatar: profile?.avatar_url,
+            avatar: profile?.avatar_url ?? null,
             actionable: true,
             meta: {
               inviteId: r.id,
@@ -423,7 +427,7 @@ const Notifications = () => {
                   </div>
                 )}
 
-                {n.type === "join_request" && n.actionable && (
+                {n.type === "join_request" && n.actionable === true && (
                   <div className="flex gap-2 mt-2">
                     <Button size="sm" className="h-7 text-xs gap-1"
                       onClick={(e) => { e.stopPropagation(); handleAcceptJoinRequest(n.meta.inviteId, n.meta.clubId, n.meta.userId); }}
