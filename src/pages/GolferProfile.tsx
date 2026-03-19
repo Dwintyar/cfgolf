@@ -169,7 +169,9 @@ const GolferProfile = () => {
       const { data: scorecards } = await supabase
         .from("scorecards")
         .select("gross_score, net_score, total_putts, total_score")
-        .eq("player_id", targetId!);
+        .eq("player_id", targetId!)
+        .gt("gross_score", 0)
+        .not("gross_score", "is", null);
       if (!scorecards || scorecards.length === 0) return null;
       const rounds = scorecards.length;
       const avgGross = scorecards.reduce((s, c) => s + (c.gross_score ?? 0), 0) / rounds;
