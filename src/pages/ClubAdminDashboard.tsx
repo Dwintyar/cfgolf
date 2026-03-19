@@ -144,6 +144,22 @@ const ClubAdminDashboard = () => {
     enabled: !!clubId,
   });
 
+  // Staff roles map
+  const { data: staffRoles } = useQuery({
+    queryKey: ["club-staff-roles", clubId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("club_staff")
+        .select("user_id, staff_role")
+        .eq("club_id", clubId!)
+        .eq("status", "active");
+      return Object.fromEntries(
+        (data ?? []).map(s => [s.user_id, s.staff_role])
+      );
+    },
+    enabled: !!clubId,
+  });
+
   // Staff
   const { data: staff } = useQuery({
     queryKey: ["club-admin-staff", clubId],
@@ -552,7 +568,14 @@ const ClubAdminDashboard = () => {
           </Avatar>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium truncate">{m.profiles?.full_name || "Unknown"}</p>
-            <Badge variant="outline" className={`text-[9px] ${roleColors[m.role] ?? ""}`}>{m.role}</Badge>
+            <div className="flex items-center gap-1 flex-wrap">
+              <Badge variant="outline" className={`text-[9px] ${roleColors[m.role] ?? ""}`}>{m.role}</Badge>
+              {staffRoles?.[m.user_id] && (
+                <Badge variant="secondary" className="text-[9px]">
+                  {staffRoles[m.user_id]}
+                </Badge>
+              )}
+            </div>
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
