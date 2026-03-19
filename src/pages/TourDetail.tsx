@@ -73,16 +73,35 @@ const TourDetail = () => {
   });
 
   const { data: players, refetch: refetchPlayers } = useQuery({
-    queryKey: ["tour-players", id],
+    queryKey: ["tour-players-detail", id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("tour_players")
-        .select("*, profiles(full_name, avatar_url, handicap), clubs(name)")
-        .eq("tour_id", id!);
+        .select(`
+          id, player_id, club_id, hcp_at_registration, hcp_tour, status,
+          clubs(id, name, logo_url),
+          profiles(id, full_name, avatar_url, handicap)
+        `)
+        .eq("tour_id", id!)
+        .order("hcp_at_registration");
       if (error) throw error;
       return data;
     },
     enabled: !!id,
+  });
+
+  const { data: allContestants } = useQuery({
+    queryKey: ["tour-all-contestants", id, events?.map(e => e.id)],
+    queryFn: async () => {
+      const eventIds = events?.map(e => e.id) ?? [];
+      if (!eventIds.length) return [];
+      const { data } = await supabase
+        .from("contestants")
+        .select("player_id, hcp, status, event_id, events(id, name, event_date, status)")
+        .in("event_id", eventIds);
+      return data ?? [];
+    },
+    enabled: !!id && !!events?.length,
   });
 
   const { data: flights } = useQuery({
