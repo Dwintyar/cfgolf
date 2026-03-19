@@ -126,6 +126,28 @@ const DesktopLayout = ({ children }: { children: React.ReactNode }) => {
         style={{ width: 256 }}
         className="fixed left-0 top-14 h-[calc(100vh-3.5rem)] border-r border-border/50 bg-card z-40 p-4 flex flex-col overflow-y-auto"
       >
+        {/* Profile Card */}
+        <div
+          className="flex items-center gap-3 px-2 py-3 mb-2 rounded-xl hover:bg-secondary cursor-pointer transition-colors"
+          onClick={() => navigate("/profile")}
+        >
+          <Avatar className="h-10 w-10 border-2 border-primary/20">
+            <AvatarImage src={profile?.avatar_url ?? ""} />
+            <AvatarFallback className="bg-primary/10 text-sm font-bold text-primary">
+              {getInitials(profile?.full_name ?? null)}
+            </AvatarFallback>
+          </Avatar>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold truncate text-foreground">
+              {profile?.full_name ?? "Golfer"}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              HCP {profile?.handicap ?? "N/A"}
+            </p>
+          </div>
+        </div>
+        <div className="border-t border-border/30 mb-2" />
+
         {/* Navigation */}
         <nav className="flex-1 space-y-1">
           {navItems.map(({ path, label, icon: Icon }) => {
