@@ -45,7 +45,7 @@ const queryClient = new QueryClient();
 
 const noLayoutPaths = [
   "/login", "/onboarding", "/reset-password",
-  "/admin", "/export-queries", "/privacy-policy"
+  "/admin", "/export-queries", "/privacy-policy", "/p/"
 ];
 
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
