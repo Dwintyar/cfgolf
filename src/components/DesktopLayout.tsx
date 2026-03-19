@@ -170,7 +170,7 @@ const DesktopLayout = ({ children }: { children: React.ReactNode }) => {
       {/* SIDEBAR KANAN — wide screens only */}
       {isWide && (
         <aside
-          style={{ width: 288 }}
+          style={{ width: 260 }}
           className="fixed right-0 top-0 h-screen border-l border-border/50 bg-card/50 z-40 p-4 overflow-y-auto"
         >
           {/* Search bar */}
