@@ -469,6 +469,16 @@ const GolferProfile = () => {
 
                 <h1 className="text-lg font-bold">{profile?.full_name ?? "Unnamed Golfer"}</h1>
 
+                {staffPositions && staffPositions.length > 0 && (
+                  <div className="mt-1 space-y-0.5">
+                    {staffPositions.map((sp: any, i: number) => (
+                      <Badge key={i} variant="secondary" className="text-[10px] mr-1">
+                        {sp.staff_role} — {(sp.clubs as any)?.name}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+
                 {profile?.location && (
                   <p className="text-sm text-muted-foreground flex items-center gap-1 mt-0.5">
                     <MapPin className="h-3.5 w-3.5" />
