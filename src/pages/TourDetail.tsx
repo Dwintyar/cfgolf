@@ -23,6 +23,7 @@ const TourDetail = () => {
   const [showCategories, setShowCategories] = useState(false);
   const [showCreateEvent, setShowCreateEvent] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [groupByClub, setGroupByClub] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
