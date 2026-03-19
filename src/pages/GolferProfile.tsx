@@ -520,6 +520,8 @@ const GolferProfile = () => {
           </div>
         )}
       </div>
+        </div>
+      </div>
 
       <CreateClubDialog open={showCreateClub} onOpenChange={setShowCreateClub} onCreated={async () => { setShowCreateClub(false); if (targetId) await fetchClubs(targetId); }} />
     </div>
