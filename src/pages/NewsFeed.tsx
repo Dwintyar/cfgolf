@@ -88,11 +88,46 @@ const NewsFeed = () => {
     return `${Math.floor(hrs / 24)}d ago`;
   };
 
+  const { data: myProfile } = useQuery({
+    queryKey: ["my-profile-feed", userId],
+    queryFn: async () => {
+      if (!userId) return null;
+      const { data } = await supabase.from("profiles").select("full_name, avatar_url").eq("id", userId).single();
+      return data;
+    },
+    enabled: !!userId,
+  });
+
+  const myInitials = myProfile?.full_name
+    ? myProfile.full_name.split(" ").slice(0, 2).map((w: string) => w[0]).join("").toUpperCase()
+    : "?";
+
   return (
     <div className="bottom-nav-safe">
       <AppHeader title="Feeds" />
 
       <div className="space-y-4 px-4 pb-20">
+        {/* Create Post Box */}
+        <div className="golf-card p-4 flex items-center gap-3">
+          <Avatar className="h-10 w-10">
+            <AvatarImage src={myProfile?.avatar_url ?? ""} />
+            <AvatarFallback className="bg-primary/10 text-sm font-bold text-primary">{myInitials}</AvatarFallback>
+          </Avatar>
+          <button
+            onClick={() => setShowCreate(true)}
+            className="flex-1 text-left px-4 py-2.5 rounded-full bg-secondary text-sm text-muted-foreground hover:bg-secondary/80 transition-colors"
+          >
+            Apa yang ingin Anda bagikan hari ini?
+          </button>
+          <div className="flex gap-1">
+            <Button size="sm" variant="ghost" className="gap-1.5 text-xs" onClick={() => setShowCreate(true)}>
+              📸 Foto
+            </Button>
+            <Button size="sm" variant="ghost" className="gap-1.5 text-xs" onClick={() => setShowCreate(true)}>
+              🏌️ Skor
+            </Button>
+          </div>
+        </div>
         {isLoading && (
           <div className="space-y-3">
             {Array.from({ length: 3 }).map((_, i) => (

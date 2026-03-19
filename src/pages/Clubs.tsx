@@ -223,9 +223,9 @@ const Clubs = () => {
     ));
 
   const renderList = (list: ClubData[], isMyClub: boolean, emptyMsg: string) => (
-    <div className="space-y-3">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {isLoading && renderSkeleton()}
-      {!isLoading && list.length === 0 && renderEmpty(emptyMsg)}
+      {!isLoading && list.length === 0 && <div className="col-span-full">{renderEmpty(emptyMsg)}</div>}
       {list.map((club, i) => renderClubCard(club, i, isMyClub))}
     </div>
   );

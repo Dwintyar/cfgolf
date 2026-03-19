@@ -231,49 +231,56 @@ const GolferProfile = () => {
     <div className="bottom-nav-safe">
       <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
 
-      <div className="relative bg-gradient-to-b from-secondary to-background pb-6">
-        <button onClick={() => navigate(-1)} className="absolute left-4 top-4 z-10 rounded-full bg-background/40 p-2 backdrop-blur">
-          <ArrowLeft className="h-5 w-5" />
-        </button>
-        <div className="flex flex-col items-center pt-14">
-          <div className="relative">
-            <Avatar className="h-28 w-28 border-4 border-primary/50">
-              <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.full_name || "Avatar"} />
-              <AvatarFallback className="bg-primary text-3xl font-bold text-primary-foreground">{getInitials(profile?.full_name)}</AvatarFallback>
-            </Avatar>
-            {isOwnProfile && (
-              <button onClick={() => fileInputRef.current?.click()} disabled={uploading} className="absolute bottom-0 right-0 rounded-full bg-primary p-1.5 text-primary-foreground shadow-lg">
-                <Camera className="h-4 w-4" />
-              </button>
-            )}
-          </div>
-          <h1 className="mt-3 font-display text-xl font-bold">{profile?.full_name || "Unnamed Golfer"}</h1>
-          <p className="text-xs uppercase tracking-widest text-muted-foreground">{profile?.location || "No location set"}</p>
-          <div className="mt-4 flex gap-3 px-8 w-full">
-            <Badge variant="outline" className="flex-1 justify-center rounded-lg border-border px-4 py-2.5 text-sm font-bold">HCP {profile?.handicap ?? "N/A"}</Badge>
-            <Badge variant="outline" className="flex-1 justify-center rounded-lg border-border px-4 py-2.5 text-sm font-bold">{clubs.length} CLUBS</Badge>
-          </div>
-          {!isOwnProfile && (
-            <div className="mt-4 flex gap-3 px-8 w-full">
-              <Button variant="outline" className="flex-1 h-11 rounded-xl text-sm font-bold uppercase tracking-wider border-border" onClick={() => navigate("/chat")}>
-                <MessageCircle className="h-4 w-4 mr-2" /> Message
-              </Button>
-              {buddyStatus === "accepted" ? (
-                <Button className="flex-1 h-11 rounded-xl text-sm font-bold uppercase tracking-wider" variant="outline" disabled><UserCheck className="h-4 w-4 mr-2" /> Buddies</Button>
-              ) : buddyStatus === "sent" ? (
-                <Button className="flex-1 h-11 rounded-xl text-sm font-bold uppercase tracking-wider" variant="outline" disabled>Requested</Button>
-              ) : (
-                <Button className="flex-1 h-11 rounded-xl text-sm font-bold uppercase tracking-wider" onClick={handleAddBuddy}><UserPlus className="h-4 w-4 mr-2" /> Add Buddy</Button>
+      <div className="lg:flex lg:gap-6 lg:items-start px-4 pt-4">
+        {/* Left column: Profile info */}
+        <div className="lg:w-2/5 lg:sticky lg:top-20">
+          <div className="relative bg-gradient-to-b from-secondary to-background pb-6 rounded-xl">
+            <button onClick={() => navigate(-1)} className="absolute left-4 top-4 z-10 rounded-full bg-background/40 p-2 backdrop-blur">
+              <ArrowLeft className="h-5 w-5" />
+            </button>
+            <div className="flex flex-col items-center pt-14">
+              <div className="relative">
+                <Avatar className="h-28 w-28 border-4 border-primary/50">
+                  <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.full_name || "Avatar"} />
+                  <AvatarFallback className="bg-primary text-3xl font-bold text-primary-foreground">{getInitials(profile?.full_name)}</AvatarFallback>
+                </Avatar>
+                {isOwnProfile && (
+                  <button onClick={() => fileInputRef.current?.click()} disabled={uploading} className="absolute bottom-0 right-0 rounded-full bg-primary p-1.5 text-primary-foreground shadow-lg">
+                    <Camera className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+              <h1 className="mt-3 font-display text-xl font-bold">{profile?.full_name || "Unnamed Golfer"}</h1>
+              <p className="text-xs uppercase tracking-widest text-muted-foreground">{profile?.location || "No location set"}</p>
+              <div className="mt-4 flex gap-3 px-8 w-full">
+                <Badge variant="outline" className="flex-1 justify-center rounded-lg border-border px-4 py-2.5 text-sm font-bold">HCP {profile?.handicap ?? "N/A"}</Badge>
+                <Badge variant="outline" className="flex-1 justify-center rounded-lg border-border px-4 py-2.5 text-sm font-bold">{clubs.length} CLUBS</Badge>
+              </div>
+              {!isOwnProfile && (
+                <div className="mt-4 flex gap-3 px-8 w-full">
+                  <Button variant="outline" className="flex-1 h-11 rounded-xl text-sm font-bold uppercase tracking-wider border-border" onClick={() => navigate("/chat")}>
+                    <MessageCircle className="h-4 w-4 mr-2" /> Message
+                  </Button>
+                  {buddyStatus === "accepted" ? (
+                    <Button className="flex-1 h-11 rounded-xl text-sm font-bold uppercase tracking-wider" variant="outline" disabled><UserCheck className="h-4 w-4 mr-2" /> Buddies</Button>
+                  ) : buddyStatus === "sent" ? (
+                    <Button className="flex-1 h-11 rounded-xl text-sm font-bold uppercase tracking-wider" variant="outline" disabled>Requested</Button>
+                  ) : (
+                    <Button className="flex-1 h-11 rounded-xl text-sm font-bold uppercase tracking-wider" onClick={handleAddBuddy}><UserPlus className="h-4 w-4 mr-2" /> Add Buddy</Button>
+                  )}
+                </div>
+              )}
+              {isOwnProfile && (
+                <div className="mt-4 flex gap-3 px-8 w-full">
+                  <Button variant="outline" className="flex-1 h-11 rounded-xl text-sm font-bold uppercase tracking-wider border-border" onClick={() => navigate("/settings")}>Edit Profile</Button>
+                </div>
               )}
             </div>
-          )}
-          {isOwnProfile && (
-            <div className="mt-4 flex gap-3 px-8 w-full">
-              <Button variant="outline" className="flex-1 h-11 rounded-xl text-sm font-bold uppercase tracking-wider border-border" onClick={() => navigate("/settings")}>Edit Profile</Button>
-            </div>
-          )}
+          </div>
         </div>
-      </div>
+
+        {/* Right column: Tabs */}
+        <div className="lg:w-3/5 mt-4 lg:mt-0">
 
       {/* Tabs */}
       <div className="flex items-center justify-center gap-6 border-b border-border/50 px-4">
@@ -512,6 +519,8 @@ const GolferProfile = () => {
             </p>
           </div>
         )}
+      </div>
+        </div>
       </div>
 
       <CreateClubDialog open={showCreateClub} onOpenChange={setShowCreateClub} onCreated={async () => { setShowCreateClub(false); if (targetId) await fetchClubs(targetId); }} />
