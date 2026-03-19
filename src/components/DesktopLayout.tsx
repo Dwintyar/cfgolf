@@ -69,7 +69,7 @@ const ActiveGolfersWidget = ({ navigate }: { navigate: (path: string) => void })
   );
 };
 
-const DesktopLayout = ({ children }: { children: React.ReactNode }) => {
+const DesktopLayout = ({ children, sidebarRightHidden = false }: { children: React.ReactNode; sidebarRightHidden?: boolean }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { unreadCount } = useContext(ChatNotifContext);
@@ -229,8 +229,8 @@ const DesktopLayout = ({ children }: { children: React.ReactNode }) => {
       <main
         style={{
           marginLeft: "256px",
-          marginRight: isWide ? "260px" : "0px",
-          width: `calc(100% - 256px - ${isWide ? "260px" : "0px"})`,
+          marginRight: (isWide && !sidebarRightHidden) ? "260px" : "0px",
+          width: `calc(100% - 256px - ${(isWide && !sidebarRightHidden) ? "260px" : "0px"})`,
           minHeight: "100vh",
         }}
         className="pt-14"
@@ -241,7 +241,7 @@ const DesktopLayout = ({ children }: { children: React.ReactNode }) => {
       </main>
 
       {/* SIDEBAR KANAN — wide screens only */}
-      {isWide && (
+      {isWide && !sidebarRightHidden && (
         <aside
           style={{ width: 260 }}
           className="fixed right-0 top-14 h-[calc(100vh-3.5rem)] border-l border-border/50 bg-card/50 z-40 p-4 overflow-y-auto"
