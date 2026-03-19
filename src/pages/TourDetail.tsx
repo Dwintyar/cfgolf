@@ -549,32 +549,30 @@ const TourDetail = () => {
                                   {playerCount}/{quota}
                                 </div>
                               )}
+                              {isOrganizer && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-7 shrink-0 gap-1 text-[10px]"
+                                  onClick={() => {
+                                    setSelectedClubForAdd(clubId);
+                                    setShowAddPlayerDialog(true);
+                                  }}
+                                >
+                                  <UserPlus className="h-3 w-3" /> Tambah
+                                </Button>
+                              )}
                             </div>
-                            {/* Organizer: add player button */}
-                            {isOrganizer && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-7 shrink-0 gap-1 text-[10px]"
-                                onClick={() => {
-                                  setSelectedClubForAdd(clubId);
-                                  setShowAddPlayerDialog(true);
-                                }}
-                              >
-                                <UserPlus className="h-3 w-3" /> Tambah
-                              </Button>
-                            )}
+                            {/* Players */}
+                            <div className="divide-y divide-border/30">
+                              {clubData.players
+                                .filter((p: any) => p.status !== "pending")
+                                .sort((a: any, b: any) =>
+                                  ((a.profiles as any)?.full_name ?? "").localeCompare((b.profiles as any)?.full_name ?? ""))
+                                .map(renderPlayerRow)}
+                            </div>
                           </div>
-                          {/* Players */}
-                          <div className="divide-y divide-border/30">
-                            {clubData.players
-                              .filter((p: any) => p.status !== "pending")
-                              .sort((a: any, b: any) =>
-                                ((a.profiles as any)?.full_name ?? "").localeCompare((b.profiles as any)?.full_name ?? ""))
-                              .map(renderPlayerRow)}
-                          </div>
-                        </div>
-                      );
+                        );
                     })}
                 </div>
                 ) : (
