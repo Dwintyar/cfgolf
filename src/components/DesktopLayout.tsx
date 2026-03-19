@@ -228,13 +228,14 @@ const DesktopLayout = ({ children }: { children: React.ReactNode }) => {
       {/* MAIN CONTENT */}
       <main
         style={{
-          marginLeft: 256,
-          marginRight: isWide ? 260 : 0,
+          marginLeft: "256px",
+          marginRight: isWide ? "260px" : "0px",
+          width: `calc(100% - 256px - ${isWide ? "260px" : "0px"})`,
           minHeight: "100vh",
         }}
         className="pt-14"
       >
-        <div className="px-6 py-4">
+        <div className="w-full px-6 py-4">
           {children}
         </div>
       </main>
