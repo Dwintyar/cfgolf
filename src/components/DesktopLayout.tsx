@@ -69,42 +69,63 @@ const DesktopLayout = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <div className="flex min-h-screen bg-background">
+      {/* TOP NAVBAR */}
+      <header className="fixed top-0 left-0 right-0 h-14 z-50 border-b border-border/50 bg-card/95 backdrop-blur-lg flex items-center justify-between px-4 gap-4">
+        {/* Kiri: Logo */}
+        <div className="flex items-center gap-2 w-56 shrink-0">
+          <img src={logo} alt="CFGolf" className="h-8 w-8 rounded-lg object-contain" />
+          <span className="font-display text-lg font-bold text-foreground">CFGolf</span>
+        </div>
+
+        {/* Tengah: Search bar */}
+        <div className="flex-1 max-w-xs">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <input
+              placeholder="Cari golfer, klub, event..."
+              className="w-full pl-9 pr-4 py-1.5 text-sm rounded-full bg-secondary border-none outline-none focus:ring-2 focus:ring-primary/30 text-foreground placeholder:text-muted-foreground"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  navigate(`/play?q=${(e.target as HTMLInputElement).value}`);
+                }
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Kanan: Actions */}
+        <div className="flex items-center gap-1 w-56 justify-end">
+          <button onClick={() => navigate("/notifications")} className="relative p-2 rounded-full hover:bg-secondary transition-colors">
+            <Bell className="h-5 w-5 text-foreground" />
+            <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-primary" />
+          </button>
+          <button onClick={() => navigate("/chat")} className="relative p-2 rounded-full hover:bg-secondary transition-colors">
+            <MessageCircle className="h-5 w-5 text-foreground" />
+            {unreadCount > 0 && (
+              <span className="absolute top-0.5 right-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-bold text-destructive-foreground">
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+            )}
+          </button>
+          <button onClick={() => navigate("/profile")} className="p-2 rounded-full hover:bg-secondary transition-colors">
+            <Avatar className="h-8 w-8 border-2 border-primary/20">
+              <AvatarImage src={profile?.avatar_url ?? ""} />
+              <AvatarFallback className="bg-primary/10 text-xs font-bold text-primary">
+                {getInitials(profile?.full_name ?? null)}
+              </AvatarFallback>
+            </Avatar>
+          </button>
+          <button onClick={() => navigate("/settings")} className="p-2 rounded-full hover:bg-secondary transition-colors">
+            <Settings className="h-5 w-5 text-foreground" />
+          </button>
+        </div>
+      </header>
+
       {/* SIDEBAR KIRI */}
       <aside
         style={{ width: 256 }}
-        className="fixed left-0 top-0 h-screen border-r border-border/50 bg-card z-40 p-4 flex flex-col overflow-y-auto"
+        className="fixed left-0 top-14 h-[calc(100vh-3.5rem)] border-r border-border/50 bg-card z-40 p-4 flex flex-col overflow-y-auto"
       >
-        {/* Logo */}
-        <div className="flex items-center gap-2.5 mb-6 px-2">
-          <img src={logo} alt="CFGolf" className="h-8 w-8 rounded-lg object-contain" />
-          <span className="font-display text-xl font-bold text-foreground">CFGolf</span>
-        </div>
-
-        {/* Profile card mini */}
-        {profile && (
-          <div
-            className="golf-card p-3 mb-4 cursor-pointer hover:border-primary/30 transition-colors"
-            onClick={() => navigate("/profile")}
-          >
-            <div className="flex items-center gap-3">
-              <Avatar className="h-10 w-10 border-2 border-primary/20">
-                <AvatarImage src={profile.avatar_url ?? ""} />
-                <AvatarFallback className="bg-primary/10 text-sm font-bold text-primary">
-                  {getInitials(profile.full_name)}
-                </AvatarFallback>
-              </Avatar>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold truncate text-foreground">
-                  {profile.full_name ?? "Golfer"}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  HCP {profile.handicap ?? "N/A"}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Navigation */}
         <nav className="flex-1 space-y-1">
           {navItems.map(({ path, label, icon: Icon }) => {
@@ -125,33 +146,6 @@ const DesktopLayout = ({ children }: { children: React.ReactNode }) => {
             );
           })}
         </nav>
-
-        {/* Bottom actions */}
-        <div className="space-y-1 mt-4 pt-4 border-t border-border/50">
-          {[
-            { icon: Bell, label: "Notifications", path: "/notifications" },
-            { icon: MessageCircle, label: "Messages", path: "/chat", badge: unreadCount },
-            { icon: Settings, label: "Settings", path: "/settings" },
-          ].map(({ icon: Icon, label, path, badge }) => (
-            <button
-              key={path}
-              onClick={() => navigate(path)}
-              className={`flex items-center gap-3 w-full px-3 py-2 rounded-xl text-sm transition-colors text-left ${
-                location.pathname.startsWith(path)
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-              }`}
-            >
-              <Icon className="h-4 w-4 shrink-0" />
-              {label}
-              {badge && badge > 0 ? (
-                <span className="ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full bg-destructive px-1.5 text-[10px] font-bold text-destructive-foreground">
-                  {badge > 9 ? "9+" : badge}
-                </span>
-              ) : null}
-            </button>
-          ))}
-        </div>
       </aside>
 
       {/* MAIN CONTENT */}
@@ -161,6 +155,7 @@ const DesktopLayout = ({ children }: { children: React.ReactNode }) => {
           marginRight: isWide ? 260 : 0,
           minHeight: "100vh",
         }}
+        className="pt-14"
       >
         <div className="px-6 py-4">
           {children}
@@ -171,22 +166,8 @@ const DesktopLayout = ({ children }: { children: React.ReactNode }) => {
       {isWide && (
         <aside
           style={{ width: 260 }}
-          className="fixed right-0 top-0 h-screen border-l border-border/50 bg-card/50 z-40 p-4 overflow-y-auto"
+          className="fixed right-0 top-14 h-[calc(100vh-3.5rem)] border-l border-border/50 bg-card/50 z-40 p-4 overflow-y-auto"
         >
-          {/* Search bar */}
-          <div className="relative mb-4">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <input
-              placeholder="Cari golfer, klub, event..."
-              className="w-full pl-10 pr-4 py-2 text-sm rounded-xl bg-secondary border-none outline-none focus:ring-2 focus:ring-primary/30 text-foreground placeholder:text-muted-foreground"
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  navigate(`/play?q=${(e.target as HTMLInputElement).value}`);
-                }
-              }}
-            />
-          </div>
-
           <UpcomingEventsWidget navigate={navigate} />
           <SuggestedClubsWidget navigate={navigate} />
         </aside>
