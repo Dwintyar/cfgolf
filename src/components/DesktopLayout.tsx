@@ -241,7 +241,7 @@ const DesktopLayout = ({ children, sidebarRightHidden = false }: { children: Rea
       </main>
 
       {/* SIDEBAR KANAN — wide screens only */}
-      {isWide && (
+      {isWide && !sidebarRightHidden && (
         <aside
           style={{ width: 260 }}
           className="fixed right-0 top-14 h-[calc(100vh-3.5rem)] border-l border-border/50 bg-card/50 z-40 p-4 overflow-y-auto"

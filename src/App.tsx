@@ -44,18 +44,25 @@ import PublicProfile from "./pages/PublicProfile";
 const queryClient = new QueryClient();
 
 const noLayoutPaths = [
-  "/login", "/onboarding", "/reset-password",
-  "/admin", "/export-queries", "/privacy-policy", "/p/"
+  "/login", "/onboarding", "/reset-password", "/privacy-policy", "/p/"
+];
+
+const leftSidebarOnlyPaths = [
+  "/admin", "/export-queries"
 ];
 
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
-  const needsLayout = !noLayoutPaths.some(p => location.pathname.startsWith(p));
+  const isNoLayout = noLayoutPaths.some(p => location.pathname.startsWith(p));
+  const isLeftOnly = leftSidebarOnlyPaths.some(p => location.pathname.startsWith(p));
 
-  if (needsLayout) {
-    return <DesktopLayout>{children}</DesktopLayout>;
-  }
-  return <>{children}</>;
+  if (isNoLayout) return <>{children}</>;
+
+  return (
+    <DesktopLayout sidebarRightHidden={isLeftOnly}>
+      {children}
+    </DesktopLayout>
+  );
 };
 
 const App = () => {
