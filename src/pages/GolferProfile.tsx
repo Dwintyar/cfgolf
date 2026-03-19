@@ -149,6 +149,19 @@ const GolferProfile = () => {
     fetchData();
   }, [navigate, paramId]);
 
+  const { data: staffPositions } = useQuery({
+    queryKey: ["staff-positions", targetId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("club_staff")
+        .select("staff_role, status, clubs(name)")
+        .eq("user_id", targetId!)
+        .eq("status", "active");
+      return data ?? [];
+    },
+    enabled: !!targetId,
+  });
+
   const { data: hcpHistory } = useQuery({
     queryKey: ["hcp-history", targetId],
     queryFn: async () => {
