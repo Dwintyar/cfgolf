@@ -44,6 +44,15 @@ const EventDetail = () => {
   const [selectedCaddy, setSelectedCaddy] = useState("");
   const [showWinners, setShowWinners] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(
+    typeof window !== "undefined" ? window.innerWidth >= 1024 : false
+  );
+
+  useEffect(() => {
+    const handler = () => setIsDesktop(window.innerWidth >= 1024);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
 
   const handleExportPDF = async () => {
     setExporting(true);
