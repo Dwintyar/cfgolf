@@ -11,11 +11,26 @@ import {
 } from "lucide-react";
 import logo from "@/assets/logo.svg";
 
+const useWindowWidth = () => {
+  const [width, setWidth] = useState(
+    typeof window !== "undefined" ? window.innerWidth : 0
+  );
+  useEffect(() => {
+    const handler = () => setWidth(window.innerWidth);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
+  return width;
+};
+
 const DesktopLayout = ({ children }: { children: React.ReactNode }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { unreadCount } = useContext(ChatNotifContext);
   const [userId, setUserId] = useState<string | null>(null);
+  const width = useWindowWidth();
+  const isDesktop = width >= 1024;
+  const isWide = width >= 1280;
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -47,14 +62,22 @@ const DesktopLayout = ({ children }: { children: React.ReactNode }) => {
   const getInitials = (name: string | null) =>
     name ? name.split(" ").slice(0, 2).map(w => w[0]).join("").toUpperCase() : "?";
 
+  // Mobile: render children only
+  if (!isDesktop) {
+    return <>{children}</>;
+  }
+
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen bg-background">
       {/* SIDEBAR KIRI */}
-      <aside className="hidden lg:flex flex-col w-64 shrink-0 fixed left-0 top-0 h-screen border-r border-border/50 bg-card/95 backdrop-blur-lg z-40 p-4">
+      <aside
+        style={{ width: 256 }}
+        className="fixed left-0 top-0 h-screen border-r border-border/50 bg-card z-40 p-4 flex flex-col overflow-y-auto"
+      >
         {/* Logo */}
         <div className="flex items-center gap-2.5 mb-6 px-2">
           <img src={logo} alt="CFGolf" className="h-8 w-8 rounded-lg object-contain" />
-          <span className="font-display text-xl font-bold">CFGolf</span>
+          <span className="font-display text-xl font-bold text-foreground">CFGolf</span>
         </div>
 
         {/* Profile card mini */}
@@ -71,7 +94,7 @@ const DesktopLayout = ({ children }: { children: React.ReactNode }) => {
                 </AvatarFallback>
               </Avatar>
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold truncate">
+                <p className="text-sm font-semibold truncate text-foreground">
                   {profile.full_name ?? "Golfer"}
                 </p>
                 <p className="text-xs text-muted-foreground">
@@ -132,31 +155,42 @@ const DesktopLayout = ({ children }: { children: React.ReactNode }) => {
       </aside>
 
       {/* MAIN CONTENT */}
-      <main className="flex-1 lg:ml-64 xl:mr-72">
-        <div className="max-w-2xl mx-auto">
+      <main
+        style={{
+          marginLeft: 256,
+          marginRight: isWide ? 288 : 0,
+          minHeight: "100vh",
+        }}
+      >
+        <div style={{ maxWidth: 680, margin: "0 auto" }} className="px-4 py-4">
           {children}
         </div>
       </main>
 
-      {/* SIDEBAR KANAN — xl only */}
-      <aside className="hidden xl:block w-72 shrink-0 fixed right-0 top-0 h-screen border-l border-border/50 bg-card/50 backdrop-blur-lg z-40 p-4 overflow-y-auto">
-        {/* Search bar */}
-        <div className="relative mb-4">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <input
-            placeholder="Cari golfer, klub, event..."
-            className="w-full pl-10 pr-4 py-2 text-sm rounded-xl bg-secondary border-none outline-none focus:ring-2 focus:ring-primary/30 text-foreground placeholder:text-muted-foreground"
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                navigate(`/play?q=${(e.target as HTMLInputElement).value}`);
-              }
-            }}
-          />
-        </div>
+      {/* SIDEBAR KANAN — wide screens only */}
+      {isWide && (
+        <aside
+          style={{ width: 288 }}
+          className="fixed right-0 top-0 h-screen border-l border-border/50 bg-card/50 z-40 p-4 overflow-y-auto"
+        >
+          {/* Search bar */}
+          <div className="relative mb-4">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <input
+              placeholder="Cari golfer, klub, event..."
+              className="w-full pl-10 pr-4 py-2 text-sm rounded-xl bg-secondary border-none outline-none focus:ring-2 focus:ring-primary/30 text-foreground placeholder:text-muted-foreground"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  navigate(`/play?q=${(e.target as HTMLInputElement).value}`);
+                }
+              }}
+            />
+          </div>
 
-        <UpcomingEventsWidget navigate={navigate} />
-        <SuggestedClubsWidget navigate={navigate} />
-      </aside>
+          <UpcomingEventsWidget navigate={navigate} />
+          <SuggestedClubsWidget navigate={navigate} />
+        </aside>
+      )}
     </div>
   );
 };
