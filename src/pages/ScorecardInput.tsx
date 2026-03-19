@@ -495,6 +495,25 @@ const ScorecardInput = () => {
             <Download className="h-4 w-4" />
             Simpan Scorecard
           </Button>
+
+          {myScorecard && (
+            <Button
+              variant="outline"
+              className="gap-2 bg-green-600/10 border-green-600/30 text-green-500 hover:bg-green-600/20"
+              onClick={() => {
+                const text = `🏌️ Baru selesai main golf!\n\n` +
+                  `📍 ${(event?.courses as any)?.name}\n` +
+                  `📅 ${event?.event_date}\n\n` +
+                  `🎯 GROSS: ${myScorecard.gross_score}\n` +
+                  `🏆 NET: ${myScorecard.net_score}\n` +
+                  `⛳ PUTTS: ${myScorecard.total_putts}\n\n` +
+                  `Main bareng? cfgolf.lovable.app`;
+                window.open(`https://wa.me/?text=${encodeURIComponent(text)}`);
+              }}
+            >
+              💬 Share ke WhatsApp
+            </Button>
+          )}
         </div>
       </div>
     );

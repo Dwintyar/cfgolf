@@ -802,6 +802,32 @@ const EventDetail = () => {
         <Button variant="outline" size="sm" className="w-full mt-2 gap-1 text-xs" onClick={() => navigate(`/event/${id}/leaderboard`)}>
           <Trophy className="h-3.5 w-3.5" /> Full Leaderboard
         </Button>
+
+        {event?.status === "completed" && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="w-full mt-1 gap-1 text-xs bg-green-600/10 border-green-600/30 text-green-500 hover:bg-green-600/20"
+            onClick={() => {
+              const top3 = (leaderboard ?? [])
+                .sort((a: any, b: any) => (a.rank_net ?? 999) - (b.rank_net ?? 999))
+                .slice(0, 3);
+              const winners = top3.map((r: any, i: number) => {
+                const medal = ["🥇", "🥈", "🥉"][i];
+                return `${medal} ${(r as any).profiles?.full_name ?? "Unknown"} — Net ${r.total_net}`;
+              }).join("\n");
+              const text = `🏆 Hasil Tournament CFGolf\n\n` +
+                `📌 ${event?.name}\n` +
+                `📅 ${event?.event_date}\n` +
+                `⛳ ${(event?.courses as any)?.name}\n\n` +
+                `${winners}\n\n` +
+                `Lihat lengkap: cfgolf.lovable.app`;
+              window.open(`https://wa.me/?text=${encodeURIComponent(text)}`);
+            }}
+          >
+            💬 Share Hasil
+          </Button>
+        )}
       </TabsContent>
     </Tabs>
   );
