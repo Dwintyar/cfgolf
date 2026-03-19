@@ -825,22 +825,22 @@ const TourDetail = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
-              Generate Surat Undangan Tournament
+              Generate Surat Undangan
             </DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4">
             <div>
-              <p className="text-xs font-medium text-muted-foreground mb-1.5">Event yang diundang:</p>
+              <p className="text-xs font-medium text-muted-foreground mb-1.5">Pilih Event</p>
               <select
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                className="w-full rounded-lg bg-secondary text-sm p-2.5 border-none outline-none"
                 value={selectedEventForInvitation ?? ""}
                 onChange={(e) => setSelectedEventForInvitation(e.target.value || null)}
               >
-                <option value="">Pilih event...</option>
+                <option value="">-- Pilih event --</option>
                 {events?.map((ev: any) => (
                   <option key={ev.id} value={ev.id}>
-                    {ev.name} — {ev.event_date}
+                    {ev.name} · {new Date(ev.event_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
                   </option>
                 ))}
               </select>
@@ -857,15 +857,13 @@ const TourDetail = () => {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Tanggal</span>
-                    <span className="font-medium">{ev.event_date}</span>
+                    <span className="font-medium">
+                      {new Date(ev.event_date).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Venue</span>
-                    <span className="font-medium">{(ev.courses as any)?.name}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Organizer</span>
-                    <span className="font-medium">{(tour?.clubs as any)?.name ?? "Organizer"}</span>
+                    <span className="font-medium">{(ev.courses as any)?.name ?? '-'}</span>
                   </div>
                 </div>
               );
