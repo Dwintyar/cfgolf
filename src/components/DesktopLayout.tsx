@@ -79,9 +79,17 @@ const DesktopLayout = ({ children }: { children: React.ReactNode }) => {
   const isWide = width >= 1280;
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) setUserId(user.id);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) setUserId(session.user.id);
     });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setUserId(session?.user?.id ?? null);
+      }
+    );
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const { data: profile } = useQuery({
@@ -95,6 +103,7 @@ const DesktopLayout = ({ children }: { children: React.ReactNode }) => {
       return data;
     },
     enabled: !!userId,
+    staleTime: 1000 * 60 * 5,
   });
 
   const navItems = [
