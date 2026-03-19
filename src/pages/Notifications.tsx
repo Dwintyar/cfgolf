@@ -362,6 +362,7 @@ const Notifications = () => {
     event_result: Trophy,
     tournament_invite: Trophy,
     join_request: UserPlus,
+    tournament_update: Trophy,
   };
 
   const handleTap = (n: NotificationItem) => {
