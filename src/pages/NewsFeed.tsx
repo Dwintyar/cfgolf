@@ -164,15 +164,33 @@ const NewsFeed = () => {
                   </div>
                 )}
                 <p className="text-sm leading-relaxed">{post.content}</p>
-                <div className="mt-3 flex items-center gap-6 text-muted-foreground">
-                  <button className="flex items-center gap-1.5 text-xs hover:text-primary transition-colors" onClick={() => handleLike(post.id)}>
-                    <Heart className="h-4 w-4" /> {post.likes_count ?? 0}
+                <div className="flex items-center border-t border-border/30 pt-2 mt-2 gap-1">
+                  <button
+                    onClick={() => handleLike(post.id)}
+                    className="flex-1 flex items-center justify-center gap-2 py-1.5 rounded-lg text-sm font-medium transition-colors hover:bg-secondary text-muted-foreground"
+                  >
+                    <Heart className="h-4 w-4" />
+                    <span>Like</span>
+                    {(post.likes_count ?? 0) > 0 && (
+                      <span className="text-xs">{post.likes_count}</span>
+                    )}
                   </button>
-                  <button className="flex items-center gap-1.5 text-xs hover:text-primary transition-colors">
-                    <MessageCircle className="h-4 w-4" /> {post.comments_count ?? 0}
+                  <button className="flex-1 flex items-center justify-center gap-2 py-1.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-secondary transition-colors">
+                    <MessageCircle className="h-4 w-4" />
+                    <span>Comment</span>
+                    {(post.comments_count ?? 0) > 0 && (
+                      <span className="text-xs">{post.comments_count}</span>
+                    )}
                   </button>
-                  <button className="ml-auto hover:text-primary transition-colors">
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(`${window.location.origin}/post/${post.id}`);
+                      toast.success("Link disalin!");
+                    }}
+                    className="flex-1 flex items-center justify-center gap-2 py-1.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-secondary transition-colors"
+                  >
                     <Share2 className="h-4 w-4" />
+                    <span>Share</span>
                   </button>
                 </div>
               </div>

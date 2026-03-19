@@ -126,6 +126,28 @@ const DesktopLayout = ({ children }: { children: React.ReactNode }) => {
         style={{ width: 256 }}
         className="fixed left-0 top-14 h-[calc(100vh-3.5rem)] border-r border-border/50 bg-card z-40 p-4 flex flex-col overflow-y-auto"
       >
+        {/* Profile Card */}
+        <div
+          className="flex items-center gap-3 px-2 py-3 mb-2 rounded-xl hover:bg-secondary cursor-pointer transition-colors"
+          onClick={() => navigate("/profile")}
+        >
+          <Avatar className="h-10 w-10 border-2 border-primary/20">
+            <AvatarImage src={profile?.avatar_url ?? ""} />
+            <AvatarFallback className="bg-primary/10 text-sm font-bold text-primary">
+              {getInitials(profile?.full_name ?? null)}
+            </AvatarFallback>
+          </Avatar>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold truncate text-foreground">
+              {profile?.full_name ?? "Golfer"}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              HCP {profile?.handicap ?? "N/A"}
+            </p>
+          </div>
+        </div>
+        <div className="border-t border-border/30 mb-2" />
+
         {/* Navigation */}
         <nav className="flex-1 space-y-1">
           {navItems.map(({ path, label, icon: Icon }) => {
@@ -170,6 +192,7 @@ const DesktopLayout = ({ children }: { children: React.ReactNode }) => {
         >
           <UpcomingEventsWidget navigate={navigate} />
           <SuggestedClubsWidget navigate={navigate} />
+          <ActiveGolfersWidget navigate={navigate} />
         </aside>
       )}
     </div>
@@ -260,6 +283,52 @@ const SuggestedClubsWidget = ({ navigate }: { navigate: (path: string) => void }
               <p className="text-[10px] text-muted-foreground">
                 {(c.members as any)?.[0]?.count ?? 0} members
               </p>
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const ActiveGolfersWidget = ({ navigate }: { navigate: (path: string) => void }) => {
+  const { data: golfers } = useQuery({
+    queryKey: ["desktop-active-golfers"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, full_name, avatar_url, handicap")
+        .not("full_name", "is", null)
+        .order("updated_at", { ascending: false })
+        .limit(6);
+      return data ?? [];
+    },
+  });
+
+  if (!golfers?.length) return null;
+
+  return (
+    <div className="golf-card p-3 mt-3">
+      <p className="text-xs font-semibold mb-2 text-foreground">Golfers</p>
+      <div className="space-y-2">
+        {golfers.map((g: any) => (
+          <button
+            key={g.id}
+            onClick={() => navigate(`/profile/${g.id}`)}
+            className="flex items-center gap-2 w-full text-left hover:opacity-70 transition-opacity"
+          >
+            <div className="relative">
+              <Avatar className="h-8 w-8">
+                <AvatarImage src={g.avatar_url ?? ""} />
+                <AvatarFallback className="bg-primary/10 text-[10px] font-bold text-primary">
+                  {(g.full_name ?? "?").charAt(0)}
+                </AvatarFallback>
+              </Avatar>
+              <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-green-500 border-2 border-background" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-medium truncate text-foreground">{g.full_name}</p>
+              <p className="text-[10px] text-muted-foreground">HCP {g.handicap ?? "N/A"}</p>
             </div>
           </button>
         ))}
