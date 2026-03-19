@@ -1,11 +1,9 @@
-import { ArrowLeft, Globe, Mail, Camera, UserPlus, UserCheck, MessageCircle, Crown, Check, X, BarChart3, TrendingDown, Trophy } from "lucide-react";
+import { ArrowLeft, Globe, Mail, Camera, UserPlus, UserCheck, MessageCircle, Crown, Check, X, BarChart3, TrendingDown, Trophy, MapPin, Settings, Clock } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import heroImg from "@/assets/golf-hero.jpg";
-import venueImg from "@/assets/golf-venue.jpg";
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
@@ -13,6 +11,7 @@ import { toast } from "@/hooks/use-toast";
 import CreateClubDialog from "@/components/CreateClubDialog";
 
 type Tab = "about" | "clubs" | "stats" | "gallery";
+type DesktopTab = "overview" | "stats" | "history";
 
 interface Profile {
   id: string;
@@ -28,12 +27,14 @@ interface Club {
   name: string;
   logo_url: string | null;
   is_personal?: boolean;
+  facility_type?: string;
 }
 
 const GolferProfile = () => {
   const navigate = useNavigate();
   const { id: paramId } = useParams<{ id: string }>();
   const [tab, setTab] = useState<Tab>("about");
+  const [desktopTab, setDesktopTab] = useState<DesktopTab>("overview");
   const [profile, setProfile] = useState<Profile | null>(null);
   const [clubs, setClubs] = useState<Club[]>([]);
   const [pendingInvites, setPendingInvites] = useState<any[]>([]);
@@ -46,16 +47,26 @@ const GolferProfile = () => {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [isDesktop, setIsDesktop] = useState(
+    typeof window !== "undefined" ? window.innerWidth >= 1024 : false
+  );
+
+  useEffect(() => {
+    const handler = () => setIsDesktop(window.innerWidth >= 1024);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
+
   const targetId = paramId || currentUserId;
 
   const fetchClubs = async (tid: string) => {
     const { data: membersData } = await supabase
       .from("members")
-      .select("club_id, clubs(id, name, logo_url, is_personal)")
+      .select("club_id, clubs(id, name, logo_url, is_personal, facility_type)")
       .eq("user_id", tid);
     const { data: personalClub } = await supabase
       .from("clubs")
-      .select("id, name, logo_url, is_personal")
+      .select("id, name, logo_url, is_personal, facility_type")
       .eq("owner_id", tid)
       .eq("is_personal", true)
       .maybeSingle();
@@ -90,6 +101,25 @@ const GolferProfile = () => {
     if (targetId) fetchInvites(targetId);
   };
 
+  const handleAcceptBuddy = async (connectionId: string) => {
+    const { error } = await supabase.from("buddy_connections").update({ status: "accepted" }).eq("id", connectionId);
+    if (error) toast({ title: "Gagal", description: error.message, variant: "destructive" });
+    else { setBuddyStatus("accepted"); toast({ title: "Buddy diterima!" }); }
+  };
+
+  const handleDeclineBuddy = async (connectionId: string) => {
+    const { error } = await supabase.from("buddy_connections").update({ status: "declined" }).eq("id", connectionId);
+    if (error) toast({ title: "Gagal", description: error.message, variant: "destructive" });
+    else { setBuddyStatus(null); setBuddyConnectionId(null); toast({ title: "Permintaan ditolak" }); }
+  };
+
+  const handleRemoveBuddy = async () => {
+    if (!buddyConnectionId) return;
+    const { error } = await supabase.from("buddy_connections").delete().eq("id", buddyConnectionId);
+    if (error) toast({ title: "Gagal", description: error.message, variant: "destructive" });
+    else { setBuddyStatus(null); setBuddyConnectionId(null); toast({ title: "Buddy dihapus" }); }
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -119,7 +149,6 @@ const GolferProfile = () => {
     fetchData();
   }, [navigate, paramId]);
 
-  // Stats data
   const { data: hcpHistory } = useQuery({
     queryKey: ["hcp-history", targetId],
     queryFn: async () => {
@@ -141,7 +170,6 @@ const GolferProfile = () => {
         .from("scorecards")
         .select("gross_score, net_score, total_putts, total_score")
         .eq("player_id", targetId!);
-
       if (!scorecards || scorecards.length === 0) return null;
       const rounds = scorecards.length;
       const avgGross = scorecards.reduce((s, c) => s + (c.gross_score ?? 0), 0) / rounds;
@@ -227,13 +255,403 @@ const GolferProfile = () => {
     );
   }
 
+  // ═══════════════════════════════════════
+  // SHARED: Tournament History content
+  // ═══════════════════════════════════════
+  const tournamentHistoryContent = (
+    <>
+      {tournamentHistory && tournamentHistory.length > 0 && (
+        <div className="golf-card p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Trophy className="h-4 w-4 text-primary" />
+            <p className="text-sm font-semibold">Tournament History</p>
+            <span className="text-xs text-muted-foreground ml-auto">
+              {tournamentHistory.length} tournament
+            </span>
+          </div>
+          <div className="space-y-3">
+            {tournamentHistory.map((t: any, i: number) => (
+              <div key={i} className="border border-border/50 rounded-lg overflow-hidden">
+                <div className="flex items-center justify-between bg-secondary/50 px-3 py-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-semibold truncate">{t.tour?.name ?? "Tournament"}</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {t.tour?.year} · {t.tour?.tournament_type} · {t.club?.name}
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0 ml-2">
+                    <p className="text-[10px] text-muted-foreground">Tour HCP</p>
+                    <p className="text-xs font-bold text-primary">{t.hcpAtReg ?? "—"} → {t.hcpCurrent ?? "—"}</p>
+                  </div>
+                </div>
+                {t.events.length > 0 ? (
+                  <div className="divide-y divide-border/30">
+                    {t.events.map((e: any, j: number) => (
+                      <div key={j} className="flex items-center justify-between px-3 py-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs truncate">{e.event?.name}</p>
+                          <p className="text-[10px] text-muted-foreground">
+                            {e.event?.event_date} · {(e.event?.courses as any)?.name}
+                          </p>
+                        </div>
+                        <div className="text-right shrink-0 ml-2">
+                          <p className="text-[10px] text-muted-foreground">HCP used</p>
+                          <p className="text-xs font-medium">{e.hcp ?? "—"}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-[10px] text-muted-foreground text-center py-2">Belum ada event selesai</p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {(!tournamentHistory || tournamentHistory.length === 0) && (
+        <div className="golf-card p-6 text-center">
+          <Trophy className="mx-auto h-8 w-8 text-muted-foreground/40" />
+          <p className="mt-2 text-sm text-muted-foreground">Belum mengikuti tournament</p>
+        </div>
+      )}
+    </>
+  );
+
+  // ═══════════════════════════════════════
+  // SHARED: Stats content
+  // ═══════════════════════════════════════
+  const statsContent = (
+    <>
+      {playerStats ? (
+        <div className="golf-card p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <BarChart3 className="h-4 w-4 text-primary" />
+            <p className="text-sm font-semibold">Playing Statistics</p>
+          </div>
+          <div className="space-y-3">
+            <StatRow label="Scoring Average" value={playerStats.avgGross} />
+            <StatRow label="Best Round" value={playerStats.bestRound?.toString() ?? "—"} />
+            <StatRow label="Putts per Round" value={playerStats.avgPutts} />
+            <StatRow label="Rounds Played" value={playerStats.rounds.toString()} />
+          </div>
+        </div>
+      ) : (
+        <div className="golf-card p-8 text-center">
+          <BarChart3 className="mx-auto h-8 w-8 text-muted-foreground/40" />
+          <p className="mt-3 text-sm text-muted-foreground">No stats available yet</p>
+          <p className="text-xs text-muted-foreground/70 mt-1">Play some rounds to see your statistics</p>
+        </div>
+      )}
+    </>
+  );
+
+  // ═══════════════════════════════════════
+  // SHARED: HCP History by tour content
+  // ═══════════════════════════════════════
+  const hcpHistoryContent = hcpHistory && hcpHistory.length > 0 && (() => {
+    const byTour: Record<string, { tourName: string; entries: any[] }> = {};
+    hcpHistory.forEach((h: any) => {
+      const key = h.tour_id ?? "personal";
+      if (!byTour[key]) {
+        byTour[key] = {
+          tourName: h.tour_id ? ((h.tours as any)?.name ?? "Tournament") : "Personal",
+          entries: [],
+        };
+      }
+      byTour[key].entries.push(h);
+    });
+    return Object.entries(byTour).map(([key, group]) => (
+      <div key={key} className="golf-card p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <TrendingDown className="h-4 w-4 text-primary" />
+          <p className="text-sm font-semibold">{group.tourName}</p>
+          {key !== "personal" && (
+            <Badge variant="outline" className="text-[9px]">Tournament HCP</Badge>
+          )}
+        </div>
+        <div className="space-y-2">
+          {group.entries.map((h: any, i: number) => (
+            <div key={i} className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground truncate flex-1">{(h.events as any)?.name ?? "Event"}</span>
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-muted-foreground">{h.old_hcp ?? "?"}</span>
+                <span>→</span>
+                <span className="font-bold">{h.new_hcp ?? "?"}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    ));
+  })();
+
+  // ═══════════════════════════════════════
+  // SHARED: HCP Trend mini chart
+  // ═══════════════════════════════════════
+  const hcpTrendChart = hcpHistory && hcpHistory.length > 0 && (
+    <div className="golf-card p-4">
+      <div className="flex items-center gap-2 mb-3">
+        <TrendingDown className="h-4 w-4 text-primary" />
+        <p className="text-sm font-semibold">Handicap History</p>
+      </div>
+      <div className="flex items-end gap-1 h-20">
+        {hcpHistory.map((h: any, i: number) => {
+          const hcp = h.new_hcp ?? 0;
+          const maxHcp = Math.max(...hcpHistory.map((x: any) => x.new_hcp ?? 0), 36);
+          const height = maxHcp > 0 ? (hcp / maxHcp) * 100 : 0;
+          return (
+            <div key={i} className="flex-1 flex flex-col items-center gap-1">
+              <span className="text-[8px] text-muted-foreground">{hcp}</span>
+              <div className="w-full bg-primary/60 rounded-t" style={{ height: `${Math.max(height, 5)}%` }} />
+            </div>
+          );
+        })}
+      </div>
+      <p className="text-[10px] text-muted-foreground mt-2 text-center">
+        Current: HCP {profile?.handicap ?? "N/A"}
+      </p>
+    </div>
+  );
+
+  // ═══════════════════════════════════════
+  // DESKTOP LAYOUT
+  // ═══════════════════════════════════════
+  if (isDesktop) {
+    return (
+      <div className="w-full bottom-nav-safe">
+        <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
+
+        <div className="flex gap-6 p-6 items-start">
+          {/* KOLOM KIRI (35%) — Profile card sticky */}
+          <div className="w-80 shrink-0 space-y-4 sticky top-20">
+            {/* Profile card utama */}
+            <div className="golf-card overflow-hidden">
+              {/* Cover photo */}
+              <div className="h-24 bg-gradient-to-br from-primary/30 to-primary/10 relative">
+                {isOwnProfile && (
+                  <button className="absolute bottom-2 right-2 bg-background/80 rounded-full p-1.5 hover:bg-background transition-colors">
+                    <Camera className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+              {/* Avatar + info */}
+              <div className="px-4 pb-4">
+                <div className="-mt-8 mb-3 relative inline-block">
+                  <Avatar className="h-16 w-16 border-4 border-background">
+                    <AvatarImage src={profile?.avatar_url ?? ""} />
+                    <AvatarFallback className="bg-primary/10 text-lg font-bold text-primary">
+                      {getInitials(profile?.full_name)}
+                    </AvatarFallback>
+                  </Avatar>
+                  {isOwnProfile && (
+                    <button onClick={() => fileInputRef.current?.click()} disabled={uploading}
+                      className="absolute bottom-0 right-0 rounded-full bg-primary p-1 text-primary-foreground shadow-lg">
+                      <Camera className="h-3 w-3" />
+                    </button>
+                  )}
+                </div>
+
+                <h1 className="text-lg font-bold">{profile?.full_name ?? "Unnamed Golfer"}</h1>
+
+                {profile?.location && (
+                  <p className="text-sm text-muted-foreground flex items-center gap-1 mt-0.5">
+                    <MapPin className="h-3.5 w-3.5" />
+                    {profile.location}
+                  </p>
+                )}
+
+                {profile?.bio && (
+                  <p className="text-xs text-muted-foreground mt-2 italic">{profile.bio}</p>
+                )}
+
+                {/* HCP + Rounds badges */}
+                <div className="mt-3 flex items-center gap-2">
+                  <div className="golf-card px-4 py-2 text-center flex-1 border-primary/30">
+                    <p className="text-2xl font-bold text-primary">{profile?.handicap ?? "N/A"}</p>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Handicap</p>
+                  </div>
+                  <div className="golf-card px-4 py-2 text-center flex-1">
+                    <p className="text-2xl font-bold">{playerStats?.rounds ?? 0}</p>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Rounds</p>
+                  </div>
+                </div>
+
+                {/* Action buttons */}
+                <div className="mt-3 space-y-2">
+                  {!isOwnProfile && (
+                    <>
+                      {buddyStatus === "accepted" ? (
+                        <Button variant="outline" size="sm" className="w-full gap-2" onClick={handleRemoveBuddy}>
+                          <UserCheck className="h-4 w-4" /> Buddies
+                        </Button>
+                      ) : buddyStatus === "sent" ? (
+                        <Button variant="outline" size="sm" className="w-full gap-2" disabled>
+                          <Clock className="h-4 w-4" /> Request Sent
+                        </Button>
+                      ) : buddyStatus === "pending" ? (
+                        <div className="flex gap-2">
+                          <Button size="sm" className="flex-1 gap-1" onClick={() => handleAcceptBuddy(buddyConnectionId!)}>
+                            <Check className="h-3.5 w-3.5" /> Accept
+                          </Button>
+                          <Button size="sm" variant="outline" className="flex-1 gap-1" onClick={() => handleDeclineBuddy(buddyConnectionId!)}>
+                            <X className="h-3.5 w-3.5" /> Decline
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button size="sm" className="w-full gap-2" onClick={handleAddBuddy}>
+                          <UserPlus className="h-4 w-4" /> Add Buddy
+                        </Button>
+                      )}
+                      <Button variant="outline" size="sm" className="w-full gap-2" onClick={() => navigate(`/chat/${profile?.id}`)}>
+                        <MessageCircle className="h-4 w-4" /> Send Message
+                      </Button>
+                    </>
+                  )}
+                  {isOwnProfile && (
+                    <Button variant="outline" size="sm" className="w-full gap-2" onClick={() => navigate("/settings")}>
+                      <Settings className="h-4 w-4" /> Edit Profile
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Stats card */}
+            {playerStats && (
+              <div className="golf-card p-4 space-y-3">
+                <p className="text-sm font-semibold">Playing Stats</p>
+                {[
+                  { label: "Scoring Average", value: playerStats.avgGross },
+                  { label: "Best Round", value: playerStats.bestRound?.toString() ?? "—" },
+                  { label: "Putts per Round", value: playerStats.avgPutts },
+                  { label: "Rounds Played", value: playerStats.rounds.toString() },
+                ].map(s => (
+                  <div key={s.label} className="flex justify-between items-center text-sm">
+                    <span className="text-muted-foreground">{s.label}</span>
+                    <span className="font-semibold">{s.value}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Clubs */}
+            {clubs && clubs.length > 0 && (
+              <div className="golf-card p-4">
+                <p className="text-sm font-semibold mb-3">Clubs</p>
+                <div className="space-y-2">
+                  {clubs.map((c: any) => (
+                    <button key={c.id} onClick={() => navigate(`/clubs/${c.id}`)}
+                      className="flex items-center gap-2 w-full hover:opacity-70 transition-opacity text-left">
+                      <Avatar className="h-8 w-8 rounded-lg">
+                        <AvatarImage src={c.logo_url ?? ""} />
+                        <AvatarFallback className="rounded-lg bg-primary/10 text-xs font-bold text-primary">
+                          {c.name.charAt(0)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0">
+                        <p className="text-xs font-medium truncate">{c.name}</p>
+                        <p className="text-[10px] text-muted-foreground capitalize">
+                          {c.facility_type?.replace("_", " ") ?? "Club"}
+                        </p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* KOLOM KANAN (65%) — Tabs konten */}
+          <div className="flex-1 min-w-0">
+            {/* Tabs */}
+            <div className="flex gap-1 mb-4 border-b border-border/50">
+              {(["overview", "stats", "history"] as DesktopTab[]).map(t => (
+                <button key={t} onClick={() => setDesktopTab(t)}
+                  className={`px-4 py-2.5 text-sm font-medium capitalize transition-colors relative
+                    ${desktopTab === t ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}>
+                  {t === "overview" ? "Overview" : t === "stats" ? "Statistics" : "Tournament History"}
+                  {desktopTab === t && (
+                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
+                  )}
+                </button>
+              ))}
+            </div>
+
+            {/* Tab: Overview */}
+            {desktopTab === "overview" && (
+              <div className="space-y-4">
+                {hcpTrendChart}
+
+                <div className="golf-card p-4">
+                  <p className="text-sm font-semibold mb-3">Recent Rounds</p>
+                  {playerStats ? (
+                    <div className="grid grid-cols-3 gap-4 text-center">
+                      <div>
+                        <p className="text-2xl font-bold text-primary">{playerStats.bestRound ?? "—"}</p>
+                        <p className="text-xs text-muted-foreground">Best Score</p>
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold">{playerStats.avgGross}</p>
+                        <p className="text-xs text-muted-foreground">Avg Score</p>
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold">{playerStats.avgPutts}</p>
+                        <p className="text-xs text-muted-foreground">Avg Putts</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-4">Belum ada data round</p>
+                  )}
+                </div>
+
+                {/* About info */}
+                <div className="golf-card p-4 space-y-3">
+                  <p className="text-sm font-semibold">About</p>
+                  <p className="text-sm text-muted-foreground italic">{profile?.bio || "No bio yet"}</p>
+                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                    <Globe className="h-4 w-4 shrink-0" />
+                    <span>No website linked</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                    <Mail className="h-4 w-4 shrink-0" />
+                    <span>Contact via Message</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Tab: Statistics */}
+            {desktopTab === "stats" && (
+              <div className="space-y-4">
+                {statsContent}
+                {hcpHistoryContent}
+              </div>
+            )}
+
+            {/* Tab: Tournament History */}
+            {desktopTab === "history" && (
+              <div className="space-y-4">
+                {tournamentHistoryContent}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <CreateClubDialog open={showCreateClub} onOpenChange={setShowCreateClub} onCreated={async () => { setShowCreateClub(false); if (targetId) await fetchClubs(targetId); }} />
+      </div>
+    );
+  }
+
+  // ═══════════════════════════════════════
+  // MOBILE LAYOUT — unchanged
+  // ═══════════════════════════════════════
   return (
     <div className="bottom-nav-safe">
       <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
 
-      <div className="lg:flex lg:gap-6 lg:items-start px-4 pt-4">
-        {/* Left column: Profile info */}
-        <div className="lg:w-2/5 lg:sticky lg:top-20">
+      <div className="px-4 pt-4">
+        <div>
           <div className="relative bg-gradient-to-b from-secondary to-background pb-6 rounded-xl">
             <button onClick={() => navigate(-1)} className="absolute left-4 top-4 z-10 rounded-full bg-background/40 p-2 backdrop-blur">
               <ArrowLeft className="h-5 w-5" />
@@ -279,247 +697,106 @@ const GolferProfile = () => {
           </div>
         </div>
 
-        {/* Right column: Tabs */}
-        <div className="lg:w-3/5 mt-4 lg:mt-0">
-
-      {/* Tabs */}
-      <div className="flex items-center justify-center gap-6 border-b border-border/50 px-4">
-        {tabs.map((t) => (
-          <div key={t.id} className="flex items-center gap-3">
-            <button onClick={() => setTab(t.id)} className={`relative py-3 text-sm font-semibold tracking-wider transition-colors ${tab === t.id ? "text-foreground" : "text-muted-foreground"}`}>
-              {t.label}
-              {tab === t.id && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />}
-            </button>
-            {t.id === "clubs" && isOwnProfile && (
-              <button onClick={() => setShowCreateClub(true)} className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">+</button>
-            )}
+        <div className="mt-4">
+          {/* Tabs */}
+          <div className="flex items-center justify-center gap-6 border-b border-border/50 px-4">
+            {tabs.map((t) => (
+              <div key={t.id} className="flex items-center gap-3">
+                <button onClick={() => setTab(t.id)} className={`relative py-3 text-sm font-semibold tracking-wider transition-colors ${tab === t.id ? "text-foreground" : "text-muted-foreground"}`}>
+                  {t.label}
+                  {tab === t.id && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />}
+                </button>
+                {t.id === "clubs" && isOwnProfile && (
+                  <button onClick={() => setShowCreateClub(true)} className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">+</button>
+                )}
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
 
-      {/* Tab content */}
-      <div className="px-4 pt-4 pb-4">
-        {tab === "about" && (
-          <div className="space-y-4 animate-fade-in">
-            <div className="px-2">
-              <p className="text-sm italic text-muted-foreground">{profile?.bio || "No bio yet"}</p>
-            </div>
-            <div className="golf-card p-4 flex items-start gap-4">
-              <Globe className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
-              <p className="text-sm text-muted-foreground">No website linked</p>
-            </div>
-            <div className="golf-card p-4 flex items-center gap-4">
-              <Mail className="h-5 w-5 text-muted-foreground shrink-0" />
-              <p className="text-sm text-muted-foreground">Contact via Message</p>
-            </div>
-
-            {/* Handicap trend mini chart */}
-            {hcpHistory && hcpHistory.length > 0 && (
-              <div className="golf-card p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <TrendingDown className="h-4 w-4 text-primary" />
-                  <p className="text-sm font-semibold">Handicap History</p>
+          {/* Tab content */}
+          <div className="px-4 pt-4 pb-4">
+            {tab === "about" && (
+              <div className="space-y-4 animate-fade-in">
+                <div className="px-2">
+                  <p className="text-sm italic text-muted-foreground">{profile?.bio || "No bio yet"}</p>
                 </div>
-                <div className="flex items-end gap-1 h-20">
-                  {hcpHistory.map((h: any, i: number) => {
-                    const hcp = h.new_hcp ?? 0;
-                    const maxHcp = Math.max(...hcpHistory.map((x: any) => x.new_hcp ?? 0), 36);
-                    const height = maxHcp > 0 ? (hcp / maxHcp) * 100 : 0;
-                    return (
-                      <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                        <span className="text-[8px] text-muted-foreground">{hcp}</span>
-                        <div className="w-full bg-primary/60 rounded-t" style={{ height: `${Math.max(height, 5)}%` }} />
-                      </div>
-                    );
-                  })}
+                <div className="golf-card p-4 flex items-start gap-4">
+                  <Globe className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
+                  <p className="text-sm text-muted-foreground">No website linked</p>
                 </div>
-                <p className="text-[10px] text-muted-foreground mt-2 text-center">
-                  Current: HCP {profile?.handicap ?? "N/A"}
-                </p>
+                <div className="golf-card p-4 flex items-center gap-4">
+                  <Mail className="h-5 w-5 text-muted-foreground shrink-0" />
+                  <p className="text-sm text-muted-foreground">Contact via Message</p>
+                </div>
+                {hcpTrendChart}
               </div>
             )}
-          </div>
-        )}
 
-        {tab === "clubs" && (
-          <div className="animate-fade-in space-y-4">
-            {isOwnProfile && pendingInvites.length > 0 && (
-              <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Undangan Klub</p>
-                {pendingInvites.map((inv: any) => {
-                  const club = inv.clubs as any;
-                  return (
-                    <div key={inv.id} className="golf-card p-3 flex items-center gap-3">
-                      <Avatar className="h-10 w-10 border-2 border-primary/30">
-                        <AvatarImage src={club?.logo_url ?? ""} />
-                        <AvatarFallback className="bg-primary/10 text-xs font-bold text-primary">{club?.name?.charAt(0) ?? "?"}</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold truncate">{club?.name}</p>
-                        <p className="text-xs text-muted-foreground">Mengundang Anda</p>
-                      </div>
-                      <div className="flex gap-1.5">
-                        <button onClick={() => handleAcceptInvite(inv.id, inv.club_id)} className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground"><Check className="h-4 w-4" /></button>
-                        <button onClick={() => handleDeclineInvite(inv.id)} className="flex h-8 w-8 items-center justify-center rounded-full bg-destructive/10 text-destructive"><X className="h-4 w-4" /></button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-            <div className="grid grid-cols-2 gap-3">
-              {clubs.length === 0 && pendingInvites.length === 0 && (
-                <p className="col-span-2 text-center text-sm text-muted-foreground py-8">Belum bergabung dengan klub manapun</p>
-              )}
-              {clubs.map((c, i) => (
-                <div key={c.id} onClick={() => navigate(`/clubs/${c.id}`)} className="golf-card overflow-hidden animate-fade-in cursor-pointer" style={{ animationDelay: `${i * 60}ms` }}>
-                  <div className="relative h-28 bg-secondary flex items-center justify-center">
-                    {c.logo_url ? <img src={c.logo_url} alt={c.name} className="h-full w-full object-cover" /> : <span className="text-3xl font-bold text-primary/30">{c.name.charAt(0)}</span>}
-                    {c.is_personal && (
-                      <span className="absolute top-2 right-2 flex items-center gap-1 rounded-full bg-primary/90 px-2 py-0.5 text-[9px] font-bold text-primary-foreground uppercase tracking-wider"><Crown className="h-3 w-3" /> Personal</span>
-                    )}
+            {tab === "clubs" && (
+              <div className="animate-fade-in space-y-4">
+                {isOwnProfile && pendingInvites.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Undangan Klub</p>
+                    {pendingInvites.map((inv: any) => {
+                      const club = inv.clubs as any;
+                      return (
+                        <div key={inv.id} className="golf-card p-3 flex items-center gap-3">
+                          <Avatar className="h-10 w-10 border-2 border-primary/30">
+                            <AvatarImage src={club?.logo_url ?? ""} />
+                            <AvatarFallback className="bg-primary/10 text-xs font-bold text-primary">{club?.name?.charAt(0) ?? "?"}</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-bold truncate">{club?.name}</p>
+                            <p className="text-xs text-muted-foreground">Mengundang Anda</p>
+                          </div>
+                          <div className="flex gap-1.5">
+                            <button onClick={() => handleAcceptInvite(inv.id, inv.club_id)} className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground"><Check className="h-4 w-4" /></button>
+                            <button onClick={() => handleDeclineInvite(inv.id)} className="flex h-8 w-8 items-center justify-center rounded-full bg-destructive/10 text-destructive"><X className="h-4 w-4" /></button>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                  <p className="p-2.5 text-xs font-medium truncate">{c.name}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {tab === "stats" && (
-          <div className="space-y-4 animate-fade-in">
-            {/* Tournament History */}
-            {tournamentHistory && tournamentHistory.length > 0 && (
-              <div className="golf-card p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <Trophy className="h-4 w-4 text-primary" />
-                  <p className="text-sm font-semibold">Tournament History</p>
-                  <span className="text-xs text-muted-foreground ml-auto">
-                    {tournamentHistory.length} tournament
-                  </span>
-                </div>
-                <div className="space-y-3">
-                  {tournamentHistory.map((t: any, i: number) => (
-                    <div key={i} className="border border-border/50 rounded-lg overflow-hidden">
-                      <div className="flex items-center justify-between bg-secondary/50 px-3 py-2">
-                        <div className="min-w-0 flex-1">
-                          <p className="text-xs font-semibold truncate">{t.tour?.name ?? "Tournament"}</p>
-                          <p className="text-[10px] text-muted-foreground">
-                            {t.tour?.year} · {t.tour?.tournament_type} · {t.club?.name}
-                          </p>
-                        </div>
-                        <div className="text-right shrink-0 ml-2">
-                          <p className="text-[10px] text-muted-foreground">Tour HCP</p>
-                          <p className="text-xs font-bold text-primary">{t.hcpAtReg ?? "—"} → {t.hcpCurrent ?? "—"}</p>
-                        </div>
+                )}
+                <div className="grid grid-cols-2 gap-3">
+                  {clubs.length === 0 && pendingInvites.length === 0 && (
+                    <p className="col-span-2 text-center text-sm text-muted-foreground py-8">Belum bergabung dengan klub manapun</p>
+                  )}
+                  {clubs.map((c, i) => (
+                    <div key={c.id} onClick={() => navigate(`/clubs/${c.id}`)} className="golf-card overflow-hidden animate-fade-in cursor-pointer" style={{ animationDelay: `${i * 60}ms` }}>
+                      <div className="relative h-28 bg-secondary flex items-center justify-center">
+                        {c.logo_url ? <img src={c.logo_url} alt={c.name} className="h-full w-full object-cover" /> : <span className="text-3xl font-bold text-primary/30">{c.name.charAt(0)}</span>}
+                        {c.is_personal && (
+                          <span className="absolute top-2 right-2 flex items-center gap-1 rounded-full bg-primary/90 px-2 py-0.5 text-[9px] font-bold text-primary-foreground uppercase tracking-wider"><Crown className="h-3 w-3" /> Personal</span>
+                        )}
                       </div>
-                      {t.events.length > 0 ? (
-                        <div className="divide-y divide-border/30">
-                          {t.events.map((e: any, j: number) => (
-                            <div key={j} className="flex items-center justify-between px-3 py-2">
-                              <div className="min-w-0 flex-1">
-                                <p className="text-xs truncate">{e.event?.name}</p>
-                                <p className="text-[10px] text-muted-foreground">
-                                  {e.event?.event_date} · {(e.event?.courses as any)?.name}
-                                </p>
-                              </div>
-                              <div className="text-right shrink-0 ml-2">
-                                <p className="text-[10px] text-muted-foreground">HCP used</p>
-                                <p className="text-xs font-medium">{e.hcp ?? "—"}</p>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-[10px] text-muted-foreground text-center py-2">Belum ada event selesai</p>
-                      )}
+                      <p className="p-2.5 text-xs font-medium truncate">{c.name}</p>
                     </div>
                   ))}
                 </div>
               </div>
             )}
-            {tournamentHistory?.length === 0 && (
-              <div className="golf-card p-6 text-center">
-                <Trophy className="mx-auto h-8 w-8 text-muted-foreground/40" />
-                <p className="mt-2 text-sm text-muted-foreground">Belum mengikuti tournament</p>
+
+            {tab === "stats" && (
+              <div className="space-y-4 animate-fade-in">
+                {tournamentHistoryContent}
+                {statsContent}
+                {hcpHistoryContent}
               </div>
             )}
 
-            {playerStats ? (
-              <>
-                <div className="golf-card p-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <BarChart3 className="h-4 w-4 text-primary" />
-                    <p className="text-sm font-semibold">Playing Statistics</p>
-                  </div>
-                  <div className="space-y-3">
-                    <StatRow label="Scoring Average" value={playerStats.avgGross} />
-                    <StatRow label="Best Round" value={playerStats.bestRound?.toString() ?? "—"} />
-                    <StatRow label="Putts per Round" value={playerStats.avgPutts} />
-                    <StatRow label="Rounds Played" value={playerStats.rounds.toString()} />
-                  </div>
+            {tab === "gallery" && (
+              <div className="flex flex-col items-center justify-center py-16 text-center animate-fade-in">
+                <div className="h-16 w-16 rounded-full bg-secondary flex items-center justify-center mb-4">
+                  <Camera className="h-8 w-8 text-muted-foreground/40" />
                 </div>
-              </>
-            ) : (
-              <div className="golf-card p-8 text-center">
-                <BarChart3 className="mx-auto h-8 w-8 text-muted-foreground/40" />
-                <p className="mt-3 text-sm text-muted-foreground">No stats available yet</p>
-                <p className="text-xs text-muted-foreground/70 mt-1">Play some rounds to see your statistics</p>
+                <p className="text-base font-semibold">Belum ada foto</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Foto akan muncul setelah mengikuti event
+                </p>
               </div>
             )}
-
-            {hcpHistory && hcpHistory.length > 0 && (() => {
-              // Group by tour
-              const byTour: Record<string, { tourName: string; entries: any[] }> = {};
-              hcpHistory.forEach((h: any) => {
-                const key = h.tour_id ?? "personal";
-                if (!byTour[key]) {
-                  byTour[key] = {
-                    tourName: h.tour_id ? ((h.tours as any)?.name ?? "Tournament") : "Personal",
-                    entries: [],
-                  };
-                }
-                byTour[key].entries.push(h);
-              });
-              return Object.entries(byTour).map(([key, group]) => (
-                <div key={key} className="golf-card p-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <TrendingDown className="h-4 w-4 text-primary" />
-                    <p className="text-sm font-semibold">{group.tourName}</p>
-                    {key !== "personal" && (
-                      <Badge variant="outline" className="text-[9px]">Tournament HCP</Badge>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    {group.entries.map((h: any, i: number) => (
-                      <div key={i} className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground truncate flex-1">{(h.events as any)?.name ?? "Event"}</span>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <span className="text-muted-foreground">{h.old_hcp ?? "?"}</span>
-                          <span>→</span>
-                          <span className="font-bold">{h.new_hcp ?? "?"}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ));
-            })()}
           </div>
-        )}
-
-        {tab === "gallery" && (
-          <div className="flex flex-col items-center justify-center py-16 text-center animate-fade-in">
-            <div className="h-16 w-16 rounded-full bg-secondary flex items-center justify-center mb-4">
-              <Camera className="h-8 w-8 text-muted-foreground/40" />
-            </div>
-            <p className="text-base font-semibold">Belum ada foto</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Foto akan muncul setelah mengikuti event
-            </p>
-          </div>
-        )}
-      </div>
         </div>
       </div>
 
