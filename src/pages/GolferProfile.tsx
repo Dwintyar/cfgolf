@@ -706,6 +706,15 @@ const GolferProfile = () => {
                 )}
               </div>
               <h1 className="mt-3 font-display text-xl font-bold">{profile?.full_name || "Unnamed Golfer"}</h1>
+              {staffPositions && staffPositions.length > 0 && (
+                <div className="mt-1 flex flex-wrap justify-center gap-1">
+                  {staffPositions.map((sp: any, i: number) => (
+                    <Badge key={i} variant="secondary" className="text-[10px]">
+                      {sp.staff_role} — {(sp.clubs as any)?.name}
+                    </Badge>
+                  ))}
+                </div>
+              )}
               <p className="text-xs uppercase tracking-widest text-muted-foreground">{profile?.location || "No location set"}</p>
               <div className="mt-4 flex gap-3 px-8 w-full">
                 <Badge variant="outline" className="flex-1 justify-center rounded-lg border-border px-4 py-2.5 text-sm font-bold">HCP {profile?.handicap ?? "N/A"}</Badge>

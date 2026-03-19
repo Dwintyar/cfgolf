@@ -568,7 +568,14 @@ const ClubAdminDashboard = () => {
           </Avatar>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium truncate">{m.profiles?.full_name || "Unknown"}</p>
-            <Badge variant="outline" className={`text-[9px] ${roleColors[m.role] ?? ""}`}>{m.role}</Badge>
+            <div className="flex items-center gap-1 flex-wrap">
+              <Badge variant="outline" className={`text-[9px] ${roleColors[m.role] ?? ""}`}>{m.role}</Badge>
+              {staffRoles?.[m.user_id] && (
+                <Badge variant="secondary" className="text-[9px]">
+                  {staffRoles[m.user_id]}
+                </Badge>
+              )}
+            </div>
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

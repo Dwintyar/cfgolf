@@ -371,9 +371,16 @@ const ClubProfile = () => {
                     </Avatar>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-bold truncate">{profile?.full_name || "Golfer"}</p>
-                      <p className={`text-xs ${m.role === "owner" ? "text-primary" : "text-muted-foreground"}`}>
-                        {getRoleLabel(m.role)}
-                      </p>
+                      <div className="flex items-center gap-1 flex-wrap">
+                        <span className={`text-xs ${m.role === "owner" ? "text-primary" : "text-muted-foreground"}`}>
+                          {getRoleLabel(m.role)}
+                        </span>
+                        {staffRoles?.[m.user_id] && (
+                          <span className="text-xs text-muted-foreground">
+                            · {staffRoles[m.user_id]}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <button className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
                       <Mail className="h-4 w-4" />
