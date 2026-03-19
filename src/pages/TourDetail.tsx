@@ -420,6 +420,48 @@ const TourDetail = () => {
                       </p>
                     </div>
                     <Badge variant="outline" className="text-[9px] shrink-0">{player.status}</Badge>
+                    {isOrganizer && (
+                      <div className="flex gap-0.5 shrink-0">
+                        <button
+                          onClick={async () => {
+                            const clubId = player.club_id ?? (player.clubs as any)?.id;
+                            if (!clubId) return;
+                            await supabase.from("club_staff")
+                              .upsert({
+                                club_id: clubId,
+                                user_id: player.player_id,
+                                staff_role: "Captain",
+                                status: "active"
+                              }, { onConflict: "club_id,user_id" });
+                            toast.success(`${profile?.full_name} dijadikan Captain`);
+                            refetchPlayers();
+                          }}
+                          className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-primary transition-colors"
+                          title="Set as Captain"
+                        >
+                          <Star className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          onClick={async () => {
+                            if (!confirm(`Hapus ${profile?.full_name} dari tournament?`)) return;
+                            await supabase.from("tour_players").delete().eq("id", player.id);
+                            const eventIds = events?.map((e: any) => e.id) ?? [];
+                            if (eventIds.length) {
+                              await supabase.from("contestants")
+                                .delete()
+                                .eq("player_id", player.player_id)
+                                .in("event_id", eventIds);
+                            }
+                            toast.success("Player dihapus dari tournament");
+                            queryClient.invalidateQueries({ queryKey: ["tour-players-detail", id] });
+                          }}
+                          className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                          title="Remove player"
+                        >
+                          <UserMinus className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                   {myEvents.length > 0 && (
                     <div className="mt-2 ml-10 flex flex-wrap gap-1">
