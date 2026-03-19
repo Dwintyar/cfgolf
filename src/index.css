@@ -125,4 +125,10 @@
   .bottom-nav-safe {
     padding-bottom: 5rem;
   }
+
+  @media (min-width: 1024px) {
+    .bottom-nav-safe {
+      padding-bottom: 1rem;
+    }
+  }
 }
