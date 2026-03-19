@@ -144,6 +144,22 @@ const ClubAdminDashboard = () => {
     enabled: !!clubId,
   });
 
+  // Staff roles map
+  const { data: staffRoles } = useQuery({
+    queryKey: ["club-staff-roles", clubId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("club_staff")
+        .select("user_id, staff_role")
+        .eq("club_id", clubId!)
+        .eq("status", "active");
+      return Object.fromEntries(
+        (data ?? []).map(s => [s.user_id, s.staff_role])
+      );
+    },
+    enabled: !!clubId,
+  });
+
   // Staff
   const { data: staff } = useQuery({
     queryKey: ["club-admin-staff", clubId],
