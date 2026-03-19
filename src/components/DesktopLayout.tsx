@@ -69,7 +69,7 @@ const ActiveGolfersWidget = ({ navigate }: { navigate: (path: string) => void })
   );
 };
 
-const DesktopLayout = ({ children }: { children: React.ReactNode }) => {
+const DesktopLayout = ({ children, sidebarRightHidden = false }: { children: React.ReactNode; sidebarRightHidden?: boolean }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { unreadCount } = useContext(ChatNotifContext);
