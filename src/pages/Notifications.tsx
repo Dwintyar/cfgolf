@@ -11,7 +11,7 @@ import AppHeader from "@/components/AppHeader";
 
 interface NotificationItem {
   id: string;
-  type: "buddy_request" | "club_invite" | "upcoming_event" | "handicap_update" | "event_result" | "tournament_invite" | "join_request";
+  type: "buddy_request" | "club_invite" | "upcoming_event" | "handicap_update" | "event_result" | "tournament_invite" | "join_request" | "tournament_update";
   title: string;
   subtitle: string;
   time: string;
