@@ -11,7 +11,7 @@ import AppHeader from "@/components/AppHeader";
 
 interface NotificationItem {
   id: string;
-  type: "buddy_request" | "club_invite" | "upcoming_event" | "handicap_update" | "event_result" | "tournament_invite" | "join_request";
+  type: "buddy_request" | "club_invite" | "upcoming_event" | "handicap_update" | "event_result" | "tournament_invite" | "join_request" | "tournament_update";
   title: string;
   subtitle: string;
   time: string;
@@ -236,6 +236,27 @@ const Notifications = () => {
         }
       });
 
+      // 7. Tournament update notifications from notifications table
+      const { data: tourNotifs } = await supabase
+        .from("notifications")
+        .select("*")
+        .eq("user_id", userId!)
+        .eq("type", "tournament_update")
+        .eq("is_read", false)
+        .order("created_at", { ascending: false })
+        .limit(20);
+
+      tourNotifs?.forEach((n: any) => {
+        items.push({
+          id: `notif-${n.id}`,
+          type: "tournament_update",
+          title: n.title,
+          subtitle: n.message,
+          time: formatTime(n.created_at),
+          meta: { ...(n.metadata ?? {}), notifId: n.id },
+        });
+      });
+
       return items;
     },
     enabled: !!userId,
@@ -341,17 +362,23 @@ const Notifications = () => {
     event_result: Trophy,
     tournament_invite: Trophy,
     join_request: UserPlus,
+    tournament_update: Trophy,
   };
 
   const handleTap = (n: NotificationItem) => {
     if (n.type === "upcoming_event" || n.type === "event_result") {
       navigate(`/event/${n.meta?.eventId}`);
     }
-    if (n.type === "tournament_invite") {
-      navigate(`/tour/${n.meta?.tourId}`);
+    if (n.type === "tournament_invite" || n.type === "tournament_update") {
+      if (n.meta?.tour_id) navigate(`/tour/${n.meta.tour_id}`);
+      else if (n.meta?.tourId) navigate(`/tour/${n.meta.tourId}`);
     }
     if (n.type === "join_request") {
       navigate(`/clubs/${n.meta?.clubId}`);
+    }
+    // Mark tournament_update as read on tap
+    if (n.type === "tournament_update" && n.meta?.notifId) {
+      supabase.from("notifications").update({ is_read: true }).eq("id", n.meta.notifId).then(() => {});
     }
   };
 

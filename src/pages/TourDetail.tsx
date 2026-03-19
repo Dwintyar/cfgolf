@@ -37,6 +37,7 @@ const TourDetail = () => {
       if (user) setUserId(user.id);
     });
   }, []);
+
   const { data: tour, isLoading } = useQuery({
     queryKey: ["tour", id],
     queryFn: async () => {
@@ -140,12 +141,44 @@ const TourDetail = () => {
     enabled: !!userId && !!tour?.organizer_club_id,
   });
 
+  // Check if user is admin of a participant club in this tour
+  const { data: myClubInTour } = useQuery({
+    queryKey: ["my-club-in-tour", id, userId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("tour_clubs")
+        .select("club_id, ticket_quota, clubs(name)")
+        .eq("tour_id", id!);
+
+      const clubIds = (data ?? []).map(tc => tc.club_id);
+      if (!clubIds.length) return null;
+
+      const { data: myMembership } = await supabase
+        .from("members")
+        .select("club_id, role")
+        .eq("user_id", userId!)
+        .in("club_id", clubIds)
+        .in("role", ["owner", "admin"])
+        .maybeSingle();
+
+      if (!myMembership) return null;
+
+      const myTourClub = data?.find(tc => tc.club_id === myMembership.club_id);
+      return myTourClub ? { ...myTourClub, role: myMembership.role } : null;
+    },
+    enabled: !!id && !!userId,
+  });
+
+  const isClubAdmin = !!myClubInTour;
+  const myClubId = myClubInTour?.club_id;
+  const myClubQuota = myClubInTour?.ticket_quota ?? 0;
+  const myClubName = (myClubInTour?.clubs as any)?.name ?? "";
+
   // Determine caller's club in this tour
   const { data: callerClubId } = useQuery({
     queryKey: ["tour-caller-club", id, userId],
     queryFn: async () => {
       if (!userId) return null;
-      // Find which club(s) in this tour the user belongs to
       const { data: userMemberships } = await supabase
         .from("members")
         .select("club_id")
@@ -153,7 +186,6 @@ const TourDetail = () => {
         .in("role", ["owner", "admin"]);
       if (!userMemberships?.length) return null;
       const clubIds = userMemberships.map(m => m.club_id);
-      // Check which of those clubs participate in this tour
       const { data: tourClubMatch } = await supabase
         .from("tour_clubs")
         .select("club_id")
@@ -161,7 +193,6 @@ const TourDetail = () => {
         .in("club_id", clubIds)
         .limit(1);
       if (tourClubMatch?.length) return tourClubMatch[0].club_id;
-      // Fallback: check if user is organizer club member
       if (tour?.organizer_club_id && clubIds.includes(tour.organizer_club_id)) {
         return tour.organizer_club_id;
       }
@@ -207,6 +238,90 @@ const TourDetail = () => {
     }, {});
   }, [allContestants]);
 
+  // Check if user can manage a specific player (organizer or same club admin)
+  const canManagePlayer = (player: any) => {
+    if (isOrganizer) return true;
+    if (isClubAdmin && !isOrganizer) {
+      const playerClubId = player.club_id ?? (player.clubs as any)?.id;
+      return playerClubId === myClubId;
+    }
+    return false;
+  };
+
+  const setAsCaptain = async (player: any) => {
+    const profile = player.profiles as any;
+    const clubId = player.club_id ?? (player.clubs as any)?.id;
+    if (!clubId) return;
+    await supabase.from("club_staff").upsert({
+      club_id: clubId,
+      user_id: player.player_id,
+      staff_role: "Captain",
+      status: "active"
+    }, { onConflict: "club_id,user_id" });
+    toast.success(`${profile?.full_name} dijadikan Captain`);
+    refetchPlayers();
+  };
+
+  const removePlayer = async (player: any) => {
+    const profile = player.profiles as any;
+    const playerName = profile?.full_name ?? "Player";
+    const playerClubId = player.club_id ?? (player.clubs as any)?.id;
+    const clubName = (player.clubs as any)?.name ?? "Club";
+
+    if (!confirm(`Hapus ${playerName} dari tournament?`)) return;
+
+    await supabase.from("tour_players").delete().eq("id", player.id);
+    const eventIds = events?.map((e: any) => e.id) ?? [];
+    if (eventIds.length) {
+      for (const eventId of eventIds) {
+        await supabase.from("contestants")
+          .delete()
+          .eq("player_id", player.player_id)
+          .eq("event_id", eventId);
+      }
+    }
+
+    // Notify the other party
+    if (isOrganizer && playerClubId && playerClubId !== tour?.organizer_club_id) {
+      // Organizer removed a participant club's player → notify club admins
+      const { data: clubAdmins } = await supabase
+        .from("members")
+        .select("user_id")
+        .eq("club_id", playerClubId)
+        .in("role", ["owner", "admin"]);
+      for (const admin of clubAdmins ?? []) {
+        if (admin.user_id === userId) continue;
+        await supabase.from("notifications").insert({
+          user_id: admin.user_id,
+          type: "tournament_update",
+          title: "Player dihapus dari tournament",
+          message: `${playerName} telah dihapus dari ${tour?.name} oleh panitia.`,
+          metadata: { tour_id: id, club_id: playerClubId },
+        });
+      }
+    } else if (isClubAdmin && !isOrganizer && tour?.organizer_club_id) {
+      // Club admin removed own player → notify organizer
+      const { data: organizers } = await supabase
+        .from("members")
+        .select("user_id")
+        .eq("club_id", tour.organizer_club_id)
+        .in("role", ["owner", "admin"]);
+      for (const org of organizers ?? []) {
+        if (org.user_id === userId) continue;
+        await supabase.from("notifications").insert({
+          user_id: org.user_id,
+          type: "tournament_update",
+          title: "Player dihapus oleh club",
+          message: `${playerName} dari ${clubName} telah dihapus dari ${tour?.name}.`,
+          metadata: { tour_id: id },
+        });
+      }
+    }
+
+    toast.success(`${playerName} dihapus dari tournament`);
+    queryClient.invalidateQueries({ queryKey: ["tour-players-detail", id] });
+  };
+
   const statusColors: Record<string, string> = {
     draft: "border-muted-foreground/30 text-muted-foreground",
     registration: "border-accent/40 text-accent",
@@ -225,6 +340,13 @@ const TourDetail = () => {
   if (!tour) return (
     <div className="bottom-nav-safe p-4 text-center text-muted-foreground">Tour not found</div>
   );
+
+  // Visible clubs in Group by Club view
+  const visibleClubs = isOrganizer
+    ? Object.entries(playersByClub)
+    : isClubAdmin
+      ? Object.entries(playersByClub).filter(([clubId]) => clubId === myClubId)
+      : Object.entries(playersByClub);
 
   return (
     <div className="bottom-nav-safe">
@@ -269,8 +391,23 @@ const TourDetail = () => {
         </div>
       )}
 
-      {/* Participant Actions (non-organizer) */}
-      {!isOrganizer && userId && (
+      {/* Participant Club Admin Actions (non-organizer) */}
+      {!isOrganizer && isClubAdmin && (
+        <div className="flex gap-2 overflow-x-auto px-4 pb-3 scrollbar-none">
+          <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowRegister(true)}>
+            <UserPlus className="h-3 w-3" /> Register Player
+          </Button>
+          <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => {
+            setSelectedClubForAdd(myClubId ?? null);
+            setShowAddPlayerDialog(true);
+          }}>
+            <UserPlus className="h-3 w-3" /> Daftarkan Player
+          </Button>
+        </div>
+      )}
+
+      {/* Regular user Actions (non-organizer, non-club-admin) */}
+      {!isOrganizer && !isClubAdmin && userId && (
         <div className="flex gap-2 overflow-x-auto px-4 pb-3 scrollbar-none">
           <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowRegister(true)}>
             <UserPlus className="h-3 w-3" /> Register Player
@@ -322,71 +459,111 @@ const TourDetail = () => {
             Tournament HCP berkembang setiap event. Personal HCP tidak terpengaruh.
           </p>
 
-          {/* SECTION: Pending Approval */}
-          {(players?.filter(p => p.status === "pending").length ?? 0) > 0 && (
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-                ⏳ Pending Approval ({players?.filter(p => p.status === "pending").length})
-              </p>
-              {players?.filter(p => p.status === "pending").map(p => {
-                const personalHcp = (p.profiles as any)?.handicap;
-                const tourHcp = p.hcp_tour ?? p.hcp_at_registration;
-                return (
-                  <div key={p.id} className="golf-card flex items-center gap-3 p-3 mb-2 border-accent/30">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent/10 text-xs font-semibold text-accent">
-                      {(p.profiles as any)?.full_name?.charAt(0) ?? "?"}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium truncate">{(p.profiles as any)?.full_name ?? "Unknown"}</p>
-                      <p className="text-xs text-muted-foreground">{(p.clubs as any)?.name}</p>
-                      <p className="text-[10px] text-muted-foreground">
-                        Personal: {personalHcp ?? "—"} · Tournament: <span className="font-semibold text-foreground">{tourHcp ?? "—"}</span>
-                      </p>
-                    </div>
-                    {isOrganizer ? (
-                      <div className="flex gap-1 shrink-0">
-                        <Button
-                          size="sm"
-                          className="h-7 px-2 text-[10px] gap-1"
-                          onClick={async () => {
-                            const { error } = await supabase.from("tour_players").update({ status: "registered" }).eq("id", p.id);
-                            if (error) {
-                              toast.error("Gagal: " + error.message);
-                              console.error("Accept error:", error);
-                              return;
-                            }
-                            toast.success(`${(p.profiles as any)?.full_name} registered!`);
-                            refetchPlayers();
-                          }}
-                        >
-                          <Check className="h-3 w-3" /> Accept
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 px-2 text-[10px] gap-1 text-destructive border-destructive/30"
-                          onClick={async () => {
-                            const { error } = await supabase.from("tour_players").delete().eq("id", p.id);
-                            if (error) {
-                              toast.error("Gagal: " + error.message);
-                              console.error("Reject error:", error);
-                              return;
-                            }
-                            toast.success("Player removed");
-                            refetchPlayers();
-                          }}
-                        >
-                          <X className="h-3 w-3" /> Reject
-                        </Button>
-                      </div>
-                    ) : (
-                      <Badge variant="outline" className="text-[10px] text-accent border-accent/30">pending</Badge>
-                    )}
-                  </div>
-                );
-              })}
+          {/* Club Admin Info Banner */}
+          {isClubAdmin && !isOrganizer && myClubId && (
+            <div className="golf-card p-3 border-primary/20">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-semibold">{myClubName}</p>
+                  <p className="text-[10px] text-muted-foreground">
+                    Quota: {playersByClub[myClubId]?.players?.filter((p: any) => p.status !== "pending").length ?? 0}/{myClubQuota} slot terpakai
+                  </p>
+                </div>
+                {(playersByClub[myClubId]?.players?.filter((p: any) => p.status !== "pending").length ?? 0) < myClubQuota && (
+                  <Badge variant="outline" className="text-[10px] text-primary border-primary/30">
+                    {myClubQuota - (playersByClub[myClubId]?.players?.filter((p: any) => p.status !== "pending").length ?? 0)} slot kosong
+                  </Badge>
+                )}
+              </div>
+              <Button
+                size="sm"
+                className="w-full mt-2 h-8 gap-1 text-[11px]"
+                onClick={() => {
+                  setSelectedClubForAdd(myClubId);
+                  setShowAddPlayerDialog(true);
+                }}
+              >
+                <UserPlus className="h-3 w-3" /> Daftarkan Player dari Club Saya
+              </Button>
             </div>
           )}
+
+          {/* SECTION: Pending Approval */}
+          {(() => {
+            const pendingPlayers = players?.filter(p => {
+              if (p.status !== "pending") return false;
+              // Club admin only sees their own club's pending
+              if (isClubAdmin && !isOrganizer) {
+                return p.club_id === myClubId || (p.clubs as any)?.id === myClubId;
+              }
+              return true;
+            }) ?? [];
+
+            if (pendingPlayers.length === 0) return null;
+
+            return (
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                  ⏳ Pending Approval ({pendingPlayers.length})
+                </p>
+                {pendingPlayers.map(p => {
+                  const personalHcp = (p.profiles as any)?.handicap;
+                  const tourHcp = p.hcp_tour ?? p.hcp_at_registration;
+                  return (
+                    <div key={p.id} className="golf-card flex items-center gap-3 p-3 mb-2 border-accent/30">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent/10 text-xs font-semibold text-accent">
+                        {(p.profiles as any)?.full_name?.charAt(0) ?? "?"}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium truncate">{(p.profiles as any)?.full_name ?? "Unknown"}</p>
+                        <p className="text-xs text-muted-foreground">{(p.clubs as any)?.name}</p>
+                        <p className="text-[10px] text-muted-foreground">
+                          Personal: {personalHcp ?? "—"} · Tournament: <span className="font-semibold text-foreground">{tourHcp ?? "—"}</span>
+                        </p>
+                      </div>
+                      {isOrganizer ? (
+                        <div className="flex gap-1 shrink-0">
+                          <Button
+                            size="sm"
+                            className="h-7 px-2 text-[10px] gap-1"
+                            onClick={async () => {
+                              const { error } = await supabase.from("tour_players").update({ status: "registered" }).eq("id", p.id);
+                              if (error) {
+                                toast.error("Gagal: " + error.message);
+                                return;
+                              }
+                              toast.success(`${(p.profiles as any)?.full_name} registered!`);
+                              refetchPlayers();
+                            }}
+                          >
+                            <Check className="h-3 w-3" /> Accept
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 px-2 text-[10px] gap-1 text-destructive border-destructive/30"
+                            onClick={async () => {
+                              const { error } = await supabase.from("tour_players").delete().eq("id", p.id);
+                              if (error) {
+                                toast.error("Gagal: " + error.message);
+                                return;
+                              }
+                              toast.success("Player removed");
+                              refetchPlayers();
+                            }}
+                          >
+                            <X className="h-3 w-3" /> Reject
+                          </Button>
+                        </div>
+                      ) : (
+                        <Badge variant="outline" className="text-[10px] text-accent border-accent/30">pending</Badge>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
 
           {/* SECTION: Registered Players */}
           {(() => {
@@ -397,6 +574,7 @@ const TourDetail = () => {
               const profile = player.profiles as any;
               const myEvents = contestantMap[player.player_id] ?? [];
               const tourHcp = player.hcp_tour ?? player.hcp_at_registration;
+              const showActions = canManagePlayer(player);
 
               return (
                 <div key={player.id} className="p-3">
@@ -420,41 +598,17 @@ const TourDetail = () => {
                       </p>
                     </div>
                     <Badge variant="outline" className="text-[9px] shrink-0">{player.status}</Badge>
-                    {isOrganizer && (
+                    {showActions && (
                       <div className="flex gap-0.5 shrink-0">
                         <button
-                          onClick={async () => {
-                            const clubId = player.club_id ?? (player.clubs as any)?.id;
-                            if (!clubId) return;
-                            await supabase.from("club_staff")
-                              .upsert({
-                                club_id: clubId,
-                                user_id: player.player_id,
-                                staff_role: "Captain",
-                                status: "active"
-                              }, { onConflict: "club_id,user_id" });
-                            toast.success(`${profile?.full_name} dijadikan Captain`);
-                            refetchPlayers();
-                          }}
+                          onClick={() => setAsCaptain(player)}
                           className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-primary transition-colors"
                           title="Set as Captain"
                         >
                           <Star className="h-3.5 w-3.5" />
                         </button>
                         <button
-                          onClick={async () => {
-                            if (!confirm(`Hapus ${profile?.full_name} dari tournament?`)) return;
-                            await supabase.from("tour_players").delete().eq("id", player.id);
-                            const eventIds = events?.map((e: any) => e.id) ?? [];
-                            if (eventIds.length) {
-                              await supabase.from("contestants")
-                                .delete()
-                                .eq("player_id", player.player_id)
-                                .in("event_id", eventIds);
-                            }
-                            toast.success("Player dihapus dari tournament");
-                            queryClient.invalidateQueries({ queryKey: ["tour-players-detail", id] });
-                          }}
+                          onClick={() => removePlayer(player)}
                           className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
                           title="Remove player"
                         >
@@ -508,12 +662,14 @@ const TourDetail = () => {
 
                 {groupByClub ? (
                   <div className="space-y-4">
-                    {Object.entries(playersByClub)
+                    {visibleClubs
                       .sort(([, a]: any, [, b]: any) =>
                         (a.club?.name ?? "").localeCompare(b.club?.name ?? ""))
                       .map(([clubId, clubData]: [string, any]) => {
                         const quota = clubQuota[clubId] ?? 0;
-                        const playerCount = clubData.players.filter((p: any) => p.status !== "pending").length;
+                        const registeredInClub = clubData.players.filter((p: any) => p.status !== "pending");
+                        const playerCount = registeredInClub.length;
+                        const canAddToClub = isOrganizer || (isClubAdmin && clubId === myClubId);
 
                         return (
                           <div key={clubId} className="golf-card overflow-hidden">
@@ -549,7 +705,7 @@ const TourDetail = () => {
                                   {playerCount}/{quota}
                                 </div>
                               )}
-                              {isOrganizer && (
+                              {canAddToClub && (
                                 <Button
                                   size="sm"
                                   variant="outline"
@@ -565,23 +721,22 @@ const TourDetail = () => {
                             </div>
                             {/* Players */}
                             <div className="divide-y divide-border/30">
-                              {clubData.players
-                                .filter((p: any) => p.status !== "pending")
+                              {registeredInClub
                                 .sort((a: any, b: any) =>
                                   ((a.profiles as any)?.full_name ?? "").localeCompare((b.profiles as any)?.full_name ?? ""))
                                 .map(renderPlayerRow)}
                             </div>
                           </div>
                         );
-                    })}
-                </div>
+                      })}
+                  </div>
                 ) : (
-                <div className="space-y-0 golf-card overflow-hidden divide-y divide-border/30">
-                  {registered
-                    .sort((a: any, b: any) =>
-                      ((a.profiles as any)?.full_name ?? "").localeCompare((b.profiles as any)?.full_name ?? ""))
-                    .map(renderPlayerRow)}
-                </div>
+                  <div className="space-y-0 golf-card overflow-hidden divide-y divide-border/30">
+                    {registered
+                      .sort((a: any, b: any) =>
+                        ((a.profiles as any)?.full_name ?? "").localeCompare((b.profiles as any)?.full_name ?? ""))
+                      .map(renderPlayerRow)}
+                  </div>
                 )}
               </div>
             );
@@ -640,6 +795,10 @@ const TourDetail = () => {
             <AddPlayerFromClubList
               clubId={selectedClubForAdd}
               tourId={id!}
+              organizerClubId={tour.organizer_club_id}
+              tourName={tour.name}
+              callerClubName={isClubAdmin && !isOrganizer ? myClubName : undefined}
+              isClubAdminAdding={isClubAdmin && !isOrganizer}
               eventIds={events?.map((e: any) => e.id) ?? []}
               search={searchAddPlayer}
               existingPlayerIds={players?.map(p => p.player_id) ?? []}
@@ -657,10 +816,12 @@ const TourDetail = () => {
 };
 
 const AddPlayerFromClubList = ({
-  clubId, tourId, eventIds, search, existingPlayerIds, onAdded
+  clubId, tourId, organizerClubId, tourName, callerClubName, isClubAdminAdding,
+  eventIds, search, existingPlayerIds, onAdded
 }: {
-  clubId: string; tourId: string; eventIds: string[];
-  search: string; existingPlayerIds: string[]; onAdded: () => void;
+  clubId: string; tourId: string; organizerClubId: string; tourName: string;
+  callerClubName?: string; isClubAdminAdding?: boolean;
+  eventIds: string[]; search: string; existingPlayerIds: string[]; onAdded: () => void;
 }) => {
   const { data: clubMembers } = useQuery({
     queryKey: ["club-members-add", clubId, existingPlayerIds],
@@ -680,6 +841,55 @@ const AddPlayerFromClubList = ({
   const filtered = clubMembers?.filter((m: any) =>
     !search || (m.profiles as any)?.full_name?.toLowerCase().includes(search.toLowerCase())
   ) ?? [];
+
+  const addPlayer = async (m: any) => {
+    const profile = m.profiles as any;
+    const hcp = profile?.handicap ?? 20;
+    const playerName = profile?.full_name ?? "Player";
+
+    await supabase.from("tour_players").insert({
+      tour_id: tourId,
+      player_id: m.user_id,
+      club_id: clubId,
+      hcp_at_registration: hcp,
+      hcp_tour: hcp,
+      status: "active",
+    });
+
+    for (const eventId of eventIds) {
+      await supabase.from("contestants").upsert({
+        event_id: eventId,
+        player_id: m.user_id,
+        hcp: hcp,
+        status: "competitor",
+      }, { onConflict: "event_id,player_id" });
+    }
+
+    // Notify organizer when club admin adds a player
+    if (isClubAdminAdding && organizerClubId) {
+      const { data: organizers } = await supabase
+        .from("members")
+        .select("user_id")
+        .eq("club_id", organizerClubId)
+        .in("role", ["owner", "admin"]);
+
+      const { data: { user } } = await supabase.auth.getUser();
+
+      for (const org of organizers ?? []) {
+        if (org.user_id === user?.id) continue;
+        await supabase.from("notifications").insert({
+          user_id: org.user_id,
+          type: "tournament_update",
+          title: "Player baru didaftarkan",
+          message: `${playerName} dari ${callerClubName ?? "club peserta"} telah didaftarkan ke ${tourName}.`,
+          metadata: { tour_id: tourId },
+        });
+      }
+    }
+
+    toast.success(`${playerName} ditambahkan!`);
+    onAdded();
+  };
 
   return (
     <div className="max-h-64 overflow-y-auto space-y-1">
@@ -705,27 +915,7 @@ const AddPlayerFromClubList = ({
               size="sm"
               variant="outline"
               className="h-7 text-[10px] shrink-0"
-              onClick={async () => {
-                const hcp = profile?.handicap ?? 20;
-                await supabase.from("tour_players").insert({
-                  tour_id: tourId,
-                  player_id: m.user_id,
-                  club_id: clubId,
-                  hcp_at_registration: hcp,
-                  hcp_tour: hcp,
-                  status: "active",
-                });
-                for (const eventId of eventIds) {
-                  await supabase.from("contestants").upsert({
-                    event_id: eventId,
-                    player_id: m.user_id,
-                    hcp: hcp,
-                    status: "competitor",
-                  }, { onConflict: "event_id,player_id" });
-                }
-                toast.success(`${profile?.full_name} ditambahkan!`);
-                onAdded();
-              }}
+              onClick={() => addPlayer(m)}
             >
               + Tambah
             </Button>
