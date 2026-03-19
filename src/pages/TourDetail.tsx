@@ -578,11 +578,12 @@ const TourDetail = () => {
                     })}
                 </div>
                 ) : (
-                  <div className="space-y-0 golf-card overflow-hidden divide-y divide-border/30">
-                    {registered
-                      .sort((a: any, b: any) => (a.hcp_at_registration ?? 99) - (b.hcp_at_registration ?? 99))
-                      .map(renderPlayerRow)}
-                  </div>
+                <div className="space-y-0 golf-card overflow-hidden divide-y divide-border/30">
+                  {registered
+                    .sort((a: any, b: any) =>
+                      ((a.profiles as any)?.full_name ?? "").localeCompare((b.profiles as any)?.full_name ?? ""))
+                    .map(renderPlayerRow)}
+                </div>
                 )}
               </div>
             );
