@@ -236,6 +236,27 @@ const Notifications = () => {
         }
       });
 
+      // 7. Tournament update notifications from notifications table
+      const { data: tourNotifs } = await supabase
+        .from("notifications")
+        .select("*")
+        .eq("user_id", userId!)
+        .eq("type", "tournament_update")
+        .eq("is_read", false)
+        .order("created_at", { ascending: false })
+        .limit(20);
+
+      tourNotifs?.forEach((n: any) => {
+        items.push({
+          id: `notif-${n.id}`,
+          type: "tournament_update",
+          title: n.title,
+          subtitle: n.message,
+          time: formatTime(n.created_at),
+          meta: { ...(n.metadata ?? {}), notifId: n.id },
+        });
+      });
+
       return items;
     },
     enabled: !!userId,
