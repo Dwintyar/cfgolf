@@ -158,11 +158,11 @@ const DesktopLayout = ({ children }: { children: React.ReactNode }) => {
       <main
         style={{
           marginLeft: 256,
-          marginRight: isWide ? 288 : 0,
+          marginRight: isWide ? 260 : 0,
           minHeight: "100vh",
         }}
       >
-        <div style={{ maxWidth: 680, margin: "0 auto" }} className="px-4 py-4">
+        <div className="px-6 py-4">
           {children}
         </div>
       </main>
@@ -170,7 +170,7 @@ const DesktopLayout = ({ children }: { children: React.ReactNode }) => {
       {/* SIDEBAR KANAN — wide screens only */}
       {isWide && (
         <aside
-          style={{ width: 288 }}
+          style={{ width: 260 }}
           className="fixed right-0 top-0 h-screen border-l border-border/50 bg-card/50 z-40 p-4 overflow-y-auto"
         >
           {/* Search bar */}
