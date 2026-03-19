@@ -393,7 +393,7 @@ const TourDetail = () => {
             <Calendar className="h-3 w-3" /> New Event
           </Button>
           <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowInvitationDialog(true)}>
-            <FileText className="h-3 w-3" /> Generate Undangan
+            <FileText className="h-3 w-3" /> Buat Undangan
           </Button>
         </div>
       )}
