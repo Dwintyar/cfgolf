@@ -111,7 +111,7 @@ const Login = () => {
 
       <div className="relative z-10 w-full max-w-sm px-6 pb-12">
         <div className="mb-8 text-center">
-          <img src={logo} alt="CFGolf" className="mx-auto h-14 w-14 rounded-xl shadow-lg mb-4" />
+          <img src={logo} alt="CFGolf" className="mx-auto h-20 w-20 rounded-2xl shadow-lg mb-4 object-contain" />
           <h1 className="font-display text-3xl font-bold tracking-tight">
             CF<span className="text-primary">Golf</span>
           </h1>
