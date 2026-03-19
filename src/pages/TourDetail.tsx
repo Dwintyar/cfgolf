@@ -31,6 +31,9 @@ const TourDetail = () => {
   const [selectedClubForAdd, setSelectedClubForAdd] = useState<string | null>(null);
   const [showAddPlayerDialog, setShowAddPlayerDialog] = useState(false);
   const [searchAddPlayer, setSearchAddPlayer] = useState("");
+  const [showInvitationDialog, setShowInvitationDialog] = useState(false);
+  const [selectedEventForInvitation, setSelectedEventForInvitation] = useState<string | null>(null);
+  const [generatingPDF, setGeneratingPDF] = useState(false);
   const queryClient = useQueryClient();
 
   useEffect(() => {
