@@ -446,399 +446,371 @@ const EventDetail = () => {
 
   const usedTickets = tickets?.filter(t => t.status !== "available").length ?? 0;
 
-  return (
-    <div className="bottom-nav-safe">
-      {/* Header */}
-      <div className="p-4">
-        <button onClick={() => navigate(`/tour/${(event.tours as any)?.id}`)} className="mb-2 text-xs text-muted-foreground hover:text-foreground transition-colors">
-          ← {(event.tours as any)?.name}
-        </button>
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="font-display text-xl font-bold">{event.name}</h1>
-            <div className="mt-1 flex flex-wrap gap-x-3 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> {event.event_date}</span>
-              <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {(event.courses as any)?.name}</span>
-            </div>
+  // Shared content blocks
+  const headerBlock = (
+    <div className={isDesktop ? "" : "p-4"}>
+      <button onClick={() => navigate(`/tour/${(event.tours as any)?.id}`)} className="mb-2 text-xs text-muted-foreground hover:text-foreground transition-colors">
+        ← {(event.tours as any)?.name}
+      </button>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className={`font-display font-bold ${isDesktop ? "text-2xl" : "text-xl"}`}>{event.name}</h1>
+          <div className={`mt-1 flex flex-wrap gap-x-3 text-muted-foreground ${isDesktop ? "text-sm gap-x-4" : "text-xs"}`}>
+            <span className="flex items-center gap-1"><Calendar className={isDesktop ? "h-4 w-4" : "h-3 w-3"} /> {event.event_date}</span>
+            <span className="flex items-center gap-1"><MapPin className={isDesktop ? "h-4 w-4" : "h-3 w-3"} /> {(event.courses as any)?.name}</span>
           </div>
-          <Badge variant="outline" className={`text-[10px] ${statusColors[event.status] ?? ""}`}>{event.status}</Badge>
         </div>
+        <Badge variant="outline" className={`${isDesktop ? "text-xs" : "text-[10px]"} ${statusColors[event.status] ?? ""}`}>{event.status}</Badge>
       </div>
+    </div>
+  );
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-4 gap-2 px-4 pb-3">
-        <div className="golf-card p-2.5 text-center">
-          <Users className="mx-auto h-3.5 w-3.5 text-primary" />
-          <p className="text-base font-bold">{contestants?.length ?? 0}</p>
-          <p className="text-[9px] text-muted-foreground">Players</p>
-        </div>
-        <div className="golf-card p-2.5 text-center">
-          <ClipboardCheck className="mx-auto h-3.5 w-3.5 text-accent" />
-          <p className="text-base font-bold">{checkins?.length ?? 0}</p>
-          <p className="text-[9px] text-muted-foreground">Check-ins</p>
-        </div>
-        <div className="golf-card p-2.5 text-center">
-          <Shuffle className="mx-auto h-3.5 w-3.5 text-primary" />
-          <p className="text-base font-bold">{pairings?.length ?? 0}</p>
-          <p className="text-[9px] text-muted-foreground">Groups</p>
-        </div>
-        <div className="golf-card p-2.5 text-center">
-          <Trophy className="mx-auto h-3.5 w-3.5 text-accent" />
-          <p className="text-base font-bold">{(event.courses as any)?.par ?? "—"}</p>
-          <p className="text-[9px] text-muted-foreground">Par</p>
-        </div>
-      </div>
-
-      {/* Action Buttons */}
-      <div className="flex gap-2 overflow-x-auto px-4 pb-3 scrollbar-none">
-        {/* Self check-in button */}
-        {myContestant && !isCheckedIn && (
-          <Button size="sm" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowCheckinDialog(true)}>
-            <ClipboardCheck className="h-3 w-3" /> Check In
-          </Button>
-        )}
-        {/* Scorecard button */}
-        {myContestant && isCheckedIn && (
-          <Button
-            size="sm"
-            variant={event?.status === "completed" ? "outline" : "default"}
-            className={`h-7 shrink-0 gap-1 text-[11px] ${
-              event?.status === "completed"
-                ? "opacity-50 cursor-not-allowed border-muted-foreground/30 text-muted-foreground"
-                : ""
-            }`}
-            onClick={() => navigate(`/event/${id}/scorecard`)}
-            disabled={event?.status === "completed"}
-          >
-            <Pencil className="h-3 w-3" />
-            {event?.status === "completed" ? "Score Locked" : "Input Score"}
-          </Button>
-        )}
-        {/* Admin-only buttons */}
-        {showAdminActions && (
-          <>
-            <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowAssign(true)}>
-              <Users className="h-3 w-3" /> Assign
-            </Button>
-            {event?.status !== "completed" ? (
-              <Button
-                size="sm"
-                className="h-7 shrink-0 gap-1 text-[11px] bg-primary"
-                onClick={() => setShowFinalizeConfirm(true)}
-                disabled={finalizing}
-              >
-                <Trophy className="h-3 w-3" />
-                {finalizing ? "Finalizing…" : "Finalize Event"}
-              </Button>
-            ) : (
-              <Badge className="text-[10px] bg-primary/20 text-primary border-primary/30">
-                ✓ Completed
-              </Badge>
-            )}
-          </>
-        )}
-        <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowWinners(true)}>
-          <Trophy className="h-3 w-3" /> Results
+  const actionButtonsBlock = (
+    <div className="flex gap-2 overflow-x-auto px-4 pb-3 scrollbar-none">
+      {myContestant && !isCheckedIn && (
+        <Button size="sm" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowCheckinDialog(true)}>
+          <ClipboardCheck className="h-3 w-3" /> Check In
         </Button>
-        {event?.status === "completed" && (
-          <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={handleExportPDF} disabled={exporting}>
-            <Download className="h-3 w-3" /> {exporting ? "..." : "Export"}
+      )}
+      {myContestant && isCheckedIn && (
+        <Button
+          size="sm"
+          variant={event?.status === "completed" ? "outline" : "default"}
+          className={`h-7 shrink-0 gap-1 text-[11px] ${
+            event?.status === "completed"
+              ? "opacity-50 cursor-not-allowed border-muted-foreground/30 text-muted-foreground"
+              : ""
+          }`}
+          onClick={() => navigate(`/event/${id}/scorecard`)}
+          disabled={event?.status === "completed"}
+        >
+          <Pencil className="h-3 w-3" />
+          {event?.status === "completed" ? "Score Locked" : "Input Score"}
+        </Button>
+      )}
+      {showAdminActions && (
+        <>
+          <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowAssign(true)}>
+            <Users className="h-3 w-3" /> Assign
           </Button>
-        )}
-      </div>
-
-      {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="px-4">
-        <TabsList className="w-full overflow-x-auto flex">
-          <TabsTrigger value="overview" className="flex-1 text-[11px]">Overview</TabsTrigger>
-          <TabsTrigger value="checkin" className="flex-1 text-[11px]">Check-in</TabsTrigger>
-          <TabsTrigger value="pairings" className="flex-1 text-[11px]">Pairings</TabsTrigger>
-          <TabsTrigger value="leaderboard" className="flex-1 text-[11px]">Board</TabsTrigger>
-        </TabsList>
-
-        {/* OVERVIEW */}
-        <TabsContent value="overview" className="space-y-4 pt-2">
-          {/* Pairing Approval Setting */}
-          {showAdminActions && event?.status !== "completed" && (
-            <div className="golf-card p-3 flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium">Pairing Approval</p>
-                <p className="text-[9px] text-muted-foreground">
-                  Review sebelum dipublikasikan ke pemain
-                </p>
-              </div>
-              <Switch
-                checked={event?.pairing_approval_required ?? false}
-                onCheckedChange={async (val) => {
-                  await supabase
-                    .from("events")
-                    .update({ pairing_approval_required: val })
-                    .eq("id", id!);
-                  queryClient.invalidateQueries({ queryKey: ["event", id] });
-                  toast.success(val
-                    ? "Pairing approval aktif"
-                    : "Pairing langsung dipublikasikan");
-                }}
-              />
-            </div>
-          )}
-
-          <Section title="Contestants" icon={Users} count={contestants?.length}>
-            {contestants?.length === 0 && <EmptyState text="No contestants" />}
-            {contestants?.slice(0, 10).map((c) => (
-              <div key={c.id} className="golf-card flex items-center gap-3 p-3">
-                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
-                  {(c.profiles as any)?.full_name?.charAt(0) ?? "?"}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium truncate">{(c.profiles as any)?.full_name ?? "Unknown"}</p>
-                  <p className="text-xs text-muted-foreground">HCP {c.hcp ?? "—"} · {(c.tournament_flights as any)?.flight_name ?? "—"}</p>
-                </div>
-                <Badge variant="outline" className="text-[10px]">{c.status}</Badge>
-              </div>
-            ))}
-            {(contestants?.length ?? 0) > 10 && <p className="text-xs text-muted-foreground text-center py-1">+{(contestants!.length) - 10} more</p>}
-          </Section>
-
-          <Section title="Tickets" icon={Ticket} count={tickets?.length} sub={`${usedTickets} assigned`}>
-            {tickets?.length === 0 && <EmptyState text="No tickets" />}
-            {tickets?.slice(0, 6).map((t) => (
-              <div key={t.id} className="golf-card flex items-center justify-between p-3">
-                <div>
-                  <p className="text-sm font-medium">#{t.ticket_number} · {(t.clubs as any)?.name}</p>
-                  <p className="text-xs text-muted-foreground">{t.assigned_player_id ? (t.profiles as any)?.full_name : "Unassigned"}</p>
-                </div>
-                <Badge variant="outline" className="text-[10px]">{t.status}</Badge>
-              </div>
-            ))}
-          </Section>
-
-          <Section title="Results" icon={Award} count={results?.length}>
-            {results?.length === 0 && <EmptyState text="No results yet" />}
-            {results?.map((r) => (
-              <div key={r.id} className="golf-card flex items-center gap-3 p-3">
-                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-accent/10 text-xs font-bold text-accent">#{r.rank_position}</div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium truncate">{(r.contestants as any)?.profiles?.full_name ?? "Unknown"}</p>
-                  <p className="text-xs text-muted-foreground">{(r.tournament_winner_categories as any)?.category_name} · {r.score_value}</p>
-                </div>
-              </div>
-            ))}
-          </Section>
-        </TabsContent>
-
-        {/* CHECK-IN */}
-        <TabsContent value="checkin" className="space-y-4 pt-2">
-          <Section title="Check-ins" icon={ClipboardCheck} count={checkins?.length}>
-            {checkins?.length === 0 && <EmptyState text="No check-ins yet" />}
-            {checkins?.map((ci) => (
-              <div key={ci.id} className="golf-card p-3 space-y-1">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium">{(ci.contestants as any)?.profiles?.full_name ?? "Unknown"}</p>
-                  <span className="text-[10px] text-muted-foreground">{new Date(ci.checked_in_at).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}</span>
-                </div>
-                <div className="flex gap-3 text-xs text-muted-foreground">
-                  {ci.bag_drop_number != null && (
-                    <span className="flex items-center gap-1"><Package className="h-3 w-3" /> Bag #{ci.bag_drop_number}</span>
-                  )}
-                  {ci.locker_number != null && (
-                    <span className="flex items-center gap-1"><Lock className="h-3 w-3" /> Locker #{ci.locker_number}</span>
-                  )}
-                </div>
-              </div>
-            ))}
-          </Section>
-
-          <Section title="Golf Cart" icon={Car} count={cartAssignments?.length}>
-            {showAdminActions && (
-              <Button size="sm" variant="outline" className="w-full h-7 gap-1 text-[11px] mb-2" onClick={() => setShowCartDialog(true)}>
-                <Plus className="h-3 w-3" /> Assign Cart
-              </Button>
-            )}
-            {cartAssignments?.length === 0 && <EmptyState text="No carts assigned" />}
-            {cartAssignments?.map((ca) => (
-              <div key={ca.id} className="golf-card flex items-center justify-between p-3">
-                <div className="flex items-center gap-2">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-xs font-bold text-primary">{ca.cart_number}</div>
-                  <p className="text-sm">{(ca.contestants as any)?.profiles?.full_name ?? "Unknown"}</p>
-                </div>
-              </div>
-            ))}
-          </Section>
-
-          <Section title="Caddy" icon={UserCheck} count={caddyAssignments?.length}>
-            {showAdminActions && (
-              <Button size="sm" variant="outline" className="w-full h-7 gap-1 text-[11px] mb-2" onClick={() => setShowCaddyDialog(true)}>
-                <Plus className="h-3 w-3" /> Assign Caddy
-              </Button>
-            )}
-            {caddyAssignments?.length === 0 && <EmptyState text="No caddies assigned" />}
-            {caddyAssignments?.map((ca) => (
-              <div key={ca.id} className="golf-card flex items-center justify-between p-3">
-                <div>
-                  <p className="text-sm font-medium">{(ca.contestants as any)?.profiles?.full_name ?? "Player"}</p>
-                  <p className="text-xs text-muted-foreground">Caddy: {(ca.profiles as any)?.full_name ?? "Unknown"}</p>
-                </div>
-              </div>
-            ))}
-          </Section>
-        </TabsContent>
-
-        {/* PAIRINGS */}
-        <TabsContent value="pairings" className="space-y-3 pt-2">
-          {showAdminActions && (
-            <div className="golf-card space-y-3 p-4">
-              <h3 className="text-sm font-semibold flex items-center gap-2">
-                <Shuffle className="h-4 w-4 text-primary" /> Generate Pairings
-              </h3>
-              <div className="grid grid-cols-3 gap-2">
-                <div>
-                  <Label className="text-[10px]">Start Type</Label>
-                  <Select value={startType} onValueChange={setStartType}>
-                    <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="tee_time">Tee Time</SelectItem>
-                      <SelectItem value="shotgun">Shotgun</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label className="text-[10px]">First Tee</Label>
-                  <Input type="time" value={firstTee} onChange={e => setFirstTee(e.target.value)} className="h-8 text-xs" />
-                </div>
-                <div>
-                  <Label className="text-[10px]">Interval</Label>
-                  <Input type="number" value={interval} onChange={e => setInterval(e.target.value)} className="h-8 text-xs" disabled={startType === "shotgun"} />
-                </div>
-              </div>
-              <Button size="sm" className="w-full gap-1" onClick={handleGeneratePairings} disabled={generating}>
-                <Shuffle className="h-3.5 w-3.5" />
-                {generating ? "Generating…" : (event?.pairing_approval_required ? "Generate (Draft)" : "Generate & Publish")}
-              </Button>
-            </div>
-          )}
-
-          {/* Draft notice for organizer */}
-          {event?.pairing_approval_required && pairings && pairings.length > 0 && showAdminActions && (
-            <div className="golf-card border-accent/30 p-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-semibold text-accent">
-                    Pairing dalam status Draft
-                  </p>
-                  <p className="text-[10px] text-muted-foreground">
-                    Pemain belum bisa melihat group mereka
-                  </p>
-                </div>
-                <Button size="sm" className="h-7 text-xs"
-                  onClick={async () => {
-                    await supabase
-                      .from("events")
-                      .update({ pairing_approval_required: false })
-                      .eq("id", id!);
-                    toast.success("Pairings dipublikasikan!");
-                    queryClient.invalidateQueries({ queryKey: ["event", id] });
-                  }}>
-                  Publish
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* Non-organizer: show message if approval required */}
-          {!showAdminActions && event?.pairing_approval_required && (
-            <div className="golf-card p-6 text-center">
-              <Clock className="mx-auto h-8 w-8 text-muted-foreground/40" />
-              <p className="mt-2 text-sm text-muted-foreground">
-                Pairing sedang dalam review
-              </p>
-              <p className="text-xs text-muted-foreground/60 mt-1">
-                Tournament director akan segera mempublikasikan grup Anda
-              </p>
-            </div>
-          )}
-
-          {(!event?.pairing_approval_required || showAdminActions) && (
-            <>
-              {(!pairings || pairings.length === 0) && <EmptyState text="No pairings generated yet" />}
-              {pairings?.map((p) => (
-                <div key={p.id} className="golf-card p-3 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold">Group {p.group_number}</span>
-                    <div className="flex items-center gap-2">
-                      {p.start_type === "shotgun" && p.start_hole && (
-                        <Badge variant="outline" className="text-[10px] border-accent/30 text-accent">Hole {p.start_hole}</Badge>
-                      )}
-                      <span className="text-xs text-muted-foreground">{formatTeeTime(p.tee_time)}</span>
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    {((p.pairing_players as any[]) ?? [])
-                      .sort((a: any, b: any) => (a.position ?? 0) - (b.position ?? 0))
-                      .map((pp: any) => (
-                        <div key={pp.id} className="flex items-center gap-2 text-xs">
-                          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">{pp.position}</span>
-                          <span className="truncate">{pp.contestants?.profiles?.full_name ?? "Unknown"}</span>
-                          <span className="ml-auto text-muted-foreground">HCP {pp.contestants?.hcp ?? "—"}</span>
-                        </div>
-                      ))}
-                  </div>
-                </div>
-              ))}
-            </>
-          )}
-        </TabsContent>
-
-        {/* LEADERBOARD */}
-        <TabsContent value="leaderboard" className="space-y-2 pt-2">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-xs text-muted-foreground">{leaderboard?.length ?? 0} players</p>
-            <Button size="sm" variant="ghost" className="h-7 gap-1 text-[10px]" onClick={() => refetchLeaderboard()}>
-              <RefreshCw className="h-3 w-3" /> Refresh
+          {event?.status !== "completed" ? (
+            <Button
+              size="sm"
+              className="h-7 shrink-0 gap-1 text-[11px] bg-primary"
+              onClick={() => setShowFinalizeConfirm(true)}
+              disabled={finalizing}
+            >
+              <Trophy className="h-3 w-3" />
+              {finalizing ? "Finalizing…" : "Finalize Event"}
             </Button>
-          </div>
-
-          {(!leaderboard || leaderboard.length === 0) && (
-            <div className="golf-card p-6 text-center">
-              <Trophy className="mx-auto h-8 w-8 text-muted-foreground/40" />
-              <p className="mt-2 text-sm text-muted-foreground">No scores yet</p>
-              {myContestant && isCheckedIn && (
-                <Button size="sm" className="mt-3 gap-1" onClick={() => navigate(`/event/${id}/scorecard`)}>
-                  <Pencil className="h-3.5 w-3.5" /> Be the first to enter scores
-                </Button>
-              )}
-            </div>
+          ) : (
+            <Badge className="text-[10px] bg-primary/20 text-primary border-primary/30">
+              ✓ Completed
+            </Badge>
           )}
+        </>
+      )}
+      <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowWinners(true)}>
+        <Trophy className="h-3 w-3" /> Results
+      </Button>
+      {event?.status === "completed" && (
+        <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={handleExportPDF} disabled={exporting}>
+          <Download className="h-3 w-3" /> {exporting ? "..." : "Export"}
+        </Button>
+      )}
+    </div>
+  );
 
-          {leaderboard?.map((row, i) => (
-            <div key={row.contestant_id} className="golf-card flex items-center gap-3 p-3">
-              <div className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
-                i < 3 ? "bg-accent/20 text-accent" : "bg-muted text-muted-foreground"
-              }`}>
-                {row.rank_net ?? i + 1}
+  const tabsBlock = (
+    <Tabs value={activeTab} onValueChange={setActiveTab} className={isDesktop ? "" : "px-4"}>
+      <TabsList className="w-full overflow-x-auto flex">
+        <TabsTrigger value="overview" className="flex-1 text-[11px]">Overview</TabsTrigger>
+        <TabsTrigger value="checkin" className="flex-1 text-[11px]">Check-in</TabsTrigger>
+        <TabsTrigger value="pairings" className="flex-1 text-[11px]">Pairings</TabsTrigger>
+        <TabsTrigger value="leaderboard" className="flex-1 text-[11px]">Board</TabsTrigger>
+      </TabsList>
+
+      {/* OVERVIEW */}
+      <TabsContent value="overview" className="space-y-4 pt-2">
+        {showAdminActions && event?.status !== "completed" && (
+          <div className="golf-card p-3 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium">Pairing Approval</p>
+              <p className="text-[9px] text-muted-foreground">
+                Review sebelum dipublikasikan ke pemain
+              </p>
+            </div>
+            <Switch
+              checked={event?.pairing_approval_required ?? false}
+              onCheckedChange={async (val) => {
+                await supabase
+                  .from("events")
+                  .update({ pairing_approval_required: val })
+                  .eq("id", id!);
+                queryClient.invalidateQueries({ queryKey: ["event", id] });
+                toast.success(val
+                  ? "Pairing approval aktif"
+                  : "Pairing langsung dipublikasikan");
+              }}
+            />
+          </div>
+        )}
+
+        <Section title="Contestants" icon={Users} count={contestants?.length}>
+          {contestants?.length === 0 && <EmptyState text="No contestants" />}
+          {contestants?.slice(0, 10).map((c) => (
+            <div key={c.id} className="golf-card flex items-center gap-3 p-3">
+              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                {(c.profiles as any)?.full_name?.charAt(0) ?? "?"}
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium truncate">{(row as any).profiles?.full_name ?? "Player"}</p>
-                <p className="text-xs text-muted-foreground">HCP {row.hcp ?? "—"}</p>
+                <p className="text-sm font-medium truncate">{(c.profiles as any)?.full_name ?? "Unknown"}</p>
+                <p className="text-xs text-muted-foreground">HCP {c.hcp ?? "—"} · {(c.tournament_flights as any)?.flight_name ?? "—"}</p>
               </div>
-              <div className="text-right shrink-0">
-                <p className="text-sm font-bold">{row.total_net ?? "—"}</p>
-                <p className="text-[10px] text-muted-foreground">Gross {row.total_gross ?? "—"}</p>
+              <Badge variant="outline" className="text-[10px]">{c.status}</Badge>
+            </div>
+          ))}
+          {(contestants?.length ?? 0) > 10 && <p className="text-xs text-muted-foreground text-center py-1">+{(contestants!.length) - 10} more</p>}
+        </Section>
+
+        <Section title="Tickets" icon={Ticket} count={tickets?.length} sub={`${usedTickets} assigned`}>
+          {tickets?.length === 0 && <EmptyState text="No tickets" />}
+          {tickets?.slice(0, 6).map((t) => (
+            <div key={t.id} className="golf-card flex items-center justify-between p-3">
+              <div>
+                <p className="text-sm font-medium">#{t.ticket_number} · {(t.clubs as any)?.name}</p>
+                <p className="text-xs text-muted-foreground">{t.assigned_player_id ? (t.profiles as any)?.full_name : "Unassigned"}</p>
+              </div>
+              <Badge variant="outline" className="text-[10px]">{t.status}</Badge>
+            </div>
+          ))}
+        </Section>
+
+        <Section title="Results" icon={Award} count={results?.length}>
+          {results?.length === 0 && <EmptyState text="No results yet" />}
+          {results?.map((r) => (
+            <div key={r.id} className="golf-card flex items-center gap-3 p-3">
+              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-accent/10 text-xs font-bold text-accent">#{r.rank_position}</div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium truncate">{(r.contestants as any)?.profiles?.full_name ?? "Unknown"}</p>
+                <p className="text-xs text-muted-foreground">{(r.tournament_winner_categories as any)?.category_name} · {r.score_value}</p>
               </div>
             </div>
           ))}
+        </Section>
+      </TabsContent>
 
-          <Button variant="outline" size="sm" className="w-full mt-2 gap-1 text-xs" onClick={() => navigate(`/event/${id}/leaderboard`)}>
-            <Trophy className="h-3.5 w-3.5" /> Full Leaderboard
+      {/* CHECK-IN */}
+      <TabsContent value="checkin" className="space-y-4 pt-2">
+        <Section title="Check-ins" icon={ClipboardCheck} count={checkins?.length}>
+          {checkins?.length === 0 && <EmptyState text="No check-ins yet" />}
+          {checkins?.map((ci) => (
+            <div key={ci.id} className="golf-card p-3 space-y-1">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium">{(ci.contestants as any)?.profiles?.full_name ?? "Unknown"}</p>
+                <span className="text-[10px] text-muted-foreground">{new Date(ci.checked_in_at).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}</span>
+              </div>
+              <div className="flex gap-3 text-xs text-muted-foreground">
+                {ci.bag_drop_number != null && (
+                  <span className="flex items-center gap-1"><Package className="h-3 w-3" /> Bag #{ci.bag_drop_number}</span>
+                )}
+                {ci.locker_number != null && (
+                  <span className="flex items-center gap-1"><Lock className="h-3 w-3" /> Locker #{ci.locker_number}</span>
+                )}
+              </div>
+            </div>
+          ))}
+        </Section>
+
+        <Section title="Golf Cart" icon={Car} count={cartAssignments?.length}>
+          {showAdminActions && (
+            <Button size="sm" variant="outline" className="w-full h-7 gap-1 text-[11px] mb-2" onClick={() => setShowCartDialog(true)}>
+              <Plus className="h-3 w-3" /> Assign Cart
+            </Button>
+          )}
+          {cartAssignments?.length === 0 && <EmptyState text="No carts assigned" />}
+          {cartAssignments?.map((ca) => (
+            <div key={ca.id} className="golf-card flex items-center justify-between p-3">
+              <div className="flex items-center gap-2">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-xs font-bold text-primary">{ca.cart_number}</div>
+                <p className="text-sm">{(ca.contestants as any)?.profiles?.full_name ?? "Unknown"}</p>
+              </div>
+            </div>
+          ))}
+        </Section>
+
+        <Section title="Caddy" icon={UserCheck} count={caddyAssignments?.length}>
+          {showAdminActions && (
+            <Button size="sm" variant="outline" className="w-full h-7 gap-1 text-[11px] mb-2" onClick={() => setShowCaddyDialog(true)}>
+              <Plus className="h-3 w-3" /> Assign Caddy
+            </Button>
+          )}
+          {caddyAssignments?.length === 0 && <EmptyState text="No caddies assigned" />}
+          {caddyAssignments?.map((ca) => (
+            <div key={ca.id} className="golf-card flex items-center justify-between p-3">
+              <div>
+                <p className="text-sm font-medium">{(ca.contestants as any)?.profiles?.full_name ?? "Player"}</p>
+                <p className="text-xs text-muted-foreground">Caddy: {(ca.profiles as any)?.full_name ?? "Unknown"}</p>
+              </div>
+            </div>
+          ))}
+        </Section>
+      </TabsContent>
+
+      {/* PAIRINGS */}
+      <TabsContent value="pairings" className="space-y-3 pt-2">
+        {showAdminActions && (
+          <div className="golf-card space-y-3 p-4">
+            <h3 className="text-sm font-semibold flex items-center gap-2">
+              <Shuffle className="h-4 w-4 text-primary" /> Generate Pairings
+            </h3>
+            <div className="grid grid-cols-3 gap-2">
+              <div>
+                <Label className="text-[10px]">Start Type</Label>
+                <Select value={startType} onValueChange={setStartType}>
+                  <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="tee_time">Tee Time</SelectItem>
+                    <SelectItem value="shotgun">Shotgun</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-[10px]">First Tee</Label>
+                <Input type="time" value={firstTee} onChange={e => setFirstTee(e.target.value)} className="h-8 text-xs" />
+              </div>
+              <div>
+                <Label className="text-[10px]">Interval</Label>
+                <Input type="number" value={interval} onChange={e => setInterval(e.target.value)} className="h-8 text-xs" disabled={startType === "shotgun"} />
+              </div>
+            </div>
+            <Button size="sm" className="w-full gap-1" onClick={handleGeneratePairings} disabled={generating}>
+              <Shuffle className="h-3.5 w-3.5" />
+              {generating ? "Generating…" : (event?.pairing_approval_required ? "Generate (Draft)" : "Generate & Publish")}
+            </Button>
+          </div>
+        )}
+
+        {event?.pairing_approval_required && pairings && pairings.length > 0 && showAdminActions && (
+          <div className="golf-card border-accent/30 p-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-accent">
+                  Pairing dalam status Draft
+                </p>
+                <p className="text-[10px] text-muted-foreground">
+                  Pemain belum bisa melihat group mereka
+                </p>
+              </div>
+              <Button size="sm" className="h-7 text-xs"
+                onClick={async () => {
+                  await supabase
+                    .from("events")
+                    .update({ pairing_approval_required: false })
+                    .eq("id", id!);
+                  toast.success("Pairings dipublikasikan!");
+                  queryClient.invalidateQueries({ queryKey: ["event", id] });
+                }}>
+                Publish
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {!showAdminActions && event?.pairing_approval_required && (
+          <div className="golf-card p-6 text-center">
+            <Clock className="mx-auto h-8 w-8 text-muted-foreground/40" />
+            <p className="mt-2 text-sm text-muted-foreground">
+              Pairing sedang dalam review
+            </p>
+            <p className="text-xs text-muted-foreground/60 mt-1">
+              Tournament director akan segera mempublikasikan grup Anda
+            </p>
+          </div>
+        )}
+
+        {(!event?.pairing_approval_required || showAdminActions) && (
+          <>
+            {(!pairings || pairings.length === 0) && <EmptyState text="No pairings generated yet" />}
+            {pairings?.map((p) => (
+              <div key={p.id} className="golf-card p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold">Group {p.group_number}</span>
+                  <div className="flex items-center gap-2">
+                    {p.start_type === "shotgun" && p.start_hole && (
+                      <Badge variant="outline" className="text-[10px] border-accent/30 text-accent">Hole {p.start_hole}</Badge>
+                    )}
+                    <span className="text-xs text-muted-foreground">{formatTeeTime(p.tee_time)}</span>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  {((p.pairing_players as any[]) ?? [])
+                    .sort((a: any, b: any) => (a.position ?? 0) - (b.position ?? 0))
+                    .map((pp: any) => (
+                      <div key={pp.id} className="flex items-center gap-2 text-xs">
+                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">{pp.position}</span>
+                        <span className="truncate">{pp.contestants?.profiles?.full_name ?? "Unknown"}</span>
+                        <span className="ml-auto text-muted-foreground">HCP {pp.contestants?.hcp ?? "—"}</span>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            ))}
+          </>
+        )}
+      </TabsContent>
+
+      {/* LEADERBOARD */}
+      <TabsContent value="leaderboard" className="space-y-2 pt-2">
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-xs text-muted-foreground">{leaderboard?.length ?? 0} players</p>
+          <Button size="sm" variant="ghost" className="h-7 gap-1 text-[10px]" onClick={() => refetchLeaderboard()}>
+            <RefreshCw className="h-3 w-3" /> Refresh
           </Button>
-        </TabsContent>
-      </Tabs>
+        </div>
 
-      {/* Dialogs */}
+        {(!leaderboard || leaderboard.length === 0) && (
+          <div className="golf-card p-6 text-center">
+            <Trophy className="mx-auto h-8 w-8 text-muted-foreground/40" />
+            <p className="mt-2 text-sm text-muted-foreground">No scores yet</p>
+            {myContestant && isCheckedIn && (
+              <Button size="sm" className="mt-3 gap-1" onClick={() => navigate(`/event/${id}/scorecard`)}>
+                <Pencil className="h-3.5 w-3.5" /> Be the first to enter scores
+              </Button>
+            )}
+          </div>
+        )}
+
+        {leaderboard?.map((row, i) => (
+          <div key={row.contestant_id} className="golf-card flex items-center gap-3 p-3">
+            <div className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
+              i < 3 ? "bg-accent/20 text-accent" : "bg-muted text-muted-foreground"
+            }`}>
+              {row.rank_net ?? i + 1}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium truncate">{(row as any).profiles?.full_name ?? "Player"}</p>
+              <p className="text-xs text-muted-foreground">HCP {row.hcp ?? "—"}</p>
+            </div>
+            <div className="text-right shrink-0">
+              <p className="text-sm font-bold">{row.total_net ?? "—"}</p>
+              <p className="text-[10px] text-muted-foreground">Gross {row.total_gross ?? "—"}</p>
+            </div>
+          </div>
+        ))}
+
+        <Button variant="outline" size="sm" className="w-full mt-2 gap-1 text-xs" onClick={() => navigate(`/event/${id}/leaderboard`)}>
+          <Trophy className="h-3.5 w-3.5" /> Full Leaderboard
+        </Button>
+      </TabsContent>
+    </Tabs>
+  );
+
+  const dialogsBlock = (
+    <>
       <AssignContestantDialog eventId={event.id} tourId={event.tour_id} open={showAssign} onOpenChange={setShowAssign} onDone={() => { setShowAssign(false); refetchContestants(); }} />
       <WinnerResultsDialog eventId={event.id} eventName={event.name} eventStatus={event.status} isOrganizer={!!isEventAdmin} open={showWinners} onOpenChange={setShowWinners} onDone={() => { setShowWinners(false); refetchResults(); }} />
 
-      {/* Self Check-in Dialog */}
       <Dialog open={showCheckinDialog} onOpenChange={setShowCheckinDialog}>
         <DialogContent>
           <DialogHeader>
@@ -861,7 +833,6 @@ const EventDetail = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Assign Cart Dialog */}
       <Dialog open={showCartDialog} onOpenChange={setShowCartDialog}>
         <DialogContent>
           <DialogHeader><DialogTitle>Assign Golf Cart</DialogTitle></DialogHeader>
@@ -889,7 +860,6 @@ const EventDetail = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Assign Caddy Dialog */}
       <Dialog open={showCaddyDialog} onOpenChange={setShowCaddyDialog}>
         <DialogContent>
           <DialogHeader><DialogTitle>Assign Caddy</DialogTitle></DialogHeader>
@@ -924,7 +894,6 @@ const EventDetail = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Finalize Confirmation Dialog */}
       <Dialog open={showFinalizeConfirm} onOpenChange={setShowFinalizeConfirm}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
@@ -947,6 +916,143 @@ const EventDetail = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </>
+  );
+
+  return (
+    <div className="bottom-nav-safe">
+      {isDesktop ? (
+        <div className="flex gap-6 p-6 items-start">
+          {/* Left column — Header + Actions + Tabs */}
+          <div className="flex-1 min-w-0 space-y-4">
+            {headerBlock}
+            {actionButtonsBlock}
+            {tabsBlock}
+          </div>
+
+          {/* Right column — Stats + Leaderboard preview + Contestants */}
+          <div className="w-80 shrink-0 space-y-4 sticky top-20">
+            {/* Quick Stats 2x2 */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="golf-card p-3 text-center">
+                <Users className="mx-auto h-4 w-4 text-primary mb-1" />
+                <p className="text-xl font-bold">{contestants?.length ?? 0}</p>
+                <p className="text-xs text-muted-foreground">Players</p>
+              </div>
+              <div className="golf-card p-3 text-center">
+                <ClipboardCheck className="mx-auto h-4 w-4 text-accent mb-1" />
+                <p className="text-xl font-bold">{checkins?.length ?? 0}</p>
+                <p className="text-xs text-muted-foreground">Check-ins</p>
+              </div>
+              <div className="golf-card p-3 text-center">
+                <Shuffle className="mx-auto h-4 w-4 text-primary mb-1" />
+                <p className="text-xl font-bold">{pairings?.length ?? 0}</p>
+                <p className="text-xs text-muted-foreground">Groups</p>
+              </div>
+              <div className="golf-card p-3 text-center">
+                <Trophy className="mx-auto h-4 w-4 text-accent mb-1" />
+                <p className="text-xl font-bold">{(event.courses as any)?.par ?? "—"}</p>
+                <p className="text-xs text-muted-foreground">Par</p>
+              </div>
+            </div>
+
+            {/* Leaderboard preview top 5 */}
+            {leaderboard && leaderboard.length > 0 && (
+              <div className="golf-card p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-sm font-semibold">Leaderboard</p>
+                  <span className="text-xs text-muted-foreground">Top 5</span>
+                </div>
+                <div className="space-y-2">
+                  {[...leaderboard]
+                    .sort((a: any, b: any) => (a.rank_net ?? 999) - (b.rank_net ?? 999))
+                    .slice(0, 5)
+                    .map((row: any, i: number) => (
+                      <div key={row.contestant_id} className="flex items-center gap-2 text-sm">
+                        <span className={`w-6 text-center font-bold text-xs ${
+                          i === 0 ? "text-yellow-500" :
+                          i === 1 ? "text-muted-foreground" :
+                          i === 2 ? "text-amber-600" :
+                          "text-muted-foreground"
+                        }`}>
+                          {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}`}
+                        </span>
+                        <span className="flex-1 truncate text-xs">
+                          {(row as any).profiles?.full_name ?? "Unknown"}
+                        </span>
+                        <span className="text-xs font-semibold text-primary">
+                          {row.total_net ?? "—"}
+                        </span>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
+
+            {/* Contestants preview */}
+            {contestants && contestants.length > 0 && (
+              <div className="golf-card p-4">
+                <p className="text-sm font-semibold mb-3">
+                  Contestants ({contestants.length})
+                </p>
+                <div className="space-y-2">
+                  {contestants.slice(0, 5).map((c: any) => (
+                    <div key={c.id} className="flex items-center gap-2">
+                      <Avatar className="h-7 w-7">
+                        <AvatarImage src={(c.profiles as any)?.avatar_url ?? ""} />
+                        <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
+                          {((c.profiles as any)?.full_name ?? "?").charAt(0)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="text-xs flex-1 truncate">
+                        {(c.profiles as any)?.full_name ?? "Unknown"}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground">
+                        HCP {c.hcp ?? "—"}
+                      </span>
+                    </div>
+                  ))}
+                  {contestants.length > 5 && (
+                    <p className="text-[10px] text-muted-foreground text-center pt-1">
+                      +{contestants.length - 5} lainnya
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <>
+          {headerBlock}
+          {/* Mobile Quick Stats */}
+          <div className="grid grid-cols-4 gap-2 px-4 pb-3">
+            <div className="golf-card p-2.5 text-center">
+              <Users className="mx-auto h-3.5 w-3.5 text-primary" />
+              <p className="text-base font-bold">{contestants?.length ?? 0}</p>
+              <p className="text-[9px] text-muted-foreground">Players</p>
+            </div>
+            <div className="golf-card p-2.5 text-center">
+              <ClipboardCheck className="mx-auto h-3.5 w-3.5 text-accent" />
+              <p className="text-base font-bold">{checkins?.length ?? 0}</p>
+              <p className="text-[9px] text-muted-foreground">Check-ins</p>
+            </div>
+            <div className="golf-card p-2.5 text-center">
+              <Shuffle className="mx-auto h-3.5 w-3.5 text-primary" />
+              <p className="text-base font-bold">{pairings?.length ?? 0}</p>
+              <p className="text-[9px] text-muted-foreground">Groups</p>
+            </div>
+            <div className="golf-card p-2.5 text-center">
+              <Trophy className="mx-auto h-3.5 w-3.5 text-accent" />
+              <p className="text-base font-bold">{(event.courses as any)?.par ?? "—"}</p>
+              <p className="text-[9px] text-muted-foreground">Par</p>
+            </div>
+          </div>
+          {actionButtonsBlock}
+          {tabsBlock}
+        </>
+      )}
+      {dialogsBlock}
     </div>
   );
 };
