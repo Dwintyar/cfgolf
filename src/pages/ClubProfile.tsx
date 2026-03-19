@@ -66,6 +66,21 @@ const ClubProfile = () => {
     enabled: !!id,
   });
 
+  const { data: staffRoles } = useQuery({
+    queryKey: ["club-staff-public", id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("club_staff")
+        .select("user_id, staff_role")
+        .eq("club_id", id!)
+        .eq("status", "active");
+      return Object.fromEntries(
+        (data ?? []).map(s => [s.user_id, s.staff_role])
+      );
+    },
+    enabled: !!id,
+  });
+
   // Check if current user is already a member
   const isMember = members?.some((m) => m.user_id === currentUserId);
 
