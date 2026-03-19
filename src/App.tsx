@@ -1,4 +1,4 @@
-import { useEffect, useState, createContext } from "react";
+import { useEffect, createContext } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, Navigate, useLocation } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -42,28 +42,16 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 
 const queryClient = new QueryClient();
 
-const useIsDesktop = () => {
-  const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024);
-  useEffect(() => {
-    const handler = () => setIsDesktop(window.innerWidth >= 1024);
-    window.addEventListener("resize", handler);
-    return () => window.removeEventListener("resize", handler);
-  }, []);
-  return isDesktop;
-};
-
 const noLayoutPaths = [
   "/login", "/onboarding", "/reset-password",
   "/admin", "/export-queries", "/privacy-policy"
 ];
 
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
-  const isDesktop = useIsDesktop();
   const location = useLocation();
-
   const needsLayout = !noLayoutPaths.some(p => location.pathname.startsWith(p));
 
-  if (isDesktop && needsLayout) {
+  if (needsLayout) {
     return <DesktopLayout>{children}</DesktopLayout>;
   }
   return <>{children}</>;
