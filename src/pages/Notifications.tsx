@@ -369,11 +369,16 @@ const Notifications = () => {
     if (n.type === "upcoming_event" || n.type === "event_result") {
       navigate(`/event/${n.meta?.eventId}`);
     }
-    if (n.type === "tournament_invite") {
-      navigate(`/tour/${n.meta?.tourId}`);
+    if (n.type === "tournament_invite" || n.type === "tournament_update") {
+      if (n.meta?.tour_id) navigate(`/tour/${n.meta.tour_id}`);
+      else if (n.meta?.tourId) navigate(`/tour/${n.meta.tourId}`);
     }
     if (n.type === "join_request") {
       navigate(`/clubs/${n.meta?.clubId}`);
+    }
+    // Mark tournament_update as read on tap
+    if (n.type === "tournament_update" && n.meta?.notifId) {
+      supabase.from("notifications").update({ is_read: true }).eq("id", n.meta.notifId).then(() => {});
     }
   };
 
