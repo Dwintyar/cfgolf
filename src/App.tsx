@@ -39,12 +39,13 @@ import ScorecardInput from "./pages/ScorecardInput";
 import Notifications from "./pages/Notifications";
 import CourseAdminDashboard from "./pages/CourseAdminDashboard";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+import PublicProfile from "./pages/PublicProfile";
 
 const queryClient = new QueryClient();
 
 const noLayoutPaths = [
   "/login", "/onboarding", "/reset-password",
-  "/admin", "/export-queries", "/privacy-policy"
+  "/admin", "/export-queries", "/privacy-policy", "/p/"
 ];
 
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
@@ -115,6 +116,7 @@ const AppInner = () => {
             <Route path="/book/:courseId" element={<BookTeeTime />} />
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+            <Route path="/p/:username" element={<PublicProfile />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AppLayout>

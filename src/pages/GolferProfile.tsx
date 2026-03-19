@@ -1,4 +1,4 @@
-import { ArrowLeft, Globe, Mail, Camera, UserPlus, UserCheck, MessageCircle, Crown, Check, X, BarChart3, TrendingDown, Trophy, MapPin, Settings, Clock } from "lucide-react";
+import { ArrowLeft, Globe, Mail, Camera, UserPlus, UserCheck, MessageCircle, Crown, Check, X, BarChart3, TrendingDown, Trophy, MapPin, Settings, Clock, Share2 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -511,9 +511,21 @@ const GolferProfile = () => {
                     </>
                   )}
                   {isOwnProfile && (
-                    <Button variant="outline" size="sm" className="w-full gap-2" onClick={() => navigate("/settings")}>
-                      <Settings className="h-4 w-4" /> Edit Profile
-                    </Button>
+                    <>
+                      <Button variant="outline" size="sm" className="w-full gap-2" onClick={() => navigate("/settings")}>
+                        <Settings className="h-4 w-4" /> Edit Profile
+                      </Button>
+                      <Button variant="outline" size="sm" className="w-full gap-2" onClick={() => {
+                        const un = (profile as any)?.username;
+                        if (un) {
+                          const url = `${window.location.origin}/p/${un}`;
+                          navigator.clipboard.writeText(url);
+                          toast({ title: "Link profil disalin! Bagikan ke WhatsApp 🏌️" });
+                        }
+                      }}>
+                        <Share2 className="h-4 w-4" /> Share Profile
+                      </Button>
+                    </>
                   )}
                 </div>
               </div>
@@ -693,6 +705,16 @@ const GolferProfile = () => {
               {isOwnProfile && (
                 <div className="mt-4 flex gap-3 px-8 w-full">
                   <Button variant="outline" className="flex-1 h-11 rounded-xl text-sm font-bold uppercase tracking-wider border-border" onClick={() => navigate("/settings")}>Edit Profile</Button>
+                  <Button variant="outline" className="flex-1 h-11 rounded-xl text-sm font-bold uppercase tracking-wider border-border gap-2" onClick={() => {
+                    const un = (profile as any)?.username;
+                    if (un) {
+                      const url = `${window.location.origin}/p/${un}`;
+                      navigator.clipboard.writeText(url);
+                      toast({ title: "Link profil disalin! Bagikan ke WhatsApp 🏌️" });
+                    }
+                  }}>
+                    <Share2 className="h-4 w-4" /> Share
+                  </Button>
                 </div>
               )}
             </div>
