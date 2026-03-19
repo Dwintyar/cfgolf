@@ -931,7 +931,7 @@ const EventDetail = () => {
           </div>
 
           {/* Right column — Stats + Leaderboard preview + Contestants */}
-          <div className="w-80 shrink-0 space-y-4 sticky top-20">
+          <div className="w-72 xl:w-80 shrink-0 space-y-4 sticky top-20">
             {/* Quick Stats 2x2 */}
             <div className="grid grid-cols-2 gap-3">
               <div className="golf-card p-3 text-center">
