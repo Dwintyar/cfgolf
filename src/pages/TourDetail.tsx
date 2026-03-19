@@ -393,7 +393,7 @@ const TourDetail = () => {
             <Calendar className="h-3 w-3" /> New Event
           </Button>
           <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowInvitationDialog(true)}>
-            <FileText className="h-3 w-3" /> Generate Undangan
+            <FileText className="h-3 w-3" /> Buat Undangan
           </Button>
         </div>
       )}
@@ -825,22 +825,22 @@ const TourDetail = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
-              Generate Surat Undangan Tournament
+              Generate Surat Undangan
             </DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4">
             <div>
-              <p className="text-xs font-medium text-muted-foreground mb-1.5">Event yang diundang:</p>
+              <p className="text-xs font-medium text-muted-foreground mb-1.5">Pilih Event</p>
               <select
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                className="w-full rounded-lg bg-secondary text-sm p-2.5 border-none outline-none"
                 value={selectedEventForInvitation ?? ""}
                 onChange={(e) => setSelectedEventForInvitation(e.target.value || null)}
               >
-                <option value="">Pilih event...</option>
+                <option value="">-- Pilih event --</option>
                 {events?.map((ev: any) => (
                   <option key={ev.id} value={ev.id}>
-                    {ev.name} — {ev.event_date}
+                    {ev.name} · {new Date(ev.event_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
                   </option>
                 ))}
               </select>
@@ -857,15 +857,13 @@ const TourDetail = () => {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Tanggal</span>
-                    <span className="font-medium">{ev.event_date}</span>
+                    <span className="font-medium">
+                      {new Date(ev.event_date).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Venue</span>
-                    <span className="font-medium">{(ev.courses as any)?.name}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Organizer</span>
-                    <span className="font-medium">{(tour?.clubs as any)?.name ?? "Organizer"}</span>
+                    <span className="font-medium">{(ev.courses as any)?.name ?? '-'}</span>
                   </div>
                 </div>
               );
@@ -921,9 +919,8 @@ const TourDetail = () => {
         .eq("status", "accepted")
         .order("ticket_quota", { ascending: false });
 
-      const quota6 = clubQuotas?.filter(c => c.ticket_quota >= 6).map(c => (c.clubs as any)?.name) ?? [];
-      const quota4 = clubQuotas?.filter(c => c.ticket_quota === 4).map(c => (c.clubs as any)?.name) ?? [];
-      const quota2 = clubQuotas?.filter(c => c.ticket_quota <= 2).map(c => (c.clubs as any)?.name) ?? [];
+      const quota6 = (clubQuotas ?? []).filter(c => (c.ticket_quota ?? 0) >= 6).map(c => ((c.clubs as any)?.name ?? "").replace(" Golf Club", ""));
+      const quota4 = (clubQuotas ?? []).filter(c => c.ticket_quota === 4).map(c => ((c.clubs as any)?.name ?? "").replace(" Golf Club", ""));
 
       const eventDate = new Date(ev.event_date);
       const dateStr = eventDate.toLocaleDateString("id-ID", {
@@ -932,65 +929,70 @@ const TourDetail = () => {
 
       const organizerName = (tour?.clubs as any)?.name ?? "The Explorationists Golf Club";
 
-      const content = document.createElement("div");
-      content.style.cssText = `width:800px;padding:48px;background:white;color:#1a1a1a;font-family:'Times New Roman',serif;`;
-      content.innerHTML = `
-        <div style="text-align:center;margin-bottom:32px;">
-          <h1 style="font-size:22px;font-weight:bold;letter-spacing:2px;margin:0;">${organizerName}</h1>
-          <div style="width:120px;height:2px;background:#1a1a1a;margin:10px auto;"></div>
-        </div>
-        <div style="display:flex;gap:32px;">
-          <div style="width:240px;border-right:1px solid #ccc;padding-right:24px;font-size:11px;line-height:1.6;">
-            ${staff["Chairman"] ? `<p style="font-weight:bold;margin:0 0 2px;">Chairman</p>${staff["Chairman"].map(n => `<p style="margin:0;">${n}</p>`).join("")}<br/>` : ""}
-            ${staff["Co-Chairman"] ? `<p style="font-weight:bold;margin:0 0 2px;">Co-Chairman</p>${staff["Co-Chairman"].map(n => `<p style="margin:0;">${n}</p>`).join("")}<br/>` : ""}
-            ${staff["Tournament Chairman"] ? `<p style="font-weight:bold;margin:0 0 2px;">Tournament Committee</p><p style="margin:0;">Chairman:</p>${staff["Tournament Chairman"].map((n, i) => `<p style="margin:0;">${i + 1}. ${n}</p>`).join("")}<br/>` : ""}
-            ${staff["Captain"] ? `<p style="margin:0;">Captain:</p>${staff["Captain"].map((n, i) => `<p style="margin:0;">${i + 1}. ${n}</p>`).join("")}<br/>` : ""}
-            ${staff["Handicap Committee"] ? `<p style="margin:0;">Handicap Committee:</p>${staff["Handicap Committee"].map((n, i) => `<p style="margin:0;">${i + 1}. ${n}</p>`).join("")}<br/>` : ""}
-            ${staff["Committee Member"] ? `<p style="margin:0;">Committee Members:</p>${staff["Committee Member"].map((n, i) => `<p style="margin:0;">${i + 1}. ${n}</p>`).join("")}<br/>` : ""}
-            <div style="margin-top:16px;padding:12px;background:#f5f5f5;border-radius:6px;">
+      const el = document.createElement("div");
+      el.style.cssText = "width:794px;padding:56px 60px;background:white;color:#1a1a1a;font-family:'Times New Roman',serif;position:fixed;top:-9999px;left:-9999px;";
+
+      el.innerHTML = `
+        <div style="display:flex;gap:28px;">
+          <div style="width:220px;border-right:1px solid #ccc;padding-right:20px;font-size:11px;line-height:1.7;">
+            <div style="text-align:center;margin-bottom:20px;">
+              <h1 style="font-size:16px;font-weight:bold;letter-spacing:1.5px;margin:0;line-height:1.3;">The Explorationists<br/>Golf Club</h1>
+            </div>
+            <div style="width:100%;height:1px;background:#999;margin:12px 0;"></div>
+            ${staff['Chairman']?.length ? `<p style="font-weight:bold;margin:0 0 2px;">Chairman</p>${staff['Chairman'].map(n => `<p style="margin:0;">${n}</p>`).join('')}<br/>` : ''}
+            ${staff['Co-Chairman']?.length ? `<p style="font-weight:bold;margin:0 0 2px;">Co-Chairman</p>${staff['Co-Chairman'].map(n => `<p style="margin:0;">${n}</p>`).join('')}<br/>` : ''}
+            ${staff['Tournament Chairman']?.length ? `<p style="font-weight:bold;margin:0 0 2px;">Tournament Committee</p><p style="margin:0;">Chairman:</p>${staff['Tournament Chairman'].map((n, i) => `<p style="margin:0;">${i + 1}. ${n}</p>`).join('')}<br/>` : ''}
+            ${staff['Captain']?.length ? `<p style="margin:0;">Captain:</p>${staff['Captain'].map((n, i) => `<p style="margin:0;">${i + 1}. ${n}</p>`).join('')}<br/>` : ''}
+            ${staff['Handicap Committee']?.length ? `<p style="margin:0;">Handicap Committee:</p>${staff['Handicap Committee'].map((n, i) => `<p style="margin:0;">${i + 1}. ${n}</p>`).join('')}<br/>` : ''}
+            ${staff['Committee Member']?.length ? `<p style="margin:0;">Committee Members:</p>${staff['Committee Member'].map((n, i) => `<p style="margin:0;">${i + 1}. ${n}</p>`).join('')}<br/>` : ''}
+            <div style="margin-top:16px;padding:10px;background:#f5f5f5;border-radius:6px;">
               <p style="font-weight:bold;margin:0 0 4px;font-size:12px;">QUOTA</p>
               <p style="margin:0;font-size:10px;color:#666;">for member in competition</p>
-              ${quota6.length ? `<p style="margin:8px 0 2px;font-weight:bold;">→ 6 members:</p><p style="margin:0;color:#444;">${quota6.join(", ")}</p>` : ""}
-              ${quota4.length ? `<p style="margin:8px 0 2px;font-weight:bold;">→ 4 members:</p><p style="margin:0;color:#444;">${quota4.join(", ")}</p>` : ""}
-              ${quota2.length ? `<p style="margin:8px 0 2px;font-weight:bold;">→ 2 members only:</p><p style="margin:0;color:#444;">other companies</p>` : ""}
+              ${quota6.length ? `<p style="margin:8px 0 2px;font-weight:bold;">→ 6 members:</p><p style="margin:0;color:#444;">${quota6.join(', ')}</p>` : ''}
+              ${quota4.length ? `<p style="margin:8px 0 2px;font-weight:bold;">→ 4 members:</p><p style="margin:0;color:#444;">${quota4.join(', ')}</p>` : ''}
+              <p style="margin:8px 0 2px;font-weight:bold;">→ 2 members only:</p>
+              <p style="margin:0;color:#444;">other companies</p>
             </div>
           </div>
           <div style="flex:1;font-size:13px;line-height:1.8;">
             <h2 style="font-size:18px;font-weight:bold;text-align:center;margin:0 0 20px;letter-spacing:1px;">GOLF TOURNAMENT — ${(ev.name ?? "").toUpperCase()}</h2>
             <p>Dear Explorationist Golfers,</p>
-            <p>You are cordially invited to participate in <strong>${organizerName} Golf Tournament</strong> which will be held on:</p>
+            <p style="text-align:justify;">You are cordially invited to participate in the <strong>Explorationists Golf Tournament</strong> which will be held on:</p>
             <table style="margin:16px 0;font-size:13px;">
               <tr><td style="font-weight:bold;padding-right:16px;">Date</td><td>: ${dateStr}</td></tr>
               <tr><td style="font-weight:bold;padding-right:16px;">Venue</td><td>: ${(ev.courses as any)?.name ?? "-"}</td></tr>
               <tr><td style="font-weight:bold;padding-right:16px;">Tee Off</td><td>: 07:00 AM (Shotgun Start)</td></tr>
             </table>
-            <p>The Committee will appreciate your early confirmation of participation. Please register your team players according to your company's allocated quota.</p>
-            <p>Please note that absence without prior notice will be monitored and may affect your registration for the next tournament.</p>
+            <p style="text-align:justify;">The Committee will appreciate your early confirmation of participation. Please register your team players according to your company's allocated quota.</p>
+            <p style="text-align:justify;">Please note that absence without prior notice will be monitored and may affect registration eligibility for subsequent tournaments.</p>
             <p>We look forward to seeing you on the course!</p>
             <div style="margin-top:40px;text-align:center;">
               <p style="margin:0;">The Committee,</p>
-              <p style="margin:24px 0 4px;font-weight:bold;">${(staff["Tournament Chairman"] ?? []).join(" / ") || organizerName}</p>
+              <div style="height:24px;"></div>
+              <p style="margin:0 0 4px;font-weight:bold;">${(staff['Tournament Chairman'] ?? ['Committee']).join(' / ')}</p>
               <p style="margin:0;font-size:11px;color:#666;">Tournament Chairman</p>
             </div>
           </div>
         </div>
         <div style="text-align:center;margin-top:32px;padding-top:16px;border-top:1px solid #eee;font-size:10px;color:#999;">
-          Generated by CFGolf Platform · ${new Date().toLocaleDateString("id-ID")}
+          Generated by CFGolf Platform · ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
         </div>
       `;
 
-      document.body.appendChild(content);
-      const canvas = await html2canvas(content, { scale: 2, backgroundColor: "#ffffff", useCORS: true });
-      document.body.removeChild(content);
+      document.body.appendChild(el);
+      const canvas = await html2canvas(el, { scale: 2, backgroundColor: "#ffffff", useCORS: true, logging: false });
+      document.body.removeChild(el);
 
       const link = document.createElement("a");
-      link.download = `Invitation-${(ev.name ?? "event").replace(/\s+/g, "-")}.png`;
+      link.download = `Undangan-${(ev.name ?? "EGT").replace(/\s+/g, "-")}.png`;
       link.href = canvas.toDataURL("image/png");
       link.click();
 
-      toast.success("Surat undangan berhasil di-generate!");
+      toast.success("Surat undangan berhasil di-download!");
       setShowInvitationDialog(false);
+      setSelectedEventForInvitation(null);
     } catch (err: any) {
+      console.error(err);
       toast.error("Gagal generate: " + err.message);
     }
     setGeneratingPDF(false);
