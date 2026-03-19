@@ -291,4 +291,50 @@ const SuggestedClubsWidget = ({ navigate }: { navigate: (path: string) => void }
   );
 };
 
+const ActiveGolfersWidget = ({ navigate }: { navigate: (path: string) => void }) => {
+  const { data: golfers } = useQuery({
+    queryKey: ["desktop-active-golfers"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, full_name, avatar_url, handicap")
+        .not("full_name", "is", null)
+        .order("updated_at", { ascending: false })
+        .limit(6);
+      return data ?? [];
+    },
+  });
+
+  if (!golfers?.length) return null;
+
+  return (
+    <div className="golf-card p-3 mt-3">
+      <p className="text-xs font-semibold mb-2 text-foreground">Golfers</p>
+      <div className="space-y-2">
+        {golfers.map((g: any) => (
+          <button
+            key={g.id}
+            onClick={() => navigate(`/profile/${g.id}`)}
+            className="flex items-center gap-2 w-full text-left hover:opacity-70 transition-opacity"
+          >
+            <div className="relative">
+              <Avatar className="h-8 w-8">
+                <AvatarImage src={g.avatar_url ?? ""} />
+                <AvatarFallback className="bg-primary/10 text-[10px] font-bold text-primary">
+                  {(g.full_name ?? "?").charAt(0)}
+                </AvatarFallback>
+              </Avatar>
+              <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-green-500 border-2 border-background" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-medium truncate text-foreground">{g.full_name}</p>
+              <p className="text-[10px] text-muted-foreground">HCP {g.handicap ?? "N/A"}</p>
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 export default DesktopLayout;
