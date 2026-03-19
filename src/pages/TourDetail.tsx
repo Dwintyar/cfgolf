@@ -27,6 +27,10 @@ const TourDetail = () => {
   const [showCreateEvent, setShowCreateEvent] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [groupByClub, setGroupByClub] = useState(false);
+  const [selectedClubForAdd, setSelectedClubForAdd] = useState<string | null>(null);
+  const [showAddPlayerDialog, setShowAddPlayerDialog] = useState(false);
+  const [searchAddPlayer, setSearchAddPlayer] = useState("");
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
