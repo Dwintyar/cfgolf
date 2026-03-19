@@ -116,6 +116,7 @@ const AppInner = () => {
             <Route path="/book/:courseId" element={<BookTeeTime />} />
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+            <Route path="/p/:username" element={<PublicProfile />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AppLayout>
