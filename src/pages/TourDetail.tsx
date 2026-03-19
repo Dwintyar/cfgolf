@@ -164,6 +164,43 @@ const TourDetail = () => {
     enabled: !!userId && !!id,
   });
 
+  // Group players by club
+  const playersByClub = useMemo(() => {
+    if (!players) return {};
+    return players.reduce((acc: any, p: any) => {
+      const clubId = (p.clubs as any)?.id ?? "unknown";
+      if (!acc[clubId]) acc[clubId] = { club: p.clubs, players: [] };
+      acc[clubId].players.push(p);
+      return acc;
+    }, {});
+  }, [players]);
+
+  // Quota per club
+  const clubQuota = useMemo(() => {
+    if (!tourClubs) return {};
+    return tourClubs.reduce((acc: any, tc: any) => {
+      acc[tc.club_id] = tc.ticket_quota ?? 0;
+      return acc;
+    }, {});
+  }, [tourClubs]);
+
+  // Contestants per player
+  const contestantMap = useMemo(() => {
+    if (!allContestants) return {};
+    return allContestants.reduce((acc: any, c: any) => {
+      if (!acc[c.player_id]) acc[c.player_id] = [];
+      acc[c.player_id].push({
+        event_id: c.event_id,
+        event_name: (c.events as any)?.name,
+        event_date: (c.events as any)?.event_date,
+        event_status: (c.events as any)?.status,
+        contestant_status: c.status,
+        hcp: c.hcp,
+      });
+      return acc;
+    }, {});
+  }, [allContestants]);
+
   const statusColors: Record<string, string> = {
     draft: "border-muted-foreground/30 text-muted-foreground",
     registration: "border-accent/40 text-accent",
