@@ -511,9 +511,21 @@ const GolferProfile = () => {
                     </>
                   )}
                   {isOwnProfile && (
-                    <Button variant="outline" size="sm" className="w-full gap-2" onClick={() => navigate("/settings")}>
-                      <Settings className="h-4 w-4" /> Edit Profile
-                    </Button>
+                    <>
+                      <Button variant="outline" size="sm" className="w-full gap-2" onClick={() => navigate("/settings")}>
+                        <Settings className="h-4 w-4" /> Edit Profile
+                      </Button>
+                      <Button variant="outline" size="sm" className="w-full gap-2" onClick={() => {
+                        const un = (profile as any)?.username;
+                        if (un) {
+                          const url = `${window.location.origin}/p/${un}`;
+                          navigator.clipboard.writeText(url);
+                          toast({ title: "Link profil disalin! Bagikan ke WhatsApp 🏌️" });
+                        }
+                      }}>
+                        <Share2 className="h-4 w-4" /> Share Profile
+                      </Button>
+                    </>
                   )}
                 </div>
               </div>
