@@ -1,12 +1,14 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Trophy, Calendar, Users, MapPin, ChevronRight, Settings, UserPlus, Layers, Award, Check, X, Building2 } from "lucide-react";
+import { Trophy, Calendar, Users, MapPin, ChevronRight, Settings, UserPlus, Layers, Award, Check, X, Building2, Star, UserMinus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { useState, useEffect, useMemo } from "react";
 import { toast } from "sonner";
 import InviteClubDialog from "@/components/tour/InviteClubDialog";
@@ -25,6 +27,10 @@ const TourDetail = () => {
   const [showCreateEvent, setShowCreateEvent] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [groupByClub, setGroupByClub] = useState(false);
+  const [selectedClubForAdd, setSelectedClubForAdd] = useState<string | null>(null);
+  const [showAddPlayerDialog, setShowAddPlayerDialog] = useState(false);
+  const [searchAddPlayer, setSearchAddPlayer] = useState("");
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -414,6 +420,48 @@ const TourDetail = () => {
                       </p>
                     </div>
                     <Badge variant="outline" className="text-[9px] shrink-0">{player.status}</Badge>
+                    {isOrganizer && (
+                      <div className="flex gap-0.5 shrink-0">
+                        <button
+                          onClick={async () => {
+                            const clubId = player.club_id ?? (player.clubs as any)?.id;
+                            if (!clubId) return;
+                            await supabase.from("club_staff")
+                              .upsert({
+                                club_id: clubId,
+                                user_id: player.player_id,
+                                staff_role: "Captain",
+                                status: "active"
+                              }, { onConflict: "club_id,user_id" });
+                            toast.success(`${profile?.full_name} dijadikan Captain`);
+                            refetchPlayers();
+                          }}
+                          className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-primary transition-colors"
+                          title="Set as Captain"
+                        >
+                          <Star className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          onClick={async () => {
+                            if (!confirm(`Hapus ${profile?.full_name} dari tournament?`)) return;
+                            await supabase.from("tour_players").delete().eq("id", player.id);
+                            const eventIds = events?.map((e: any) => e.id) ?? [];
+                            if (eventIds.length) {
+                              await supabase.from("contestants")
+                                .delete()
+                                .eq("player_id", player.player_id)
+                                .in("event_id", eventIds);
+                            }
+                            toast.success("Player dihapus dari tournament");
+                            queryClient.invalidateQueries({ queryKey: ["tour-players-detail", id] });
+                          }}
+                          className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                          title="Remove player"
+                        >
+                          <UserMinus className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                   {myEvents.length > 0 && (
                     <div className="mt-2 ml-10 flex flex-wrap gap-1">
@@ -501,25 +549,39 @@ const TourDetail = () => {
                                   {playerCount}/{quota}
                                 </div>
                               )}
+                              {isOrganizer && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-7 shrink-0 gap-1 text-[10px]"
+                                  onClick={() => {
+                                    setSelectedClubForAdd(clubId);
+                                    setShowAddPlayerDialog(true);
+                                  }}
+                                >
+                                  <UserPlus className="h-3 w-3" /> Tambah
+                                </Button>
+                              )}
                             </div>
                             {/* Players */}
                             <div className="divide-y divide-border/30">
                               {clubData.players
                                 .filter((p: any) => p.status !== "pending")
                                 .sort((a: any, b: any) =>
-                                  (a.hcp_at_registration ?? 99) - (b.hcp_at_registration ?? 99))
+                                  ((a.profiles as any)?.full_name ?? "").localeCompare((b.profiles as any)?.full_name ?? ""))
                                 .map(renderPlayerRow)}
                             </div>
                           </div>
                         );
-                      })}
-                  </div>
+                    })}
+                </div>
                 ) : (
-                  <div className="space-y-0 golf-card overflow-hidden divide-y divide-border/30">
-                    {registered
-                      .sort((a: any, b: any) => (a.hcp_at_registration ?? 99) - (b.hcp_at_registration ?? 99))
-                      .map(renderPlayerRow)}
-                  </div>
+                <div className="space-y-0 golf-card overflow-hidden divide-y divide-border/30">
+                  {registered
+                    .sort((a: any, b: any) =>
+                      ((a.profiles as any)?.full_name ?? "").localeCompare((b.profiles as any)?.full_name ?? ""))
+                    .map(renderPlayerRow)}
+                </div>
                 )}
               </div>
             );
@@ -558,6 +620,118 @@ const TourDetail = () => {
       <ManageFlightsDialog tourId={tour.id} open={showFlights} onOpenChange={setShowFlights} />
       <ManageCategoriesDialog tourId={tour.id} open={showCategories} onOpenChange={setShowCategories} />
       <CreateEventDialog tourId={tour.id} open={showCreateEvent} onOpenChange={setShowCreateEvent} onDone={() => { setShowCreateEvent(false); refetchEvents(); }} />
+
+      {/* Add Player from Club Dialog */}
+      <Dialog open={showAddPlayerDialog} onOpenChange={(open) => { setShowAddPlayerDialog(open); if (!open) setSearchAddPlayer(""); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Tambah Player</DialogTitle>
+          </DialogHeader>
+          <div className="relative mb-2">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Cari nama..."
+              value={searchAddPlayer}
+              onChange={(e) => setSearchAddPlayer(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          {selectedClubForAdd && (
+            <AddPlayerFromClubList
+              clubId={selectedClubForAdd}
+              tourId={id!}
+              eventIds={events?.map((e: any) => e.id) ?? []}
+              search={searchAddPlayer}
+              existingPlayerIds={players?.map(p => p.player_id) ?? []}
+              onAdded={() => {
+                setShowAddPlayerDialog(false);
+                setSearchAddPlayer("");
+                queryClient.invalidateQueries({ queryKey: ["tour-players-detail", id] });
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+const AddPlayerFromClubList = ({
+  clubId, tourId, eventIds, search, existingPlayerIds, onAdded
+}: {
+  clubId: string; tourId: string; eventIds: string[];
+  search: string; existingPlayerIds: string[]; onAdded: () => void;
+}) => {
+  const { data: clubMembers } = useQuery({
+    queryKey: ["club-members-add", clubId, existingPlayerIds],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("members")
+        .select("user_id, profiles(id, full_name, avatar_url, handicap)")
+        .eq("club_id", clubId);
+      return (data ?? [])
+        .filter(m => !existingPlayerIds.includes(m.user_id))
+        .sort((a: any, b: any) =>
+          ((a.profiles as any)?.full_name ?? "").localeCompare((b.profiles as any)?.full_name ?? ""));
+    },
+    enabled: !!clubId,
+  });
+
+  const filtered = clubMembers?.filter((m: any) =>
+    !search || (m.profiles as any)?.full_name?.toLowerCase().includes(search.toLowerCase())
+  ) ?? [];
+
+  return (
+    <div className="max-h-64 overflow-y-auto space-y-1">
+      {filtered.length === 0 && (
+        <p className="text-center text-xs text-muted-foreground py-4">
+          {clubMembers?.length === 0 ? "Semua member sudah terdaftar" : "Tidak ditemukan"}
+        </p>
+      )}
+      {filtered.map((m: any) => {
+        const profile = m.profiles as any;
+        return (
+          <div key={m.user_id} className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-secondary/50">
+            <Avatar className="h-8 w-8">
+              <AvatarFallback className="bg-secondary text-xs font-bold">
+                {(profile?.full_name ?? "?").charAt(0)}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium truncate">{profile?.full_name}</p>
+              <p className="text-[10px] text-muted-foreground">HCP {profile?.handicap ?? "N/A"}</p>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-[10px] shrink-0"
+              onClick={async () => {
+                const hcp = profile?.handicap ?? 20;
+                await supabase.from("tour_players").insert({
+                  tour_id: tourId,
+                  player_id: m.user_id,
+                  club_id: clubId,
+                  hcp_at_registration: hcp,
+                  hcp_tour: hcp,
+                  status: "active",
+                });
+                for (const eventId of eventIds) {
+                  await supabase.from("contestants").upsert({
+                    event_id: eventId,
+                    player_id: m.user_id,
+                    hcp: hcp,
+                    status: "competitor",
+                  }, { onConflict: "event_id,player_id" });
+                }
+                toast.success(`${profile?.full_name} ditambahkan!`);
+                onAdded();
+              }}
+            >
+              + Tambah
+            </Button>
+          </div>
+        );
+      })}
     </div>
   );
 };

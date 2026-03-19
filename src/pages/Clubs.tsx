@@ -99,7 +99,7 @@ const Clubs = () => {
 
   const isMember = (id: string) => myMemberships ? id in myMemberships : false;
 
-  const myClubs = applySearch(clubs?.filter((c) => isMember(c.id)) ?? []);
+  const myClubs = applySearch(clubs?.filter((c) => isMember(c.id)) ?? []).sort((a, b) => a.name.localeCompare(b.name));
   const communityClubs = applySearch(
     clubs?.filter(
       (c) =>
@@ -107,13 +107,13 @@ const Clubs = () => {
         !clubsWithCourses?.has(c.id) &&
         c.facility_type !== "driving_range"
     ) ?? []
-  );
+  ).sort((a, b) => a.name.localeCompare(b.name));
   const courseClubs = applySearch(
     clubs?.filter((c) => !isMember(c.id) && clubsWithCourses?.has(c.id)) ?? []
-  );
+  ).sort((a, b) => a.name.localeCompare(b.name));
   const rangeClubs = applySearch(
     clubs?.filter((c) => !isMember(c.id) && c.facility_type === "driving_range") ?? []
-  );
+  ).sort((a, b) => a.name.localeCompare(b.name));
 
   const facilityBadgeColors: Record<string, string> = {
     golf_club: "border-primary/30 text-primary",
