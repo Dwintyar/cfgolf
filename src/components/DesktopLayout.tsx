@@ -192,6 +192,7 @@ const DesktopLayout = ({ children }: { children: React.ReactNode }) => {
         >
           <UpcomingEventsWidget navigate={navigate} />
           <SuggestedClubsWidget navigate={navigate} />
+          <ActiveGolfersWidget navigate={navigate} />
         </aside>
       )}
     </div>
