@@ -229,8 +229,8 @@ const DesktopLayout = ({ children, sidebarRightHidden = false }: { children: Rea
       <main
         style={{
           marginLeft: "256px",
-          marginRight: isWide ? "260px" : "0px",
-          width: `calc(100% - 256px - ${isWide ? "260px" : "0px"})`,
+          marginRight: (isWide && !sidebarRightHidden) ? "260px" : "0px",
+          width: `calc(100% - 256px - ${(isWide && !sidebarRightHidden) ? "260px" : "0px"})`,
           minHeight: "100vh",
         }}
         className="pt-14"
