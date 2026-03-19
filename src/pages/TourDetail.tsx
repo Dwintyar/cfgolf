@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useState, useEffect } from "react";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { useState, useEffect, useMemo } from "react";
 import { toast } from "sonner";
 import InviteClubDialog from "@/components/tour/InviteClubDialog";
 import RegisterPlayerDialog from "@/components/tour/RegisterPlayerDialog";
@@ -72,16 +73,35 @@ const TourDetail = () => {
   });
 
   const { data: players, refetch: refetchPlayers } = useQuery({
-    queryKey: ["tour-players", id],
+    queryKey: ["tour-players-detail", id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("tour_players")
-        .select("*, profiles(full_name, avatar_url, handicap), clubs(name)")
-        .eq("tour_id", id!);
+        .select(`
+          id, player_id, club_id, hcp_at_registration, hcp_tour, status,
+          clubs(id, name, logo_url),
+          profiles(id, full_name, avatar_url, handicap)
+        `)
+        .eq("tour_id", id!)
+        .order("hcp_at_registration");
       if (error) throw error;
       return data;
     },
     enabled: !!id,
+  });
+
+  const { data: allContestants } = useQuery({
+    queryKey: ["tour-all-contestants", id, events?.map(e => e.id)],
+    queryFn: async () => {
+      const eventIds = events?.map(e => e.id) ?? [];
+      if (!eventIds.length) return [];
+      const { data } = await supabase
+        .from("contestants")
+        .select("player_id, hcp, status, event_id, events(id, name, event_date, status)")
+        .in("event_id", eventIds);
+      return data ?? [];
+    },
+    enabled: !!id && !!events?.length,
   });
 
   const { data: flights } = useQuery({
@@ -143,6 +163,43 @@ const TourDetail = () => {
     },
     enabled: !!userId && !!id,
   });
+
+  // Group players by club
+  const playersByClub = useMemo(() => {
+    if (!players) return {};
+    return players.reduce((acc: any, p: any) => {
+      const clubId = (p.clubs as any)?.id ?? "unknown";
+      if (!acc[clubId]) acc[clubId] = { club: p.clubs, players: [] };
+      acc[clubId].players.push(p);
+      return acc;
+    }, {});
+  }, [players]);
+
+  // Quota per club
+  const clubQuota = useMemo(() => {
+    if (!tourClubs) return {};
+    return tourClubs.reduce((acc: any, tc: any) => {
+      acc[tc.club_id] = tc.ticket_quota ?? 0;
+      return acc;
+    }, {});
+  }, [tourClubs]);
+
+  // Contestants per player
+  const contestantMap = useMemo(() => {
+    if (!allContestants) return {};
+    return allContestants.reduce((acc: any, c: any) => {
+      if (!acc[c.player_id]) acc[c.player_id] = [];
+      acc[c.player_id].push({
+        event_id: c.event_id,
+        event_name: (c.events as any)?.name,
+        event_date: (c.events as any)?.event_date,
+        event_status: (c.events as any)?.status,
+        contestant_status: c.status,
+        hcp: c.hcp,
+      });
+      return acc;
+    }, {});
+  }, [allContestants]);
 
   const statusColors: Record<string, string> = {
     draft: "border-muted-foreground/30 text-muted-foreground",
@@ -330,70 +387,139 @@ const TourDetail = () => {
             const registered = players?.filter(p => p.status !== "pending") ?? [];
             if (registered.length === 0) return null;
 
-            const grouped = registered.reduce((acc: Record<string, typeof registered>, p) => {
-              const clubName = (p.clubs as any)?.name ?? "Unknown";
-              if (!acc[clubName]) acc[clubName] = [];
-              acc[clubName].push(p);
-              return acc;
-            }, {});
+            const renderPlayerRow = (player: any) => {
+              const profile = player.profiles as any;
+              const myEvents = contestantMap[player.player_id] ?? [];
+              const tourHcp = player.hcp_tour ?? player.hcp_at_registration;
 
-            const renderPlayerCard = (p: typeof registered[0]) => {
-              const personalHcp = (p.profiles as any)?.handicap;
-              const tourHcp = p.hcp_tour ?? p.hcp_at_registration;
-              const hcpAtReg = p.hcp_at_registration;
               return (
-                <div key={p.id} className="golf-card flex items-center gap-3 p-3 mb-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
-                    {(p.profiles as any)?.full_name?.charAt(0) ?? "?"}
+                <div key={player.id} className="p-3">
+                  <div className="flex items-center gap-2.5">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={profile?.avatar_url ?? ""} />
+                      <AvatarFallback className="bg-secondary text-xs font-bold">
+                        {(profile?.full_name ?? "?").charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{profile?.full_name ?? "Unknown"}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        HCP {player.hcp_at_registration ?? "N/A"}
+                        {tourHcp !== player.hcp_at_registration && tourHcp != null && (
+                          <span className="text-primary ml-1">→ {tourHcp}</span>
+                        )}
+                        {!groupByClub && (
+                          <span className="ml-1.5">· {(player.clubs as any)?.name}</span>
+                        )}
+                      </p>
+                    </div>
+                    <Badge variant="outline" className="text-[9px] shrink-0">{player.status}</Badge>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium truncate">{(p.profiles as any)?.full_name ?? "Unknown"}</p>
-                    <p className="text-xs text-muted-foreground">{(p.clubs as any)?.name}</p>
-                    <p className="text-[10px] text-muted-foreground">
-                      Personal: {personalHcp ?? "—"} · Tournament: <span className="font-semibold text-foreground">{tourHcp ?? "—"}</span>
+                  {myEvents.length > 0 && (
+                    <div className="mt-2 ml-10 flex flex-wrap gap-1">
+                      {myEvents.map((ev: any) => (
+                        <span key={ev.event_id}
+                          className={`text-[9px] px-2 py-0.5 rounded-full ${
+                            ev.event_status === "completed"
+                              ? "bg-primary/10 text-primary"
+                              : "bg-secondary text-muted-foreground"
+                          }`}>
+                          {ev.event_name}
+                          {ev.hcp != null && ` (HCP ${ev.hcp})`}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {myEvents.length === 0 && (
+                    <p className="mt-1 ml-10 text-[9px] text-muted-foreground/50 italic">
+                      Belum ikut event
                     </p>
-                    <p className="text-[9px] text-muted-foreground/70">Registered at HCP {hcpAtReg ?? "—"}</p>
-                  </div>
-                  <Badge variant="outline" className="text-[10px] text-primary border-primary/30 shrink-0">{p.status}</Badge>
+                  )}
                 </div>
               );
             };
 
             return (
               <div>
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    ✅ Registered ({registered.length})
+                <div className="flex items-center justify-between mb-3 px-1">
+                  <p className="text-sm font-semibold text-muted-foreground">
+                    {registered.length} players · {Object.keys(playersByClub).length} clubs
                   </p>
                   <button
                     onClick={() => setGroupByClub(!groupByClub)}
-                    className={`text-xs px-3 py-1 rounded-full border transition-colors ${
+                    className={`text-xs px-3 py-1.5 rounded-full border transition-colors font-medium ${
                       groupByClub
                         ? "bg-primary text-primary-foreground border-primary"
-                        : "border-border text-muted-foreground"
+                        : "border-border text-muted-foreground hover:border-primary"
                     }`}
                   >
-                    {groupByClub ? "✓ By Club" : "By Club"}
+                    <Building2 className="h-3 w-3 inline mr-1" />
+                    {groupByClub ? "By Club ✓" : "By Club"}
                   </button>
                 </div>
 
                 {groupByClub ? (
-                  Object.entries(grouped)
-                    .sort(([a], [b]) => a.localeCompare(b))
-                    .map(([clubName, clubPlayers]) => (
-                      <div key={clubName} className="mb-4">
-                        <div className="flex items-center gap-2 mb-2 px-1">
-                          <Building2 className="h-3.5 w-3.5 text-primary" />
-                          <p className="text-xs font-semibold text-primary">{clubName}</p>
-                          <span className="text-[10px] text-muted-foreground">({clubPlayers.length} players)</span>
-                        </div>
-                        {clubPlayers
-                          .sort((a, b) => (a.hcp_at_registration ?? 99) - (b.hcp_at_registration ?? 99))
-                          .map(renderPlayerCard)}
-                      </div>
-                    ))
+                  <div className="space-y-4">
+                    {Object.entries(playersByClub)
+                      .sort(([, a]: any, [, b]: any) =>
+                        (a.club?.name ?? "").localeCompare(b.club?.name ?? ""))
+                      .map(([clubId, clubData]: [string, any]) => {
+                        const quota = clubQuota[clubId] ?? 0;
+                        const playerCount = clubData.players.filter((p: any) => p.status !== "pending").length;
+
+                        return (
+                          <div key={clubId} className="golf-card overflow-hidden">
+                            {/* Club header */}
+                            <div className="flex items-center gap-3 p-3 bg-secondary/50 border-b border-border/50">
+                              <Avatar className="h-8 w-8 rounded-lg">
+                                <AvatarImage src={clubData.club?.logo_url ?? ""} />
+                                <AvatarFallback className="rounded-lg bg-primary/10 text-xs font-bold text-primary">
+                                  {(clubData.club?.name ?? "?").charAt(0)}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-semibold truncate">
+                                  {clubData.club?.name ?? "Unknown Club"}
+                                </p>
+                                <p className="text-[10px] text-muted-foreground">
+                                  {playerCount} player terdaftar
+                                  {quota > 0 && (
+                                    <span className={`ml-1.5 font-medium ${
+                                      playerCount > quota ? "text-destructive" : "text-primary"
+                                    }`}>
+                                      · Quota: {playerCount}/{quota} tiket
+                                    </span>
+                                  )}
+                                </p>
+                              </div>
+                              {quota > 0 && (
+                                <div className={`px-2 py-1 rounded-lg text-[10px] font-bold ${
+                                  playerCount >= quota
+                                    ? "bg-primary/10 text-primary"
+                                    : "bg-accent/10 text-accent"
+                                }`}>
+                                  {playerCount}/{quota}
+                                </div>
+                              )}
+                            </div>
+                            {/* Players */}
+                            <div className="divide-y divide-border/30">
+                              {clubData.players
+                                .filter((p: any) => p.status !== "pending")
+                                .sort((a: any, b: any) =>
+                                  (a.hcp_at_registration ?? 99) - (b.hcp_at_registration ?? 99))
+                                .map(renderPlayerRow)}
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
                 ) : (
-                  registered.map(renderPlayerCard)
+                  <div className="space-y-0 golf-card overflow-hidden divide-y divide-border/30">
+                    {registered
+                      .sort((a: any, b: any) => (a.hcp_at_registration ?? 99) - (b.hcp_at_registration ?? 99))
+                      .map(renderPlayerRow)}
+                  </div>
                 )}
               </div>
             );
