@@ -620,6 +620,118 @@ const TourDetail = () => {
       <ManageFlightsDialog tourId={tour.id} open={showFlights} onOpenChange={setShowFlights} />
       <ManageCategoriesDialog tourId={tour.id} open={showCategories} onOpenChange={setShowCategories} />
       <CreateEventDialog tourId={tour.id} open={showCreateEvent} onOpenChange={setShowCreateEvent} onDone={() => { setShowCreateEvent(false); refetchEvents(); }} />
+
+      {/* Add Player from Club Dialog */}
+      <Dialog open={showAddPlayerDialog} onOpenChange={(open) => { setShowAddPlayerDialog(open); if (!open) setSearchAddPlayer(""); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Tambah Player</DialogTitle>
+          </DialogHeader>
+          <div className="relative mb-2">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Cari nama..."
+              value={searchAddPlayer}
+              onChange={(e) => setSearchAddPlayer(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          {selectedClubForAdd && (
+            <AddPlayerFromClubList
+              clubId={selectedClubForAdd}
+              tourId={id!}
+              eventIds={events?.map((e: any) => e.id) ?? []}
+              search={searchAddPlayer}
+              existingPlayerIds={players?.map(p => p.player_id) ?? []}
+              onAdded={() => {
+                setShowAddPlayerDialog(false);
+                setSearchAddPlayer("");
+                queryClient.invalidateQueries({ queryKey: ["tour-players-detail", id] });
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+const AddPlayerFromClubList = ({
+  clubId, tourId, eventIds, search, existingPlayerIds, onAdded
+}: {
+  clubId: string; tourId: string; eventIds: string[];
+  search: string; existingPlayerIds: string[]; onAdded: () => void;
+}) => {
+  const { data: clubMembers } = useQuery({
+    queryKey: ["club-members-add", clubId, existingPlayerIds],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("members")
+        .select("user_id, profiles(id, full_name, avatar_url, handicap)")
+        .eq("club_id", clubId);
+      return (data ?? [])
+        .filter(m => !existingPlayerIds.includes(m.user_id))
+        .sort((a: any, b: any) =>
+          ((a.profiles as any)?.full_name ?? "").localeCompare((b.profiles as any)?.full_name ?? ""));
+    },
+    enabled: !!clubId,
+  });
+
+  const filtered = clubMembers?.filter((m: any) =>
+    !search || (m.profiles as any)?.full_name?.toLowerCase().includes(search.toLowerCase())
+  ) ?? [];
+
+  return (
+    <div className="max-h-64 overflow-y-auto space-y-1">
+      {filtered.length === 0 && (
+        <p className="text-center text-xs text-muted-foreground py-4">
+          {clubMembers?.length === 0 ? "Semua member sudah terdaftar" : "Tidak ditemukan"}
+        </p>
+      )}
+      {filtered.map((m: any) => {
+        const profile = m.profiles as any;
+        return (
+          <div key={m.user_id} className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-secondary/50">
+            <Avatar className="h-8 w-8">
+              <AvatarFallback className="bg-secondary text-xs font-bold">
+                {(profile?.full_name ?? "?").charAt(0)}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium truncate">{profile?.full_name}</p>
+              <p className="text-[10px] text-muted-foreground">HCP {profile?.handicap ?? "N/A"}</p>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-[10px] shrink-0"
+              onClick={async () => {
+                const hcp = profile?.handicap ?? 20;
+                await supabase.from("tour_players").insert({
+                  tour_id: tourId,
+                  player_id: m.user_id,
+                  club_id: clubId,
+                  hcp_at_registration: hcp,
+                  hcp_tour: hcp,
+                  status: "active",
+                });
+                for (const eventId of eventIds) {
+                  await supabase.from("contestants").upsert({
+                    event_id: eventId,
+                    player_id: m.user_id,
+                    hcp: hcp,
+                    status: "competitor",
+                  }, { onConflict: "event_id,player_id" });
+                }
+                toast.success(`${profile?.full_name} ditambahkan!`);
+                onAdded();
+              }}
+            >
+              + Tambah
+            </Button>
+          </div>
+        );
+      })}
     </div>
   );
 };
