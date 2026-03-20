@@ -1244,50 +1244,9 @@ const EventDetail = () => {
       {/* HCP CORRECTION TAB */}
       <TabsContent value="hcpcorr" className="space-y-3 pt-2">
         {(() => {
-          const [hcpRows, setHcpRows] = useState<any[]>([]);
-          const [hcpLoading, setHcpLoading] = useState(true);
-          const hcpExportRef = useRef<HTMLDivElement>(null);
-
-          useEffect(() => {
-            const load = async () => {
-              setHcpLoading(true);
-              const { data: hcpData } = await supabase
-                .from("handicap_history")
-                .select("player_id, old_hcp, new_hcp, gross_score, net_score, sandbagging_flag")
-                .eq("event_id", id!)
-                .order("new_hcp", { ascending: true });
-
-              if (!hcpData?.length) { setHcpRows([]); setHcpLoading(false); return; }
-
-              const pIds = hcpData.map(h => h.player_id);
-              const [{ data: profs }, { data: tix }] = await Promise.all([
-                supabase.from("profiles").select("id, full_name").in("id", pIds),
-                supabase.from("tickets").select("assigned_player_id, clubs!inner(name)").eq("event_id", id!),
-              ]);
-
-              const profMap: Record<string, string> = {};
-              (profs ?? []).forEach((p: any) => { profMap[p.id] = p.full_name; });
-              const clubMap: Record<string, string> = {};
-              (tix ?? []).forEach((t: any) => { if (t.assigned_player_id) clubMap[t.assigned_player_id] = (t.clubs as any)?.name ?? "—"; });
-
-              setHcpRows(hcpData.map((h: any, i: number) => ({
-                no: i + 1,
-                player_id: h.player_id,
-                name: profMap[h.player_id] ?? "Unknown",
-                club: clubMap[h.player_id] ?? "—",
-                old_hcp: h.old_hcp,
-                new_hcp: h.new_hcp,
-                delta: (h.old_hcp ?? 0) - (h.new_hcp ?? 0),
-                sandbagging: h.sandbagging_flag,
-              })));
-              setHcpLoading(false);
-            };
-            if (activeTab === "hcpcorr") load();
-          }, [activeTab, id]);
-
           const totalCorrected = hcpRows.length;
-          const avgCorrection = totalCorrected > 0 ? (hcpRows.reduce((s, r) => s + r.delta, 0) / totalCorrected).toFixed(1) : "0";
-          const flagCount = hcpRows.filter(r => r.sandbagging).length;
+          const avgCorrection = totalCorrected > 0 ? (hcpRows.reduce((s: number, r: any) => s + r.delta, 0) / totalCorrected).toFixed(1) : "0";
+          const flagCount = hcpRows.filter((r: any) => r.sandbagging).length;
 
           const handleExportHcp = async () => {
             if (!hcpExportRef.current) return;
@@ -1316,7 +1275,6 @@ const EventDetail = () => {
                 </Button>
               </div>
 
-              {/* Summary cards */}
               <div className="grid grid-cols-3 gap-2 mb-3">
                 <div className="golf-card p-3 text-center">
                   <p className="text-lg font-bold text-foreground">{totalCorrected}</p>
