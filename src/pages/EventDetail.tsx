@@ -861,7 +861,7 @@ const EventDetail = () => {
 
 
       <TabsContent value="pairings" className="space-y-3 pt-2">
-        {showAdminActions && (!pairings || pairings.length === 0) && (!teeoffGroups || teeoffGroups.length === 0) && (
+        {showAdminActions && pairingsList.length === 0 && (
           <div className="golf-card space-y-3 p-4">
             <h3 className="text-sm font-semibold flex items-center gap-2">
               <Shuffle className="h-4 w-4 text-primary" /> Generate Pairings
