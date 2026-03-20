@@ -785,7 +785,7 @@ const EventDetail = () => {
 
       {/* PAIRINGS */}
       <TabsContent value="pairings" className="space-y-3 pt-2">
-        {showAdminActions && (
+        {showAdminActions && (!pairings || pairings.length === 0) && (
           <div className="golf-card space-y-3 p-4">
             <h3 className="text-sm font-semibold flex items-center gap-2">
               <Shuffle className="h-4 w-4 text-primary" /> Generate Pairings
@@ -821,19 +821,12 @@ const EventDetail = () => {
           <div className="golf-card border-accent/30 p-3">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-semibold text-accent">
-                  Pairing dalam status Draft
-                </p>
-                <p className="text-[10px] text-muted-foreground">
-                  Pemain belum bisa melihat group mereka
-                </p>
+                <p className="text-xs font-semibold text-accent">Pairing dalam status Draft</p>
+                <p className="text-[10px] text-muted-foreground">Pemain belum bisa melihat group mereka</p>
               </div>
               <Button size="sm" className="h-7 text-xs"
                 onClick={async () => {
-                  await supabase
-                    .from("events")
-                    .update({ pairing_approval_required: false })
-                    .eq("id", id!);
+                  await supabase.from("events").update({ pairing_approval_required: false }).eq("id", id!);
                   toast.success("Pairings dipublikasikan!");
                   queryClient.invalidateQueries({ queryKey: ["event", id] });
                 }}>
@@ -846,44 +839,142 @@ const EventDetail = () => {
         {!showAdminActions && event?.pairing_approval_required && (
           <div className="golf-card p-6 text-center">
             <Clock className="mx-auto h-8 w-8 text-muted-foreground/40" />
-            <p className="mt-2 text-sm text-muted-foreground">
-              Pairing sedang dalam review
-            </p>
-            <p className="text-xs text-muted-foreground/60 mt-1">
-              Tournament director akan segera mempublikasikan grup Anda
-            </p>
+            <p className="mt-2 text-sm text-muted-foreground">Pairing sedang dalam review</p>
+            <p className="text-xs text-muted-foreground/60 mt-1">Tournament director akan segera mempublikasikan grup Anda</p>
           </div>
         )}
 
-        {(!event?.pairing_approval_required || showAdminActions) && (
-          <>
-            {(!pairings || pairings.length === 0) && <EmptyState text="No pairings generated yet" />}
-            {pairings?.map((p) => (
-              <div key={p.id} className="golf-card p-3 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-semibold">Group {p.teeoff_group_number}</span>
-                  <div className="flex items-center gap-2">
-                    {p.start_type === "shotgun" && p.start_hole && (
-                      <Badge variant="outline" className="text-[10px] border-accent/30 text-accent">Hole {p.start_hole}</Badge>
-                    )}
-                    <span className="text-xs text-muted-foreground">{formatTeeTime(p.tee_time)}</span>
-                  </div>
+        {(!event?.pairing_approval_required || showAdminActions) && (() => {
+          const groups = teeoffGroups ?? [];
+          if (groups.length === 0 && (!pairings || pairings.length === 0)) {
+            return <EmptyState text="No pairings generated yet" />;
+          }
+
+          if (groups.length > 0) {
+            const holeMap: Record<number, any[]> = {};
+            groups.forEach(g => {
+              const hole = g.start_hole ?? 1;
+              if (!holeMap[hole]) holeMap[hole] = [];
+              holeMap[hole].push(g);
+            });
+            const holes = Object.keys(holeMap).map(Number).sort((a, b) => a - b);
+            const parMap: Record<number, number> = {};
+            (courseHoles ?? []).forEach(h => { parMap[h.hole_number] = h.par; });
+
+            const getFlightLevel = (hcp: number | null) => {
+              if (hcp == null) return null;
+              if (hcp <= 16) return { label: "Level A", cls: "bg-blue-500/10 text-blue-600 border-blue-500/30" };
+              if (hcp <= 22) return { label: "Level B", cls: "bg-amber-500/10 text-amber-600 border-amber-500/30" };
+              return { label: "Level C", cls: "bg-muted text-muted-foreground border-border" };
+            };
+
+            return (
+              <>
+                <div className="golf-card p-3 space-y-1">
+                  <p className="text-sm font-semibold flex items-center gap-2">
+                    <Shuffle className="h-4 w-4 text-primary" />
+                    {groups.length} Tee-off Groups | {holes.length} holes × {Math.ceil(groups.length / Math.max(holes.length, 1))} groups per hole
+                  </p>
+                  <p className="text-xs text-muted-foreground">Shotgun start · All groups tee off simultaneously</p>
                 </div>
-                <div className="space-y-1">
-                  {((p.pairing_players as any[]) ?? [])
-                    .sort((a: any, b: any) => (a.position ?? 0) - (b.position ?? 0))
-                    .map((pp: any) => (
-                      <div key={pp.id} className="flex items-center gap-2 text-xs">
-                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">{pp.position}</span>
-                        <span className="truncate">{pp.contestants?.profiles?.full_name ?? "Unknown"}</span>
-                        <span className="ml-auto text-muted-foreground">HCP {pp.contestants?.hcp ?? "—"}</span>
+
+                {holes.map(holeNum => {
+                  const holeGroups = holeMap[holeNum].sort((a: any, b: any) => (a.slot ?? "").localeCompare(b.slot ?? ""));
+                  const par = parMap[holeNum];
+                  return (
+                    <div key={holeNum}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-xs font-bold text-primary">{holeNum}</div>
+                        <p className="text-sm font-semibold">Hole {holeNum}</p>
+                        {par && <Badge variant="outline" className="text-[10px]">Par {par}</Badge>}
                       </div>
-                    ))}
+                      <div className="space-y-2 ml-2">
+                        {holeGroups.map((g: any, gi: number) => {
+                          const slotLabel = g.slot ?? String.fromCharCode(65 + gi);
+                          const badgeLabel = g.pairing_label ?? `${holeNum}${slotLabel}`;
+                          const badgeCls = slotLabel === "A" ? "bg-blue-500/10 text-blue-600 border-blue-500/30" : "bg-amber-500/10 text-amber-600 border-amber-500/30";
+                          const players = ((g.pairing_players as any[]) ?? []).sort((a: any, b: any) => (a.position ?? 0) - (b.position ?? 0));
+                          const clubMap = g._clubMap ?? {};
+                          const teeTime = g.tee_time ? (() => {
+                            try { return new Date(g.tee_time).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false }); }
+                            catch { return g.tee_time; }
+                          })() : null;
+
+                          return (
+                            <div key={g.id} className="golf-card p-3">
+                              <div className="flex items-center gap-2 mb-2">
+                                <Badge variant="outline" className={`text-[10px] font-bold ${badgeCls}`}>{badgeLabel}</Badge>
+                                {teeTime && <span className="text-xs text-muted-foreground ml-auto">{teeTime}</span>}
+                              </div>
+                              <div className="space-y-1.5">
+                                {players.map((pp: any) => {
+                                  const profile = pp.contestants?.profiles;
+                                  const hcp = pp.contestants?.hcp ?? profile?.handicap;
+                                  const flightName = pp.contestants?.tournament_flights?.flight_name;
+                                  const clubName = clubMap[pp.contestants?.player_id] ?? "";
+                                  const level = getFlightLevel(hcp);
+                                  return (
+                                    <button
+                                      key={pp.id}
+                                      onClick={() => profile?.id && navigate(`/golfer/${profile.id}`)}
+                                      className="w-full flex items-center gap-2 p-1.5 rounded-lg hover:bg-secondary/50 transition-colors text-left"
+                                    >
+                                      <Avatar className="h-7 w-7">
+                                        <AvatarImage src={profile?.avatar_url ?? ""} />
+                                        <AvatarFallback className="bg-primary/10 text-[10px] font-bold text-primary">
+                                          {(profile?.full_name ?? "?").charAt(0)}
+                                        </AvatarFallback>
+                                      </Avatar>
+                                      <div className="min-w-0 flex-1">
+                                        <p className="text-xs font-medium truncate">{profile?.full_name ?? "Unknown"}</p>
+                                        <p className="text-[10px] text-muted-foreground truncate">{clubName}{flightName && ` · ${flightName}`}</p>
+                                      </div>
+                                      <div className="flex items-center gap-1 shrink-0">
+                                        <Badge variant="outline" className="text-[9px]">HCP {hcp ?? "—"}</Badge>
+                                        {level && <Badge variant="outline" className={`text-[9px] ${level.cls}`}>{level.label}</Badge>}
+                                      </div>
+                                    </button>
+                                  );
+                                })}
+                                {players.length === 0 && <p className="text-xs text-muted-foreground text-center py-2">No players assigned</p>}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </>
+            );
+          }
+
+          // Fallback: simple list
+          return pairings?.map((p) => (
+            <div key={p.id} className="golf-card p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold">Group {p.teeoff_group_number}</span>
+                <div className="flex items-center gap-2">
+                  {p.start_type === "shotgun" && p.start_hole && (
+                    <Badge variant="outline" className="text-[10px] border-accent/30 text-accent">Hole {p.start_hole}</Badge>
+                  )}
+                  <span className="text-xs text-muted-foreground">{formatTeeTime(p.tee_time)}</span>
                 </div>
               </div>
-            ))}
-          </>
-        )}
+              <div className="space-y-1">
+                {((p.pairing_players as any[]) ?? [])
+                  .sort((a: any, b: any) => (a.position ?? 0) - (b.position ?? 0))
+                  .map((pp: any) => (
+                    <div key={pp.id} className="flex items-center gap-2 text-xs">
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">{pp.position}</span>
+                      <span className="truncate">{pp.contestants?.profiles?.full_name ?? "Unknown"}</span>
+                      <span className="ml-auto text-muted-foreground">HCP {pp.contestants?.hcp ?? "—"}</span>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          ));
+        })()}
       </TabsContent>
 
       {/* LEADERBOARD */}
