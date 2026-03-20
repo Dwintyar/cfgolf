@@ -996,57 +996,51 @@ const EventDetail = () => {
                        {/* 2×2 player grid */}
                        <div className="grid grid-cols-2 gap-2 p-3">
                          {players.map((pp: any) => {
-                           const profile = pp.contestants?.profiles;
-                           const hcp = pp.contestants?.hcp ?? profile?.handicap;
-                           const clubName = clubMap[pp.contestants?.player_id] ?? "";
-                           const level = getFlightLevel(hcp);
-                           const cartNum = cartMap[pp.contestant_id];
-                           const bagDrop = bagMap[pp.contestant_id];
-                           const caddyName = caddyMap[pp.contestant_id];
+                            const level = getFlightLevel(pp.hcp);
 
-                           return (
-                             <button
-                               key={pp.id}
-                               onClick={() => profile?.id && navigate(`/golfer/${profile.id}`)}
-                               className="flex flex-col items-center gap-1.5 rounded-lg border bg-background/60 p-2.5 hover:bg-secondary/50 transition-colors text-center"
-                             >
-                               <Avatar className="h-9 w-9">
-                                 <AvatarImage src={profile?.avatar_url ?? ""} />
-                                 <AvatarFallback className="bg-primary/10 text-xs font-bold text-primary">
-                                   {(profile?.full_name ?? "?").charAt(0)}
-                                 </AvatarFallback>
-                               </Avatar>
-                               <p className="text-xs font-semibold truncate w-full">{profile?.full_name ?? "Unknown"}</p>
-                               <div className="flex flex-wrap items-center justify-center gap-1">
-                                 <Badge variant="outline" className="text-[9px]">HCP {hcp ?? "—"}</Badge>
-                                 {level && <Badge variant="outline" className={`text-[9px] ${level.cls}`}>Lvl {level.label}</Badge>}
-                               </div>
-                               {clubName && <p className="text-[9px] text-muted-foreground truncate w-full">{clubName}</p>}
-                               {(cartNum != null || bagDrop != null || caddyName) && (
-                                 <div className="w-full border-t border-border/50 pt-1.5 mt-0.5 space-y-0.5">
-                                   {cartNum != null && (
-                                     <p className="text-[9px] text-emerald-600 flex items-center justify-center gap-0.5">
-                                       <Car className="h-2.5 w-2.5" /> Cart {cartNum}
-                                     </p>
-                                   )}
-                                   {bagDrop != null && (
-                                     <p className="text-[9px] text-muted-foreground flex items-center justify-center gap-0.5">
-                                       <Backpack className="h-2.5 w-2.5" /> Bag #{String(bagDrop).padStart(3, "0")}
-                                     </p>
-                                   )}
-                                   {caddyName && (
-                                     <p className="text-[9px] text-muted-foreground flex items-center justify-center gap-0.5 truncate">
-                                       <User className="h-2.5 w-2.5 shrink-0" /> {caddyName.split(" ")[0]}
-                                     </p>
-                                   )}
-                                 </div>
-                               )}
-                             </button>
-                           );
-                         })}
-                        {players.length === 0 && (
-                          <p className="col-span-2 text-xs text-muted-foreground text-center py-4">No players assigned</p>
-                        )}
+                            return (
+                              <button
+                                key={pp.id}
+                                onClick={() => pp.player_id && navigate(`/golfer/${pp.player_id}`)}
+                                className="flex flex-col items-center gap-1.5 rounded-lg border bg-background/60 p-2.5 hover:bg-secondary/50 transition-colors text-center"
+                              >
+                                <Avatar className="h-9 w-9">
+                                  <AvatarImage src={pp.avatar_url ?? ""} />
+                                  <AvatarFallback className="bg-primary/10 text-xs font-bold text-primary">
+                                    {(pp.full_name ?? "?").charAt(0)}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <p className="text-xs font-semibold truncate w-full">{pp.full_name}</p>
+                                <div className="flex flex-wrap items-center justify-center gap-1">
+                                  <Badge variant="outline" className="text-[9px]">HCP {pp.hcp ?? "—"}</Badge>
+                                  {pp.flight_name && <Badge variant="outline" className={`text-[9px] ${level?.cls ?? ""}`}>{pp.flight_name}</Badge>}
+                                </div>
+                                {pp.club_name && <p className="text-[9px] text-muted-foreground truncate w-full">{pp.club_name}</p>}
+                                {(pp.cart_number != null || pp.bag_number != null || pp.caddy_name) && (
+                                  <div className="w-full border-t border-border/50 pt-1.5 mt-0.5 space-y-0.5">
+                                    {pp.cart_number != null && (
+                                      <p className="text-[9px] text-emerald-600 flex items-center justify-center gap-0.5">
+                                        <Car className="h-2.5 w-2.5" /> Cart {pp.cart_number}
+                                      </p>
+                                    )}
+                                    {pp.bag_number != null && (
+                                      <p className="text-[9px] text-muted-foreground flex items-center justify-center gap-0.5">
+                                        <Backpack className="h-2.5 w-2.5" /> Bag #{String(pp.bag_number).padStart(3, "0")}
+                                      </p>
+                                    )}
+                                    {pp.caddy_name && (
+                                      <p className="text-[9px] text-muted-foreground flex items-center justify-center gap-0.5 truncate">
+                                        <User className="h-2.5 w-2.5 shrink-0" /> {pp.caddy_name.split(" ")[0]}
+                                      </p>
+                                    )}
+                                  </div>
+                                )}
+                              </button>
+                            );
+                          })}
+                         {players.length === 0 && (
+                           <p className="col-span-2 text-xs text-muted-foreground text-center py-4">No players assigned</p>
+                         )}
                       </div>
                     </div>
                   );
