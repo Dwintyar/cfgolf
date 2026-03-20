@@ -764,6 +764,9 @@ const GolferProfile = () => {
                 <Badge variant="outline" className="flex-1 justify-center rounded-lg border-border px-4 py-2.5 text-sm font-bold">HCP {profile?.handicap ?? "N/A"}</Badge>
                 <Badge variant="outline" className="flex-1 justify-center rounded-lg border-border px-4 py-2.5 text-sm font-bold">{clubs.length} CLUBS</Badge>
               </div>
+              {formatHcpUpdated(lastHcpUpdate) && (
+                <p className="text-[10px] text-muted-foreground mt-1">{formatHcpUpdated(lastHcpUpdate)}</p>
+              )}
               {!isOwnProfile && (
                 <div className="mt-4 flex gap-3 px-8 w-full">
                   <Button variant="outline" className="flex-1 h-11 rounded-xl text-sm font-bold uppercase tracking-wider border-border" onClick={() => navigate("/chat")}>
