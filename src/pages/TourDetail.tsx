@@ -18,7 +18,6 @@ import ManageFlightsDialog from "@/components/tour/ManageFlightsDialog";
 import ManageCategoriesDialog from "@/components/tour/ManageCategoriesDialog";
 import CreateEventDialog from "@/components/tour/CreateEventDialog";
 import TourLeaderboard from "@/components/tour/TourLeaderboard";
-import TourEventResults from "@/components/tour/TourEventResults";
 
 const TourDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -328,13 +327,7 @@ const TourDetail = () => {
     queryClient.invalidateQueries({ queryKey: ["tour-players-detail", id] });
   };
 
-  const statusColors: Record<string, string> = {
-    draft: "border-muted-foreground/30 text-muted-foreground",
-    registration: "border-accent/40 text-accent",
-    checkin: "border-accent/40 text-accent",
-    playing: "border-primary/40 text-primary",
-    completed: "border-primary/60 text-primary",
-  };
+  const statusColors: Record<string, string> = {};
 
   if (isLoading) return (
     <div className="bottom-nav-safe space-y-4 p-4">
@@ -363,8 +356,9 @@ const TourDetail = () => {
           <div>
             <h1 className="font-display text-xl font-bold">{tour.name}</h1>
             <div className="mt-1 flex flex-wrap gap-x-3 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> {tour.year}</span>
               <span className="flex items-center gap-1"><Users className="h-3 w-3" /> {(tour.clubs as any)?.name}</span>
+              <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> {tour.year}</span>
+              <span className="flex items-center gap-1"><Building2 className="h-3 w-3" /> {tourClubs?.filter(tc => tc.status === "accepted").length ?? 0} clubs</span>
             </div>
           </div>
           <Badge variant="outline" className="text-[10px] uppercase tracking-wider border-primary/30 text-primary">
@@ -427,42 +421,44 @@ const TourDetail = () => {
       <Tabs defaultValue="events" className="px-4">
         <TabsList className="w-full flex-wrap h-auto gap-0.5 p-1">
           <TabsTrigger value="events" className="flex-1 text-xs">Events</TabsTrigger>
-          <TabsTrigger value="players" className="flex-1 text-xs">Players</TabsTrigger>
-          {tour.tournament_type === "interclub" && (
-            <TabsTrigger value="clubs" className="flex-1 text-xs">Clubs</TabsTrigger>
-          )}
           <TabsTrigger value="leaderboard" className="flex-1 text-xs">Leaderboard</TabsTrigger>
-          <TabsTrigger value="results" className="flex-1 text-xs">Results</TabsTrigger>
+          <TabsTrigger value="players" className="flex-1 text-xs">Players</TabsTrigger>
+          <TabsTrigger value="clubs" className="flex-1 text-xs">Clubs</TabsTrigger>
         </TabsList>
 
         <TabsContent value="events" className="space-y-3 pt-2">
           {events?.length === 0 && (
             <div className="golf-card p-6 text-center text-sm text-muted-foreground">No events scheduled</div>
           )}
-          {events?.map((event, i) => (
-            <button
-              key={event.id}
-              onClick={() => navigate(`/event/${event.id}`)}
-              className="golf-card w-full text-left p-4 animate-fade-in transition-all hover:border-primary/30"
-              style={{ animationDelay: `${i * 60}ms` }}
-            >
-              <div className="flex items-start justify-between">
-                <div className="min-w-0 flex-1">
-                  <h3 className="font-display text-sm font-semibold truncate">{event.name}</h3>
-                  <div className="mt-1 flex flex-wrap gap-x-3 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> {event.event_date}</span>
-                    <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {(event.courses as any)?.name}</span>
+          {events?.map((event, i) => {
+            const eventStatusLabel = event.status === "completed" ? "Completed" : event.status === "playing" || event.status === "checkin" ? "Upcoming" : "Scheduled";
+            const eventStatusClass = event.status === "completed" ? "border-primary/40 text-primary bg-primary/5" : event.status === "playing" || event.status === "checkin" ? "border-accent/40 text-accent bg-accent/5" : "border-muted-foreground/30 text-muted-foreground";
+            const formattedDate = new Date(event.event_date).toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+            return (
+              <button
+                key={event.id}
+                onClick={() => navigate(`/event/${event.id}`)}
+                className="golf-card w-full text-left p-4 animate-fade-in transition-all hover:border-primary/30"
+                style={{ animationDelay: `${i * 60}ms` }}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-display text-sm font-semibold truncate">{event.name}</h3>
+                    <div className="mt-1 flex flex-wrap gap-x-3 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> {formattedDate}</span>
+                      <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {(event.courses as any)?.name}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className={`text-[10px] ${eventStatusClass}`}>
+                      {eventStatusLabel}
+                    </Badge>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className={`text-[10px] ${statusColors[event.status] ?? ""}`}>
-                    {event.status}
-                  </Badge>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                </div>
-              </div>
-            </button>
-          ))}
+              </button>
+            );
+          })}
         </TabsContent>
 
         <TabsContent value="players" className="space-y-3 pt-2">
@@ -608,6 +604,13 @@ const TourDetail = () => {
                         )}
                       </p>
                     </div>
+                    {(() => {
+                      const hcp = player.hcp_at_registration ?? (profile?.handicap ?? null);
+                      if (hcp == null) return null;
+                      const level = hcp <= 16 ? "A" : hcp <= 22 ? "B" : "C";
+                      const cls = level === "A" ? "bg-blue-500/10 text-blue-600 border-blue-500/30" : level === "B" ? "bg-amber-500/10 text-amber-600 border-amber-500/30" : "bg-muted text-muted-foreground border-border";
+                      return <Badge variant="outline" className={`text-[9px] shrink-0 ${cls}`}>Level {level}</Badge>;
+                    })()}
                     <Badge variant="outline" className="text-[9px] shrink-0">{player.status}</Badge>
                     {showActions && (
                       <div className="flex gap-0.5 shrink-0">
@@ -758,31 +761,39 @@ const TourDetail = () => {
           )}
         </TabsContent>
 
-        {tour.tournament_type === "interclub" && (
-          <TabsContent value="clubs" className="space-y-2 pt-2">
-            {tourClubs?.length === 0 && (
-              <div className="golf-card p-6 text-center text-sm text-muted-foreground">No clubs invited</div>
-            )}
-            {tourClubs?.map((tc) => (
-              <div key={tc.id} className="golf-card flex items-center justify-between p-3">
-                <div>
-                  <p className="text-sm font-medium">{(tc.clubs as any)?.name}</p>
-                  <p className="text-xs text-muted-foreground">Quota: {tc.ticket_quota} tickets</p>
+        <TabsContent value="clubs" className="space-y-2 pt-2">
+          {tourClubs?.length === 0 && (
+            <div className="golf-card p-6 text-center text-sm text-muted-foreground">No clubs invited</div>
+          )}
+          {tourClubs
+            ?.filter(tc => tc.status === "accepted")
+            .sort((a, b) => ((a.clubs as any)?.name ?? "").localeCompare((b.clubs as any)?.name ?? ""))
+            .map((tc) => {
+              const clubPlayerCount = playersByClub[tc.club_id]?.players?.filter((p: any) => p.status !== "pending").length ?? 0;
+              return (
+                <div key={tc.id} className="golf-card flex items-center gap-3 p-3">
+                  <Avatar className="h-9 w-9 rounded-lg">
+                    <AvatarImage src={(tc.clubs as any)?.logo_url ?? ""} />
+                    <AvatarFallback className="rounded-lg bg-primary/10 text-xs font-bold text-primary">
+                      {((tc.clubs as any)?.name ?? "?").charAt(0)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{(tc.clubs as any)?.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Quota: {tc.ticket_quota} · Players: {clubPlayerCount}
+                    </p>
+                  </div>
+                  <Badge variant="outline" className={`text-[10px] ${tc.status === "accepted" ? "text-primary border-primary/30" : "text-accent border-accent/30"}`}>
+                    {tc.status}
+                  </Badge>
                 </div>
-                <Badge variant="outline" className={`text-[10px] ${tc.status === "accepted" ? "text-primary border-primary/30" : "text-accent border-accent/30"}`}>
-                  {tc.status}
-                </Badge>
-              </div>
-            ))}
-          </TabsContent>
-        )}
+              );
+            })}
+        </TabsContent>
 
         <TabsContent value="leaderboard">
           <TourLeaderboard tourId={id!} tourName={tour.name} />
-        </TabsContent>
-
-        <TabsContent value="results">
-          <TourEventResults tourId={id!} />
         </TabsContent>
       </Tabs>
 

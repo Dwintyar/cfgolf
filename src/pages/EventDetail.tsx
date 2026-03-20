@@ -203,7 +203,7 @@ const EventDetail = () => {
         .from("pairings")
         .select("*, pairing_players(*, contestants(*, profiles(full_name, handicap)))")
         .eq("event_id", id!)
-        .order("group_number");
+        .order("teeoff_group_number");
       if (error) throw error;
       return data;
     },
@@ -684,7 +684,7 @@ const EventDetail = () => {
             {pairings?.map((p) => (
               <div key={p.id} className="golf-card p-3 space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-semibold">Group {p.group_number}</span>
+                  <span className="text-sm font-semibold">Group {p.teeoff_group_number}</span>
                   <div className="flex items-center gap-2">
                     {p.start_type === "shotgun" && p.start_hole && (
                       <Badge variant="outline" className="text-[10px] border-accent/30 text-accent">Hole {p.start_hole}</Badge>

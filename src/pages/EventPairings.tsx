@@ -30,7 +30,7 @@ const EventPairings = () => {
         .from("pairings")
         .select("*, pairing_players(*, contestants(*, profiles(full_name, handicap, avatar_url)))")
         .eq("event_id", id!)
-        .order("group_number");
+        .order("teeoff_group_number");
       if (error) throw error;
       return data;
     },
@@ -105,10 +105,10 @@ const EventPairings = () => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-sm font-bold text-primary">
-                    {p.group_number}
+                    {p.teeoff_group_number}
                   </div>
                   <div>
-                    <p className="text-sm font-semibold">Group {p.group_number}</p>
+                    <p className="text-sm font-semibold">Group {p.teeoff_group_number}</p>
                     <p className="text-[10px] text-muted-foreground">
                       {players.length} players
                     </p>
