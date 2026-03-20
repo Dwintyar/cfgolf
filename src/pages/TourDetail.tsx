@@ -17,6 +17,8 @@ import RegisterPlayerDialog from "@/components/tour/RegisterPlayerDialog";
 import ManageFlightsDialog from "@/components/tour/ManageFlightsDialog";
 import ManageCategoriesDialog from "@/components/tour/ManageCategoriesDialog";
 import CreateEventDialog from "@/components/tour/CreateEventDialog";
+import TourLeaderboard from "@/components/tour/TourLeaderboard";
+import TourEventResults from "@/components/tour/TourEventResults";
 
 const TourDetail = () => {
   const { id } = useParams<{ id: string }>();
