@@ -289,7 +289,7 @@ const EventDetail = () => {
         return eventContestants.map(ct => ({
           player_id: ct.player_id,
           full_name: (ct.profiles as any)?.full_name ?? "Unknown",
-          out_score: null, in_score: null, tot: null, nett: null,
+          club_name: "—", out_score: null, in_score: null, tot: null, nett: null,
           hcp: ct.hcp, flight_id: ct.flight_id,
           flight_name: (ct.tournament_flights as any)?.flight_name ?? "",
           hcp_min: (ct.tournament_flights as any)?.hcp_min ?? 0,
