@@ -572,7 +572,6 @@ const EventDetail = () => {
       <TabsList className="w-full overflow-x-auto flex">
         <TabsTrigger value="overview" className="flex-1 text-[11px]">Overview</TabsTrigger>
         <TabsTrigger value="checkin" className="flex-1 text-[11px]">Check-in</TabsTrigger>
-        <TabsTrigger value="teeoff" className="flex-1 text-[11px]">Tee-off Groups</TabsTrigger>
         <TabsTrigger value="pairings" className="flex-1 text-[11px]">Pairings</TabsTrigger>
         <TabsTrigger value="leaderboard" className="flex-1 text-[11px]">Board</TabsTrigger>
       </TabsList>
