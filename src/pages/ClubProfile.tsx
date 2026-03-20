@@ -1,4 +1,4 @@
-import { ArrowLeft, Search, Mail, Mic, Settings, UserPlus, Check, X, LogIn, Users } from "lucide-react";
+import { ArrowLeft, Search, Mail, Mic, Settings, UserPlus, Check, X, LogIn, Users, Loader2 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
