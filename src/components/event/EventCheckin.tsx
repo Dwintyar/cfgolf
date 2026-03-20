@@ -142,7 +142,7 @@ const EventCheckin = ({ eventId, isAdmin, userId, event }: EventCheckinProps) =>
 
   const uniqueClubCount = useMemo(() => {
     if (!contestants) return 0;
-    return new Set(contestants.map(c => c.club_name)).size;
+    return new Set(contestants.map(c => c.club_name).filter(n => n !== "Unknown")).size;
   }, [contestants]);
 
   // Handlers
