@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Calendar, MapPin, Users, Ticket, Trophy, Award, Shuffle, TrendingDown,
-  ClipboardCheck, Package, Lock, Car, UserCheck, ChevronRight, Pencil, Plus, RefreshCw, Clock, Download, Flag
+  ClipboardCheck, Package, Lock, Car, UserCheck, ChevronRight, Pencil, Plus, RefreshCw, Clock, Download, Flag, Backpack, User
 } from "lucide-react";
 import html2canvas from "html2canvas";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -304,7 +304,31 @@ const EventDetail = () => {
       const cartMap: Record<string, number> = {};
       (cartData ?? []).forEach(c => { cartMap[c.contestant_id] = c.cart_number; });
 
-      return pairingData.map(p => ({ ...p, _clubMap: clubMap, _cartMap: cartMap }));
+      // Fetch checkin data (bag drop + locker)
+      const { data: checkinData } = await supabase
+        .from("event_checkins")
+        .select("contestant_id, bag_drop_number, locker_number")
+        .eq("event_id", id!);
+      const checkinMap: Record<string, { bag_drop_number: number | null; locker_number: number | null }> = {};
+      (checkinData ?? []).forEach(c => {
+        checkinMap[c.contestant_id] = { bag_drop_number: c.bag_drop_number, locker_number: c.locker_number };
+      });
+
+      // Fetch caddy assignments
+      const { data: caddyData } = await supabase
+        .from("caddy_assignments")
+        .select(`
+          contestant_id,
+          caddy_id,
+          profiles!caddy_assignments_caddy_id_fkey ( full_name )
+        `)
+        .eq("event_id", id!);
+      const caddyMap: Record<string, string> = {};
+      (caddyData ?? []).forEach((c: any) => {
+        caddyMap[c.contestant_id] = (c.profiles as any)?.full_name ?? "";
+      });
+
+      return pairingData.map(p => ({ ...p, _clubMap: clubMap, _cartMap: cartMap, _checkinMap: checkinMap, _caddyMap: caddyMap }));
     },
     enabled: !!id && !!event?.tour_id,
   });
@@ -811,61 +835,81 @@ const EventDetail = () => {
                   const badgeCls = slotLabel === "A"
                     ? "bg-blue-500/10 text-blue-600 border-blue-500/30"
                     : "bg-amber-500/10 text-amber-600 border-amber-500/30";
-                  const players = ((g.pairing_players as any[]) ?? []).sort((a: any, b: any) => (a.position ?? 0) - (b.position ?? 0));
-                  const clubMap = g._clubMap ?? {};
-                  const cartMap = g._cartMap ?? {};
-                  const par = parMap[g.start_hole ?? 1];
-                  const teeTime = g.tee_time ? (() => {
-                    try { return new Date(g.tee_time).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false }); }
-                    catch { return g.tee_time; }
-                  })() : null;
+                   const players = ((g.pairing_players as any[]) ?? []).sort((a: any, b: any) => (a.position ?? 0) - (b.position ?? 0));
+                   const clubMap = g._clubMap ?? {};
+                   const cartMap = g._cartMap ?? {};
+                   const checkinMap = g._checkinMap ?? {};
+                   const caddyMap = g._caddyMap ?? {};
+                   const par = parMap[g.start_hole ?? 1];
+                   const teeTime = g.tee_time ? (() => {
+                     try { return new Date(g.tee_time).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false }); }
+                     catch { return g.tee_time; }
+                   })() : null;
 
-                  return (
-                    <div key={g.id} className="rounded-xl border bg-card/50 hover:shadow-md transition-shadow overflow-hidden">
-                      {/* Card header */}
-                      <div className="flex items-center gap-2 px-3 py-2.5 border-b bg-muted/30">
-                        <Badge variant="outline" className={`text-[11px] font-bold ${badgeCls}`}>{badgeLabel}</Badge>
-                        <span className="text-xs text-muted-foreground">Hole {g.start_hole ?? 1}</span>
-                        {par && <span className="text-[10px] text-muted-foreground">· Par {par}</span>}
-                        <span className="text-xs text-muted-foreground">· Slot {slotLabel}</span>
-                        {teeTime && <span className="text-xs text-muted-foreground ml-auto font-medium">{teeTime}</span>}
-                      </div>
+                   return (
+                     <div key={g.id} className="rounded-xl border bg-card/50 hover:shadow-md transition-shadow overflow-hidden">
+                       {/* Card header */}
+                       <div className="flex items-center gap-2 px-3 py-2.5 border-b bg-muted/30">
+                         <Badge variant="outline" className={`text-[11px] font-bold ${badgeCls}`}>{badgeLabel}</Badge>
+                         <span className="text-xs text-muted-foreground">Hole {g.start_hole ?? 1}</span>
+                         {par && <span className="text-[10px] text-muted-foreground">· Par {par}</span>}
+                         <span className="text-xs text-muted-foreground">· Slot {slotLabel}</span>
+                         {teeTime && <span className="text-xs text-muted-foreground ml-auto font-medium">{teeTime}</span>}
+                       </div>
 
-                      {/* 2×2 player grid */}
-                      <div className="grid grid-cols-2 gap-2 p-3">
-                        {players.map((pp: any) => {
-                          const profile = pp.contestants?.profiles;
-                          const hcp = pp.contestants?.hcp ?? profile?.handicap;
-                          const clubName = clubMap[pp.contestants?.player_id] ?? "";
-                          const level = getFlightLevel(hcp);
-                          const cartNum = cartMap[pp.contestant_id];
+                       {/* 2×2 player grid */}
+                       <div className="grid grid-cols-2 gap-2 p-3">
+                         {players.map((pp: any) => {
+                           const profile = pp.contestants?.profiles;
+                           const hcp = pp.contestants?.hcp ?? profile?.handicap;
+                           const clubName = clubMap[pp.contestants?.player_id] ?? "";
+                           const level = getFlightLevel(hcp);
+                           const cartNum = cartMap[pp.contestant_id];
+                           const checkin = checkinMap[pp.contestant_id];
+                           const bagDrop = checkin?.bag_drop_number;
+                           const caddyName = caddyMap[pp.contestant_id];
 
-                          return (
-                            <button
-                              key={pp.id}
-                              onClick={() => profile?.id && navigate(`/golfer/${profile.id}`)}
-                              className="flex flex-col items-center gap-1.5 rounded-lg border bg-background/60 p-2.5 hover:bg-secondary/50 transition-colors text-center"
-                            >
-                              <Avatar className="h-9 w-9">
-                                <AvatarImage src={profile?.avatar_url ?? ""} />
-                                <AvatarFallback className="bg-primary/10 text-xs font-bold text-primary">
-                                  {(profile?.full_name ?? "?").charAt(0)}
-                                </AvatarFallback>
-                              </Avatar>
-                              <p className="text-xs font-semibold truncate w-full">{profile?.full_name ?? "Unknown"}</p>
-                              <div className="flex flex-wrap items-center justify-center gap-1">
-                                <Badge variant="outline" className="text-[9px]">HCP {hcp ?? "—"}</Badge>
-                                {level && <Badge variant="outline" className={`text-[9px] ${level.cls}`}>Lvl {level.label}</Badge>}
-                              </div>
-                              {clubName && <p className="text-[9px] text-muted-foreground truncate w-full">{clubName}</p>}
-                              {cartNum != null && (
-                                <p className="text-[9px] text-muted-foreground flex items-center gap-0.5">
-                                  <Car className="h-2.5 w-2.5" /> Cart {cartNum}
-                                </p>
-                              )}
-                            </button>
-                          );
-                        })}
+                           return (
+                             <button
+                               key={pp.id}
+                               onClick={() => profile?.id && navigate(`/golfer/${profile.id}`)}
+                               className="flex flex-col items-center gap-1.5 rounded-lg border bg-background/60 p-2.5 hover:bg-secondary/50 transition-colors text-center"
+                             >
+                               <Avatar className="h-9 w-9">
+                                 <AvatarImage src={profile?.avatar_url ?? ""} />
+                                 <AvatarFallback className="bg-primary/10 text-xs font-bold text-primary">
+                                   {(profile?.full_name ?? "?").charAt(0)}
+                                 </AvatarFallback>
+                               </Avatar>
+                               <p className="text-xs font-semibold truncate w-full">{profile?.full_name ?? "Unknown"}</p>
+                               <div className="flex flex-wrap items-center justify-center gap-1">
+                                 <Badge variant="outline" className="text-[9px]">HCP {hcp ?? "—"}</Badge>
+                                 {level && <Badge variant="outline" className={`text-[9px] ${level.cls}`}>Lvl {level.label}</Badge>}
+                               </div>
+                               {clubName && <p className="text-[9px] text-muted-foreground truncate w-full">{clubName}</p>}
+                               {/* Divider + operational info */}
+                               {(cartNum != null || bagDrop != null || caddyName) && (
+                                 <div className="w-full border-t border-border/50 pt-1.5 mt-0.5 space-y-0.5">
+                                   {cartNum != null && (
+                                     <p className="text-[9px] text-emerald-600 flex items-center justify-center gap-0.5">
+                                       <Car className="h-2.5 w-2.5" /> Cart {cartNum}
+                                     </p>
+                                   )}
+                                   {bagDrop != null && (
+                                     <p className="text-[9px] text-muted-foreground flex items-center justify-center gap-0.5">
+                                       <Backpack className="h-2.5 w-2.5" /> Bag #{String(bagDrop).padStart(3, "0")}
+                                     </p>
+                                   )}
+                                   {caddyName && (
+                                     <p className="text-[9px] text-muted-foreground flex items-center justify-center gap-0.5 truncate">
+                                       <User className="h-2.5 w-2.5 shrink-0" /> {caddyName.split(" ")[0]}
+                                     </p>
+                                   )}
+                                 </div>
+                               )}
+                             </button>
+                           );
+                         })}
                         {players.length === 0 && (
                           <p className="col-span-2 text-xs text-muted-foreground text-center py-4">No players assigned</p>
                         )}
