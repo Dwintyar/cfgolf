@@ -74,14 +74,24 @@ const EventDetail = () => {
       if (!hcpData?.length) { setHcpRows([]); setHcpLoading(false); return; }
 
       const pIds = hcpData.map(h => h.player_id);
-      const tourId = hcpData[0]?.tour_id;
+
+      // Get tour_id from the event itself (not from handicap_history)
+      const { data: eventData } = await supabase
+        .from("events")
+        .select("tour_id")
+        .eq("id", id)
+        .single();
+      const tourId = eventData?.tour_id;
+
       const [{ data: profs }, { data: tix }, { data: flightsData }] = await Promise.all([
         supabase.from("profiles").select("id, full_name").in("id", pIds),
         supabase.from("tickets").select("assigned_player_id, clubs!inner(name)").eq("event_id", id),
         tourId
-          ? supabase.from("tournament_flights").select("flight_name, hcp_min, hcp_max").eq("tour_id", tourId).order("hcp_min")
+          ? supabase.from("tournament_flights").select("flight_name, hcp_min, hcp_max").eq("tour_id", tourId).order("hcp_min", { ascending: true })
           : Promise.resolve({ data: [] as any[] }),
       ]);
+
+      console.log("flights loaded:", flightsData);
 
       const profMap: Record<string, string> = {};
       (profs ?? []).forEach((p: any) => { profMap[p.id] = p.full_name; });
@@ -90,8 +100,11 @@ const EventDetail = () => {
 
       const getFlightName = (hcp: number | null) => {
         if (hcp == null || !flightsData?.length) return "?";
-        const fl = flightsData.find((f: any) => hcp >= f.hcp_min && hcp <= f.hcp_max);
-        return fl?.flight_name?.slice(-1) ?? "?";
+        const fl = (flightsData as any[]).find((f: any) => hcp >= f.hcp_min && hcp <= f.hcp_max);
+        if (!fl) return "?";
+        const name = fl.flight_name ?? "";
+        const match = name.match(/[ABC]$/);
+        return match ? match[0] : name;
       };
 
       setHcpRows(hcpData.map((h: any, i: number) => ({
