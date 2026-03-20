@@ -911,18 +911,6 @@ const EventDetail = () => {
             return { label: "C", cls: "bg-muted text-muted-foreground border-border" };
           };
 
-          // Apply filters
-          const filteredGroups = groups.filter(g => {
-            const hole = g.start_hole ?? 1;
-            const players = ((g.pairing_players as any[]) ?? []);
-            if (pairingFilter === "front9") return hole >= 1 && hole <= 9;
-            if (pairingFilter === "back9") return hole >= 10 && hole <= 18;
-            if (pairingFilter === "flightA") return players.some((pp: any) => { const h = pp.contestants?.hcp; return h != null && h <= 16; });
-            if (pairingFilter === "flightB") return players.some((pp: any) => { const h = pp.contestants?.hcp; return h != null && h > 16 && h <= 22; });
-            if (pairingFilter === "flightC") return players.some((pp: any) => { const h = pp.contestants?.hcp; return h != null && h > 22; });
-            return true;
-          });
-
           return (
             <>
               {/* Summary */}
@@ -934,42 +922,18 @@ const EventDetail = () => {
                 <p className="text-xs text-muted-foreground">Shotgun start · All groups tee off simultaneously</p>
               </div>
 
-              {/* Sticky filter bar */}
-              <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm py-2 flex gap-1.5 overflow-x-auto scrollbar-none">
-                {[
-                  { key: "all", label: "All" },
-                  { key: "front9", label: "Hole 1–9" },
-                  { key: "back9", label: "Hole 10–18" },
-                  { key: "flightA", label: "Flight A" },
-                  { key: "flightB", label: "Flight B" },
-                  { key: "flightC", label: "Flight C" },
-                ].map(f => (
-                  <button
-                    key={f.key}
-                    onClick={() => setPairingFilter(f.key)}
-                    className={`shrink-0 rounded-full px-3 py-1 text-[11px] font-medium border transition-colors ${
-                      pairingFilter === f.key
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "bg-secondary/50 text-muted-foreground border-border hover:bg-secondary"
-                    }`}
-                  >
-                    {f.label}
-                  </button>
-                ))}
-              </div>
-
-              {/* Card grid */}
+              {/* Card grid — no filter, show all */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {filteredGroups.map((g: any) => {
+                {groups.map((g: any) => {
                   const slotLabel = g.slot ?? "A";
                   const badgeLabel = g.pairing_label ?? `${g.start_hole ?? 1}${slotLabel}`;
                   const badgeCls = slotLabel === "A"
                     ? "bg-blue-500/10 text-blue-600 border-blue-500/30"
                     : "bg-amber-500/10 text-amber-600 border-amber-500/30";
-                   const players = ((g.pairing_players as any[]) ?? []).sort((a: any, b: any) => (a.position ?? 0) - (b.position ?? 0));
+                   const players = ((g.pairing_players as any[]) ?? []);
                    const clubMap = g._clubMap ?? {};
                    const cartMap = g._cartMap ?? {};
-                   const checkinMap = g._checkinMap ?? {};
+                   const bagMap = g._bagMap ?? {};
                    const caddyMap = g._caddyMap ?? {};
                    const par = parMap[g.start_hole ?? 1];
                    const teeTime = g.tee_time ? (() => {
@@ -996,8 +960,7 @@ const EventDetail = () => {
                            const clubName = clubMap[pp.contestants?.player_id] ?? "";
                            const level = getFlightLevel(hcp);
                            const cartNum = cartMap[pp.contestant_id];
-                           const checkin = checkinMap[pp.contestant_id];
-                           const bagDrop = checkin?.bag_drop_number;
+                           const bagDrop = bagMap[pp.contestant_id];
                            const caddyName = caddyMap[pp.contestant_id];
 
                            return (
@@ -1018,7 +981,6 @@ const EventDetail = () => {
                                  {level && <Badge variant="outline" className={`text-[9px] ${level.cls}`}>Lvl {level.label}</Badge>}
                                </div>
                                {clubName && <p className="text-[9px] text-muted-foreground truncate w-full">{clubName}</p>}
-                               {/* Divider + operational info */}
                                {(cartNum != null || bagDrop != null || caddyName) && (
                                  <div className="w-full border-t border-border/50 pt-1.5 mt-0.5 space-y-0.5">
                                    {cartNum != null && (
@@ -1049,10 +1011,6 @@ const EventDetail = () => {
                   );
                 })}
               </div>
-
-              {filteredGroups.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-6">No groups match this filter</p>
-              )}
             </>
           );
         })()}
