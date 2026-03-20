@@ -261,17 +261,54 @@ const EventDetail = () => {
       const courseId = (event?.courses as any)?.id;
       if (!courseId || !id) return [];
 
-      // Get all scorecards for this event's course
-      const { data: scorecards } = await supabase
-        .from("scorecards")
-        .select(`
-          id, player_id, gross_score, net_score,
-          rounds!inner ( id, course_id ),
-          hole_scores ( hole_number, strokes )
-        `)
-        .eq("rounds.course_id", courseId);
+      // Step 1: Find the round for this course
+      const { data: roundData } = await supabase
+        .from("rounds")
+        .select("id")
+        .eq("course_id", courseId)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      if (!roundData?.length) {
+        // No round yet — still show contestants as NR
+      }
+      const roundId = roundData?.[0]?.id;
 
-      if (!scorecards?.length) return [];
+      // Step 2: Fetch scorecards for that round
+      let scorecardsData: any[] = [];
+      if (roundId) {
+        const { data } = await supabase
+          .from("scorecards")
+          .select("id, player_id, gross_score, net_score, total_putts")
+          .eq("round_id", roundId);
+        scorecardsData = data ?? [];
+      }
+
+      // Step 3: Fetch hole_scores for those scorecards
+      const scorecardIds = scorecardsData.map(sc => sc.id);
+      const outInMap: Record<string, { out: number; in: number }> = {};
+      if (scorecardIds.length > 0) {
+        const { data: holeScoresData } = await supabase
+          .from("hole_scores")
+          .select("scorecard_id, hole_number, strokes")
+          .in("scorecard_id", scorecardIds);
+        (holeScoresData ?? []).forEach((hs: any) => {
+          if (!outInMap[hs.scorecard_id]) outInMap[hs.scorecard_id] = { out: 0, in: 0 };
+          if (hs.hole_number <= 9) outInMap[hs.scorecard_id].out += (hs.strokes ?? 0);
+          else outInMap[hs.scorecard_id].in += (hs.strokes ?? 0);
+        });
+      }
+
+      // Step 4: Build scorecardByPlayer
+      const scorecardByPlayer: Record<string, { out: number; in: number; tot: number | null; net: number | null }> = {};
+      scorecardsData.forEach(sc => {
+        const oi = outInMap[sc.id] ?? { out: 0, in: 0 };
+        scorecardByPlayer[sc.player_id] = {
+          out: oi.out,
+          in: oi.in,
+          tot: sc.gross_score,
+          net: sc.net_score,
+        };
+      });
 
       // Get contestants for this event with flight info
       const { data: eventContestants } = await supabase
@@ -299,60 +336,27 @@ const EventDetail = () => {
         resultsMap[er.contestant_id] = (er.tournament_winner_categories as any)?.category_name ?? "";
       });
 
-      // Build contestant lookup
-      const contestantMap: Record<string, any> = {};
-      eventContestants.forEach(c => { contestantMap[c.player_id] = c; });
+      // Build rows from contestants
+      const rows = eventContestants.map(ct => {
+        const scores = scorecardByPlayer[ct.player_id];
+        const categoryName = resultsMap[ct.id] ?? "";
 
-      // Merge data
-      const rows = scorecards
-        .filter(sc => contestantMap[sc.player_id])
-        .map(sc => {
-          const ct = contestantMap[sc.player_id];
-          const holes = (sc.hole_scores as any[]) ?? [];
-          const outScore = holes.filter(h => h.hole_number >= 1 && h.hole_number <= 9).reduce((s, h) => s + (h.strokes ?? 0), 0);
-          const inScore = holes.filter(h => h.hole_number >= 10 && h.hole_number <= 18).reduce((s, h) => s + (h.strokes ?? 0), 0);
-          const hasScores = holes.length > 0;
-          const categoryName = resultsMap[ct.id] ?? "";
-
-          return {
-            player_id: sc.player_id,
-            full_name: (ct.profiles as any)?.full_name ?? "Unknown",
-            out_score: hasScores ? outScore : null,
-            in_score: hasScores ? inScore : null,
-            tot: sc.gross_score ?? (hasScores ? outScore + inScore : null),
-            nett: sc.net_score,
-            hcp: ct.hcp,
-            flight_id: ct.flight_id,
-            flight_name: (ct.tournament_flights as any)?.flight_name ?? "",
-            hcp_min: (ct.tournament_flights as any)?.hcp_min ?? 0,
-            hcp_max: (ct.tournament_flights as any)?.hcp_max ?? 36,
-            display_order: (ct.tournament_flights as any)?.display_order ?? 0,
-            contestant_id: ct.id,
-            category_name: categoryName,
-          };
-        });
-
-      // Also add contestants with no scorecard (NR)
-      eventContestants.forEach(ct => {
-        if (!rows.find(r => r.player_id === ct.player_id)) {
-          const categoryName = resultsMap[ct.id] ?? "";
-          rows.push({
-            player_id: ct.player_id,
-            full_name: (ct.profiles as any)?.full_name ?? "Unknown",
-            out_score: null,
-            in_score: null,
-            tot: null,
-            nett: null,
-            hcp: ct.hcp,
-            flight_id: ct.flight_id,
-            flight_name: (ct.tournament_flights as any)?.flight_name ?? "",
-            hcp_min: (ct.tournament_flights as any)?.hcp_min ?? 0,
-            hcp_max: (ct.tournament_flights as any)?.hcp_max ?? 36,
-            display_order: (ct.tournament_flights as any)?.display_order ?? 0,
-            contestant_id: ct.id,
-            category_name: categoryName,
-          });
-        }
+        return {
+          player_id: ct.player_id,
+          full_name: (ct.profiles as any)?.full_name ?? "Unknown",
+          out_score: scores?.out ?? null,
+          in_score: scores?.in ?? null,
+          tot: scores?.tot ?? null,
+          nett: scores?.net ?? null,
+          hcp: ct.hcp,
+          flight_id: ct.flight_id,
+          flight_name: (ct.tournament_flights as any)?.flight_name ?? "",
+          hcp_min: (ct.tournament_flights as any)?.hcp_min ?? 0,
+          hcp_max: (ct.tournament_flights as any)?.hcp_max ?? 36,
+          display_order: (ct.tournament_flights as any)?.display_order ?? 0,
+          contestant_id: ct.id,
+          category_name: categoryName,
+        };
       });
 
       // Sort by flight display_order, then nett ascending (NR last)
