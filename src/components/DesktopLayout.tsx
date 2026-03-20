@@ -75,6 +75,7 @@ const DesktopLayout = ({ children, sidebarRightHidden = false }: { children: Rea
   const location = useLocation();
   const { unreadCount } = useContext(ChatNotifContext);
   const [userId, setUserId] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
   const width = useWindowWidth();
   const isDesktop = width >= 1024;
   const isWide = width >= 1280;
