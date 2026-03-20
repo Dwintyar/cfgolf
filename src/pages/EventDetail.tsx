@@ -1237,6 +1237,140 @@ const EventDetail = () => {
           </Button>
         )}
       </TabsContent>
+
+      {/* HCP CORRECTION TAB */}
+      <TabsContent value="hcpcorr" className="space-y-3 pt-2">
+        {(() => {
+          const [hcpRows, setHcpRows] = useState<any[]>([]);
+          const [hcpLoading, setHcpLoading] = useState(true);
+          const hcpExportRef = useRef<HTMLDivElement>(null);
+
+          useEffect(() => {
+            const load = async () => {
+              setHcpLoading(true);
+              const { data: hcpData } = await supabase
+                .from("handicap_history")
+                .select("player_id, old_hcp, new_hcp, gross_score, net_score, sandbagging_flag")
+                .eq("event_id", id!)
+                .order("new_hcp", { ascending: true });
+
+              if (!hcpData?.length) { setHcpRows([]); setHcpLoading(false); return; }
+
+              const pIds = hcpData.map(h => h.player_id);
+              const [{ data: profs }, { data: tix }] = await Promise.all([
+                supabase.from("profiles").select("id, full_name").in("id", pIds),
+                supabase.from("tickets").select("assigned_player_id, clubs!inner(name)").eq("event_id", id!),
+              ]);
+
+              const profMap: Record<string, string> = {};
+              (profs ?? []).forEach((p: any) => { profMap[p.id] = p.full_name; });
+              const clubMap: Record<string, string> = {};
+              (tix ?? []).forEach((t: any) => { if (t.assigned_player_id) clubMap[t.assigned_player_id] = (t.clubs as any)?.name ?? "—"; });
+
+              setHcpRows(hcpData.map((h: any, i: number) => ({
+                no: i + 1,
+                player_id: h.player_id,
+                name: profMap[h.player_id] ?? "Unknown",
+                club: clubMap[h.player_id] ?? "—",
+                old_hcp: h.old_hcp,
+                new_hcp: h.new_hcp,
+                delta: (h.old_hcp ?? 0) - (h.new_hcp ?? 0),
+                sandbagging: h.sandbagging_flag,
+              })));
+              setHcpLoading(false);
+            };
+            if (activeTab === "hcpcorr") load();
+          }, [activeTab, id]);
+
+          const totalCorrected = hcpRows.length;
+          const avgCorrection = totalCorrected > 0 ? (hcpRows.reduce((s, r) => s + r.delta, 0) / totalCorrected).toFixed(1) : "0";
+          const flagCount = hcpRows.filter(r => r.sandbagging).length;
+
+          const handleExportHcp = async () => {
+            if (!hcpExportRef.current) return;
+            setExporting(true);
+            try {
+              const canvas = await html2canvas(hcpExportRef.current, { backgroundColor: "#1a1a2e", scale: 2 });
+              const link = document.createElement("a");
+              link.download = `hcp-correction-${id}.png`;
+              link.href = canvas.toDataURL();
+              link.click();
+              toast.success("HCP Correction exported!");
+            } catch { toast.error("Export failed"); }
+            setExporting(false);
+          };
+
+          if (hcpLoading) return <div className="space-y-2">{[1,2,3].map(i => <Skeleton key={i} className="h-10 w-full" />)}</div>;
+
+          return (
+            <>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs text-muted-foreground">
+                  HCP Correction — <span className="font-semibold text-foreground">{totalCorrected}</span> players corrected
+                </p>
+                <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={handleExportHcp} disabled={exporting}>
+                  <Download className="h-3 w-3" /> PNG
+                </Button>
+              </div>
+
+              {/* Summary cards */}
+              <div className="grid grid-cols-3 gap-2 mb-3">
+                <div className="golf-card p-3 text-center">
+                  <p className="text-lg font-bold text-foreground">{totalCorrected}</p>
+                  <p className="text-[10px] text-muted-foreground">Total Corrected</p>
+                </div>
+                <div className="golf-card p-3 text-center">
+                  <p className="text-lg font-bold text-foreground">{avgCorrection}</p>
+                  <p className="text-[10px] text-muted-foreground">Avg Correction</p>
+                </div>
+                <div className="golf-card p-3 text-center">
+                  <p className={`text-lg font-bold ${flagCount > 0 ? "text-destructive" : "text-foreground"}`}>{flagCount}</p>
+                  <p className="text-[10px] text-muted-foreground">Sandbagging Flags</p>
+                </div>
+              </div>
+
+              <div ref={hcpExportRef} className="rounded-lg overflow-hidden border border-border bg-card">
+                <table className="w-full text-[11px]">
+                  <thead>
+                    <tr className="bg-muted/60 border-b border-border">
+                      <th className="py-1.5 px-2 text-center font-semibold w-8">NO</th>
+                      <th className="py-1.5 px-2 text-left font-semibold">PLAYER'S NAME</th>
+                      <th className="py-1.5 px-2 text-left font-semibold max-w-[100px]">CLUB</th>
+                      <th className="py-1.5 px-2 text-center font-semibold">HCP AWAL</th>
+                      <th className="py-1.5 px-2 text-center font-semibold">HCP KOREKSI</th>
+                      <th className="py-1.5 px-2 text-center font-semibold">DELTA</th>
+                      <th className="py-1.5 px-2 text-center font-semibold">FLAG</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {hcpRows.length === 0 ? (
+                      <tr><td colSpan={7} className="text-center py-6 text-muted-foreground">No HCP corrections for this event</td></tr>
+                    ) : hcpRows.map((row: any) => (
+                      <tr key={row.player_id} className="border-b border-border/30 hover:bg-muted/20 transition-colors">
+                        <td className="text-center py-1.5 px-2 tabular-nums text-muted-foreground">{row.no}</td>
+                        <td className="py-1.5 px-2 font-medium text-foreground">{row.name}</td>
+                        <td className="py-1.5 px-2 text-muted-foreground max-w-[100px] truncate">{row.club}</td>
+                        <td className="text-center py-1.5 px-2 tabular-nums text-foreground">{row.old_hcp ?? "—"}</td>
+                        <td className="text-center py-1.5 px-2 tabular-nums font-bold text-green-500">{row.new_hcp ?? "—"}</td>
+                        <td className="text-center py-1.5 px-2 tabular-nums font-bold text-destructive">
+                          {row.delta > 0 ? `–${row.delta}` : row.delta === 0 ? "0" : `+${Math.abs(row.delta)}`}
+                        </td>
+                        <td className="text-center py-1.5 px-2">
+                          {row.sandbagging ? (
+                            <Badge variant="destructive" className="text-[9px] px-1.5 py-0">⚠ Sandbagging</Badge>
+                          ) : (
+                            <span className="text-muted-foreground/50">—</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          );
+        })()}
+      </TabsContent>
     </Tabs>
   );
 
