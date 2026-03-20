@@ -14,7 +14,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 const VenueList = () => {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
-  const [venueTab, setVenueTab] = useState<"golf" | "range">("golf");
+  const [venueTab, setVenueTab] = useState<"all" | "golf" | "range">("all");
   const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -80,23 +80,26 @@ const VenueList = () => {
     !search ||
     c.name.toLowerCase().includes(search.toLowerCase()) ||
     c.location?.toLowerCase().includes(search.toLowerCase())
-  );
-
-  const golfCourses = searchFiltered?.filter(
-    (c) =>
-      (c as any).facility_type !== "driving_range" &&
-      (c.clubs as any)?.facility_type !== "driving_range"
   ) ?? [];
+
+  const golfCourses = searchFiltered.filter(
+    (c) => (c.clubs as any)?.facility_type !== "driving_range"
+  );
 
   const filteredRanges = drivingRangeClubs?.filter(c =>
     !search || c.name.toLowerCase().includes(search.toLowerCase())
   ) ?? [];
 
+  // For "All" tab: combine golf courses + driving ranges
+  const allCount = searchFiltered.length + filteredRanges.length;
+
   const isMyCourse = (c: any) => myClubIds?.includes(c.club_id);
 
-  const sortedGolfCourses = [
-    ...(golfCourses.filter(isMyCourse)),
-    ...(golfCourses.filter(c => !isMyCourse(c))),
+  // Determine which courses to show based on tab
+  const displayCourses = venueTab === "all" ? searchFiltered : golfCourses;
+  const sortedDisplayCourses = [
+    ...(displayCourses.filter(isMyCourse)),
+    ...(displayCourses.filter(c => !isMyCourse(c))),
   ];
 
   const formatPrice = (price: number | null) => {
@@ -128,8 +131,9 @@ const VenueList = () => {
 
       <div className="flex mx-4 mb-3 rounded-xl overflow-hidden border border-border/50">
         {[
-          { id: "golf" as const, label: "Golf Courses", count: golfCourses.length },
-          { id: "range" as const, label: "Driving Ranges", count: filteredRanges.length },
+          { id: "all" as const, label: "All", count: allCount },
+          { id: "golf" as const, label: "Golf Course", count: golfCourses.length },
+          { id: "range" as const, label: "Driving Range", count: filteredRanges.length },
         ].map((t) => (
           <button
             key={t.id}
@@ -145,15 +149,15 @@ const VenueList = () => {
         ))}
       </div>
 
-      {/* Golf Courses Tab */}
-      {venueTab === "golf" && (
+      {/* Courses (shown in "all" and "golf" tabs) */}
+      {(venueTab === "all" || venueTab === "golf") && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 px-4">
           {isLoading &&
             Array.from({ length: 3 }).map((_, i) => (
               <Skeleton key={i} className="h-32 w-full rounded-xl" />
             ))}
 
-          {!isLoading && sortedGolfCourses.length === 0 && (
+          {!isLoading && sortedDisplayCourses.length === 0 && venueTab === "golf" && (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <div className="h-16 w-16 rounded-full bg-secondary flex items-center justify-center mb-4">
                 <Flag className="h-8 w-8 text-muted-foreground/40" />
@@ -165,7 +169,7 @@ const VenueList = () => {
             </div>
           )}
 
-          {sortedGolfCourses.map((course, i) => {
+          {sortedDisplayCourses.map((course, i) => {
             const isOwned = isMyCourse(course);
             return (
               <div
@@ -214,12 +218,11 @@ const VenueList = () => {
               </div>
             );
           })}
-
         </div>
       )}
 
-      {/* Driving Ranges Tab */}
-      {venueTab === "range" && (
+      {/* Driving Ranges (shown in "all" and "range" tabs) */}
+      {(venueTab === "all" || venueTab === "range") && filteredRanges.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 px-4">
           {loadingRanges &&
             Array.from({ length: 3 }).map((_, i) => (
