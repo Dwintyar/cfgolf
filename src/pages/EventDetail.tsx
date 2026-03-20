@@ -60,6 +60,45 @@ const EventDetail = () => {
     return () => window.removeEventListener("resize", handler);
   }, []);
 
+  // HCP Correction data loading
+  useEffect(() => {
+    const loadHcp = async () => {
+      if (activeTab !== "hcpcorr" || !id) return;
+      setHcpLoading(true);
+      const { data: hcpData } = await supabase
+        .from("handicap_history")
+        .select("player_id, old_hcp, new_hcp, gross_score, net_score, sandbagging_flag")
+        .eq("event_id", id)
+        .order("new_hcp", { ascending: true });
+
+      if (!hcpData?.length) { setHcpRows([]); setHcpLoading(false); return; }
+
+      const pIds = hcpData.map(h => h.player_id);
+      const [{ data: profs }, { data: tix }] = await Promise.all([
+        supabase.from("profiles").select("id, full_name").in("id", pIds),
+        supabase.from("tickets").select("assigned_player_id, clubs!inner(name)").eq("event_id", id),
+      ]);
+
+      const profMap: Record<string, string> = {};
+      (profs ?? []).forEach((p: any) => { profMap[p.id] = p.full_name; });
+      const clubMap: Record<string, string> = {};
+      (tix ?? []).forEach((t: any) => { if (t.assigned_player_id) clubMap[t.assigned_player_id] = (t.clubs as any)?.name ?? "—"; });
+
+      setHcpRows(hcpData.map((h: any, i: number) => ({
+        no: i + 1,
+        player_id: h.player_id,
+        name: profMap[h.player_id] ?? "Unknown",
+        club: clubMap[h.player_id] ?? "—",
+        old_hcp: h.old_hcp,
+        new_hcp: h.new_hcp,
+        delta: (h.old_hcp ?? 0) - (h.new_hcp ?? 0),
+        sandbagging: h.sandbagging_flag,
+      })));
+      setHcpLoading(false);
+    };
+    loadHcp();
+  }, [activeTab, id]);
+
   const handleExportPDF = async () => {
     setExporting(true);
     try {
