@@ -2,9 +2,9 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { Mail, Plus } from "lucide-react";
+import { Mail, PenSquare } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { toast } from "sonner";
+import NewMessageDialog from "@/components/NewMessageDialog";
 
 const formatRelativeTime = (dateStr: string) => {
   const now = new Date();
@@ -25,6 +25,7 @@ const formatRelativeTime = (dateStr: string) => {
 const ChatList = () => {
   const navigate = useNavigate();
   const [userId, setUserId] = useState<string | null>(null);
+  const [newMsgOpen, setNewMsgOpen] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -81,60 +82,6 @@ const ChatList = () => {
     enabled: !!userId,
   });
 
-  const startNewChat = async () => {
-    if (!userId) return;
-
-    const { data: profiles } = await supabase
-      .from("profiles")
-      .select("id, full_name")
-      .neq("id", userId)
-      .limit(20);
-
-    if (!profiles || profiles.length === 0) {
-      toast.error("No other users found");
-      return;
-    }
-
-    const randomProfile = profiles[Math.floor(Math.random() * profiles.length)];
-
-    const { data: existingParts } = await supabase
-      .from("conversation_participants")
-      .select("conversation_id")
-      .eq("user_id", userId);
-
-    if (existingParts) {
-      for (const ep of existingParts) {
-        const { data: otherPart } = await supabase
-          .from("conversation_participants")
-          .select("user_id")
-          .eq("conversation_id", ep.conversation_id)
-          .eq("user_id", randomProfile.id);
-        if (otherPart && otherPart.length > 0) {
-          navigate(`/chat/${ep.conversation_id}`);
-          return;
-        }
-      }
-    }
-
-    const newId = crypto.randomUUID();
-    const { error: convError } = await supabase
-      .from("conversations")
-      .insert({ id: newId });
-
-    if (convError) {
-      toast.error("Failed to create chat");
-      return;
-    }
-
-    await supabase.from("conversation_participants").insert([
-      { conversation_id: newId, user_id: userId },
-      { conversation_id: newId, user_id: randomProfile.id },
-    ]);
-
-    toast.success(`Chat started with ${randomProfile.full_name}`);
-    navigate(`/chat/${newId}`);
-  };
-
   const getInitials = (name: string | null) =>
     name ? name.split(" ").slice(0, 2).map((w) => w[0]).join("").toUpperCase() : "?";
 
@@ -142,17 +89,13 @@ const ChatList = () => {
     <div className="bottom-nav-safe">
       <div className="flex items-center justify-between p-4">
         <h1 className="font-display text-2xl font-bold">Messages</h1>
-        <div className="flex gap-2">
-          <button
-            onClick={startNewChat}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground"
-          >
-            <Plus className="h-4 w-4" />
-          </button>
-          <button className="relative rounded-full bg-secondary p-2">
-            <Mail className="h-5 w-5" />
-          </button>
-        </div>
+        <button
+          onClick={() => setNewMsgOpen(true)}
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+          aria-label="New message"
+        >
+          <PenSquare className="h-4 w-4" />
+        </button>
       </div>
 
       <div className="divide-y divide-border/30">
@@ -163,12 +106,12 @@ const ChatList = () => {
         {!isLoading && (!conversations || conversations.length === 0) && (
           <div className="p-8 text-center">
             <Mail className="mx-auto h-10 w-10 text-muted-foreground/40" />
-            <p className="mt-3 text-sm text-muted-foreground">Belum ada percakapan</p>
+            <p className="mt-3 text-sm text-muted-foreground">No conversations yet</p>
             <button
-              onClick={startNewChat}
+              onClick={() => setNewMsgOpen(true)}
               className="mt-3 text-sm font-semibold text-primary"
             >
-              Mulai chat baru
+              Start a new chat
             </button>
           </div>
         )}
@@ -209,6 +152,14 @@ const ChatList = () => {
           </button>
         ))}
       </div>
+
+      {userId && (
+        <NewMessageDialog
+          open={newMsgOpen}
+          onOpenChange={setNewMsgOpen}
+          userId={userId}
+        />
+      )}
     </div>
   );
 };

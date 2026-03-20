@@ -34,13 +34,13 @@ const ChatRoom = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  // Load other participant
+  // Load other participant with handicap
   const { data: otherUser } = useQuery({
     queryKey: ["chat-participant", conversationId, userId],
     queryFn: async () => {
       const { data } = await supabase
         .from("conversation_participants")
-        .select("user_id, profiles(full_name, avatar_url)")
+        .select("user_id, profiles(full_name, avatar_url, handicap)")
         .eq("conversation_id", conversationId!)
         .neq("user_id", userId!);
       return (data?.[0]?.profiles as any) ?? null;
@@ -48,7 +48,7 @@ const ChatRoom = () => {
     enabled: authReady && !!conversationId && !!userId,
   });
 
-  // Load initial messages (wait for auth to be ready)
+  // Load initial messages
   useEffect(() => {
     if (!conversationId || !userId || !authReady) return;
     const load = async () => {
@@ -86,7 +86,6 @@ const ChatRoom = () => {
             .eq("id", payload.new.sender_id)
             .single();
           setMessages((prev) => {
-            // Avoid duplicate messages
             if (prev.some((m) => m.id === payload.new.id)) return prev;
             return [...prev, { ...payload.new, profiles: data }];
           });
@@ -117,13 +116,16 @@ const ChatRoom = () => {
     setSending(false);
     if (error) {
       console.error("Send failed:", error);
-      toast.error("Gagal mengirim pesan: " + error.message);
-      setMessage(text); // Restore message
+      toast.error("Failed to send message");
+      setMessage(text);
     }
   };
 
   const getInitials = (name: string | null) =>
     name ? name.split(" ").slice(0, 2).map((w) => w[0]).join("").toUpperCase() : "?";
+
+  const formatTime = (dateStr: string) =>
+    new Date(dateStr).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
   if (!authReady) {
     return (
@@ -146,10 +148,14 @@ const ChatRoom = () => {
             {getInitials(otherUser?.full_name)}
           </AvatarFallback>
         </Avatar>
-        <div>
-          <p className="text-sm font-bold">{otherUser?.full_name ?? "Loading..."}</p>
-          <p className="text-[10px] text-primary">Online</p>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-bold truncate">{otherUser?.full_name ?? "Loading..."}</p>
         </div>
+        {otherUser?.handicap != null && (
+          <span className="text-[10px] font-bold bg-primary/15 text-primary px-2 py-0.5 rounded-full shrink-0">
+            HCP {otherUser.handicap}
+          </span>
+        )}
       </div>
 
       {/* Messages */}
@@ -159,8 +165,8 @@ const ChatRoom = () => {
             <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
               <Send className="h-7 w-7 text-primary" />
             </div>
-            <p className="text-sm font-semibold text-foreground">Mulai percakapan! 💬</p>
-            <p className="text-xs text-muted-foreground mt-1">Ketik pesan di bawah untuk memulai chat</p>
+            <p className="text-sm font-semibold text-foreground">Start the conversation! 💬</p>
+            <p className="text-xs text-muted-foreground mt-1">Type a message below to begin</p>
           </div>
         )}
         {messages.map((msg) => {
@@ -179,7 +185,7 @@ const ChatRoom = () => {
                 )}
                 <p className="text-sm">{msg.content}</p>
                 <p className={`text-[9px] mt-1 ${isMine ? "text-primary-foreground/60" : "text-muted-foreground"}`}>
-                  {new Date(msg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  {formatTime(msg.created_at)}
                 </p>
               </div>
             </div>
@@ -191,7 +197,7 @@ const ChatRoom = () => {
       {/* Input */}
       <div className="border-t border-border/50 p-3 flex gap-2 bg-card">
         <Input
-          placeholder="Ketik pesan..."
+          placeholder="Type a message..."
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
