@@ -776,6 +776,14 @@ const TourDetail = () => {
             ))}
           </TabsContent>
         )}
+
+        <TabsContent value="leaderboard">
+          <TourLeaderboard tourId={id!} tourName={tour.name} />
+        </TabsContent>
+
+        <TabsContent value="results">
+          <TourEventResults tourId={id!} />
+        </TabsContent>
       </Tabs>
 
       {/* Dialogs */}
