@@ -971,11 +971,8 @@ const EventDetail = () => {
                   const badgeCls = slotLabel === "A"
                     ? "bg-blue-500/10 text-blue-600 border-blue-500/30"
                     : "bg-amber-500/10 text-amber-600 border-amber-500/30";
-                   const players = ((g.pairing_players as any[]) ?? []);
-                   const clubMap = g._clubMap ?? {};
-                   const cartMap = g._cartMap ?? {};
-                   const bagMap = g._bagMap ?? {};
-                   const caddyMap = g._caddyMap ?? {};
+                   const playersMap = g._players ?? {};
+                   const players = (playersMap[g.id] ?? []).sort((a: any, b: any) => (a.position ?? 0) - (b.position ?? 0));
                    const par = parMap[g.start_hole ?? 1];
                    const teeTime = g.tee_time ? (() => {
                      try { return new Date(g.tee_time).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false }); }
