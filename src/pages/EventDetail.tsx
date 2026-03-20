@@ -254,6 +254,123 @@ const EventDetail = () => {
     enabled: !!event,
   });
 
+  // Scoreboard data: scorecards with hole scores, grouped by flight
+  const { data: scoreboardData, refetch: refetchScoreboard } = useQuery({
+    queryKey: ["event-scoreboard", id, event?.courses],
+    queryFn: async () => {
+      const courseId = (event?.courses as any)?.id;
+      if (!courseId || !id) return [];
+
+      // Get all scorecards for this event's course
+      const { data: scorecards } = await supabase
+        .from("scorecards")
+        .select(`
+          id, player_id, gross_score, net_score,
+          rounds!inner ( id, course_id ),
+          hole_scores ( hole_number, strokes )
+        `)
+        .eq("rounds.course_id", courseId);
+
+      if (!scorecards?.length) return [];
+
+      // Get contestants for this event with flight info
+      const { data: eventContestants } = await supabase
+        .from("contestants")
+        .select(`
+          id, player_id, hcp, flight_id,
+          profiles ( full_name ),
+          tournament_flights ( flight_name, hcp_min, hcp_max, display_order )
+        `)
+        .eq("event_id", id!);
+
+      if (!eventContestants?.length) return [];
+
+      // Get event results for remarks
+      const { data: eventResults } = await supabase
+        .from("event_results")
+        .select(`
+          contestant_id,
+          tournament_winner_categories ( category_name )
+        `)
+        .eq("event_id", id!);
+
+      const resultsMap: Record<string, string> = {};
+      (eventResults ?? []).forEach((er: any) => {
+        resultsMap[er.contestant_id] = (er.tournament_winner_categories as any)?.category_name ?? "";
+      });
+
+      // Build contestant lookup
+      const contestantMap: Record<string, any> = {};
+      eventContestants.forEach(c => { contestantMap[c.player_id] = c; });
+
+      // Merge data
+      const rows = scorecards
+        .filter(sc => contestantMap[sc.player_id])
+        .map(sc => {
+          const ct = contestantMap[sc.player_id];
+          const holes = (sc.hole_scores as any[]) ?? [];
+          const outScore = holes.filter(h => h.hole_number >= 1 && h.hole_number <= 9).reduce((s, h) => s + (h.strokes ?? 0), 0);
+          const inScore = holes.filter(h => h.hole_number >= 10 && h.hole_number <= 18).reduce((s, h) => s + (h.strokes ?? 0), 0);
+          const hasScores = holes.length > 0;
+          const categoryName = resultsMap[ct.id] ?? "";
+
+          return {
+            player_id: sc.player_id,
+            full_name: (ct.profiles as any)?.full_name ?? "Unknown",
+            out_score: hasScores ? outScore : null,
+            in_score: hasScores ? inScore : null,
+            tot: sc.gross_score ?? (hasScores ? outScore + inScore : null),
+            nett: sc.net_score,
+            hcp: ct.hcp,
+            flight_id: ct.flight_id,
+            flight_name: (ct.tournament_flights as any)?.flight_name ?? "",
+            hcp_min: (ct.tournament_flights as any)?.hcp_min ?? 0,
+            hcp_max: (ct.tournament_flights as any)?.hcp_max ?? 36,
+            display_order: (ct.tournament_flights as any)?.display_order ?? 0,
+            contestant_id: ct.id,
+            category_name: categoryName,
+          };
+        });
+
+      // Also add contestants with no scorecard (NR)
+      eventContestants.forEach(ct => {
+        if (!rows.find(r => r.player_id === ct.player_id)) {
+          const categoryName = resultsMap[ct.id] ?? "";
+          rows.push({
+            player_id: ct.player_id,
+            full_name: (ct.profiles as any)?.full_name ?? "Unknown",
+            out_score: null,
+            in_score: null,
+            tot: null,
+            nett: null,
+            hcp: ct.hcp,
+            flight_id: ct.flight_id,
+            flight_name: (ct.tournament_flights as any)?.flight_name ?? "",
+            hcp_min: (ct.tournament_flights as any)?.hcp_min ?? 0,
+            hcp_max: (ct.tournament_flights as any)?.hcp_max ?? 36,
+            display_order: (ct.tournament_flights as any)?.display_order ?? 0,
+            contestant_id: ct.id,
+            category_name: categoryName,
+          });
+        }
+      });
+
+      // Sort by flight display_order, then nett ascending (NR last)
+      rows.sort((a, b) => {
+        if (a.display_order !== b.display_order) return a.display_order - b.display_order;
+        if (a.nett == null && b.nett == null) return 0;
+        if (a.nett == null) return 1;
+        if (b.nett == null) return -1;
+        return a.nett - b.nett;
+      });
+
+      return rows;
+    },
+    enabled: !!id && !!event?.courses,
+  });
+
+  const scoreboardRef = useRef<HTMLDivElement>(null);
+
   // Tee-off groups: pairings enriched with club + flight info
   const { data: teeoffGroups } = useQuery({
     queryKey: ["event-teeoff-groups", id, event?.tour_id],
