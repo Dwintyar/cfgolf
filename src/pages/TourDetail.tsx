@@ -437,30 +437,35 @@ const TourDetail = () => {
           {events?.length === 0 && (
             <div className="golf-card p-6 text-center text-sm text-muted-foreground">No events scheduled</div>
           )}
-          {events?.map((event, i) => (
-            <button
-              key={event.id}
-              onClick={() => navigate(`/event/${event.id}`)}
-              className="golf-card w-full text-left p-4 animate-fade-in transition-all hover:border-primary/30"
-              style={{ animationDelay: `${i * 60}ms` }}
-            >
-              <div className="flex items-start justify-between">
-                <div className="min-w-0 flex-1">
-                  <h3 className="font-display text-sm font-semibold truncate">{event.name}</h3>
-                  <div className="mt-1 flex flex-wrap gap-x-3 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> {event.event_date}</span>
-                    <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {(event.courses as any)?.name}</span>
+          {events?.map((event, i) => {
+            const eventStatusLabel = event.status === "completed" ? "Completed" : event.status === "playing" || event.status === "checkin" ? "Upcoming" : "Scheduled";
+            const eventStatusClass = event.status === "completed" ? "border-primary/40 text-primary bg-primary/5" : event.status === "playing" || event.status === "checkin" ? "border-accent/40 text-accent bg-accent/5" : "border-muted-foreground/30 text-muted-foreground";
+            const formattedDate = new Date(event.event_date).toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+            return (
+              <button
+                key={event.id}
+                onClick={() => navigate(`/event/${event.id}`)}
+                className="golf-card w-full text-left p-4 animate-fade-in transition-all hover:border-primary/30"
+                style={{ animationDelay: `${i * 60}ms` }}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-display text-sm font-semibold truncate">{event.name}</h3>
+                    <div className="mt-1 flex flex-wrap gap-x-3 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> {formattedDate}</span>
+                      <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {(event.courses as any)?.name}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className={`text-[10px] ${eventStatusClass}`}>
+                      {eventStatusLabel}
+                    </Badge>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className={`text-[10px] ${statusColors[event.status] ?? ""}`}>
-                    {event.status}
-                  </Badge>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                </div>
-              </div>
-            </button>
-          ))}
+              </button>
+            );
+          })}
         </TabsContent>
 
         <TabsContent value="players" className="space-y-3 pt-2">
