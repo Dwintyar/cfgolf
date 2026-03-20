@@ -80,23 +80,26 @@ const VenueList = () => {
     !search ||
     c.name.toLowerCase().includes(search.toLowerCase()) ||
     c.location?.toLowerCase().includes(search.toLowerCase())
-  );
-
-  const golfCourses = searchFiltered?.filter(
-    (c) =>
-      (c as any).facility_type !== "driving_range" &&
-      (c.clubs as any)?.facility_type !== "driving_range"
   ) ?? [];
+
+  const golfCourses = searchFiltered.filter(
+    (c) => (c.clubs as any)?.facility_type !== "driving_range"
+  );
 
   const filteredRanges = drivingRangeClubs?.filter(c =>
     !search || c.name.toLowerCase().includes(search.toLowerCase())
   ) ?? [];
 
+  // For "All" tab: combine golf courses + driving ranges
+  const allCount = searchFiltered.length + filteredRanges.length;
+
   const isMyCourse = (c: any) => myClubIds?.includes(c.club_id);
 
-  const sortedGolfCourses = [
-    ...(golfCourses.filter(isMyCourse)),
-    ...(golfCourses.filter(c => !isMyCourse(c))),
+  // Determine which courses to show based on tab
+  const displayCourses = venueTab === "all" ? searchFiltered : golfCourses;
+  const sortedDisplayCourses = [
+    ...(displayCourses.filter(isMyCourse)),
+    ...(displayCourses.filter(c => !isMyCourse(c))),
   ];
 
   const formatPrice = (price: number | null) => {
