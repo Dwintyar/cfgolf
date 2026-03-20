@@ -36,7 +36,8 @@ const GolfersNearby = () => {
     !search ||
     g.full_name?.toLowerCase().includes(search.toLowerCase()) ||
     g.location?.toLowerCase().includes(search.toLowerCase())
-  ).filter(g => g.id !== currentUserId) ?? [];
+  ).filter(g => g.id !== currentUserId)
+   .sort((a, b) => (a.full_name ?? "").localeCompare(b.full_name ?? "", "id")) ?? [];
 
   const getInitials = (name: string | null) =>
     name ? name.split(" ").slice(0, 2).map(w => w[0]).join("").toUpperCase() : "?";
