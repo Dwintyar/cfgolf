@@ -363,8 +363,9 @@ const TourDetail = () => {
           <div>
             <h1 className="font-display text-xl font-bold">{tour.name}</h1>
             <div className="mt-1 flex flex-wrap gap-x-3 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> {tour.year}</span>
               <span className="flex items-center gap-1"><Users className="h-3 w-3" /> {(tour.clubs as any)?.name}</span>
+              <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> {tour.year}</span>
+              <span className="flex items-center gap-1"><Building2 className="h-3 w-3" /> {tourClubs?.filter(tc => tc.status === "accepted").length ?? 0} clubs</span>
             </div>
           </div>
           <Badge variant="outline" className="text-[10px] uppercase tracking-wider border-primary/30 text-primary">
