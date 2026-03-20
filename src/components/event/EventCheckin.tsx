@@ -1,13 +1,11 @@
 import { useState, useEffect, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ClipboardCheck, Search, UserPlus, Check, Undo2 } from "lucide-react";
+import { ClipboardCheck, Search, Check, Undo2, Users, Building2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface EventCheckinProps {
@@ -20,20 +18,58 @@ interface EventCheckinProps {
 const EventCheckin = ({ eventId, isAdmin, userId, event }: EventCheckinProps) => {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
-  const [walkinSearch, setWalkinSearch] = useState("");
   const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
-  const [subTab, setSubTab] = useState("players");
 
-  // Contestants
+  // Contestants with club info via tour_players
   const { data: contestants } = useQuery({
-    queryKey: ["checkin-contestants", eventId],
+    queryKey: ["checkin-contestants-v2", eventId],
     queryFn: async () => {
+      // Get tour_id from event
+      const { data: ev } = await supabase
+        .from("events")
+        .select("tour_id")
+        .eq("id", eventId)
+        .single();
+      if (!ev) return [];
+
       const { data, error } = await supabase
         .from("contestants")
-        .select("*, profiles:player_id(full_name, avatar_url, handicap), tournament_flights(flight_name)")
+        .select("id, player_id, hcp, flight_id, status, tournament_flights(flight_name)")
         .eq("event_id", eventId);
       if (error) throw error;
-      return data ?? [];
+      if (!data || data.length === 0) return [];
+
+      // Get profiles
+      const playerIds = data.map(c => c.player_id);
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, full_name, avatar_url")
+        .in("id", playerIds);
+
+      // Get tour_players for club mapping
+      const { data: tourPlayers } = await supabase
+        .from("tour_players")
+        .select("player_id, club_id")
+        .eq("tour_id", ev.tour_id)
+        .in("player_id", playerIds);
+
+      // Get clubs
+      const clubIds = [...new Set((tourPlayers ?? []).map(tp => tp.club_id))];
+      const { data: clubs } = clubIds.length > 0
+        ? await supabase.from("clubs").select("id, name").in("id", clubIds)
+        : { data: [] };
+
+      const profileMap = new Map((profiles ?? []).map(p => [p.id, p]));
+      const tpMap = new Map((tourPlayers ?? []).map(tp => [tp.player_id, tp.club_id]));
+      const clubMap = new Map((clubs ?? []).map(c => [c.id, c.name]));
+
+      return data.map(c => ({
+        ...c,
+        full_name: profileMap.get(c.player_id)?.full_name ?? "Unknown",
+        club_id: tpMap.get(c.player_id) ?? null,
+        club_name: clubMap.get(tpMap.get(c.player_id) ?? "") ?? "No Club",
+        flight_name: (c.tournament_flights as any)?.flight_name ?? null,
+      }));
     },
   });
 
@@ -50,35 +86,7 @@ const EventCheckin = ({ eventId, isAdmin, userId, event }: EventCheckinProps) =>
     },
   });
 
-  // Tickets
-  const { data: tickets } = useQuery({
-    queryKey: ["checkin-tickets", eventId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("tickets")
-        .select("ticket_number, assigned_player_id")
-        .eq("event_id", eventId);
-      if (error) throw error;
-      return data ?? [];
-    },
-  });
-
-  // Walkin search profiles
-  const { data: walkinProfiles } = useQuery({
-    queryKey: ["walkin-search", walkinSearch],
-    queryFn: async () => {
-      if (walkinSearch.length < 2) return [];
-      const { data } = await supabase
-        .from("profiles")
-        .select("id, full_name, avatar_url, handicap")
-        .ilike("full_name", `%${walkinSearch}%`)
-        .limit(20);
-      return data ?? [];
-    },
-    enabled: walkinSearch.length >= 2,
-  });
-
-  // Realtime subscription
+  // Realtime
   useEffect(() => {
     const channel = supabase
       .channel(`checkin-rt-${eventId}`)
@@ -92,42 +100,44 @@ const EventCheckin = ({ eventId, isAdmin, userId, event }: EventCheckinProps) =>
     return () => { supabase.removeChannel(channel); };
   }, [eventId, queryClient]);
 
-  // Derived data
   const checkinMap = useMemo(() => {
     const map = new Map<string, any>();
     checkins?.forEach(ci => map.set(ci.contestant_id, ci));
     return map;
   }, [checkins]);
 
-  const ticketMap = useMemo(() => {
-    const map = new Map<string, number>();
-    tickets?.forEach(t => { if (t.assigned_player_id) map.set(t.assigned_player_id, t.ticket_number); });
-    return map;
-  }, [tickets]);
-
   const registeredCount = contestants?.length ?? 0;
   const checkedInCount = checkins?.length ?? 0;
   const notYetCount = registeredCount - checkedInCount;
   const progressPct = registeredCount > 0 ? (checkedInCount / registeredCount) * 100 : 0;
 
-  const contestantPlayerIds = useMemo(() => new Set(contestants?.map(c => c.player_id) ?? []), [contestants]);
-
-  const filteredWalkins = useMemo(() => {
-    if (!walkinProfiles) return [];
-    return walkinProfiles.filter(p => !contestantPlayerIds.has(p.id));
-  }, [walkinProfiles, contestantPlayerIds]);
-
-  const sortedContestants = useMemo(() => {
+  // Group by club
+  const clubGroups = useMemo(() => {
     if (!contestants) return [];
-    let list = [...contestants].sort((a, b) =>
-      ((a.profiles as any)?.full_name ?? "").localeCompare((b.profiles as any)?.full_name ?? "", "id")
-    );
+    let filtered = contestants;
     if (search) {
       const q = search.toLowerCase();
-      list = list.filter(c => ((c.profiles as any)?.full_name ?? "").toLowerCase().includes(q));
+      filtered = filtered.filter(c => c.full_name.toLowerCase().includes(q) || c.club_name.toLowerCase().includes(q));
     }
-    return list;
+    const groups = new Map<string, typeof filtered>();
+    filtered.forEach(c => {
+      const key = c.club_name;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key)!.push(c);
+    });
+    // Sort clubs alphabetically, sort players within each club
+    return [...groups.entries()]
+      .sort(([a], [b]) => a.localeCompare(b, "id"))
+      .map(([name, members]) => ({
+        name,
+        members: members.sort((a, b) => a.full_name.localeCompare(b.full_name, "id")),
+      }));
   }, [contestants, search]);
+
+  const uniqueClubCount = useMemo(() => {
+    if (!contestants) return 0;
+    return new Set(contestants.map(c => c.club_name)).size;
+  }, [contestants]);
 
   // Handlers
   const handleCheckin = async (contestantId: string) => {
@@ -167,40 +177,26 @@ const EventCheckin = ({ eventId, isAdmin, userId, event }: EventCheckinProps) =>
     }
   };
 
-  const handleWalkin = async (profileId: string, profileName: string) => {
-    setProcessingIds(prev => new Set(prev).add(profileId));
-    try {
-      // Insert contestant
-      const { data: newContestant, error: cErr } = await supabase
-        .from("contestants")
-        .insert({ event_id: eventId, player_id: profileId, status: "walk_in" })
-        .select("id")
-        .single();
-      if (cErr) throw cErr;
-      // Check them in immediately
-      const { error: ciErr } = await supabase.from("event_checkins").insert({
-        event_id: eventId,
-        contestant_id: newContestant.id,
-        bag_drop_number: (checkins?.length ?? 0) + 1,
-      });
-      if (ciErr) throw ciErr;
-      queryClient.invalidateQueries({ queryKey: ["checkin-contestants", eventId] });
-      queryClient.invalidateQueries({ queryKey: ["checkin-data", eventId] });
-      queryClient.invalidateQueries({ queryKey: ["event-contestants", eventId] });
-      toast.success(`${profileName} added as walk-in & checked in`);
-      setWalkinSearch("");
-    } catch (err: any) {
-      toast.error(err.message);
-    } finally {
-      setProcessingIds(prev => { const n = new Set(prev); n.delete(profileId); return n; });
-    }
+  const getFlightBadge = (flightName: string | null) => {
+    if (!flightName) return null;
+    const letter = flightName.replace(/[^A-Ca-c]/g, "").toUpperCase().charAt(0);
+    if (!letter) return <Badge variant="outline" className="text-[10px] h-5 px-1.5">{flightName}</Badge>;
+    const colors: Record<string, string> = {
+      A: "bg-blue-500/15 text-blue-400 border-blue-500/30",
+      B: "bg-amber-500/15 text-amber-400 border-amber-500/30",
+      C: "bg-muted text-muted-foreground border-border",
+    };
+    return (
+      <Badge variant="outline" className={`text-[10px] h-5 px-1.5 ${colors[letter] ?? ""}`}>
+        {letter}
+      </Badge>
+    );
   };
 
   // ========== PLAYER VIEW ==========
   if (!isAdmin) {
     const myContestant = contestants?.find(c => c.player_id === userId);
     const myCheckin = myContestant ? checkinMap.get(myContestant.id) : null;
-    const myTicket = userId ? ticketMap.get(userId) : null;
 
     return (
       <div className="space-y-4 pt-2">
@@ -212,14 +208,11 @@ const EventCheckin = ({ eventId, isAdmin, userId, event }: EventCheckinProps) =>
           {myContestant ? (
             <>
               <p className="text-xs text-muted-foreground">
-                Registered for <span className="font-medium text-foreground">{event?.name}</span> · {event?.event_date} · {(event?.courses as any)?.name}
+                Registered for <span className="font-medium text-foreground">{event?.name}</span>
               </p>
               <div className="flex flex-wrap gap-2 text-xs">
-                {myTicket && <Badge variant="outline">Ticket #{myTicket}</Badge>}
-                {(myContestant.tournament_flights as any)?.flight_name && (
-                  <Badge variant="outline">{(myContestant.tournament_flights as any).flight_name}</Badge>
-                )}
                 <Badge variant="outline">HCP {myContestant.hcp ?? "—"}</Badge>
+                {myContestant.flight_name && getFlightBadge(myContestant.flight_name)}
               </div>
               {myCheckin ? (
                 <div className="flex items-center gap-2 p-3 rounded-lg bg-primary/10">
@@ -231,7 +224,6 @@ const EventCheckin = ({ eventId, isAdmin, userId, event }: EventCheckinProps) =>
               ) : (
                 <div className="p-3 rounded-lg bg-muted">
                   <p className="text-sm text-muted-foreground">Not checked in yet</p>
-                  <p className="text-xs text-muted-foreground mt-1">Please check in at the registration desk</p>
                 </div>
               )}
             </>
@@ -246,13 +238,16 @@ const EventCheckin = ({ eventId, isAdmin, userId, event }: EventCheckinProps) =>
   // ========== ADMIN VIEW ==========
   return (
     <div className="space-y-4 pt-2">
-      {/* SECTION 1 — Summary bar */}
+      {/* Summary bar */}
       <div className="golf-card p-4 space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold flex items-center gap-2">
             <ClipboardCheck className="h-4 w-4 text-primary" /> Check-in
           </h3>
-          <span className="text-xs text-muted-foreground">{checkedInCount} / {registeredCount}</span>
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1"><Users className="h-3 w-3" /> {registeredCount} Players</span>
+            <span className="flex items-center gap-1"><Building2 className="h-3 w-3" /> {uniqueClubCount} Clubs</span>
+          </div>
         </div>
         <Progress value={progressPct} className="h-2" />
         <div className="grid grid-cols-3 gap-2 text-center">
@@ -271,131 +266,106 @@ const EventCheckin = ({ eventId, isAdmin, userId, event }: EventCheckinProps) =>
         </div>
       </div>
 
-      {/* Sub-tabs: Players / Walk-ins */}
-      <Tabs value={subTab} onValueChange={setSubTab}>
-        <TabsList className="w-full">
-          <TabsTrigger value="players" className="flex-1 text-xs gap-1">
-            <ClipboardCheck className="h-3 w-3" /> Players
-          </TabsTrigger>
-          <TabsTrigger value="walkins" className="flex-1 text-xs gap-1">
-            <UserPlus className="h-3 w-3" /> Walk-ins
-          </TabsTrigger>
-        </TabsList>
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Search player or club..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className="pl-9 h-9 text-sm"
+        />
+      </div>
 
-        {/* SECTION 2 — Player list */}
-        <TabsContent value="players" className="space-y-2 pt-2">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search player..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="pl-9 h-9 text-sm"
-            />
-          </div>
-          <div className="space-y-1.5 max-h-[60vh] overflow-y-auto">
-            {sortedContestants.map(c => {
-              const profile = c.profiles as any;
-              const ci = checkinMap.get(c.id);
-              const isIn = !!ci;
-              const ticket = ticketMap.get(c.player_id);
-              const flight = (c.tournament_flights as any)?.flight_name;
-              const processing = processingIds.has(c.id);
-
-              return (
-                <div key={c.id} className="golf-card flex items-center gap-3 p-3">
-                  <Avatar className="h-8 w-8">
-                    {profile?.avatar_url && <AvatarImage src={profile.avatar_url} />}
-                    <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                      {(profile?.full_name ?? "?").charAt(0)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium truncate">{profile?.full_name ?? "Unknown"}</p>
-                    <div className="flex flex-wrap gap-1 mt-0.5">
-                      <Badge variant="outline" className="text-[9px] h-4 px-1">HCP {c.hcp ?? "—"}</Badge>
-                      {flight && <Badge variant="outline" className="text-[9px] h-4 px-1">{flight}</Badge>}
-                      {ticket && <Badge variant="outline" className="text-[9px] h-4 px-1">#{ticket}</Badge>}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    {isIn ? (
-                      <>
-                        <span className="text-[10px] text-primary font-medium flex items-center gap-1">
-                          <Check className="h-3 w-3" />
-                          {new Date(ci.checked_in_at).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false })}
-                        </span>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-7 px-2 text-[10px] text-muted-foreground"
-                          onClick={() => handleUndo(c.id)}
-                          disabled={processing}
-                        >
-                          <Undo2 className="h-3 w-3" />
-                        </Button>
-                      </>
-                    ) : (
-                      <Button
-                        size="sm"
-                        className="h-8 px-4 text-xs gap-1"
-                        onClick={() => handleCheckin(c.id)}
-                        disabled={processing}
-                      >
-                        <Check className="h-3 w-3" /> Check In
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-            {sortedContestants.length === 0 && (
-              <p className="text-xs text-muted-foreground text-center py-4">No contestants found</p>
-            )}
-          </div>
-        </TabsContent>
-
-        {/* SECTION 3 — Walk-ins */}
-        <TabsContent value="walkins" className="space-y-2 pt-2">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by name to add walk-in..."
-              value={walkinSearch}
-              onChange={e => setWalkinSearch(e.target.value)}
-              className="pl-9 h-9 text-sm"
-            />
-          </div>
-          <div className="space-y-1.5">
-            {walkinSearch.length < 2 && (
-              <p className="text-xs text-muted-foreground text-center py-4">Type at least 2 characters to search</p>
-            )}
-            {filteredWalkins.map(p => (
-              <div key={p.id} className="golf-card flex items-center gap-3 p-3">
-                <Avatar className="h-8 w-8">
-                  {p.avatar_url && <AvatarImage src={p.avatar_url} />}
-                  <AvatarFallback className="text-xs bg-muted">{(p.full_name ?? "?").charAt(0)}</AvatarFallback>
-                </Avatar>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium truncate">{p.full_name}</p>
-                  <p className="text-[10px] text-muted-foreground">HCP {p.handicap ?? "—"}</p>
-                </div>
-                <Button
-                  size="sm"
-                  className="h-8 px-3 text-xs gap-1"
-                  onClick={() => handleWalkin(p.id, p.full_name ?? "Player")}
-                  disabled={processingIds.has(p.id)}
-                >
-                  <UserPlus className="h-3 w-3" /> Add & Check In
-                </Button>
+      {/* Club-grouped tables */}
+      <div className="space-y-4 max-h-[60vh] overflow-y-auto">
+        {clubGroups.map(group => (
+          <div key={group.name} className="rounded-lg border border-border overflow-hidden">
+            {/* Club header */}
+            <div className="bg-accent px-3 py-2 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Building2 className="h-3.5 w-3.5 text-accent-foreground/70" />
+                <span className="text-sm font-bold text-accent-foreground">{group.name}</span>
+                <span className="text-xs text-accent-foreground/60">({group.members.length})</span>
               </div>
-            ))}
-            {walkinSearch.length >= 2 && filteredWalkins.length === 0 && (
-              <p className="text-xs text-muted-foreground text-center py-4">No matching players found</p>
-            )}
+            </div>
+
+            {/* Table */}
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-border bg-muted/50">
+                    <th className="w-10 px-2 py-2 text-center text-muted-foreground font-medium">NO</th>
+                    <th className="px-3 py-2 text-left text-muted-foreground font-medium">CONTESTANT NAME</th>
+                    <th className="w-14 px-2 py-2 text-center text-muted-foreground font-medium">HCP</th>
+                    <th className="w-20 px-2 py-2 text-center text-muted-foreground font-medium hidden sm:table-cell">STATUS</th>
+                    <th className="w-14 px-2 py-2 text-center text-muted-foreground font-medium">FLIGHT</th>
+                    <th className="w-24 px-2 py-2 text-center text-muted-foreground font-medium">ATTENDANCE</th>
+                    {isAdmin && <th className="w-20 px-2 py-2 text-center text-muted-foreground font-medium">ACTION</th>}
+                  </tr>
+                </thead>
+                <tbody>
+                  {group.members.map((c, idx) => {
+                    const ci = checkinMap.get(c.id);
+                    const isIn = !!ci;
+                    const processing = processingIds.has(c.id);
+
+                    return (
+                      <tr
+                        key={c.id}
+                        className={`border-b border-border last:border-0 ${idx % 2 === 0 ? "bg-card" : "bg-muted/20"}`}
+                      >
+                        <td className="px-2 py-2 text-center text-muted-foreground font-mono">{idx + 1}</td>
+                        <td className="px-3 py-2 text-foreground font-medium truncate max-w-[200px]">{c.full_name}</td>
+                        <td className="px-2 py-2 text-center text-foreground font-mono">{c.hcp ?? "—"}</td>
+                        <td className="px-2 py-2 text-center text-muted-foreground hidden sm:table-cell">Competitor</td>
+                        <td className="px-2 py-2 text-center">{getFlightBadge(c.flight_name)}</td>
+                        <td className="px-2 py-2 text-center">
+                          {isIn ? (
+                            <span className="inline-flex items-center gap-1 text-emerald-500 font-medium">
+                              <Check className="h-3 w-3" />
+                              {new Date(ci.checked_in_at).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false })}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </td>
+                        {isAdmin && (
+                          <td className="px-2 py-2 text-center">
+                            {isIn ? (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 px-2 text-[10px] text-muted-foreground"
+                                onClick={() => handleUndo(c.id)}
+                                disabled={processing}
+                              >
+                                <Undo2 className="h-3 w-3" />
+                              </Button>
+                            ) : (
+                              <Button
+                                size="sm"
+                                className="h-6 px-2 text-[10px] gap-0.5"
+                                onClick={() => handleCheckin(c.id)}
+                                disabled={processing}
+                              >
+                                <Check className="h-3 w-3" /> In
+                              </Button>
+                            )}
+                          </td>
+                        )}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </TabsContent>
-      </Tabs>
+        ))}
+        {clubGroups.length === 0 && (
+          <p className="text-xs text-muted-foreground text-center py-4">No contestants found</p>
+        )}
+      </div>
     </div>
   );
 };
