@@ -261,9 +261,13 @@ const ClubProfile = () => {
               <Badge variant="outline" className="text-xs">{members?.length ?? 0} Members</Badge>
               {/* Join / Requested badge for non-owner non-members */}
               {!isOwner && !isMember && currentUserId && (
-                hasPendingRequest ? (
-                  <Badge variant="secondary" className="text-xs">
-                    ⏳ Menunggu persetujuan
+                hasPendingRequest || joining ? (
+                  <Badge variant="outline" className="text-xs text-muted-foreground">
+                    {joining ? (
+                      <><Loader2 className="h-3 w-3 animate-spin mr-1" /> Requesting...</>
+                    ) : (
+                      "⏳ Menunggu persetujuan"
+                    )}
                   </Badge>
                 ) : (
                   <Button
@@ -273,7 +277,7 @@ const ClubProfile = () => {
                     disabled={joining}
                   >
                     <LogIn className="h-3.5 w-3.5 mr-1" />
-                    {joining ? "Mengirim..." : "Join"}
+                    Join
                   </Button>
                 )
               )}
