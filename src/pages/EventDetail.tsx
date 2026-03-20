@@ -1156,6 +1156,7 @@ const EventDetail = () => {
                             <tr key={row.player_id} className={`border-b border-border/50 ${idx % 2 === 0 ? "bg-card" : "bg-muted/20"} hover:bg-accent/10`}>
                               <td className="text-center py-1 px-1 border-r border-border/50 text-muted-foreground">{idx + 1}</td>
                               <td className="py-1 px-2 border-r border-border/50 font-medium text-foreground truncate max-w-[180px]">{row.full_name}</td>
+                              <td className="py-1 px-2 border-r border-border/50 text-foreground truncate max-w-[120px] text-[10px]">{row.club_name}</td>
                               <td className="text-center py-1 px-1 border-r border-border/50 tabular-nums text-foreground">{isNR ? <span className="text-destructive/60 text-[10px]">NR</span> : row.out_score}</td>
                               <td className="text-center py-1 px-1 border-r border-border/50 tabular-nums text-foreground">{isNR ? <span className="text-destructive/60 text-[10px]">NR</span> : row.in_score}</td>
                               <td className="text-center py-1 px-1 border-r border-border/50 tabular-nums text-foreground">{isNR ? <span className="text-destructive/60 text-[10px]">NR</span> : row.tot}</td>
