@@ -1617,6 +1617,47 @@ export type Database = {
           },
         ]
       }
+      pending_approvals: {
+        Row: {
+          email: string | null
+          full_name: string | null
+          id: string
+          requested_at: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string | null
+          user_id: string | null
+        }
+        Insert: {
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          requested_at?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          requested_at?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pending_approvals_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       post_likes: {
         Row: {
           created_at: string
@@ -1709,42 +1750,59 @@ export type Database = {
       }
       profiles: {
         Row: {
+          approved_at: string | null
+          approved_by: string | null
           avatar_url: string | null
           bio: string | null
           created_at: string
           full_name: string | null
           handicap: number | null
           id: string
+          is_approved: boolean | null
           location: string | null
           onboarding_completed: boolean | null
           updated_at: string
           username: string | null
         }
         Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
           full_name?: string | null
           handicap?: number | null
           id: string
+          is_approved?: boolean | null
           location?: string | null
           onboarding_completed?: boolean | null
           updated_at?: string
           username?: string | null
         }
         Update: {
+          approved_at?: string | null
+          approved_by?: string | null
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
           full_name?: string | null
           handicap?: number | null
           id?: string
+          is_approved?: boolean | null
           location?: string | null
           onboarding_completed?: boolean | null
           updated_at?: string
           username?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       range_bays: {
         Row: {
@@ -2641,6 +2699,7 @@ export type Database = {
     Functions: {
       get_admin_level: { Args: { check_user_id?: string }; Returns: string }
       get_my_conversation_ids: { Args: never; Returns: string[] }
+      is_approved_user: { Args: never; Returns: boolean }
       is_club_admin: {
         Args: { check_club_id: string; check_user_id?: string }
         Returns: boolean
