@@ -1352,7 +1352,7 @@ const EventDetail = () => {
               </div>
               <div className="golf-card p-3 text-center">
                 <Shuffle className="mx-auto h-4 w-4 text-primary mb-1" />
-                <p className="text-xl font-bold">{teeoffGroups?.length ?? pairings?.length ?? 0}</p>
+                <p className="text-xl font-bold">{pairingsList.length}</p>
                 <p className="text-xs text-muted-foreground">Groups</p>
               </div>
               <div className="golf-card p-3 text-center">
