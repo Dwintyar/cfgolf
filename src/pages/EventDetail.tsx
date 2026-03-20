@@ -352,32 +352,35 @@ const EventDetail = () => {
       console.log("Scorecards found:", scorecards?.length);
 
       const scIds = (scorecards ?? []).map(s => s.id);
-      const batch1 = scIds.slice(0, 72);
-      const batch2 = scIds.slice(72, 144);
+      let allHoles: any[] = [];
+      const pageSize = 1000;
+      let page = 0;
+      let keepFetching = scIds.length > 0;
 
-      const [{ data: holeScoresBatch1 }, { data: holeScoresBatch2 }] = await Promise.all([
-        batch1.length > 0
-          ? supabase
-              .from("hole_scores")
-              .select("scorecard_id, hole_number, strokes")
-              .in("scorecard_id", batch1)
-              .limit(1500)
-          : Promise.resolve({ data: [] as any[] }),
-        batch2.length > 0
-          ? supabase
-              .from("hole_scores")
-              .select("scorecard_id, hole_number, strokes")
-              .in("scorecard_id", batch2)
-              .limit(1500)
-          : Promise.resolve({ data: [] as any[] }),
-      ]);
+      while (keepFetching) {
+        const from = page * pageSize;
+        const to = from + pageSize - 1;
 
-      const holeScores = [...(holeScoresBatch1 ?? []), ...(holeScoresBatch2 ?? [])];
-      console.log("Total hole scores fetched:", holeScores.length);
+        const { data: batch } = await supabase
+          .from("hole_scores")
+          .select("scorecard_id, hole_number, strokes")
+          .in("scorecard_id", scIds)
+          .range(from, to);
+
+        if (batch && batch.length > 0) {
+          allHoles = [...allHoles, ...batch];
+          page += 1;
+          if (batch.length < pageSize) keepFetching = false;
+        } else {
+          keepFetching = false;
+        }
+      }
+
+      console.log("Total hole scores fetched:", allHoles.length);
 
       // Compute OUT/IN per scorecard
       const outInMap: Record<string, { out: number; in: number }> = {};
-      (holeScores ?? []).forEach((h: any) => {
+      allHoles.forEach((h: any) => {
         if (!outInMap[h.scorecard_id]) outInMap[h.scorecard_id] = { out: 0, in: 0 };
         if (h.hole_number <= 9) outInMap[h.scorecard_id].out += (h.strokes ?? 0);
         else outInMap[h.scorecard_id].in += (h.strokes ?? 0);
