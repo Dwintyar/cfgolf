@@ -602,60 +602,8 @@ const EventDetail = () => {
       </TabsContent>
 
       {/* CHECK-IN */}
-      <TabsContent value="checkin" className="space-y-4 pt-2">
-        <Section title="Check-ins" icon={ClipboardCheck} count={checkins?.length}>
-          {checkins?.length === 0 && <EmptyState text="No check-ins yet" />}
-          {checkins?.map((ci) => (
-            <div key={ci.id} className="golf-card p-3 space-y-1">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-medium">{(ci.contestants as any)?.profiles?.full_name ?? "Unknown"}</p>
-                <span className="text-[10px] text-muted-foreground">{new Date(ci.checked_in_at).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}</span>
-              </div>
-              <div className="flex gap-3 text-xs text-muted-foreground">
-                {ci.bag_drop_number != null && (
-                  <span className="flex items-center gap-1"><Package className="h-3 w-3" /> Bag #{ci.bag_drop_number}</span>
-                )}
-                {ci.locker_number != null && (
-                  <span className="flex items-center gap-1"><Lock className="h-3 w-3" /> Locker #{ci.locker_number}</span>
-                )}
-              </div>
-            </div>
-          ))}
-        </Section>
-
-        <Section title="Golf Cart" icon={Car} count={cartAssignments?.length}>
-          {showAdminActions && (
-            <Button size="sm" variant="outline" className="w-full h-7 gap-1 text-[11px] mb-2" onClick={() => setShowCartDialog(true)}>
-              <Plus className="h-3 w-3" /> Assign Cart
-            </Button>
-          )}
-          {cartAssignments?.length === 0 && <EmptyState text="No carts assigned" />}
-          {cartAssignments?.map((ca) => (
-            <div key={ca.id} className="golf-card flex items-center justify-between p-3">
-              <div className="flex items-center gap-2">
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-xs font-bold text-primary">{ca.cart_number}</div>
-                <p className="text-sm">{(ca.contestants as any)?.profiles?.full_name ?? "Unknown"}</p>
-              </div>
-            </div>
-          ))}
-        </Section>
-
-        <Section title="Caddy" icon={UserCheck} count={caddyAssignments?.length}>
-          {showAdminActions && (
-            <Button size="sm" variant="outline" className="w-full h-7 gap-1 text-[11px] mb-2" onClick={() => setShowCaddyDialog(true)}>
-              <Plus className="h-3 w-3" /> Assign Caddy
-            </Button>
-          )}
-          {caddyAssignments?.length === 0 && <EmptyState text="No caddies assigned" />}
-          {caddyAssignments?.map((ca) => (
-            <div key={ca.id} className="golf-card flex items-center justify-between p-3">
-              <div>
-                <p className="text-sm font-medium">{(ca.contestants as any)?.profiles?.full_name ?? "Player"}</p>
-                <p className="text-xs text-muted-foreground">Caddy: {(ca.profiles as any)?.full_name ?? "Unknown"}</p>
-              </div>
-            </div>
-          ))}
-        </Section>
+      <TabsContent value="checkin" className="pt-0">
+        <EventCheckin eventId={id!} isAdmin={showAdminActions} userId={userId} event={event} />
       </TabsContent>
 
       {/* PAIRINGS */}
