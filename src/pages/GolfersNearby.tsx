@@ -5,7 +5,8 @@ import { useQuery } from "@tanstack/react-query";
 import AppHeader from "@/components/AppHeader";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Search, UserRound, Settings } from "lucide-react";
 
 const GolfersNearby = () => {
   const navigate = useNavigate();
@@ -90,10 +91,17 @@ const GolfersNearby = () => {
           </div>
         ))}
         {!isLoading && filtered.length === 0 && (
-          <div className="col-span-3 py-12 text-center">
-            <p className="text-sm text-muted-foreground">
-              {search ? "Tidak ditemukan" : "Tidak ada golfer"}
+          <div className="col-span-3 flex flex-col items-center justify-center py-20 text-center">
+            <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+              <UserRound className="h-8 w-8 text-primary/60" />
+            </div>
+            <p className="text-lg font-semibold text-foreground">No golfers nearby</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Try adjusting your location or search radius.
             </p>
+            <Button variant="outline" className="mt-4 gap-2" onClick={() => navigate("/settings")}>
+              <Settings className="h-4 w-4" /> Adjust Settings
+            </Button>
           </div>
         )}
       </div>

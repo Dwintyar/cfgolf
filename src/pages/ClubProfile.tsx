@@ -341,12 +341,19 @@ const ClubProfile = () => {
                 ))}
 
               {!membersLoading && (!filteredMembers || filteredMembers.length === 0) && (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <Users className="h-10 w-10 text-muted-foreground/40 mb-3" />
-                  <p className="text-sm font-semibold">Belum ada anggota</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {search ? "Tidak ditemukan" : "Undang golfer untuk bergabung ke klub ini"}
+                <div className="flex flex-col items-center justify-center py-20 text-center">
+                  <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                    <Users className="h-8 w-8 text-primary/60" />
+                  </div>
+                  <p className="text-lg font-semibold text-foreground">No members yet</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {search ? "No matching members found." : "Share your club link to invite golfers to join."}
                   </p>
+                  {!search && isOwner && (
+                    <Button className="mt-4" onClick={() => setShowInvite(true)}>
+                      Copy Invite Link
+                    </Button>
+                  )}
                 </div>
               )}
 
