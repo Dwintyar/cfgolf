@@ -304,7 +304,31 @@ const EventDetail = () => {
       const cartMap: Record<string, number> = {};
       (cartData ?? []).forEach(c => { cartMap[c.contestant_id] = c.cart_number; });
 
-      return pairingData.map(p => ({ ...p, _clubMap: clubMap, _cartMap: cartMap }));
+      // Fetch checkin data (bag drop + locker)
+      const { data: checkinData } = await supabase
+        .from("event_checkins")
+        .select("contestant_id, bag_drop_number, locker_number")
+        .eq("event_id", id!);
+      const checkinMap: Record<string, { bag_drop_number: number | null; locker_number: number | null }> = {};
+      (checkinData ?? []).forEach(c => {
+        checkinMap[c.contestant_id] = { bag_drop_number: c.bag_drop_number, locker_number: c.locker_number };
+      });
+
+      // Fetch caddy assignments
+      const { data: caddyData } = await supabase
+        .from("caddy_assignments")
+        .select(`
+          contestant_id,
+          caddy_id,
+          profiles!caddy_assignments_caddy_id_fkey ( full_name )
+        `)
+        .eq("event_id", id!);
+      const caddyMap: Record<string, string> = {};
+      (caddyData ?? []).forEach((c: any) => {
+        caddyMap[c.contestant_id] = (c.profiles as any)?.full_name ?? "";
+      });
+
+      return pairingData.map(p => ({ ...p, _clubMap: clubMap, _cartMap: cartMap, _checkinMap: checkinMap, _caddyMap: caddyMap }));
     },
     enabled: !!id && !!event?.tour_id,
   });
