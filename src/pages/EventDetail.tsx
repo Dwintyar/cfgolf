@@ -258,28 +258,29 @@ const EventDetail = () => {
   const { data: teeoffGroups } = useQuery({
     queryKey: ["event-teeoff-groups", id, event?.tour_id],
     queryFn: async () => {
-      // Step 1: Fetch pairings with nested joins
       const { data: pairingData, error } = await supabase
         .from("pairings")
-        .select("id, pairing_label, start_hole, slot, tee_time, start_type, teeoff_group_number, pairing_players!inner(id, position, contestant_id, contestants!inner(id, player_id, hcp, flight_id, profiles!inner(id, full_name, handicap, avatar_url), tournament_flights(flight_name)))")
+        .select(`
+          id, pairing_label, start_hole, slot, tee_time, start_type, teeoff_group_number,
+          pairing_players (
+            id, position, contestant_id,
+            contestants (
+              id, player_id, hcp, flight_id,
+              profiles ( id, full_name, handicap, avatar_url ),
+              tournament_flights ( flight_name )
+            )
+          )
+        `)
         .eq("event_id", id!)
         .order("start_hole")
         .order("slot");
       if (error) {
         console.error("teeoff query error:", error);
-        // Fallback: simpler query without !inner
-        const { data: fallbackData } = await supabase
-          .from("pairings")
-          .select("id, pairing_label, start_hole, slot, tee_time, start_type, teeoff_group_number, pairing_players(id, position, contestant_id, contestants(id, player_id, hcp, flight_id, profiles(id, full_name, handicap, avatar_url), tournament_flights(flight_name)))")
-          .eq("event_id", id!)
-          .order("start_hole")
-          .order("slot");
-        if (!fallbackData?.length) return [];
-        return fallbackData.map(p => ({ ...p, _clubMap: {} as Record<string, string> }));
+        return [];
       }
       if (!pairingData?.length) return [];
 
-      // Step 2: Fetch club names via tour_players
+      // Fetch club names via tour_players
       const playerIds = pairingData.flatMap(p =>
         ((p.pairing_players as any[]) ?? []).map((pp: any) => pp.contestants?.player_id).filter(Boolean)
       );
@@ -294,7 +295,16 @@ const EventDetail = () => {
           clubMap[tp.player_id] = (tp.clubs as any)?.name ?? "";
         });
       }
-      return pairingData.map(p => ({ ...p, _clubMap: clubMap }));
+
+      // Fetch cart assignments
+      const { data: cartData } = await supabase
+        .from("golf_cart_assignments")
+        .select("cart_number, contestant_id")
+        .eq("event_id", id!);
+      const cartMap: Record<string, number> = {};
+      (cartData ?? []).forEach(c => { cartMap[c.contestant_id] = c.cart_number; });
+
+      return pairingData.map(p => ({ ...p, _clubMap: clubMap, _cartMap: cartMap }));
     },
     enabled: !!id && !!event?.tour_id,
   });
