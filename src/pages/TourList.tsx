@@ -160,7 +160,7 @@ const TourList = () => {
   return (
     <div className="bottom-nav-safe">
       <AppHeader
-        title="Events"
+        title="Play"
         icon={<Trophy className="h-5 w-5 text-primary" />}
       />
 
