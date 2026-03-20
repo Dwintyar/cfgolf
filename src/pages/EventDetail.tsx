@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Calendar, MapPin, Users, Ticket, Trophy, Award, Shuffle, TrendingDown,
-  ClipboardCheck, Package, Lock, Car, UserCheck, ChevronRight, Pencil, Plus, RefreshCw, Clock, Download
+  ClipboardCheck, Package, Lock, Car, UserCheck, ChevronRight, Pencil, Plus, RefreshCw, Clock, Download, Flag
 } from "lucide-react";
 import html2canvas from "html2canvas";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -236,6 +236,51 @@ const EventDetail = () => {
       return data;
     },
     enabled: !!id,
+  });
+
+  const { data: courseHoles } = useQuery({
+    queryKey: ["event-course-holes", event?.courses],
+    queryFn: async () => {
+      const courseId = (event?.courses as any)?.id;
+      if (!courseId) return [];
+      const { data } = await supabase
+        .from("course_holes")
+        .select("hole_number, par")
+        .eq("course_id", courseId)
+        .order("hole_number");
+      return data ?? [];
+    },
+    enabled: !!event,
+  });
+
+  // Tee-off groups: pairings enriched with club + flight info via tour_players
+  const { data: teeoffGroups } = useQuery({
+    queryKey: ["event-teeoff-groups", id, event?.tour_id],
+    queryFn: async () => {
+      const { data: pairingData } = await supabase
+        .from("pairings")
+        .select("id, pairing_label, start_hole, slot, tee_time, start_type, teeoff_group_number, pairing_players(id, position, contestant_id, contestants(id, player_id, hcp, flight_id, profiles(id, full_name, handicap, avatar_url), tournament_flights(flight_name)))")
+        .eq("event_id", id!)
+        .order("start_hole")
+        .order("slot");
+      if (!pairingData?.length) return [];
+      // Fetch tour_players for club info
+      const playerIds = pairingData.flatMap(p =>
+        ((p.pairing_players as any[]) ?? []).map((pp: any) => pp.contestants?.player_id).filter(Boolean)
+      );
+      if (!playerIds.length) return pairingData;
+      const { data: tourPlayers } = await supabase
+        .from("tour_players")
+        .select("player_id, clubs(name)")
+        .eq("tour_id", event!.tour_id)
+        .in("player_id", [...new Set(playerIds)]);
+      const clubMap: Record<string, string> = {};
+      (tourPlayers ?? []).forEach((tp: any) => {
+        clubMap[tp.player_id] = (tp.clubs as any)?.name ?? "";
+      });
+      return pairingData.map(p => ({ ...p, _clubMap: clubMap }));
+    },
+    enabled: !!id && !!event?.tour_id,
   });
 
   // Check if user is contestant & checked in
@@ -527,6 +572,7 @@ const EventDetail = () => {
       <TabsList className="w-full overflow-x-auto flex">
         <TabsTrigger value="overview" className="flex-1 text-[11px]">Overview</TabsTrigger>
         <TabsTrigger value="checkin" className="flex-1 text-[11px]">Check-in</TabsTrigger>
+        <TabsTrigger value="teeoff" className="flex-1 text-[11px]">Tee-off Groups</TabsTrigger>
         <TabsTrigger value="pairings" className="flex-1 text-[11px]">Pairings</TabsTrigger>
         <TabsTrigger value="leaderboard" className="flex-1 text-[11px]">Board</TabsTrigger>
       </TabsList>
@@ -604,6 +650,137 @@ const EventDetail = () => {
       {/* CHECK-IN */}
       <TabsContent value="checkin" className="pt-0">
         <EventCheckin eventId={id!} isAdmin={showAdminActions} userId={userId} event={event} />
+      </TabsContent>
+
+      {/* TEE-OFF GROUPS */}
+      <TabsContent value="teeoff" className="space-y-4 pt-2">
+        {(() => {
+          if (!teeoffGroups || teeoffGroups.length === 0) {
+            return (
+              <div className="golf-card p-6 text-center">
+                <Flag className="mx-auto h-8 w-8 text-muted-foreground/40" />
+                <p className="mt-2 text-sm text-muted-foreground">Tee-off groups belum dibuat untuk event ini</p>
+              </div>
+            );
+          }
+
+          // Group by start_hole
+          const holeMap: Record<number, any[]> = {};
+          teeoffGroups.forEach(g => {
+            const hole = g.start_hole ?? 1;
+            if (!holeMap[hole]) holeMap[hole] = [];
+            holeMap[hole].push(g);
+          });
+          const holes = Object.keys(holeMap).map(Number).sort((a, b) => a - b);
+          const totalGroups = teeoffGroups.length;
+          const holesCount = holes.length;
+          const groupsPerHole = holesCount > 0 ? Math.ceil(totalGroups / holesCount) : 0;
+
+          // Course holes par map
+          const parMap: Record<number, number> = {};
+          (courseHoles ?? []).forEach(h => { parMap[h.hole_number] = h.par; });
+
+          const getFlightLevel = (hcp: number | null) => {
+            if (hcp == null) return null;
+            if (hcp <= 16) return { label: "Level A", cls: "bg-blue-500/10 text-blue-600 border-blue-500/30" };
+            if (hcp <= 22) return { label: "Level B", cls: "bg-amber-500/10 text-amber-600 border-amber-500/30" };
+            return { label: "Level C", cls: "bg-muted text-muted-foreground border-border" };
+          };
+
+          return (
+            <>
+              {/* Summary */}
+              <div className="golf-card p-3 space-y-1">
+                <p className="text-sm font-semibold flex items-center gap-2">
+                  <Flag className="h-4 w-4 text-primary" />
+                  {totalGroups} Tee-off Groups | {holesCount} holes × {groupsPerHole} groups per hole
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Shotgun start · All groups tee off simultaneously
+                </p>
+              </div>
+
+              {/* Per-hole sections */}
+              {holes.map(holeNum => {
+                const groups = holeMap[holeNum].sort((a: any, b: any) => (a.slot ?? "").localeCompare(b.slot ?? ""));
+                const par = parMap[holeNum];
+                return (
+                  <div key={holeNum}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-xs font-bold text-primary">
+                        {holeNum}
+                      </div>
+                      <p className="text-sm font-semibold">Hole {holeNum}</p>
+                      {par && <Badge variant="outline" className="text-[10px]">Par {par}</Badge>}
+                    </div>
+                    <div className="space-y-2 ml-2">
+                      {groups.map((g: any, gi: number) => {
+                        const slotLabel = g.slot ?? String.fromCharCode(65 + gi); // A, B, C...
+                        const badgeLabel = `${holeNum}${slotLabel}`;
+                        const badgeCls = gi === 0 ? "bg-blue-500/10 text-blue-600 border-blue-500/30" : "bg-amber-500/10 text-amber-600 border-amber-500/30";
+                        const players = ((g.pairing_players as any[]) ?? [])
+                          .sort((a: any, b: any) => (a.position ?? 0) - (b.position ?? 0));
+                        const clubMap = g._clubMap ?? {};
+                        const teeTime = g.tee_time ? (() => {
+                          try { return new Date(g.tee_time).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false }); }
+                          catch { return g.tee_time; }
+                        })() : null;
+
+                        return (
+                          <div key={g.id} className="golf-card p-3">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Badge variant="outline" className={`text-[10px] font-bold ${badgeCls}`}>{badgeLabel}</Badge>
+                              {g.pairing_label && <span className="text-xs text-muted-foreground">{g.pairing_label}</span>}
+                              {teeTime && <span className="text-xs text-muted-foreground ml-auto">{teeTime}</span>}
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              {players.map((pp: any) => {
+                                const profile = pp.contestants?.profiles;
+                                const hcp = pp.contestants?.hcp ?? profile?.handicap;
+                                const flightName = pp.contestants?.tournament_flights?.flight_name;
+                                const clubName = clubMap[pp.contestants?.player_id] ?? "";
+                                const level = getFlightLevel(hcp);
+                                const playerId = profile?.id;
+                                return (
+                                  <button
+                                    key={pp.id}
+                                    onClick={() => playerId && navigate(`/golfer/${playerId}`)}
+                                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-secondary/50 transition-colors text-left"
+                                  >
+                                    <Avatar className="h-8 w-8">
+                                      <AvatarImage src={profile?.avatar_url ?? ""} />
+                                      <AvatarFallback className="bg-primary/10 text-xs font-bold text-primary">
+                                        {(profile?.full_name ?? "?").charAt(0)}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                    <div className="min-w-0 flex-1">
+                                      <p className="text-xs font-medium truncate">{profile?.full_name ?? "Unknown"}</p>
+                                      <p className="text-[10px] text-muted-foreground truncate">
+                                        {clubName}
+                                        {flightName && <span className="ml-1">· {flightName}</span>}
+                                      </p>
+                                    </div>
+                                    <div className="flex flex-col items-end gap-0.5 shrink-0">
+                                      <Badge variant="outline" className="text-[9px]">HCP {hcp ?? "—"}</Badge>
+                                      {level && <Badge variant="outline" className={`text-[9px] ${level.cls}`}>{level.label}</Badge>}
+                                    </div>
+                                  </button>
+                                );
+                              })}
+                              {players.length === 0 && (
+                                <p className="text-xs text-muted-foreground col-span-2 text-center py-2">No players assigned</p>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </>
+          );
+        })()}
       </TabsContent>
 
       {/* PAIRINGS */}
