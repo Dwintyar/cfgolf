@@ -34,7 +34,6 @@ const EventDetail = () => {
   const [firstTee, setFirstTee] = useState("07:00");
   const [interval, setInterval] = useState("8");
   const [activeTab, setActiveTab] = useState("overview");
-  const [activeTab, setActiveTab] = useState("overview");
   const [userId, setUserId] = useState<string | null>(null);
   const [checkingIn, setCheckingIn] = useState(false);
   const [showCheckinDialog, setShowCheckinDialog] = useState(false);
