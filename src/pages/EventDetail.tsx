@@ -203,7 +203,7 @@ const EventDetail = () => {
         .from("pairings")
         .select("*, pairing_players(*, contestants(*, profiles(full_name, handicap)))")
         .eq("event_id", id!)
-        .order("group_number");
+        .order("teeoff_group_number");
       if (error) throw error;
       return data;
     },
