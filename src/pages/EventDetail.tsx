@@ -807,6 +807,7 @@ const EventDetail = () => {
         <TabsTrigger value="checkin" className="flex-1 text-[11px]">Check-in</TabsTrigger>
         <TabsTrigger value="pairings" className="flex-1 text-[11px]">Pairings</TabsTrigger>
         <TabsTrigger value="leaderboard" className="flex-1 text-[11px]">Board</TabsTrigger>
+        <TabsTrigger value="hcpcorr" className="flex-1 text-[11px]">HCP Corr</TabsTrigger>
       </TabsList>
 
       {/* OVERVIEW */}
