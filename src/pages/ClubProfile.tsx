@@ -24,6 +24,7 @@ const ClubProfile = () => {
   const [showInvite, setShowInvite] = useState(false);
   const [tab, setTab] = useState<Tab>("members");
   const [joining, setJoining] = useState(false);
+  const [processingId, setProcessingId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   useEffect(() => {
