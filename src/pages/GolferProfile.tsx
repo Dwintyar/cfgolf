@@ -149,6 +149,50 @@ const GolferProfile = () => {
     fetchData();
   }, [navigate, paramId]);
 
+  // Realtime subscription for profile handicap updates
+  useEffect(() => {
+    if (!targetId) return;
+    const channel = supabase
+      .channel(`profile-hcp-${targetId}`)
+      .on(
+        "postgres_changes" as any,
+        { event: "UPDATE", schema: "public", table: "profiles", filter: `id=eq.${targetId}` },
+        (payload: any) => {
+          if (payload.new) {
+            setProfile(prev => prev ? { ...prev, handicap: payload.new.handicap } : prev);
+          }
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [targetId]);
+
+  // Query last handicap update timestamp
+  const { data: lastHcpUpdate } = useQuery({
+    queryKey: ["last-hcp-update", targetId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("handicap_history")
+        .select("created_at")
+        .eq("player_id", targetId!)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      return data && data.length > 0 ? data[0].created_at : null;
+    },
+    enabled: !!targetId,
+  });
+
+  const formatHcpUpdated = (dateStr: string | null | undefined) => {
+    if (!dateStr) return null;
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffDays = Math.floor((now.getTime() - date.getTime()) / 86400000);
+    if (diffDays === 0) return "Updated today";
+    if (diffDays === 1) return "Updated yesterday";
+    if (diffDays < 30) return `Updated ${diffDays} days ago`;
+    return `Updated ${date.toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" })}`;
+  };
+
   const { data: staffPositions } = useQuery({
     queryKey: ["staff-positions", targetId],
     queryFn: async () => {
