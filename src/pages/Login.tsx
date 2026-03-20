@@ -26,7 +26,7 @@ const Login = () => {
       .eq("id", userId)
       .single();
 
-    if (data?.is_approved === false) {
+    if (!data?.is_approved) {
       await supabase.auth.signOut();
       toast.error("Akun Anda belum disetujui oleh admin EGC. Silakan hubungi dwintyar@gmail.com");
       return;
