@@ -428,12 +428,9 @@ const TourDetail = () => {
       <Tabs defaultValue="events" className="px-4">
         <TabsList className="w-full flex-wrap h-auto gap-0.5 p-1">
           <TabsTrigger value="events" className="flex-1 text-xs">Events</TabsTrigger>
-          <TabsTrigger value="players" className="flex-1 text-xs">Players</TabsTrigger>
-          {tour.tournament_type === "interclub" && (
-            <TabsTrigger value="clubs" className="flex-1 text-xs">Clubs</TabsTrigger>
-          )}
           <TabsTrigger value="leaderboard" className="flex-1 text-xs">Leaderboard</TabsTrigger>
-          <TabsTrigger value="results" className="flex-1 text-xs">Results</TabsTrigger>
+          <TabsTrigger value="players" className="flex-1 text-xs">Players</TabsTrigger>
+          <TabsTrigger value="clubs" className="flex-1 text-xs">Clubs</TabsTrigger>
         </TabsList>
 
         <TabsContent value="events" className="space-y-3 pt-2">
