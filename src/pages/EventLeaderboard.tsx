@@ -32,7 +32,7 @@ const EventLeaderboard = () => {
 
       const { data: eventInfo } = await supabase
         .from("events")
-        .select("course_id")
+        .select("course_id, event_date")
         .eq("id", id)
         .single();
       if (!eventInfo?.course_id) return [];
@@ -50,27 +50,16 @@ const EventLeaderboard = () => {
 
       const playerIds = eventContestants.map(c => c.player_id);
 
-      // Find round
-      const { data: roundData } = await supabase
+      // Find round matching event_date
+      const eventDate = eventInfo.event_date.slice(0, 10);
+      const { data: allRounds } = await supabase
         .from("rounds")
-        .select("id")
-        .eq("course_id", eventInfo.course_id)
-        .eq("status", "completed")
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .select("id, created_at")
+        .eq("course_id", eventInfo.course_id);
 
-      let roundId = roundData?.id;
-      if (!roundId) {
-        const { data: anyRound } = await supabase
-          .from("rounds")
-          .select("id")
-          .eq("course_id", eventInfo.course_id)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        roundId = anyRound?.id;
-      }
+      const matchedRound = allRounds?.find(r => r.created_at.slice(0, 10) === eventDate)
+        ?? allRounds?.[0];
+      let roundId = matchedRound?.id;
 
       if (!roundId) {
         return eventContestants.map(ct => ({
