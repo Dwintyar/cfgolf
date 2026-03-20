@@ -221,8 +221,8 @@ const VenueList = () => {
         </div>
       )}
 
-      {/* Driving Ranges Tab */}
-      {venueTab === "range" && (
+      {/* Driving Ranges (shown in "all" and "range" tabs) */}
+      {(venueTab === "all" || venueTab === "range") && filteredRanges.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 px-4">
           {loadingRanges &&
             Array.from({ length: 3 }).map((_, i) => (
