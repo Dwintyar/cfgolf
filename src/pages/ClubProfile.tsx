@@ -169,7 +169,6 @@ const ClubProfile = () => {
       setJoining(false);
     }
   };
-  };
 
   const handleAcceptInvitation = async (invitationId: string, userId: string) => {
     setProcessingId(invitationId);
