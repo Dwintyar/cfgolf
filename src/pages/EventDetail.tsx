@@ -921,12 +921,10 @@ const EventDetail = () => {
         )}
 
         {(!event?.pairing_approval_required || showAdminActions) && (() => {
-          const groups = teeoffGroups ?? [];
-          if (groups.length === 0 && (!pairings || pairings.length === 0)) {
+          const groups = pairingsList;
+          if (groups.length === 0) {
             return <EmptyState text="No pairings generated yet" />;
           }
-
-          if (groups.length === 0) return null;
 
           const parMap: Record<number, number> = {};
           (courseHoles ?? []).forEach(h => { parMap[h.hole_number] = h.par; });
