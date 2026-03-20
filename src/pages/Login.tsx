@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
+import { Clock, Mail } from "lucide-react";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -16,13 +17,21 @@ const Login = () => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [isForgot, setIsForgot] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [pendingApproval, setPendingApproval] = useState(false);
 
   const checkOnboarding = async (userId: string) => {
     const { data } = await supabase
       .from("profiles")
-      .select("onboarding_completed")
+      .select("onboarding_completed, is_approved")
       .eq("id", userId)
       .single();
+
+    if (data?.is_approved === false) {
+      await supabase.auth.signOut();
+      toast.error("Akun Anda belum disetujui oleh admin EGC. Silakan hubungi dwintyar@gmail.com");
+      return;
+    }
+
     if (!data?.onboarding_completed) {
       navigate("/onboarding", { replace: true });
     } else {
@@ -33,18 +42,18 @@ const Login = () => {
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        if (session) {
+        if (session && !pendingApproval) {
           checkOnboarding(session.user.id);
         }
       }
     );
 
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) checkOnboarding(session.user.id);
+      if (session && !pendingApproval) checkOnboarding(session.user.id);
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, pendingApproval]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,11 +78,16 @@ const Login = () => {
     setLoading(true);
 
     if (isSignUp) {
-      const { error } = await supabase.auth.signUp({
+      if (!fullName.trim()) {
+        toast.error("Nama lengkap wajib diisi");
+        setLoading(false);
+        return;
+      }
+      const { data: signUpData, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          data: { full_name: fullName || undefined },
+          data: { full_name: fullName },
           emailRedirectTo: window.location.origin,
         },
       });
@@ -81,14 +95,36 @@ const Login = () => {
       if (error) {
         toast.error(error.message);
       } else {
-        toast.success("Check your email to confirm your account");
+        // Sign out immediately and show waiting screen
+        await supabase.auth.signOut();
+        setPendingApproval(true);
       }
     } else {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      setLoading(false);
+      const { data: signInData, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
+        setLoading(false);
         toast.error(error.message);
+        return;
       }
+
+      // Check approval status
+      const userId = signInData.user?.id;
+      if (userId) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("is_approved")
+          .eq("id", userId)
+          .single();
+
+        if (profile?.is_approved === false) {
+          await supabase.auth.signOut();
+          setLoading(false);
+          toast.error("Akun Anda belum disetujui oleh admin EGC.");
+          setPendingApproval(true);
+          return;
+        }
+      }
+      setLoading(false);
     }
   };
 
@@ -99,6 +135,39 @@ const Login = () => {
     });
     if (error) toast.error(error.message);
   };
+
+  // Waiting screen
+  if (pendingApproval) {
+    return (
+      <div className="relative flex min-h-screen flex-col items-center justify-center">
+        <img src={loginBg} alt="Golf course" className="absolute inset-0 h-full w-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent" />
+        <div className="relative z-10 w-full max-w-sm px-6">
+          <div className="rounded-2xl bg-card/90 backdrop-blur-lg border border-border/50 p-6 text-center space-y-4">
+            <div className="mx-auto w-14 h-14 rounded-full bg-amber-500/10 flex items-center justify-center">
+              <Clock className="h-7 w-7 text-amber-500" />
+            </div>
+            <h2 className="text-lg font-bold text-foreground">Menunggu Persetujuan</h2>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Pendaftaran Anda sedang menunggu persetujuan admin EGC.
+              Anda akan menerima notifikasi setelah disetujui.
+            </p>
+            <div className="flex items-center gap-2 justify-center text-xs text-muted-foreground pt-2">
+              <Mail className="h-3.5 w-3.5" />
+              <span>Hubungi <span className="font-medium text-foreground">dwintyar@gmail.com</span> jika ada pertanyaan</span>
+            </div>
+            <Button
+              variant="outline"
+              className="w-full mt-2"
+              onClick={() => setPendingApproval(false)}
+            >
+              Kembali ke Login
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center">
