@@ -45,6 +45,8 @@ const EventDetail = () => {
   const [selectedCaddy, setSelectedCaddy] = useState("");
   const [showWinners, setShowWinners] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [pairingsList, setPairingsList] = useState<any[]>([]);
+  const [playersByPairing, setPlayersByPairing] = useState<Record<string, any[]>>({});
   const [isDesktop, setIsDesktop] = useState(
     typeof window !== "undefined" ? window.innerWidth >= 1024 : false
   );
@@ -196,19 +198,7 @@ const EventDetail = () => {
     enabled: !!id,
   });
 
-  const { data: pairings, refetch: refetchPairings } = useQuery({
-    queryKey: ["event-pairings", id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("pairings")
-        .select("*, pairing_players(*, contestants(*, profiles(full_name, handicap)))")
-        .eq("event_id", id!)
-        .order("teeoff_group_number");
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!id,
-  });
+  const refetchPairings = async () => { /* trigger useEffect reload */ setPairingsList([]); setPlayersByPairing({}); setTimeout(() => loadPairingsData(), 100); };
 
   const { data: leaderboard, refetch: refetchLeaderboard } = useQuery({
     queryKey: ["event-leaderboard", id],
@@ -397,119 +387,109 @@ const EventDetail = () => {
 
   const scoreboardRef = useRef<HTMLDivElement>(null);
 
-  // Tee-off groups: 8 flat queries joined in JS
-  const { data: teeoffGroups } = useQuery({
-    queryKey: ["event-teeoff-groups-v2", id],
-    queryFn: async () => {
-      // STEP 1: pairings
-      const { data: pairingData, error: e1 } = await supabase
-        .from("pairings")
-        .select("id, pairing_label, start_hole, slot, tee_time")
-        .eq("event_id", id!)
-        .order("start_hole")
-        .order("slot");
-      if (e1) console.error("pairings:", e1);
-      if (!pairingData?.length) return [];
+  // Pairings: flat queries joined in JS via useEffect
+  const loadPairingsData = async () => {
+    if (!id) return;
+    const eventId = id;
 
-      // STEP 2: pairing_players
-      const pairingIds = pairingData.map(p => p.id);
-      const { data: ppRows, error: e2 } = await supabase
-        .from("pairing_players")
-        .select("id, pairing_id, contestant_id, position")
-        .in("pairing_id", pairingIds);
-      if (e2) console.error("pairing_players:", e2);
-      console.log("ppRows count:", ppRows?.length);
+    // Step 1
+    const { data: p, error: pe } = await supabase
+      .from("pairings")
+      .select("id, pairing_label, start_hole, slot, tee_time")
+      .eq("event_id", eventId)
+      .order("start_hole")
+      .order("slot");
+    console.log("STEP1 pairings:", p?.length, pe);
+    if (!p?.length) return;
 
-      if (!ppRows?.length) {
-        return pairingData.map(p => ({ ...p, _players: {} as Record<string, any[]> }));
-      }
+    // Step 2
+    const { data: pp, error: ppe } = await supabase
+      .from("pairing_players")
+      .select("pairing_id, contestant_id, position")
+      .in("pairing_id", p.map(x => x.id));
+    console.log("STEP2 pairing_players:", pp?.length, ppe);
+    if (!pp?.length) { setPairingsList(p); return; }
 
-      // STEP 3: contestants
-      const cIds = [...new Set(ppRows.map(pp => pp.contestant_id).filter(Boolean))] as string[];
-      const { data: contestantsData, error: e3 } = await supabase
-        .from("contestants")
-        .select("id, player_id, hcp, flight_id")
-        .in("id", cIds);
-      if (e3) console.error("contestants:", e3);
-      console.log("contestants count:", contestantsData?.length);
+    // Step 3
+    const { data: ct, error: cte } = await supabase
+      .from("contestants")
+      .select("id, player_id, hcp, flight_id")
+      .in("id", pp.map(x => x.contestant_id).filter(Boolean));
+    console.log("STEP3 contestants:", ct?.length, cte);
 
-      // STEP 4: profiles
-      const pIds = [...new Set((contestantsData ?? []).map(c => c.player_id))];
-      const { data: profilesData, error: e4 } = await supabase
-        .from("profiles")
-        .select("id, full_name, avatar_url")
-        .in("id", pIds);
-      if (e4) console.error("profiles:", e4);
+    // Step 4
+    const { data: pr, error: pre } = await supabase
+      .from("profiles")
+      .select("id, full_name, avatar_url")
+      .in("id", (ct ?? []).map(x => x.player_id));
+    console.log("STEP4 profiles:", pr?.length, pre);
 
-      // STEP 5: flights
-      const fIds = [...new Set((contestantsData ?? []).map(c => c.flight_id).filter(Boolean))] as string[];
-      const { data: flightsData } = fIds.length > 0
-        ? await supabase.from("tournament_flights").select("id, flight_name").in("id", fIds)
-        : { data: [] as { id: string; flight_name: string }[] };
+    // Step 5
+    const flIds = [...new Set((ct ?? []).map(c => c.flight_id).filter(Boolean))] as string[];
+    const { data: fl } = flIds.length
+      ? await supabase.from("tournament_flights").select("id, flight_name").in("id", flIds)
+      : { data: [] as any[] };
 
-      // STEP 6: carts
-      const { data: cartsData } = await supabase
-        .from("golf_cart_assignments")
-        .select("contestant_id, cart_number")
-        .eq("event_id", id!);
+    // Step 6
+    const { data: ca } = await supabase
+      .from("golf_cart_assignments")
+      .select("contestant_id, cart_number")
+      .eq("event_id", eventId);
 
-      // STEP 7: checkins (bag number)
-      const { data: checkinsData } = await supabase
-        .from("event_checkins")
-        .select("contestant_id, bag_drop_number")
-        .eq("event_id", id!);
+    // Step 7
+    const { data: ec } = await supabase
+      .from("event_checkins")
+      .select("contestant_id, bag_drop_number")
+      .eq("event_id", eventId);
 
-      // STEP 8: caddies
-      const { data: caddyRows } = await supabase
-        .from("caddy_assignments")
-        .select("contestant_id, caddy_id")
-        .eq("event_id", id!);
-      const caddyIds = [...new Set((caddyRows ?? []).map(r => r.caddy_id))];
-      const { data: caddyProfiles } = caddyIds.length > 0
-        ? await supabase.from("profiles").select("id, full_name").in("id", caddyIds)
-        : { data: [] as { id: string; full_name: string | null }[] };
+    // Step 8
+    const { data: cdy } = await supabase
+      .from("caddy_assignments")
+      .select("contestant_id, caddy_id")
+      .eq("event_id", eventId);
+    const { data: cdyPr } = (cdy ?? []).length
+      ? await supabase.from("profiles").select("id, full_name").in("id", cdy!.map(x => x.caddy_id))
+      : { data: [] as any[] };
 
-      // BUILD LOOKUP MAPS
-      const contMap = Object.fromEntries((contestantsData ?? []).map(c => [c.id, c]));
-      const profMap = Object.fromEntries((profilesData ?? []).map(p => [p.id, p]));
-      const flightMap = Object.fromEntries((flightsData ?? []).map(f => [f.id, f]));
-      const cartMap = Object.fromEntries((cartsData ?? []).map(c => [c.contestant_id, c.cart_number]));
-      const bagMap = Object.fromEntries((checkinsData ?? []).map(c => [c.contestant_id, c.bag_drop_number]));
-      const caddyProfMap = Object.fromEntries((caddyProfiles ?? []).map(p => [p.id, p.full_name]));
-      const caddyMap = Object.fromEntries((caddyRows ?? []).map(r => [r.contestant_id, caddyProfMap[r.caddy_id] ?? "—"]));
+    // Maps
+    const ctMap = Object.fromEntries((ct ?? []).map(c => [c.id, c]));
+    const prMap = Object.fromEntries((pr ?? []).map(x => [x.id, x]));
+    const flMap = Object.fromEntries((fl ?? []).map(x => [x.id, x]));
+    const caMap = Object.fromEntries((ca ?? []).map(x => [x.contestant_id, x.cart_number]));
+    const ecMap = Object.fromEntries((ec ?? []).map(x => [x.contestant_id, x.bag_drop_number]));
+    const cdyMap = Object.fromEntries((cdy ?? []).map(x => [
+      x.contestant_id, (cdyPr ?? []).find((cp: any) => cp.id === x.caddy_id)?.full_name ?? "—"
+    ]));
 
-      // GROUP PLAYERS BY PAIRING
-      const playersByPairing: Record<string, any[]> = {};
-      ppRows.forEach(pp => {
-        if (!pp.contestant_id) return;
-        if (!playersByPairing[pp.pairing_id]) playersByPairing[pp.pairing_id] = [];
-        const ct = contMap[pp.contestant_id];
-        const pr = ct ? profMap[ct.player_id] : null;
-        const fl = ct?.flight_id ? flightMap[ct.flight_id] : null;
-        playersByPairing[pp.pairing_id].push({
-          id: pp.id,
-          position: pp.position,
-          contestant_id: pp.contestant_id,
-          full_name: pr?.full_name ?? "?",
-          avatar_url: pr?.avatar_url ?? null,
-          player_id: ct?.player_id ?? null,
-          hcp: ct?.hcp ?? null,
-          flight_name: fl?.flight_name?.replace("Flight Level ", "") ?? "?",
-          cart_number: cartMap[pp.contestant_id] ?? null,
-          bag_number: bagMap[pp.contestant_id] ?? null,
-          caddy_name: caddyMap[pp.contestant_id] ?? null,
-        });
+    // Group players by pairing
+    const byPairing: Record<string, any[]> = {};
+    (pp ?? []).forEach(row => {
+      if (!byPairing[row.pairing_id]) byPairing[row.pairing_id] = [];
+      const c = ctMap[row.contestant_id!];
+      const prof = c ? prMap[c.player_id] : null;
+      const f = c ? flMap[c.flight_id!] : null;
+      byPairing[row.pairing_id].push({
+        id: row.contestant_id,
+        position: row.position,
+        full_name: prof?.full_name ?? "?",
+        avatar_url: prof?.avatar_url,
+        player_id: c?.player_id ?? null,
+        hcp: c?.hcp ?? null,
+        flight_name: f?.flight_name?.replace("Flight Level ", "") ?? "?",
+        cart_number: caMap[row.contestant_id!] ?? null,
+        bag_number: ecMap[row.contestant_id!] ?? null,
+        caddy_name: cdyMap[row.contestant_id!] ?? null,
       });
+    });
+    console.log("STEP9 byPairing keys:", Object.keys(byPairing).length);
 
-      console.log("playersByPairing keys:", Object.keys(playersByPairing).length);
+    setPairingsList(p);
+    setPlayersByPairing(byPairing);
+  };
 
-      return pairingData.map(p => ({
-        ...p,
-        _players: playersByPairing,
-      }));
-    },
-    enabled: !!id,
-  });
+  useEffect(() => {
+    loadPairingsData();
+  }, [id]);
 
   // Check if user is contestant & checked in
   const myContestant = contestants?.find(c => c.player_id === userId);
@@ -881,7 +861,7 @@ const EventDetail = () => {
 
 
       <TabsContent value="pairings" className="space-y-3 pt-2">
-        {showAdminActions && (!pairings || pairings.length === 0) && (!teeoffGroups || teeoffGroups.length === 0) && (
+        {showAdminActions && pairingsList.length === 0 && (
           <div className="golf-card space-y-3 p-4">
             <h3 className="text-sm font-semibold flex items-center gap-2">
               <Shuffle className="h-4 w-4 text-primary" /> Generate Pairings
@@ -913,7 +893,7 @@ const EventDetail = () => {
           </div>
         )}
 
-        {event?.pairing_approval_required && pairings && pairings.length > 0 && showAdminActions && (
+        {event?.pairing_approval_required && pairingsList.length > 0 && showAdminActions && (
           <div className="golf-card border-accent/30 p-3">
             <div className="flex items-center justify-between">
               <div>
@@ -941,12 +921,10 @@ const EventDetail = () => {
         )}
 
         {(!event?.pairing_approval_required || showAdminActions) && (() => {
-          const groups = teeoffGroups ?? [];
-          if (groups.length === 0 && (!pairings || pairings.length === 0)) {
+          const groups = pairingsList;
+          if (groups.length === 0) {
             return <EmptyState text="No pairings generated yet" />;
           }
-
-          if (groups.length === 0) return null;
 
           const parMap: Record<number, number> = {};
           (courseHoles ?? []).forEach(h => { parMap[h.hole_number] = h.par; });
@@ -977,8 +955,8 @@ const EventDetail = () => {
                   const badgeCls = slotLabel === "A"
                     ? "bg-blue-500/10 text-blue-600 border-blue-500/30"
                     : "bg-amber-500/10 text-amber-600 border-amber-500/30";
-                   const playersMap = g._players ?? {};
-                   const players = (playersMap[g.id] ?? []).sort((a: any, b: any) => (a.position ?? 0) - (b.position ?? 0));
+                   const playersArr = playersByPairing[g.id] ?? [];
+                   const players = playersArr.sort((a: any, b: any) => (a.position ?? 0) - (b.position ?? 0));
                    const par = parMap[g.start_hole ?? 1];
                    const teeTime = g.tee_time ? (() => {
                      try { return new Date(g.tee_time).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false }); }
@@ -1374,7 +1352,7 @@ const EventDetail = () => {
               </div>
               <div className="golf-card p-3 text-center">
                 <Shuffle className="mx-auto h-4 w-4 text-primary mb-1" />
-                <p className="text-xl font-bold">{teeoffGroups?.length ?? pairings?.length ?? 0}</p>
+                <p className="text-xl font-bold">{pairingsList.length}</p>
                 <p className="text-xs text-muted-foreground">Groups</p>
               </div>
               <div className="golf-card p-3 text-center">
@@ -1467,7 +1445,7 @@ const EventDetail = () => {
             </div>
             <div className="golf-card p-2.5 text-center">
               <Shuffle className="mx-auto h-3.5 w-3.5 text-primary" />
-              <p className="text-base font-bold">{teeoffGroups?.length ?? pairings?.length ?? 0}</p>
+              <p className="text-base font-bold">{pairingsList.length}</p>
               <p className="text-[9px] text-muted-foreground">Groups</p>
             </div>
             <div className="golf-card p-2.5 text-center">
