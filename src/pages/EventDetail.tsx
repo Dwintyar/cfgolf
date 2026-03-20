@@ -255,12 +255,19 @@ const EventDetail = () => {
 
   // Scoreboard data: scorecards with hole scores, grouped by flight
   const { data: scoreboardData, refetch: refetchScoreboard } = useQuery({
-    queryKey: ["event-scoreboard", id, event?.courses],
+    queryKey: ["event-scoreboard", id],
     queryFn: async () => {
-      const courseId = (event?.courses as any)?.id;
-      if (!courseId || !id) return [];
+      if (!id) return [];
 
-      // Get contestants first to know player_ids
+      // Get event info
+      const { data: eventInfo } = await supabase
+        .from("events")
+        .select("course_id, event_date")
+        .eq("id", id)
+        .single();
+      if (!eventInfo?.course_id) return [];
+
+      // Get contestants
       const { data: eventContestants } = await supabase
         .from("contestants")
         .select(`
@@ -268,85 +275,96 @@ const EventDetail = () => {
           profiles ( full_name ),
           tournament_flights ( flight_name, hcp_min, hcp_max, display_order )
         `)
-        .eq("event_id", id!);
-
+        .eq("event_id", id);
       if (!eventContestants?.length) return [];
 
       const playerIds = eventContestants.map(c => c.player_id);
 
-      // Step 1: Find ALL rounds for this course
+      // Find the completed round for this course (most recent)
       const { data: roundData } = await supabase
         .from("rounds")
         .select("id")
-        .eq("course_id", courseId)
-        .order("created_at", { ascending: false });
+        .eq("course_id", eventInfo.course_id)
+        .eq("status", "completed")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-      const roundIds = (roundData ?? []).map(r => r.id);
-
-      // Step 2: Fetch ALL scorecards across these rounds for event players
-      let scorecardsData: any[] = [];
-      if (roundIds.length > 0) {
-        const { data } = await supabase
-          .from("scorecards")
-          .select("id, player_id, gross_score, net_score, round_id")
-          .in("round_id", roundIds)
-          .in("player_id", playerIds);
-        scorecardsData = data ?? [];
+      // Also try any round if no completed one found
+      let roundId = roundData?.id;
+      if (!roundId) {
+        const { data: anyRound } = await supabase
+          .from("rounds")
+          .select("id")
+          .eq("course_id", eventInfo.course_id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        roundId = anyRound?.id;
       }
 
-      // Dedupe: keep only the latest scorecard per player
-      const scByPlayer: Record<string, any> = {};
-      scorecardsData.forEach(sc => {
-        if (!scByPlayer[sc.player_id]) scByPlayer[sc.player_id] = sc;
-      });
-      const uniqueScorecards = Object.values(scByPlayer);
+      if (!roundId) {
+        // No round found — return contestants with no scores
+        return eventContestants.map(ct => ({
+          player_id: ct.player_id,
+          full_name: (ct.profiles as any)?.full_name ?? "Unknown",
+          out_score: null, in_score: null, tot: null, nett: null,
+          hcp: ct.hcp, flight_id: ct.flight_id,
+          flight_name: (ct.tournament_flights as any)?.flight_name ?? "",
+          hcp_min: (ct.tournament_flights as any)?.hcp_min ?? 0,
+          hcp_max: (ct.tournament_flights as any)?.hcp_max ?? 36,
+          display_order: (ct.tournament_flights as any)?.display_order ?? 0,
+          contestant_id: ct.id, category_name: "",
+        }));
+      }
 
-      // Step 3: Fetch ALL hole_scores for those scorecards
-      const scorecardIds = uniqueScorecards.map((sc: any) => sc.id);
+      // Fetch scorecards for this round
+      const { data: scorecards } = await supabase
+        .from("scorecards")
+        .select("id, player_id, gross_score, net_score")
+        .eq("round_id", roundId)
+        .in("player_id", playerIds);
+
+      const scIds = (scorecards ?? []).map(s => s.id);
+
+      // Fetch hole_scores
+      const { data: holeScores } = scIds.length > 0
+        ? await supabase.from("hole_scores").select("scorecard_id, hole_number, strokes").in("scorecard_id", scIds)
+        : { data: [] as any[] };
+
+      // Compute OUT/IN per scorecard
       const outInMap: Record<string, { out: number; in: number }> = {};
-      if (scorecardIds.length > 0) {
-        const { data: holeScoresData } = await supabase
-          .from("hole_scores")
-          .select("scorecard_id, hole_number, strokes")
-          .in("scorecard_id", scorecardIds);
-        (holeScoresData ?? []).forEach((hs: any) => {
-          if (!outInMap[hs.scorecard_id]) outInMap[hs.scorecard_id] = { out: 0, in: 0 };
-          if (hs.hole_number <= 9) outInMap[hs.scorecard_id].out += (hs.strokes ?? 0);
-          else outInMap[hs.scorecard_id].in += (hs.strokes ?? 0);
-        });
-      }
+      (holeScores ?? []).forEach((h: any) => {
+        if (!outInMap[h.scorecard_id]) outInMap[h.scorecard_id] = { out: 0, in: 0 };
+        if (h.hole_number <= 9) outInMap[h.scorecard_id].out += (h.strokes ?? 0);
+        else outInMap[h.scorecard_id].in += (h.strokes ?? 0);
+      });
 
-      // Step 4: Build scoreByPlayer
+      // Build scoreByPlayer (dedupe: keep first match per player)
       const scoreByPlayer: Record<string, { out: number; in: number; tot: number | null; net: number | null }> = {};
-      uniqueScorecards.forEach((sc: any) => {
+      (scorecards ?? []).forEach((sc: any) => {
+        if (scoreByPlayer[sc.player_id]) return;
         const oi = outInMap[sc.id] ?? { out: 0, in: 0 };
         scoreByPlayer[sc.player_id] = {
-          out: oi.out,
-          in: oi.in,
-          tot: sc.gross_score,
-          net: sc.net_score,
+          out: oi.out, in: oi.in,
+          tot: sc.gross_score, net: sc.net_score,
         };
       });
 
       // Get event results for remarks
       const { data: eventResults } = await supabase
         .from("event_results")
-        .select(`
-          contestant_id,
-          tournament_winner_categories ( category_name )
-        `)
-        .eq("event_id", id!);
+        .select(`contestant_id, tournament_winner_categories ( category_name )`)
+        .eq("event_id", id);
 
       const resultsMap: Record<string, string> = {};
       (eventResults ?? []).forEach((er: any) => {
         resultsMap[er.contestant_id] = (er.tournament_winner_categories as any)?.category_name ?? "";
       });
 
-      // Build rows from contestants
+      // Build rows
       const rows = eventContestants.map(ct => {
         const scores = scoreByPlayer[ct.player_id];
-        const categoryName = resultsMap[ct.id] ?? "";
-
         return {
           player_id: ct.player_id,
           full_name: (ct.profiles as any)?.full_name ?? "Unknown",
@@ -354,18 +372,16 @@ const EventDetail = () => {
           in_score: scores?.in ?? null,
           tot: scores?.tot ?? null,
           nett: scores?.net ?? null,
-          hcp: ct.hcp,
-          flight_id: ct.flight_id,
+          hcp: ct.hcp, flight_id: ct.flight_id,
           flight_name: (ct.tournament_flights as any)?.flight_name ?? "",
           hcp_min: (ct.tournament_flights as any)?.hcp_min ?? 0,
           hcp_max: (ct.tournament_flights as any)?.hcp_max ?? 36,
           display_order: (ct.tournament_flights as any)?.display_order ?? 0,
           contestant_id: ct.id,
-          category_name: categoryName,
+          category_name: resultsMap[ct.id] ?? "",
         };
       });
 
-      // Sort by flight display_order, then nett ascending (NR last)
       rows.sort((a, b) => {
         if (a.display_order !== b.display_order) return a.display_order - b.display_order;
         if (a.nett == null && b.nett == null) return 0;
@@ -376,7 +392,7 @@ const EventDetail = () => {
 
       return rows;
     },
-    enabled: !!id && !!event?.courses,
+    enabled: !!id,
   });
 
   const scoreboardRef = useRef<HTMLDivElement>(null);
