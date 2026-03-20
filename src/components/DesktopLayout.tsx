@@ -4,10 +4,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect, useContext } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ChatNotifContext } from "@/App";
+import { Badge } from "@/components/ui/badge";
 import {
   Newspaper, Users, Trophy, MapPin,
   Bell, MessageCircle, Settings,
-  Building2, Search, Flag
+  Building2, Search, Flag, ShieldCheck
 } from "lucide-react";
 import logo from "@/assets/logo.svg";
 
@@ -74,18 +75,23 @@ const DesktopLayout = ({ children, sidebarRightHidden = false }: { children: Rea
   const location = useLocation();
   const { unreadCount } = useContext(ChatNotifContext);
   const [userId, setUserId] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
   const width = useWindowWidth();
   const isDesktop = width >= 1024;
   const isWide = width >= 1280;
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) setUserId(session.user.id);
+      if (session?.user) {
+        setUserId(session.user.id);
+        setUserEmail(session.user.email ?? null);
+      }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setUserId(session?.user?.id ?? null);
+        setUserEmail(session?.user?.email ?? null);
       }
     );
 
@@ -104,6 +110,21 @@ const DesktopLayout = ({ children, sidebarRightHidden = false }: { children: Rea
     },
     enabled: !!userId,
     staleTime: 1000 * 60 * 5,
+  });
+
+  const isAdmin = userEmail === "dwintyar@gmail.com";
+
+  const { data: pendingCount } = useQuery({
+    queryKey: ["sidebar-pending-approvals-count"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("pending_approvals")
+        .select("id")
+        .eq("status", "pending");
+      return data?.length ?? 0;
+    },
+    enabled: isAdmin,
+    refetchInterval: 30000,
   });
 
   const navItems = [
@@ -222,6 +243,29 @@ const DesktopLayout = ({ children, sidebarRightHidden = false }: { children: Rea
               </button>
             );
           })}
+
+          {/* Admin Approvals */}
+          {isAdmin && (
+            <>
+              <div className="border-t border-border/30 my-2" />
+              <button
+                onClick={() => navigate("/admin/approvals")}
+                className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-colors text-left ${
+                  location.pathname === "/admin/approvals"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                }`}
+              >
+                <ShieldCheck className="h-[18px] w-[18px] shrink-0" />
+                Approvals
+                {(pendingCount ?? 0) > 0 && (
+                  <Badge variant="destructive" className="ml-auto text-[10px] px-1.5 py-0 h-5 min-w-[20px] flex items-center justify-center">
+                    {pendingCount}
+                  </Badge>
+                )}
+              </button>
+            </>
+          )}
         </nav>
       </aside>
 

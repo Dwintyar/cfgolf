@@ -42,6 +42,7 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import PublicProfile from "./pages/PublicProfile";
 import RecordRound from "./pages/RecordRound";
 import CasualScorecardInput from "./pages/CasualScorecardInput";
+import AdminApprovals from "./pages/AdminApprovals";
 
 const queryClient = new QueryClient();
 
@@ -98,6 +99,7 @@ const AppInner = () => {
           <Routes>
             <Route path="/" element={<Navigate to="/login" replace />} />
             <Route path="/admin" element={<AdminRoute requirePlatformAdmin><PlatformAdminDashboard /></AdminRoute>} />
+            <Route path="/admin/approvals" element={<AdminApprovals />} />
             <Route path="/admin/club/:clubId" element={<AdminRoute><ClubAdminDashboard /></AdminRoute>} />
             <Route path="/admin/course/:courseId" element={<CourseAdminDashboard />} />
             <Route path="/export-queries" element={<ExportQueries />} />
