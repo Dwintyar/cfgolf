@@ -39,37 +39,43 @@ const EventCheckin = ({ eventId, isAdmin, userId, event }: EventCheckinProps) =>
       if (error) throw error;
       if (!data || data.length === 0) return [];
 
-      // Get profiles
       const playerIds = data.map(c => c.player_id);
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("id, full_name, avatar_url")
-        .in("id", playerIds);
 
-      // Get tour_players for club mapping
-      const { data: tourPlayers } = await supabase
-        .from("tour_players")
-        .select("player_id, club_id")
-        .eq("tour_id", ev.tour_id)
-        .in("player_id", playerIds);
+      // Parallel: profiles, tour_players, tickets
+      const [profilesRes, tourPlayersRes, ticketsRes] = await Promise.all([
+        supabase.from("profiles").select("id, full_name, avatar_url").in("id", playerIds),
+        supabase.from("tour_players").select("player_id, club_id").eq("tour_id", ev.tour_id).in("player_id", playerIds),
+        supabase.from("tickets").select("assigned_player_id, club_id").eq("event_id", eventId).in("assigned_player_id", playerIds),
+      ]);
 
-      // Get clubs
-      const clubIds = [...new Set((tourPlayers ?? []).map(tp => tp.club_id))];
-      const { data: clubs } = clubIds.length > 0
-        ? await supabase.from("clubs").select("id, name").in("id", clubIds)
-        : { data: [] };
+      // Build club_id maps: tour_players primary, tickets fallback
+      const tpMap = new Map((tourPlayersRes.data ?? []).map(tp => [tp.player_id, tp.club_id]));
+      const ticketClubMap = new Map((ticketsRes.data ?? []).map(t => [t.assigned_player_id!, t.club_id]));
 
-      const profileMap = new Map((profiles ?? []).map(p => [p.id, p]));
-      const tpMap = new Map((tourPlayers ?? []).map(tp => [tp.player_id, tp.club_id]));
+      // Collect all unique club IDs from both sources
+      const allClubIds = new Set<string>();
+      (tourPlayersRes.data ?? []).forEach(tp => allClubIds.add(tp.club_id));
+      (ticketsRes.data ?? []).forEach(t => { if (t.club_id) allClubIds.add(t.club_id); });
+
+      const clubIdsArr = [...allClubIds];
+      const { data: clubs } = clubIdsArr.length > 0
+        ? await supabase.from("clubs").select("id, name").in("id", clubIdsArr)
+        : { data: [] as { id: string; name: string }[] };
+
+      const profileMap = new Map((profilesRes.data ?? []).map(p => [p.id, p]));
       const clubMap = new Map((clubs ?? []).map(c => [c.id, c.name]));
 
-      return data.map(c => ({
-        ...c,
-        full_name: profileMap.get(c.player_id)?.full_name ?? "Unknown",
-        club_id: tpMap.get(c.player_id) ?? null,
-        club_name: clubMap.get(tpMap.get(c.player_id) ?? "") ?? "No Club",
-        flight_name: (c.tournament_flights as any)?.flight_name ?? null,
-      }));
+      return data.map(c => {
+        const clubId = tpMap.get(c.player_id) ?? ticketClubMap.get(c.player_id) ?? null;
+        const clubName = clubId ? (clubMap.get(clubId) ?? "Unknown") : "Unknown";
+        return {
+          ...c,
+          full_name: profileMap.get(c.player_id)?.full_name ?? "Unknown",
+          club_id: clubId,
+          club_name: clubName,
+          flight_name: (c.tournament_flights as any)?.flight_name ?? null,
+        };
+      });
     },
   });
 
