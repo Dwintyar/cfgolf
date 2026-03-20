@@ -34,6 +34,7 @@ const EventDetail = () => {
   const [firstTee, setFirstTee] = useState("07:00");
   const [interval, setInterval] = useState("8");
   const [activeTab, setActiveTab] = useState("overview");
+  const [pairingFilter, setPairingFilter] = useState<string>("all");
   const [userId, setUserId] = useState<string | null>(null);
   const [checkingIn, setCheckingIn] = useState(false);
   const [showCheckinDialog, setShowCheckinDialog] = useState(false);
@@ -257,28 +258,29 @@ const EventDetail = () => {
   const { data: teeoffGroups } = useQuery({
     queryKey: ["event-teeoff-groups", id, event?.tour_id],
     queryFn: async () => {
-      // Step 1: Fetch pairings with nested joins
       const { data: pairingData, error } = await supabase
         .from("pairings")
-        .select("id, pairing_label, start_hole, slot, tee_time, start_type, teeoff_group_number, pairing_players!inner(id, position, contestant_id, contestants!inner(id, player_id, hcp, flight_id, profiles!inner(id, full_name, handicap, avatar_url), tournament_flights(flight_name)))")
+        .select(`
+          id, pairing_label, start_hole, slot, tee_time, start_type, teeoff_group_number,
+          pairing_players (
+            id, position, contestant_id,
+            contestants (
+              id, player_id, hcp, flight_id,
+              profiles ( id, full_name, handicap, avatar_url ),
+              tournament_flights ( flight_name )
+            )
+          )
+        `)
         .eq("event_id", id!)
         .order("start_hole")
         .order("slot");
       if (error) {
         console.error("teeoff query error:", error);
-        // Fallback: simpler query without !inner
-        const { data: fallbackData } = await supabase
-          .from("pairings")
-          .select("id, pairing_label, start_hole, slot, tee_time, start_type, teeoff_group_number, pairing_players(id, position, contestant_id, contestants(id, player_id, hcp, flight_id, profiles(id, full_name, handicap, avatar_url), tournament_flights(flight_name)))")
-          .eq("event_id", id!)
-          .order("start_hole")
-          .order("slot");
-        if (!fallbackData?.length) return [];
-        return fallbackData.map(p => ({ ...p, _clubMap: {} as Record<string, string> }));
+        return [];
       }
       if (!pairingData?.length) return [];
 
-      // Step 2: Fetch club names via tour_players
+      // Fetch club names via tour_players
       const playerIds = pairingData.flatMap(p =>
         ((p.pairing_players as any[]) ?? []).map((pp: any) => pp.contestants?.player_id).filter(Boolean)
       );
@@ -293,7 +295,16 @@ const EventDetail = () => {
           clubMap[tp.player_id] = (tp.clubs as any)?.name ?? "";
         });
       }
-      return pairingData.map(p => ({ ...p, _clubMap: clubMap }));
+
+      // Fetch cart assignments
+      const { data: cartData } = await supabase
+        .from("golf_cart_assignments")
+        .select("cart_number, contestant_id")
+        .eq("event_id", id!);
+      const cartMap: Record<string, number> = {};
+      (cartData ?? []).forEach(c => { cartMap[c.contestant_id] = c.cart_number; });
+
+      return pairingData.map(p => ({ ...p, _clubMap: clubMap, _cartMap: cartMap }));
     },
     enabled: !!id && !!event?.tour_id,
   });
@@ -667,9 +678,8 @@ const EventDetail = () => {
       </TabsContent>
 
 
-      {/* PAIRINGS */}
       <TabsContent value="pairings" className="space-y-3 pt-2">
-        {showAdminActions && (!pairings || pairings.length === 0) && (
+        {showAdminActions && (!pairings || pairings.length === 0) && (!teeoffGroups || teeoffGroups.length === 0) && (
           <div className="golf-card space-y-3 p-4">
             <h3 className="text-sm font-semibold flex items-center gap-2">
               <Shuffle className="h-4 w-4 text-primary" /> Generate Pairings
@@ -734,130 +744,142 @@ const EventDetail = () => {
             return <EmptyState text="No pairings generated yet" />;
           }
 
-          if (groups.length > 0) {
-            const holeMap: Record<number, any[]> = {};
-            groups.forEach(g => {
-              const hole = g.start_hole ?? 1;
-              if (!holeMap[hole]) holeMap[hole] = [];
-              holeMap[hole].push(g);
-            });
-            const holes = Object.keys(holeMap).map(Number).sort((a, b) => a - b);
-            const parMap: Record<number, number> = {};
-            (courseHoles ?? []).forEach(h => { parMap[h.hole_number] = h.par; });
+          if (groups.length === 0) return null;
 
-            const getFlightLevel = (hcp: number | null) => {
-              if (hcp == null) return null;
-              if (hcp <= 16) return { label: "Level A", cls: "bg-blue-500/10 text-blue-600 border-blue-500/30" };
-              if (hcp <= 22) return { label: "Level B", cls: "bg-amber-500/10 text-amber-600 border-amber-500/30" };
-              return { label: "Level C", cls: "bg-muted text-muted-foreground border-border" };
-            };
+          const parMap: Record<number, number> = {};
+          (courseHoles ?? []).forEach(h => { parMap[h.hole_number] = h.par; });
 
-            return (
-              <>
-                <div className="golf-card p-3 space-y-1">
-                  <p className="text-sm font-semibold flex items-center gap-2">
-                    <Shuffle className="h-4 w-4 text-primary" />
-                    {groups.length} Tee-off Groups | {holes.length} holes × {Math.ceil(groups.length / Math.max(holes.length, 1))} groups per hole
-                  </p>
-                  <p className="text-xs text-muted-foreground">Shotgun start · All groups tee off simultaneously</p>
-                </div>
+          const getFlightLevel = (hcp: number | null) => {
+            if (hcp == null) return null;
+            if (hcp <= 16) return { label: "A", cls: "bg-blue-500/10 text-blue-600 border-blue-500/30" };
+            if (hcp <= 22) return { label: "B", cls: "bg-amber-500/10 text-amber-600 border-amber-500/30" };
+            return { label: "C", cls: "bg-muted text-muted-foreground border-border" };
+          };
 
-                {holes.map(holeNum => {
-                  const holeGroups = holeMap[holeNum].sort((a: any, b: any) => (a.slot ?? "").localeCompare(b.slot ?? ""));
-                  const par = parMap[holeNum];
+          // Apply filters
+          const filteredGroups = groups.filter(g => {
+            const hole = g.start_hole ?? 1;
+            const players = ((g.pairing_players as any[]) ?? []);
+            if (pairingFilter === "front9") return hole >= 1 && hole <= 9;
+            if (pairingFilter === "back9") return hole >= 10 && hole <= 18;
+            if (pairingFilter === "flightA") return players.some((pp: any) => { const h = pp.contestants?.hcp; return h != null && h <= 16; });
+            if (pairingFilter === "flightB") return players.some((pp: any) => { const h = pp.contestants?.hcp; return h != null && h > 16 && h <= 22; });
+            if (pairingFilter === "flightC") return players.some((pp: any) => { const h = pp.contestants?.hcp; return h != null && h > 22; });
+            return true;
+          });
+
+          return (
+            <>
+              {/* Summary */}
+              <div className="golf-card p-3 space-y-1">
+                <p className="text-sm font-semibold flex items-center gap-2">
+                  <Shuffle className="h-4 w-4 text-primary" />
+                  {groups.length} Tee-off Groups
+                </p>
+                <p className="text-xs text-muted-foreground">Shotgun start · All groups tee off simultaneously</p>
+              </div>
+
+              {/* Sticky filter bar */}
+              <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm py-2 flex gap-1.5 overflow-x-auto scrollbar-none">
+                {[
+                  { key: "all", label: "All" },
+                  { key: "front9", label: "Hole 1–9" },
+                  { key: "back9", label: "Hole 10–18" },
+                  { key: "flightA", label: "Flight A" },
+                  { key: "flightB", label: "Flight B" },
+                  { key: "flightC", label: "Flight C" },
+                ].map(f => (
+                  <button
+                    key={f.key}
+                    onClick={() => setPairingFilter(f.key)}
+                    className={`shrink-0 rounded-full px-3 py-1 text-[11px] font-medium border transition-colors ${
+                      pairingFilter === f.key
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-secondary/50 text-muted-foreground border-border hover:bg-secondary"
+                    }`}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Card grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {filteredGroups.map((g: any) => {
+                  const slotLabel = g.slot ?? "A";
+                  const badgeLabel = g.pairing_label ?? `${g.start_hole ?? 1}${slotLabel}`;
+                  const badgeCls = slotLabel === "A"
+                    ? "bg-blue-500/10 text-blue-600 border-blue-500/30"
+                    : "bg-amber-500/10 text-amber-600 border-amber-500/30";
+                  const players = ((g.pairing_players as any[]) ?? []).sort((a: any, b: any) => (a.position ?? 0) - (b.position ?? 0));
+                  const clubMap = g._clubMap ?? {};
+                  const cartMap = g._cartMap ?? {};
+                  const par = parMap[g.start_hole ?? 1];
+                  const teeTime = g.tee_time ? (() => {
+                    try { return new Date(g.tee_time).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false }); }
+                    catch { return g.tee_time; }
+                  })() : null;
+
                   return (
-                    <div key={holeNum}>
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-xs font-bold text-primary">{holeNum}</div>
-                        <p className="text-sm font-semibold">Hole {holeNum}</p>
-                        {par && <Badge variant="outline" className="text-[10px]">Par {par}</Badge>}
+                    <div key={g.id} className="rounded-xl border bg-card/50 hover:shadow-md transition-shadow overflow-hidden">
+                      {/* Card header */}
+                      <div className="flex items-center gap-2 px-3 py-2.5 border-b bg-muted/30">
+                        <Badge variant="outline" className={`text-[11px] font-bold ${badgeCls}`}>{badgeLabel}</Badge>
+                        <span className="text-xs text-muted-foreground">Hole {g.start_hole ?? 1}</span>
+                        {par && <span className="text-[10px] text-muted-foreground">· Par {par}</span>}
+                        <span className="text-xs text-muted-foreground">· Slot {slotLabel}</span>
+                        {teeTime && <span className="text-xs text-muted-foreground ml-auto font-medium">{teeTime}</span>}
                       </div>
-                      <div className="space-y-2 ml-2">
-                        {holeGroups.map((g: any, gi: number) => {
-                          const slotLabel = g.slot ?? String.fromCharCode(65 + gi);
-                          const badgeLabel = g.pairing_label ?? `${holeNum}${slotLabel}`;
-                          const badgeCls = slotLabel === "A" ? "bg-blue-500/10 text-blue-600 border-blue-500/30" : "bg-amber-500/10 text-amber-600 border-amber-500/30";
-                          const players = ((g.pairing_players as any[]) ?? []).sort((a: any, b: any) => (a.position ?? 0) - (b.position ?? 0));
-                          const clubMap = g._clubMap ?? {};
-                          const teeTime = g.tee_time ? (() => {
-                            try { return new Date(g.tee_time).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false }); }
-                            catch { return g.tee_time; }
-                          })() : null;
+
+                      {/* 2×2 player grid */}
+                      <div className="grid grid-cols-2 gap-2 p-3">
+                        {players.map((pp: any) => {
+                          const profile = pp.contestants?.profiles;
+                          const hcp = pp.contestants?.hcp ?? profile?.handicap;
+                          const clubName = clubMap[pp.contestants?.player_id] ?? "";
+                          const level = getFlightLevel(hcp);
+                          const cartNum = cartMap[pp.contestant_id];
 
                           return (
-                            <div key={g.id} className="golf-card p-3">
-                              <div className="flex items-center gap-2 mb-2">
-                                <Badge variant="outline" className={`text-[10px] font-bold ${badgeCls}`}>{badgeLabel}</Badge>
-                                {teeTime && <span className="text-xs text-muted-foreground ml-auto">{teeTime}</span>}
+                            <button
+                              key={pp.id}
+                              onClick={() => profile?.id && navigate(`/golfer/${profile.id}`)}
+                              className="flex flex-col items-center gap-1.5 rounded-lg border bg-background/60 p-2.5 hover:bg-secondary/50 transition-colors text-center"
+                            >
+                              <Avatar className="h-9 w-9">
+                                <AvatarImage src={profile?.avatar_url ?? ""} />
+                                <AvatarFallback className="bg-primary/10 text-xs font-bold text-primary">
+                                  {(profile?.full_name ?? "?").charAt(0)}
+                                </AvatarFallback>
+                              </Avatar>
+                              <p className="text-xs font-semibold truncate w-full">{profile?.full_name ?? "Unknown"}</p>
+                              <div className="flex flex-wrap items-center justify-center gap-1">
+                                <Badge variant="outline" className="text-[9px]">HCP {hcp ?? "—"}</Badge>
+                                {level && <Badge variant="outline" className={`text-[9px] ${level.cls}`}>Lvl {level.label}</Badge>}
                               </div>
-                              <div className="space-y-1.5">
-                                {players.map((pp: any) => {
-                                  const profile = pp.contestants?.profiles;
-                                  const hcp = pp.contestants?.hcp ?? profile?.handicap;
-                                  const flightName = pp.contestants?.tournament_flights?.flight_name;
-                                  const clubName = clubMap[pp.contestants?.player_id] ?? "";
-                                  const level = getFlightLevel(hcp);
-                                  return (
-                                    <button
-                                      key={pp.id}
-                                      onClick={() => profile?.id && navigate(`/golfer/${profile.id}`)}
-                                      className="w-full flex items-center gap-2 p-1.5 rounded-lg hover:bg-secondary/50 transition-colors text-left"
-                                    >
-                                      <Avatar className="h-7 w-7">
-                                        <AvatarImage src={profile?.avatar_url ?? ""} />
-                                        <AvatarFallback className="bg-primary/10 text-[10px] font-bold text-primary">
-                                          {(profile?.full_name ?? "?").charAt(0)}
-                                        </AvatarFallback>
-                                      </Avatar>
-                                      <div className="min-w-0 flex-1">
-                                        <p className="text-xs font-medium truncate">{profile?.full_name ?? "Unknown"}</p>
-                                        <p className="text-[10px] text-muted-foreground truncate">{clubName}{flightName && ` · ${flightName}`}</p>
-                                      </div>
-                                      <div className="flex items-center gap-1 shrink-0">
-                                        <Badge variant="outline" className="text-[9px]">HCP {hcp ?? "—"}</Badge>
-                                        {level && <Badge variant="outline" className={`text-[9px] ${level.cls}`}>{level.label}</Badge>}
-                                      </div>
-                                    </button>
-                                  );
-                                })}
-                                {players.length === 0 && <p className="text-xs text-muted-foreground text-center py-2">No players assigned</p>}
-                              </div>
-                            </div>
+                              {clubName && <p className="text-[9px] text-muted-foreground truncate w-full">{clubName}</p>}
+                              {cartNum != null && (
+                                <p className="text-[9px] text-muted-foreground flex items-center gap-0.5">
+                                  <Car className="h-2.5 w-2.5" /> Cart {cartNum}
+                                </p>
+                              )}
+                            </button>
                           );
                         })}
+                        {players.length === 0 && (
+                          <p className="col-span-2 text-xs text-muted-foreground text-center py-4">No players assigned</p>
+                        )}
                       </div>
                     </div>
                   );
                 })}
-              </>
-            );
-          }
+              </div>
 
-          // Fallback: simple list
-          return pairings?.map((p) => (
-            <div key={p.id} className="golf-card p-3 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-semibold">Group {p.teeoff_group_number}</span>
-                <div className="flex items-center gap-2">
-                  {p.start_type === "shotgun" && p.start_hole && (
-                    <Badge variant="outline" className="text-[10px] border-accent/30 text-accent">Hole {p.start_hole}</Badge>
-                  )}
-                  <span className="text-xs text-muted-foreground">{formatTeeTime(p.tee_time)}</span>
-                </div>
-              </div>
-              <div className="space-y-1">
-                {((p.pairing_players as any[]) ?? [])
-                  .sort((a: any, b: any) => (a.position ?? 0) - (b.position ?? 0))
-                  .map((pp: any) => (
-                    <div key={pp.id} className="flex items-center gap-2 text-xs">
-                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">{pp.position}</span>
-                      <span className="truncate">{pp.contestants?.profiles?.full_name ?? "Unknown"}</span>
-                      <span className="ml-auto text-muted-foreground">HCP {pp.contestants?.hcp ?? "—"}</span>
-                    </div>
-                  ))}
-              </div>
-            </div>
-          ));
+              {filteredGroups.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-6">No groups match this filter</p>
+              )}
+            </>
+          );
         })()}
       </TabsContent>
 
