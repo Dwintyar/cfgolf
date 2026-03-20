@@ -40,6 +40,8 @@ import Notifications from "./pages/Notifications";
 import CourseAdminDashboard from "./pages/CourseAdminDashboard";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import PublicProfile from "./pages/PublicProfile";
+import RecordRound from "./pages/RecordRound";
+import CasualScorecardInput from "./pages/CasualScorecardInput";
 
 const queryClient = new QueryClient();
 
@@ -115,6 +117,8 @@ const AppInner = () => {
             <Route path="/venue" element={<VenueList />} />
             <Route path="/venue/:id" element={<Venue />} />
             <Route path="/play" element={<Play />} />
+            <Route path="/record-round" element={<RecordRound />} />
+            <Route path="/record-round/:courseId" element={<CasualScorecardInput />} />
             <Route path="/play/messages" element={<Messages />} />
             <Route path="/profile" element={<GolferProfile />} />
             <Route path="/settings" element={<Settings />} />

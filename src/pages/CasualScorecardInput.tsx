@@ -2,8 +2,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Trophy, Download } from "lucide-react";
-import html2canvas from "html2canvas";
+import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -15,8 +14,8 @@ interface HoleScore {
   gir: boolean | null;
 }
 
-const ScorecardInput = () => {
-  const { id: eventId } = useParams<{ id: string }>();
+const CasualScorecardInput = () => {
+  const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [scores, setScores] = useState<HoleScore[]>([]);
@@ -31,113 +30,58 @@ const ScorecardInput = () => {
     });
   }, [navigate]);
 
-  const { data: event } = useQuery({
-    queryKey: ["event-scorecard", eventId],
+  const { data: course } = useQuery({
+    queryKey: ["course-casual", courseId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("events")
-        .select("*, courses(id, name, par, holes_count, course_holes(*))")
-        .eq("id", eventId!)
+        .from("courses")
+        .select("id, name, par, holes_count, location")
+        .eq("id", courseId!)
         .single();
       if (error) throw error;
       return data;
     },
-    enabled: !!eventId,
+    enabled: !!courseId,
   });
 
-  const { data: contestant } = useQuery({
-    queryKey: ["my-contestant", eventId, userId],
+  const { data: profile } = useQuery({
+    queryKey: ["my-profile-casual", userId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("contestants")
-        .select("*, profiles(full_name, handicap)")
-        .eq("event_id", eventId!)
-        .eq("player_id", userId!)
+      const { data } = await supabase
+        .from("profiles")
+        .select("handicap, full_name")
+        .eq("id", userId!)
         .single();
-      if (error) throw error;
       return data;
     },
-    enabled: !!eventId && !!userId,
+    enabled: !!userId,
   });
 
-  const { data: existingScorecard } = useQuery({
-    queryKey: ["my-scorecard", eventId, userId],
+  const { data: holesData } = useQuery({
+    queryKey: ["course-holes-casual", courseId],
     queryFn: async () => {
-      const { data: rounds } = await supabase
-        .from("rounds")
-        .select("id")
-        .eq("course_id", (event?.courses as any)?.id)
-        .eq("created_by", userId!);
-      if (!rounds || rounds.length === 0) return null;
-      const roundIds = rounds.map(r => r.id);
-      const { data: sc } = await supabase
-        .from("scorecards")
-        .select("*, hole_scores(*)")
-        .eq("player_id", userId!)
-        .in("round_id", roundIds)
-        .maybeSingle();
-      return sc;
-    },
-    enabled: !!event && !!userId,
-  });
-
-  const { data: eventHolesData } = useQuery({
-    queryKey: ["event-holes-scorecard", eventId],
-    queryFn: async () => {
-      const { data: eventHoles } = await supabase
-        .from("event_holes")
-        .select("hole_number, par, distance_yards, stroke_index")
-        .eq("event_id", eventId!)
-        .order("hole_number");
-      if (eventHoles && eventHoles.length > 0) {
-        return eventHoles.map(h => ({
-          hole_number: h.hole_number,
-          par: h.par,
-          distance_yards: h.distance_yards,
-          handicap_index: h.stroke_index,
-        }));
-      }
-      const courseId = (event?.courses as any)?.id;
-      if (!courseId) return [];
-      const { data: courseHoles } = await supabase
+      const { data } = await supabase
         .from("course_holes")
         .select("hole_number, par, distance_yards, handicap_index")
-        .eq("course_id", courseId)
+        .eq("course_id", courseId!)
         .order("hole_number");
-      return courseHoles ?? [];
+      return data ?? [];
     },
-    enabled: !!eventId && !!event,
+    enabled: !!courseId,
   });
 
-  const holes = useMemo(() => eventHolesData ?? [], [eventHolesData]);
-  const holesCount = (event?.courses as any)?.holes_count ?? 18;
+  const holes = useMemo(() => holesData ?? [], [holesData]);
+  const holesCount = course?.holes_count ?? 18;
+  const playerHcp = profile?.handicap ?? 0;
 
   useEffect(() => {
-    if (scores.length > 0) return;
+    if (scores.length > 0 || !course) return;
     const initial: HoleScore[] = [];
     for (let i = 1; i <= holesCount; i++) {
       initial.push({ hole_number: i, strokes: null, putts: null, fairway_hit: null, gir: null });
     }
-    if (existingScorecard?.hole_scores) {
-      const existing = existingScorecard.hole_scores as any[];
-      existing.forEach(hs => {
-        const idx = initial.findIndex(s => s.hole_number === hs.hole_number);
-        if (idx >= 0) {
-          initial[idx] = {
-            hole_number: hs.hole_number,
-            strokes: hs.strokes,
-            putts: hs.putts,
-            fairway_hit: hs.fairway_hit,
-            gir: hs.gir,
-          };
-        }
-      });
-    }
     setScores(initial);
-  }, [holesCount, existingScorecard]);
-
-  const coursePar = (event?.courses as any)?.par ?? 72;
-  const playerHcp = contestant?.hcp ?? (contestant?.profiles as any)?.handicap ?? 0;
+  }, [holesCount, course]);
 
   const outScores = scores.slice(0, 9);
   const inScores = scores.slice(9, 18);
@@ -158,7 +102,6 @@ const ScorecardInput = () => {
     }
     if (isNaN(num) || num < 1 || num > 15) return;
     setScores(prev => prev.map((s, i) => i === holeIndex ? { ...s, strokes: num } : s));
-    // Auto-advance to next hole
     if (holeIndex < holesCount - 1) {
       setTimeout(() => inputRefs.current[holeIndex + 1]?.focus(), 100);
     }
@@ -180,38 +123,23 @@ const ScorecardInput = () => {
   };
 
   const handleSubmit = async () => {
-    if (!userId || !event || !contestant) return;
+    if (!userId || !courseId) return;
     setSubmitting(true);
     try {
-      const courseId = (event.courses as any)?.id;
-      let roundId: string;
-      const { data: existingRound } = await supabase
+      const { data: newRound, error } = await supabase
         .from("rounds")
-        .select("id")
-        .eq("course_id", courseId)
-        .eq("created_by", userId)
-        .maybeSingle();
+        .insert({ course_id: courseId, created_by: userId, status: "completed", finished_at: new Date().toISOString() })
+        .select()
+        .single();
+      if (error) throw error;
+      const roundId = newRound.id;
 
-      if (existingRound) {
-        roundId = existingRound.id;
-      } else {
-        const { data: newRound, error } = await supabase
-          .from("rounds")
-          .insert({ course_id: courseId, created_by: userId, status: "playing" })
-          .select()
-          .single();
-        if (error) throw error;
-        roundId = newRound.id;
-        await supabase.from("round_players").insert({ round_id: roundId, user_id: userId });
-      }
+      await supabase.from("round_players").insert({ round_id: roundId, user_id: userId });
 
       const totalPutts = scores.reduce((s, h) => s + (h.putts ?? 0), 0);
-
-      // Try upsert scorecard
-      let scorecardId: string;
       const { data: sc, error: scErr } = await supabase
         .from("scorecards")
-        .upsert({
+        .insert({
           round_id: roundId,
           player_id: userId,
           course_id: courseId,
@@ -219,83 +147,33 @@ const ScorecardInput = () => {
           gross_score: grossTotal,
           net_score: netTotal,
           total_putts: totalPutts,
-        }, { onConflict: "round_id,player_id" })
+        })
         .select()
         .single();
+      if (scErr) throw scErr;
 
-      if (scErr) {
-        const { data: existSc } = await supabase
-          .from("scorecards")
-          .select("id")
-          .eq("round_id", roundId)
-          .eq("player_id", userId)
-          .maybeSingle();
-
-        if (existSc) {
-          scorecardId = existSc.id;
-          await supabase.from("scorecards").update({
-            total_score: grossTotal, gross_score: grossTotal, net_score: netTotal, total_putts: totalPutts,
-          }).eq("id", scorecardId);
-        } else {
-          const { data: newSc, error: insertErr } = await supabase
-            .from("scorecards")
-            .insert({
-              round_id: roundId, player_id: userId, course_id: courseId,
-              total_score: grossTotal, gross_score: grossTotal, net_score: netTotal, total_putts: totalPutts,
-            })
-            .select().single();
-          if (insertErr) throw insertErr;
-          scorecardId = newSc.id;
-        }
-      } else {
-        scorecardId = sc.id;
-      }
-
-      // Save hole scores
       for (const s of scores) {
         if (s.strokes === null) continue;
-        const { error: hsErr } = await supabase.from("hole_scores").upsert({
-          scorecard_id: scorecardId,
+        await supabase.from("hole_scores").insert({
+          scorecard_id: sc.id,
           hole_number: s.hole_number,
           strokes: s.strokes,
           putts: s.putts,
           fairway_hit: s.fairway_hit,
           gir: s.gir,
-        }, { onConflict: "scorecard_id,hole_number" });
-
-        if (hsErr) {
-          await supabase.from("hole_scores")
-            .delete()
-            .eq("scorecard_id", scorecardId)
-            .eq("hole_number", s.hole_number);
-          await supabase.from("hole_scores").insert({
-            scorecard_id: scorecardId,
-            hole_number: s.hole_number,
-            strokes: s.strokes,
-            putts: s.putts,
-            fairway_hit: s.fairway_hit,
-            gir: s.gir,
-          });
-        }
+        });
       }
 
-      if (allFilled) {
-        await supabase.from("rounds").update({ status: "completed", finished_at: new Date().toISOString() }).eq("id", roundId);
-      }
-
-      queryClient.invalidateQueries({ queryKey: ["event-leaderboard"] });
       toast.success("Scorecard saved!");
-      navigate(`/event/${eventId}`);
+      navigate("/play");
     } catch (err: any) {
-      toast.error(err.message || "Failed to save scorecard");
+      toast.error(err.message || "Failed to save");
     } finally {
       setSubmitting(false);
     }
   };
 
-  const isEventCompleted = event?.status === "completed";
-
-  if (!event || !contestant || scores.length === 0) {
+  if (!course || scores.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
@@ -304,55 +182,6 @@ const ScorecardInput = () => {
     );
   }
 
-  // Completed event — read-only view
-  if (isEventCompleted) {
-    const myScorecard = existingScorecard;
-    return (
-      <div className="flex flex-col h-screen">
-        <div className="flex items-center justify-between border-b border-border/50 p-4">
-          <button onClick={() => navigate(-1)} className="rounded-full p-1.5 hover:bg-muted">
-            <ArrowLeft className="h-5 w-5" />
-          </button>
-          <div className="text-center">
-            <p className="text-sm font-bold">{event?.name ?? "Event"}</p>
-            <p className="text-xs text-muted-foreground">{(event?.courses as any)?.name}</p>
-          </div>
-          <div className="w-8" />
-        </div>
-        <div className="flex-1 flex flex-col items-center justify-center p-8 text-center gap-4">
-          <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
-            <Trophy className="h-8 w-8 text-primary" />
-          </div>
-          <div>
-            <p className="text-base font-bold">Event Completed</p>
-            <p className="text-sm text-muted-foreground mt-1">Scorecard is locked and cannot be edited.</p>
-          </div>
-          {myScorecard && (
-            <div className="golf-card w-full max-w-xs p-4 mt-2">
-              <p className="text-xs text-muted-foreground mb-3 text-center">Your Final Score</p>
-              <div className="grid grid-cols-3 gap-3 text-center">
-                <div>
-                  <p className="text-2xl font-bold">{myScorecard.gross_score ?? "—"}</p>
-                  <p className="text-[10px] text-muted-foreground">GROSS</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-primary">{myScorecard.net_score ?? "—"}</p>
-                  <p className="text-[10px] text-muted-foreground">NET</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{myScorecard.total_putts ?? "—"}</p>
-                  <p className="text-[10px] text-muted-foreground">PUTTS</p>
-                </div>
-              </div>
-            </div>
-          )}
-          <Button className="mt-2" onClick={() => navigate(`/event/${eventId}`)}>View Leaderboard</Button>
-        </div>
-      </div>
-    );
-  }
-
-  // Grid row component
   const HoleRow = ({ holeIndex }: { holeIndex: number }) => {
     const s = scores[holeIndex];
     const holeData = holes.find((h: any) => h.hole_number === holeIndex + 1);
@@ -399,22 +228,20 @@ const ScorecardInput = () => {
 
   return (
     <div className="flex flex-col min-h-screen">
-      {/* Header */}
       <div className="border-b border-border/50 p-4">
         <div className="flex items-center gap-3">
           <button onClick={() => navigate(-1)} className="rounded-full p-1.5 hover:bg-muted shrink-0">
             <ArrowLeft className="h-5 w-5" />
           </button>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold truncate">{(event.courses as any)?.name}</p>
+            <p className="text-sm font-bold truncate">{course.name}</p>
             <p className="text-xs text-muted-foreground">
-              {event.event_date} · HCP {playerHcp}
+              {new Date().toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })} · HCP {playerHcp}
             </p>
           </div>
         </div>
       </div>
 
-      {/* Live running total sub-header */}
       <div className="flex items-center justify-around border-b border-border/30 bg-secondary/30 py-2 px-2 text-center">
         <div>
           <p className="text-[10px] text-muted-foreground">OUT</p>
@@ -434,7 +261,6 @@ const ScorecardInput = () => {
         </div>
       </div>
 
-      {/* Scorecard Grid */}
       <div className="flex-1 overflow-auto px-3 py-2">
         <table className="w-full">
           <thead>
@@ -447,14 +273,12 @@ const ScorecardInput = () => {
             </tr>
           </thead>
           <tbody>
-            {/* Front 9 */}
             {Array.from({ length: Math.min(9, holesCount) }).map((_, i) => (
               <HoleRow key={i} holeIndex={i} />
             ))}
             {holesCount >= 9 && (
               <SubtotalRow label="OUT" totalStrokes={outStrokes} totalPar={outPar} />
             )}
-            {/* Back 9 */}
             {holesCount > 9 && Array.from({ length: Math.min(9, holesCount - 9) }).map((_, i) => (
               <HoleRow key={i + 9} holeIndex={i + 9} />
             ))}
@@ -468,7 +292,6 @@ const ScorecardInput = () => {
         </table>
       </div>
 
-      {/* Bottom section */}
       <div className="border-t border-border/50 bg-background p-4 space-y-3">
         <div className="flex gap-3">
           <div className="golf-card flex-1 p-3 text-center">
@@ -485,11 +308,11 @@ const ScorecardInput = () => {
           disabled={!allFilled || submitting}
           onClick={handleSubmit}
         >
-          {submitting ? "Saving..." : allFilled ? "Save Scorecard" : `Enter all ${holesCount} holes to save (${filledHoles}/${holesCount})`}
+          {submitting ? "Saving..." : allFilled ? "Save Scorecard" : `Enter all ${holesCount} holes (${filledHoles}/${holesCount})`}
         </Button>
       </div>
     </div>
   );
 };
 
-export default ScorecardInput;
+export default CasualScorecardInput;

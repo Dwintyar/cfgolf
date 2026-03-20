@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, UserPlus, Users, MessageCircle, X, Check } from "lucide-react";
+import { Search, UserPlus, Users, MessageCircle, X, Check, Plus, Flag } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -505,6 +505,14 @@ const Play = () => {
           </>
         )}
       </div>
+
+      {/* Floating Action Button */}
+      <button
+        onClick={() => navigate("/record-round")}
+        className="fixed bottom-20 right-4 lg:bottom-6 lg:right-6 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors"
+      >
+        <Plus className="h-6 w-6" />
+      </button>
     </div>
   );
 };
