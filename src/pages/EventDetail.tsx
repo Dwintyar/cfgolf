@@ -45,6 +45,8 @@ const EventDetail = () => {
   const [selectedCaddy, setSelectedCaddy] = useState("");
   const [showWinners, setShowWinners] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [pairingsList, setPairingsList] = useState<any[]>([]);
+  const [playersByPairing, setPlayersByPairing] = useState<Record<string, any[]>>({});
   const [isDesktop, setIsDesktop] = useState(
     typeof window !== "undefined" ? window.innerWidth >= 1024 : false
   );
