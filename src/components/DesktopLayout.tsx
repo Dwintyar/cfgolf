@@ -82,12 +82,16 @@ const DesktopLayout = ({ children, sidebarRightHidden = false }: { children: Rea
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) setUserId(session.user.id);
+      if (session?.user) {
+        setUserId(session.user.id);
+        setUserEmail(session.user.email ?? null);
+      }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setUserId(session?.user?.id ?? null);
+        setUserEmail(session?.user?.email ?? null);
       }
     );
 
