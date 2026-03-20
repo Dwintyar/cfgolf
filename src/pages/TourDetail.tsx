@@ -768,24 +768,36 @@ const TourDetail = () => {
           )}
         </TabsContent>
 
-        {tour.tournament_type === "interclub" && (
-          <TabsContent value="clubs" className="space-y-2 pt-2">
-            {tourClubs?.length === 0 && (
-              <div className="golf-card p-6 text-center text-sm text-muted-foreground">No clubs invited</div>
-            )}
-            {tourClubs?.map((tc) => (
-              <div key={tc.id} className="golf-card flex items-center justify-between p-3">
-                <div>
-                  <p className="text-sm font-medium">{(tc.clubs as any)?.name}</p>
-                  <p className="text-xs text-muted-foreground">Quota: {tc.ticket_quota} tickets</p>
+        <TabsContent value="clubs" className="space-y-2 pt-2">
+          {tourClubs?.length === 0 && (
+            <div className="golf-card p-6 text-center text-sm text-muted-foreground">No clubs invited</div>
+          )}
+          {tourClubs
+            ?.filter(tc => tc.status === "accepted")
+            .sort((a, b) => ((a.clubs as any)?.name ?? "").localeCompare((b.clubs as any)?.name ?? ""))
+            .map((tc) => {
+              const clubPlayerCount = playersByClub[tc.club_id]?.players?.filter((p: any) => p.status !== "pending").length ?? 0;
+              return (
+                <div key={tc.id} className="golf-card flex items-center gap-3 p-3">
+                  <Avatar className="h-9 w-9 rounded-lg">
+                    <AvatarImage src={(tc.clubs as any)?.logo_url ?? ""} />
+                    <AvatarFallback className="rounded-lg bg-primary/10 text-xs font-bold text-primary">
+                      {((tc.clubs as any)?.name ?? "?").charAt(0)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{(tc.clubs as any)?.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Quota: {tc.ticket_quota} · Players: {clubPlayerCount}
+                    </p>
+                  </div>
+                  <Badge variant="outline" className={`text-[10px] ${tc.status === "accepted" ? "text-primary border-primary/30" : "text-accent border-accent/30"}`}>
+                    {tc.status}
+                  </Badge>
                 </div>
-                <Badge variant="outline" className={`text-[10px] ${tc.status === "accepted" ? "text-primary border-primary/30" : "text-accent border-accent/30"}`}>
-                  {tc.status}
-                </Badge>
-              </div>
-            ))}
-          </TabsContent>
-        )}
+              );
+            })}
+        </TabsContent>
 
         <TabsContent value="leaderboard">
           <TourLeaderboard tourId={id!} tourName={tour.name} />
