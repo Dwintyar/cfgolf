@@ -238,6 +238,51 @@ const EventDetail = () => {
     enabled: !!id,
   });
 
+  const { data: courseHoles } = useQuery({
+    queryKey: ["event-course-holes", event?.courses],
+    queryFn: async () => {
+      const courseId = (event?.courses as any)?.id;
+      if (!courseId) return [];
+      const { data } = await supabase
+        .from("course_holes")
+        .select("hole_number, par")
+        .eq("course_id", courseId)
+        .order("hole_number");
+      return data ?? [];
+    },
+    enabled: !!event,
+  });
+
+  // Tee-off groups: pairings enriched with club + flight info via tour_players
+  const { data: teeoffGroups } = useQuery({
+    queryKey: ["event-teeoff-groups", id, event?.tour_id],
+    queryFn: async () => {
+      const { data: pairingData } = await supabase
+        .from("pairings")
+        .select("id, pairing_label, start_hole, slot, tee_time, start_type, teeoff_group_number, pairing_players(id, position, contestant_id, contestants(id, player_id, hcp, flight_id, profiles(id, full_name, handicap, avatar_url), tournament_flights(flight_name)))")
+        .eq("event_id", id!)
+        .order("start_hole")
+        .order("slot");
+      if (!pairingData?.length) return [];
+      // Fetch tour_players for club info
+      const playerIds = pairingData.flatMap(p =>
+        ((p.pairing_players as any[]) ?? []).map((pp: any) => pp.contestants?.player_id).filter(Boolean)
+      );
+      if (!playerIds.length) return pairingData;
+      const { data: tourPlayers } = await supabase
+        .from("tour_players")
+        .select("player_id, clubs(name)")
+        .eq("tour_id", event!.tour_id)
+        .in("player_id", [...new Set(playerIds)]);
+      const clubMap: Record<string, string> = {};
+      (tourPlayers ?? []).forEach((tp: any) => {
+        clubMap[tp.player_id] = (tp.clubs as any)?.name ?? "";
+      });
+      return pairingData.map(p => ({ ...p, _clubMap: clubMap }));
+    },
+    enabled: !!id && !!event?.tour_id,
+  });
+
   // Check if user is contestant & checked in
   const myContestant = contestants?.find(c => c.player_id === userId);
   const myCheckin = checkins?.find(ci => ci.contestant_id === myContestant?.id);
