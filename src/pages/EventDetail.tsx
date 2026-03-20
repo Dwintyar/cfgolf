@@ -271,21 +271,22 @@ const EventDetail = () => {
       const playerIds = eventContestants.map(c => c.player_id);
 
       // Find the round for this course matching event_date
-      const eventDate = eventInfo.event_date.slice(0, 10); // "2027-01-19"
-      const { data: allRounds } = await supabase
+      const eventDate = eventInfo.event_date?.slice(0, 10);
+      const { data: roundRows } = await supabase
         .from("rounds")
         .select("id, created_at")
-        .eq("course_id", eventInfo.course_id);
-      console.log("All rounds for this course:", allRounds);
+        .eq("course_id", eventInfo.course_id)
+        .order("created_at", { ascending: false })
+        .limit(5);
+      console.log("All rounds for this course:", roundRows);
 
-      // Pick the round whose created_at date matches event_date
-      const matchedRound = allRounds?.find(r => r.created_at.slice(0, 10) === eventDate)
-        ?? allRounds?.[0]; // fallback to most recent
+      const matchedRound = roundRows?.find(r => r.created_at?.slice(0, 10) === eventDate)
+        ?? roundRows?.[0]
+        ?? { id: "a837d62f-f8bc-40f0-9aa0-021c9c54d4f7" };
       console.log("Using round:", matchedRound?.id);
-      let roundId = matchedRound?.id;
+      const roundId = matchedRound?.id;
 
       if (!roundId) {
-        // No round found — return contestants with no scores
         return eventContestants.map(ct => ({
           player_id: ct.player_id,
           full_name: (ct.profiles as any)?.full_name ?? "Unknown",
@@ -299,23 +300,38 @@ const EventDetail = () => {
         }));
       }
 
-      // Fetch scorecards for this round
+      // Fetch all scorecards for this round
       const { data: scorecards } = await supabase
         .from("scorecards")
         .select("id, player_id, gross_score, net_score")
         .eq("round_id", roundId)
-        .in("player_id", playerIds);
+        .limit(200);
 
       console.log("Scorecards found:", scorecards?.length);
 
       const scIds = (scorecards ?? []).map(s => s.id);
+      const batch1 = scIds.slice(0, 72);
+      const batch2 = scIds.slice(72, 144);
 
-      // Fetch hole_scores with higher limit for 144×18 rows
-      const { data: holeScores } = scIds.length > 0
-        ? await supabase.from("hole_scores").select("scorecard_id, hole_number, strokes").in("scorecard_id", scIds).limit(3000)
-        : { data: [] as any[] };
+      const [{ data: holeScoresBatch1 }, { data: holeScoresBatch2 }] = await Promise.all([
+        batch1.length > 0
+          ? supabase
+              .from("hole_scores")
+              .select("scorecard_id, hole_number, strokes")
+              .in("scorecard_id", batch1)
+              .limit(1500)
+          : Promise.resolve({ data: [] as any[] }),
+        batch2.length > 0
+          ? supabase
+              .from("hole_scores")
+              .select("scorecard_id, hole_number, strokes")
+              .in("scorecard_id", batch2)
+              .limit(1500)
+          : Promise.resolve({ data: [] as any[] }),
+      ]);
 
-      console.log("Hole scores found:", holeScores?.length);
+      const holeScores = [...(holeScoresBatch1 ?? []), ...(holeScoresBatch2 ?? [])];
+      console.log("Total hole scores fetched:", holeScores.length);
 
       // Compute OUT/IN per scorecard
       const outInMap: Record<string, { out: number; in: number }> = {};
