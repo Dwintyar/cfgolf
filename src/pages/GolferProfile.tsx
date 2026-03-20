@@ -545,8 +545,11 @@ const GolferProfile = () => {
                     <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Rounds</p>
                   </div>
                 </div>
+                {formatHcpUpdated(lastHcpUpdate) && (
+                  <p className="text-[10px] text-muted-foreground mt-1 text-center">{formatHcpUpdated(lastHcpUpdate)}</p>
+                )}
 
-                {/* Action buttons */}
+
                 <div className="mt-3 space-y-2">
                   {!isOwnProfile && (
                     <>
