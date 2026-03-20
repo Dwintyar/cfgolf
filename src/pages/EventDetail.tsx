@@ -270,28 +270,19 @@ const EventDetail = () => {
 
       const playerIds = eventContestants.map(c => c.player_id);
 
-      // Find the completed round for this course (most recent)
-      const { data: roundData } = await supabase
+      // Find the round for this course matching event_date
+      const eventDate = eventInfo.event_date.slice(0, 10); // "2027-01-19"
+      const { data: allRounds } = await supabase
         .from("rounds")
-        .select("id")
-        .eq("course_id", eventInfo.course_id)
-        .eq("status", "completed")
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .select("id, created_at")
+        .eq("course_id", eventInfo.course_id);
+      console.log("All rounds for this course:", allRounds);
 
-      // Also try any round if no completed one found
-      let roundId = roundData?.id;
-      if (!roundId) {
-        const { data: anyRound } = await supabase
-          .from("rounds")
-          .select("id")
-          .eq("course_id", eventInfo.course_id)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        roundId = anyRound?.id;
-      }
+      // Pick the round whose created_at date matches event_date
+      const matchedRound = allRounds?.find(r => r.created_at.slice(0, 10) === eventDate)
+        ?? allRounds?.[0]; // fallback to most recent
+      console.log("Using round:", matchedRound?.id);
+      let roundId = matchedRound?.id;
 
       if (!roundId) {
         // No round found — return contestants with no scores
@@ -315,12 +306,16 @@ const EventDetail = () => {
         .eq("round_id", roundId)
         .in("player_id", playerIds);
 
+      console.log("Scorecards found:", scorecards?.length);
+
       const scIds = (scorecards ?? []).map(s => s.id);
 
-      // Fetch hole_scores
+      // Fetch hole_scores with higher limit for 144×18 rows
       const { data: holeScores } = scIds.length > 0
-        ? await supabase.from("hole_scores").select("scorecard_id, hole_number, strokes").in("scorecard_id", scIds)
+        ? await supabase.from("hole_scores").select("scorecard_id, hole_number, strokes").in("scorecard_id", scIds).limit(3000)
         : { data: [] as any[] };
+
+      console.log("Hole scores found:", holeScores?.length);
 
       // Compute OUT/IN per scorecard
       const outInMap: Record<string, { out: number; in: number }> = {};
