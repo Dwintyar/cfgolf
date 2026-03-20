@@ -304,10 +304,88 @@ const ClubAdminDashboard = () => {
     enabled: !!clubId && isDrivingRange,
   });
 
+  // Realtime subscription for new join requests
+  useEffect(() => {
+    if (!clubId || !userId) return;
+
+    const channel = supabase
+      .channel(`club-join-requests-${clubId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "club_invitations",
+          filter: `club_id=eq.${clubId}`,
+        },
+        async (payload) => {
+          const inv = payload.new as any;
+          // Only handle self-initiated join requests (not admin invites)
+          if (inv.invited_by !== inv.invited_user_id) return;
+          // Don't notify about own actions
+          if (inv.invited_user_id === userId) return;
+
+          // Fetch requester name
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("full_name")
+            .eq("id", inv.invited_user_id)
+            .single();
+
+          const playerName = profile?.full_name ?? "Seseorang";
+          const clubName = club?.name ?? "klub Anda";
+
+          // Invalidate queries immediately for badge update
+          queryClient.invalidateQueries({ queryKey: ["club-join-requests", clubId] });
+          queryClient.invalidateQueries({ queryKey: ["club-admin-pending", clubId] });
+
+          // Show toast with Accept/Decline buttons
+          toast(`${playerName} ingin bergabung ke ${clubName}`, {
+            description: "Permintaan bergabung baru",
+            duration: 10000,
+            action: {
+              label: "Terima",
+              onClick: async () => {
+                const { error } = await supabase
+                  .from("members")
+                  .insert({
+                    club_id: clubId,
+                    user_id: inv.invited_user_id,
+                    role: "member",
+                    joined_at: new Date().toISOString(),
+                  });
+                if (error && error.code !== "23505") {
+                  toast.error(error.message);
+                  return;
+                }
+                await supabase
+                  .from("club_invitations")
+                  .update({ status: "accepted" })
+                  .eq("id", inv.id);
+                toast.success("Member diterima!");
+                queryClient.invalidateQueries({ queryKey: ["club-join-requests", clubId] });
+                queryClient.invalidateQueries({ queryKey: ["club-admin-pending", clubId] });
+                queryClient.invalidateQueries({ queryKey: ["club-admin-members", clubId] });
+              },
+            },
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [clubId, userId, club?.name, queryClient]);
+
+  // Track which request is being processed
+  const [processingRequestId, setProcessingRequestId] = useState<string | null>(null);
+
   // KPI computations
   const memberCount = members?.length ?? 0;
   const staffCount = staff?.length ?? 0;
-  const pendingCount = (pendingInvitations?.length ?? 0) + (joinRequests?.length ?? 0);
+  // joinRequests is a subset of pendingInvitations, so only use joinRequests
+  const pendingCount = joinRequests?.length ?? 0;
   const totalTours = clubTours?.length ?? 0;
   const today = new Date().toISOString().split("T")[0];
   const todayBookings = courseBookings?.filter((b) => b.booking_date === today).length ?? 0;
