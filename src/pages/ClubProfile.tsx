@@ -144,55 +144,31 @@ const ClubProfile = () => {
   };
 
   const handleJoinRequest = async () => {
-    if (!currentUserId || !id) return;
+    if (!currentUserId || !id || joining) return;
     setJoining(true);
     try {
-      // Cek apakah sudah ada pending request
-      const { data: existing } = await supabase
-        .from("club_invitations")
-        .select("id")
-        .eq("club_id", id)
-        .eq("invited_user_id", currentUserId)
-        .eq("invited_by", currentUserId)
-        .eq("status", "pending")
-        .maybeSingle();
-
-      if (existing) {
-        toast({ title: "Permintaan bergabung sudah dikirim, mohon tunggu persetujuan admin." });
-        setJoining(false);
-        return;
-      }
-
-      // Cek apakah sudah member
-      const { data: alreadyMember } = await supabase
-        .from("members")
-        .select("id")
-        .eq("club_id", id)
-        .eq("user_id", currentUserId)
-        .maybeSingle();
-
-      if (alreadyMember) {
-        toast({ title: "Anda sudah menjadi member klub ini." });
-        setJoining(false);
-        return;
-      }
-
-      // Baru insert request
       const { error } = await supabase.from("club_invitations").insert({
         club_id: id,
         invited_by: currentUserId,
         invited_user_id: currentUserId,
         status: "pending",
       });
-      if (error) throw error;
+      if (error) {
+        // Duplicate key = already has pending request, treat as success
+        if (error.code === "23505") {
+          queryClient.invalidateQueries({ queryKey: ["my-join-request", id, currentUserId] });
+          return;
+        }
+        throw error;
+      }
       toast({ title: "Permintaan bergabung terkirim!" });
       queryClient.invalidateQueries({ queryKey: ["my-join-request", id, currentUserId] });
       queryClient.invalidateQueries({ queryKey: ["club-invitations", id] });
     } catch (err: any) {
       toast({ title: "Gagal", description: err.message, variant: "destructive" });
-    } finally {
       setJoining(false);
     }
+  };
   };
 
   const handleAcceptInvitation = async (invitationId: string, userId: string) => {
