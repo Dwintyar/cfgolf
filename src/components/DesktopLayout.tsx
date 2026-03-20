@@ -7,7 +7,7 @@ import { ChatNotifContext } from "@/App";
 import {
   Newspaper, Users, Trophy, MapPin,
   Bell, MessageCircle, Settings,
-  Building2, Search, Play
+  Building2, Search, Flag
 } from "lucide-react";
 import logo from "@/assets/logo.svg";
 
@@ -110,7 +110,7 @@ const DesktopLayout = ({ children, sidebarRightHidden = false }: { children: Rea
     { path: "/news", label: "Feeds", icon: Newspaper },
     { path: "/play", label: "Buddies", icon: Users },
     { path: "/clubs", label: "Clubs", icon: Building2 },
-    { path: "/tour", label: "Events", icon: Trophy },
+    { path: "/tour", label: "Play", icon: Flag },
     { path: "/venue", label: "Venues", icon: MapPin },
   ];
 
