@@ -260,30 +260,49 @@ const EventDetail = () => {
       const courseId = (event?.courses as any)?.id;
       if (!courseId || !id) return [];
 
-      // Step 1: Find the round for this course
+      // Get contestants first to know player_ids
+      const { data: eventContestants } = await supabase
+        .from("contestants")
+        .select(`
+          id, player_id, hcp, flight_id,
+          profiles ( full_name ),
+          tournament_flights ( flight_name, hcp_min, hcp_max, display_order )
+        `)
+        .eq("event_id", id!);
+
+      if (!eventContestants?.length) return [];
+
+      const playerIds = eventContestants.map(c => c.player_id);
+
+      // Step 1: Find ALL rounds for this course
       const { data: roundData } = await supabase
         .from("rounds")
         .select("id")
         .eq("course_id", courseId)
-        .order("created_at", { ascending: false })
-        .limit(1);
-      if (!roundData?.length) {
-        // No round yet — still show contestants as NR
-      }
-      const roundId = roundData?.[0]?.id;
+        .order("created_at", { ascending: false });
 
-      // Step 2: Fetch scorecards for that round
+      const roundIds = (roundData ?? []).map(r => r.id);
+
+      // Step 2: Fetch ALL scorecards across these rounds for event players
       let scorecardsData: any[] = [];
-      if (roundId) {
+      if (roundIds.length > 0) {
         const { data } = await supabase
           .from("scorecards")
-          .select("id, player_id, gross_score, net_score, total_putts")
-          .eq("round_id", roundId);
+          .select("id, player_id, gross_score, net_score, round_id")
+          .in("round_id", roundIds)
+          .in("player_id", playerIds);
         scorecardsData = data ?? [];
       }
 
-      // Step 3: Fetch hole_scores for those scorecards
-      const scorecardIds = scorecardsData.map(sc => sc.id);
+      // Dedupe: keep only the latest scorecard per player
+      const scByPlayer: Record<string, any> = {};
+      scorecardsData.forEach(sc => {
+        if (!scByPlayer[sc.player_id]) scByPlayer[sc.player_id] = sc;
+      });
+      const uniqueScorecards = Object.values(scByPlayer);
+
+      // Step 3: Fetch ALL hole_scores for those scorecards
+      const scorecardIds = uniqueScorecards.map((sc: any) => sc.id);
       const outInMap: Record<string, { out: number; in: number }> = {};
       if (scorecardIds.length > 0) {
         const { data: holeScoresData } = await supabase
@@ -297,11 +316,11 @@ const EventDetail = () => {
         });
       }
 
-      // Step 4: Build scorecardByPlayer
-      const scorecardByPlayer: Record<string, { out: number; in: number; tot: number | null; net: number | null }> = {};
-      scorecardsData.forEach(sc => {
+      // Step 4: Build scoreByPlayer
+      const scoreByPlayer: Record<string, { out: number; in: number; tot: number | null; net: number | null }> = {};
+      uniqueScorecards.forEach((sc: any) => {
         const oi = outInMap[sc.id] ?? { out: 0, in: 0 };
-        scorecardByPlayer[sc.player_id] = {
+        scoreByPlayer[sc.player_id] = {
           out: oi.out,
           in: oi.in,
           tot: sc.gross_score,
