@@ -116,7 +116,7 @@ const Login = () => {
           .eq("id", userId)
           .single();
 
-        if (profile?.is_approved === false) {
+        if (!profile?.is_approved) {
           await supabase.auth.signOut();
           setLoading(false);
           toast.error("Akun Anda belum disetujui oleh admin EGC.");
