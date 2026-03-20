@@ -42,6 +42,7 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import PublicProfile from "./pages/PublicProfile";
 import RecordRound from "./pages/RecordRound";
 import CasualScorecardInput from "./pages/CasualScorecardInput";
+import AdminApprovals from "./pages/AdminApprovals";
 
 const queryClient = new QueryClient();
 
