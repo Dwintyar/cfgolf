@@ -6,6 +6,22 @@ import { Mail, Plus } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
 
+const formatRelativeTime = (dateStr: string) => {
+  const now = new Date();
+  const date = new Date(dateStr);
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return "Now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays === 1) return "Yesterday";
+  if (diffDays < 7) return date.toLocaleDateString("en-US", { weekday: "short" });
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+};
+
 const ChatList = () => {
   const navigate = useNavigate();
   const [userId, setUserId] = useState<string | null>(null);
@@ -20,7 +36,6 @@ const ChatList = () => {
   const { data: conversations, isLoading } = useQuery({
     queryKey: ["my-conversations", userId],
     queryFn: async () => {
-      // Get all conversation IDs for this user
       const { data: parts } = await supabase
         .from("conversation_participants")
         .select("conversation_id")
@@ -30,29 +45,31 @@ const ChatList = () => {
 
       const convIds = parts.map((p) => p.conversation_id);
 
-      // Get other participants with profile info
       const { data: otherParts } = await supabase
         .from("conversation_participants")
         .select("conversation_id, user_id, profiles(full_name, avatar_url)")
         .in("conversation_id", convIds)
         .neq("user_id", userId!);
 
-      // Get last message for each conversation
       const convos = await Promise.all(
         convIds.map(async (convId) => {
           const { data: lastMsg } = await supabase
             .from("chat_messages")
-            .select("content, created_at")
+            .select("content, created_at, sender_id")
             .eq("conversation_id", convId)
             .order("created_at", { ascending: false })
             .limit(1);
 
           const other = otherParts?.find((p) => p.conversation_id === convId);
+          const hasLastMsg = lastMsg && lastMsg.length > 0;
+          const isUnread = hasLastMsg && lastMsg[0].sender_id !== userId;
+
           return {
             id: convId,
             otherUser: other?.profiles as any,
-            lastMessage: lastMsg?.[0]?.content ?? "No messages yet",
-            lastTime: lastMsg?.[0]?.created_at,
+            lastMessage: hasLastMsg ? lastMsg[0].content : null,
+            lastTime: hasLastMsg ? lastMsg[0].created_at : null,
+            isUnread,
           };
         })
       );
@@ -64,11 +81,9 @@ const ChatList = () => {
     enabled: !!userId,
   });
 
-  // Start a new conversation with a random golfer (for demo)
   const startNewChat = async () => {
     if (!userId) return;
 
-    // Find a random profile to chat with
     const { data: profiles } = await supabase
       .from("profiles")
       .select("id, full_name")
@@ -82,7 +97,6 @@ const ChatList = () => {
 
     const randomProfile = profiles[Math.floor(Math.random() * profiles.length)];
 
-    // Check if conversation already exists
     const { data: existingParts } = await supabase
       .from("conversation_participants")
       .select("conversation_id")
@@ -102,7 +116,6 @@ const ChatList = () => {
       }
     }
 
-    // Create new conversation
     const newId = crypto.randomUUID();
     const { error: convError } = await supabase
       .from("conversations")
@@ -167,23 +180,32 @@ const ChatList = () => {
             className="flex w-full items-center gap-3 px-4 py-3.5 text-left hover:bg-secondary/30 transition-colors animate-fade-in"
             style={{ animationDelay: `${i * 50}ms` }}
           >
-            <Avatar className="h-12 w-12 border-2 border-primary/30">
-              <AvatarImage src={conv.otherUser?.avatar_url ?? ""} />
-              <AvatarFallback className="bg-secondary text-sm font-bold">
-                {getInitials(conv.otherUser?.full_name)}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold truncate">
-                {conv.otherUser?.full_name ?? "Unknown"}
-              </p>
-              <p className="text-xs text-muted-foreground truncate">{conv.lastMessage}</p>
+            <div className="relative">
+              <Avatar className="h-12 w-12 border-2 border-primary/30">
+                <AvatarImage src={conv.otherUser?.avatar_url ?? ""} />
+                <AvatarFallback className="bg-secondary text-sm font-bold">
+                  {getInitials(conv.otherUser?.full_name)}
+                </AvatarFallback>
+              </Avatar>
+              {conv.isUnread && (
+                <span className="absolute top-0 right-0 h-3 w-3 rounded-full bg-primary border-2 border-background" />
+              )}
             </div>
-            {conv.lastTime && (
-              <span className="text-[10px] text-muted-foreground">
-                {new Date(conv.lastTime).toLocaleDateString([], { month: "short", day: "numeric" })}
-              </span>
-            )}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between gap-2">
+                <p className={`text-sm truncate ${conv.isUnread ? "font-bold text-foreground" : "font-semibold text-foreground"}`}>
+                  {conv.otherUser?.full_name ?? "Unknown"}
+                </p>
+                {conv.lastTime && (
+                  <span className={`text-[10px] shrink-0 ${conv.isUnread ? "text-primary font-semibold" : "text-muted-foreground"}`}>
+                    {formatRelativeTime(conv.lastTime)}
+                  </span>
+                )}
+              </div>
+              <p className={`text-xs truncate ${conv.lastMessage ? (conv.isUnread ? "text-foreground font-medium" : "text-muted-foreground") : "text-muted-foreground/60 italic"}`}>
+                {conv.lastMessage ?? "No messages yet"}
+              </p>
+            </div>
           </button>
         ))}
       </div>
