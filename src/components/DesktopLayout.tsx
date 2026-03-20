@@ -243,6 +243,29 @@ const DesktopLayout = ({ children, sidebarRightHidden = false }: { children: Rea
               </button>
             );
           })}
+
+          {/* Admin Approvals */}
+          {isAdmin && (
+            <>
+              <div className="border-t border-border/30 my-2" />
+              <button
+                onClick={() => navigate("/admin/approvals")}
+                className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-colors text-left ${
+                  location.pathname === "/admin/approvals"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                }`}
+              >
+                <ShieldCheck className="h-[18px] w-[18px] shrink-0" />
+                Approvals
+                {(pendingCount ?? 0) > 0 && (
+                  <Badge variant="destructive" className="ml-auto text-[10px] px-1.5 py-0 h-5 min-w-[20px] flex items-center justify-center">
+                    {pendingCount}
+                  </Badge>
+                )}
+              </button>
+            </>
+          )}
         </nav>
       </aside>
 
