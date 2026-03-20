@@ -1133,6 +1133,7 @@ const EventDetail = () => {
                         <tr className="bg-muted/50 border-b border-border">
                           <th className="w-[40px] text-center py-1 px-1 border-r border-border font-bold text-muted-foreground">NO</th>
                           <th className="text-left py-1 px-2 border-r border-border font-bold text-muted-foreground">PLAYER'S NAME</th>
+                          <th className="text-left py-1 px-2 border-r border-border font-bold text-muted-foreground max-w-[120px]">CLUB</th>
                           <th className="w-[50px] text-center py-1 px-1 border-r border-border font-bold text-muted-foreground">OUT</th>
                           <th className="w-[50px] text-center py-1 px-1 border-r border-border font-bold text-muted-foreground">IN</th>
                           <th className="w-[50px] text-center py-1 px-1 border-r border-border font-bold text-muted-foreground">TOT</th>
