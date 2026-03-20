@@ -1105,9 +1105,9 @@ const EventDetail = () => {
 
           const flightHeaderCls = (name: string) => {
             const n = name.toLowerCase();
-            if (n.includes("a")) return "bg-blue-700 text-white";
-            if (n.includes("b")) return "bg-amber-600 text-white";
-            return "bg-gray-600 text-white";
+            if (n.includes("a")) return "bg-blue-600/90 text-blue-50";
+            if (n.includes("b")) return "bg-amber-600/90 text-amber-50";
+            return "bg-muted text-muted-foreground";
           };
 
           const courseRating = (event?.courses as any)?.par ?? "";
@@ -1115,11 +1115,11 @@ const EventDetail = () => {
           const tourName = (event?.tours as any)?.name ?? "";
 
           return (
-            <div ref={scoreboardRef} className="bg-white rounded-lg overflow-hidden">
+            <div ref={scoreboardRef} className="bg-card rounded-lg overflow-hidden border">
               {/* Scoreboard header */}
-              <div className="text-center py-3 px-4 border-b-2 border-gray-800 bg-white">
-                <h2 className="text-sm font-bold tracking-wider text-gray-900 uppercase">{tourName}</h2>
-                <p className="text-xs text-gray-600 mt-0.5">
+              <div className="text-center py-3 px-4 border-b-2 border-border bg-card">
+                <h2 className="text-sm font-bold tracking-wider text-foreground uppercase">{tourName}</h2>
+                <p className="text-xs text-muted-foreground mt-0.5">
                   {courseName} — {event?.event_date ? new Date(event.event_date).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }) : ""} — CR {courseRating}
                 </p>
               </div>
@@ -1137,15 +1137,15 @@ const EventDetail = () => {
                     {/* Table */}
                     <table className="w-full border-collapse text-xs" style={{ fontFamily: "'Courier New', Courier, monospace" }}>
                       <thead>
-                        <tr className="bg-gray-100 border-b border-gray-400">
-                          <th className="w-[40px] text-center py-1 px-1 border-r border-gray-300 font-bold text-gray-700">NO</th>
-                          <th className="text-left py-1 px-2 border-r border-gray-300 font-bold text-gray-700">PLAYER'S NAME</th>
-                          <th className="w-[50px] text-center py-1 px-1 border-r border-gray-300 font-bold text-gray-700">OUT</th>
-                          <th className="w-[50px] text-center py-1 px-1 border-r border-gray-300 font-bold text-gray-700">IN</th>
-                          <th className="w-[50px] text-center py-1 px-1 border-r border-gray-300 font-bold text-gray-700">TOT</th>
-                          <th className="w-[45px] text-center py-1 px-1 border-r border-gray-300 font-bold text-gray-700">HCP</th>
-                          <th className="w-[50px] text-center py-1 px-1 border-r border-gray-300 font-bold text-gray-700">NETT</th>
-                          <th className="w-[90px] text-center py-1 px-1 font-bold text-gray-700">REMARKS</th>
+                        <tr className="bg-muted/50 border-b border-border">
+                          <th className="w-[40px] text-center py-1 px-1 border-r border-border font-bold text-muted-foreground">NO</th>
+                          <th className="text-left py-1 px-2 border-r border-border font-bold text-muted-foreground">PLAYER'S NAME</th>
+                          <th className="w-[50px] text-center py-1 px-1 border-r border-border font-bold text-muted-foreground">OUT</th>
+                          <th className="w-[50px] text-center py-1 px-1 border-r border-border font-bold text-muted-foreground">IN</th>
+                          <th className="w-[50px] text-center py-1 px-1 border-r border-border font-bold text-muted-foreground">TOT</th>
+                          <th className="w-[45px] text-center py-1 px-1 border-r border-border font-bold text-muted-foreground">HCP</th>
+                          <th className="w-[50px] text-center py-1 px-1 border-r border-border font-bold text-muted-foreground">NETT</th>
+                          <th className="w-[90px] text-center py-1 px-1 font-bold text-muted-foreground">REMARKS</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1154,23 +1154,23 @@ const EventDetail = () => {
                           const hasRemark = !!remark;
                           const isOverall = remark === "BGO" || remark === "BNO";
                           const remarkCls = isOverall
-                            ? "text-amber-600 font-bold"
-                            : hasRemark ? "text-blue-600 font-bold" : "";
+                            ? "text-amber-500 font-bold"
+                            : hasRemark ? "text-blue-500 font-bold" : "";
                           const isNR = row.tot == null;
 
                           return (
-                            <tr key={row.player_id} className={`border-b border-gray-200 ${idx % 2 === 0 ? "bg-white" : "bg-gray-50"} hover:bg-blue-50/30`}>
-                              <td className="text-center py-1 px-1 border-r border-gray-200 text-gray-500">{idx + 1}</td>
-                              <td className="py-1 px-2 border-r border-gray-200 font-medium text-gray-900 truncate max-w-[180px]">{row.full_name}</td>
-                              <td className="text-center py-1 px-1 border-r border-gray-200 tabular-nums">{isNR ? <span className="text-red-400 text-[10px]">NR</span> : row.out_score}</td>
-                              <td className="text-center py-1 px-1 border-r border-gray-200 tabular-nums">{isNR ? <span className="text-red-400 text-[10px]">NR</span> : row.in_score}</td>
-                              <td className="text-center py-1 px-1 border-r border-gray-200 tabular-nums">{isNR ? <span className="text-red-400 text-[10px]">NR</span> : row.tot}</td>
-                              <td className="text-center py-1 px-1 border-r border-gray-200 tabular-nums text-gray-600">{row.hcp ?? "—"}</td>
-                              <td className="text-center py-1 px-1 border-r border-gray-200 tabular-nums font-bold">
+                            <tr key={row.player_id} className={`border-b border-border/50 ${idx % 2 === 0 ? "bg-card" : "bg-muted/20"} hover:bg-accent/10`}>
+                              <td className="text-center py-1 px-1 border-r border-border/50 text-muted-foreground">{idx + 1}</td>
+                              <td className="py-1 px-2 border-r border-border/50 font-medium text-foreground truncate max-w-[180px]">{row.full_name}</td>
+                              <td className="text-center py-1 px-1 border-r border-border/50 tabular-nums text-foreground">{isNR ? <span className="text-destructive/60 text-[10px]">NR</span> : row.out_score}</td>
+                              <td className="text-center py-1 px-1 border-r border-border/50 tabular-nums text-foreground">{isNR ? <span className="text-destructive/60 text-[10px]">NR</span> : row.in_score}</td>
+                              <td className="text-center py-1 px-1 border-r border-border/50 tabular-nums text-foreground">{isNR ? <span className="text-destructive/60 text-[10px]">NR</span> : row.tot}</td>
+                              <td className="text-center py-1 px-1 border-r border-border/50 tabular-nums text-muted-foreground">{row.hcp ?? "—"}</td>
+                              <td className="text-center py-1 px-1 border-r border-border/50 tabular-nums font-bold text-foreground">
                                 {isNR ? (
-                                  <span className="text-red-400 text-[10px]">NR</span>
+                                  <span className="text-destructive/60 text-[10px]">NR</span>
                                 ) : hasRemark ? (
-                                  <span className="inline-flex items-center justify-center h-5 w-5 rounded-full border-2 border-current text-[10px] leading-none" style={{ borderColor: isOverall ? '#d97706' : '#2563eb', color: isOverall ? '#d97706' : '#2563eb' }}>
+                                  <span className={`inline-flex items-center justify-center h-5 w-5 rounded-full border-2 text-[10px] leading-none ${isOverall ? "border-amber-500 text-amber-500" : "border-blue-500 text-blue-500"}`}>
                                     {row.nett}
                                   </span>
                                 ) : (
@@ -1188,8 +1188,8 @@ const EventDetail = () => {
               })}
 
               {/* Footer */}
-              <div className="text-center py-2 border-t border-gray-300 bg-gray-50">
-                <p className="text-[10px] text-gray-400">Generated by CFGolf · {new Date().toLocaleDateString('id-ID')}</p>
+              <div className="text-center py-2 border-t border-border bg-muted/30">
+                <p className="text-[10px] text-muted-foreground">Generated by CFGolf · {new Date().toLocaleDateString('id-ID')}</p>
               </div>
             </div>
           );
