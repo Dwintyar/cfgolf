@@ -381,90 +381,125 @@ const EventDetail = () => {
 
   const scoreboardRef = useRef<HTMLDivElement>(null);
 
-  // Tee-off groups: separate queries joined in JS
+  // Tee-off groups: flat queries joined in JS (no nested selects)
   const { data: teeoffGroups } = useQuery({
     queryKey: ["event-teeoff-groups", id, event?.tour_id],
     queryFn: async () => {
-      // Query A — pairings
+      // Step 1: pairings
       const { data: pairingData, error } = await supabase
         .from("pairings")
         .select("id, pairing_label, start_hole, slot, tee_time, start_type, teeoff_group_number")
         .eq("event_id", id!)
-        .order("start_hole")
-        .order("slot");
+        .order("start_hole", { ascending: true })
+        .order("slot", { ascending: true });
       if (error || !pairingData?.length) return [];
 
       const pairingIds = pairingData.map(p => p.id);
 
-      // Query B — pairing_players with contestant + profile data
-      const { data: ppData } = await supabase
+      // Step 2: pairing_players (flat)
+      const { data: ppRows } = await supabase
         .from("pairing_players")
-        .select(`
-          pairing_id, position, contestant_id,
-          contestants!inner (
-            id, player_id, hcp, flight_id,
-            profiles!inner ( id, full_name, handicap, avatar_url ),
-            tournament_flights ( flight_name )
-          )
-        `)
+        .select("id, pairing_id, contestant_id, position")
         .in("pairing_id", pairingIds)
-        .order("position");
+        .order("position", { ascending: true });
 
-      // Query C — cart assignments
-      const { data: cartData } = await supabase
-        .from("golf_cart_assignments")
-        .select("contestant_id, cart_number")
-        .eq("event_id", id!);
+      if (!ppRows?.length) {
+        return pairingData.map(p => ({ ...p, _players: {} as Record<string, any[]> }));
+      }
 
-      // Query D — check-ins
-      const { data: checkinData } = await supabase
-        .from("event_checkins")
-        .select("contestant_id, bag_drop_number")
-        .eq("event_id", id!);
+      const contestantIds = [...new Set((ppRows ?? []).map(pp => pp.contestant_id).filter(Boolean))] as string[];
 
-      // Query E — caddy assignments
-      const { data: caddyData } = await supabase
-        .from("caddy_assignments")
-        .select("contestant_id, caddy_id, profiles!caddy_assignments_caddy_id_fkey(full_name)")
-        .eq("event_id", id!);
+      // Step 3: contestants (flat)
+      const { data: contestantsData } = await supabase
+        .from("contestants")
+        .select("id, player_id, hcp, flight_id")
+        .in("id", contestantIds);
 
-      // Build lookup maps
-      const ppByPairing: Record<string, any[]> = {};
-      (ppData ?? []).forEach((pp: any) => {
-        if (!ppByPairing[pp.pairing_id]) ppByPairing[pp.pairing_id] = [];
-        ppByPairing[pp.pairing_id].push(pp);
-      });
+      const playerIds = [...new Set((contestantsData ?? []).map(c => c.player_id))];
+      const flightIds = [...new Set((contestantsData ?? []).map(c => c.flight_id).filter(Boolean))] as string[];
 
-      const cartMap: Record<string, number> = {};
-      (cartData ?? []).forEach(c => { cartMap[c.contestant_id] = c.cart_number; });
+      // Steps 4-8 in parallel
+      const [profilesRes, flightsRes, cartsRes, checkinsRes, caddyRes] = await Promise.all([
+        supabase.from("profiles").select("id, full_name, avatar_url, handicap").in("id", playerIds),
+        flightIds.length > 0
+          ? supabase.from("tournament_flights").select("id, flight_name").in("id", flightIds)
+          : Promise.resolve({ data: [] as { id: string; flight_name: string }[] }),
+        supabase.from("golf_cart_assignments").select("contestant_id, cart_number").eq("event_id", id!),
+        supabase.from("event_checkins").select("contestant_id, bag_drop_number").eq("event_id", id!),
+        supabase.from("caddy_assignments").select("contestant_id, caddy_id").eq("event_id", id!),
+      ]);
 
-      const bagMap: Record<string, number | null> = {};
-      (checkinData ?? []).forEach(c => { bagMap[c.contestant_id] = c.bag_drop_number; });
+      // Caddy profiles
+      const caddyPlayerIds = [...new Set((caddyRes.data ?? []).map(ca => ca.caddy_id))];
+      const { data: caddyProfiles } = caddyPlayerIds.length > 0
+        ? await supabase.from("profiles").select("id, full_name").in("id", caddyPlayerIds)
+        : { data: [] as { id: string; full_name: string | null }[] };
 
-      const caddyMap: Record<string, string> = {};
-      (caddyData ?? []).forEach((c: any) => { caddyMap[c.contestant_id] = (c.profiles as any)?.full_name ?? ""; });
-
-      // Fetch club names via tour_players
-      const allPlayerIds = (ppData ?? []).map((pp: any) => pp.contestants?.player_id).filter(Boolean);
-      const clubMap: Record<string, string> = {};
-      if (allPlayerIds.length > 0 && event?.tour_id) {
+      // Club names via tour_players
+      let clubMap: Record<string, string> = {};
+      if (playerIds.length > 0 && event?.tour_id) {
         const { data: tourPlayers } = await supabase
           .from("tour_players")
-          .select("player_id, clubs(name)")
+          .select("player_id, club_id")
           .eq("tour_id", event.tour_id)
-          .in("player_id", [...new Set(allPlayerIds)]);
-        (tourPlayers ?? []).forEach((tp: any) => {
-          clubMap[tp.player_id] = (tp.clubs as any)?.name ?? "";
-        });
+          .in("player_id", playerIds);
+        const clubIds = [...new Set((tourPlayers ?? []).map(tp => tp.club_id))];
+        if (clubIds.length > 0) {
+          const { data: clubs } = await supabase.from("clubs").select("id, name").in("id", clubIds);
+          const clubNameMap: Record<string, string> = {};
+          (clubs ?? []).forEach(c => { clubNameMap[c.id] = c.name; });
+          (tourPlayers ?? []).forEach(tp => { clubMap[tp.player_id] = clubNameMap[tp.club_id] ?? ""; });
+        }
       }
+
+      // Build lookup maps
+      const profileMap: Record<string, any> = {};
+      (profilesRes.data ?? []).forEach(p => { profileMap[p.id] = p; });
+
+      const contestantMap: Record<string, any> = {};
+      (contestantsData ?? []).forEach(c => { contestantMap[c.id] = c; });
+
+      const flightMap: Record<string, any> = {};
+      ((flightsRes as any).data ?? []).forEach((f: any) => { flightMap[f.id] = f; });
+
+      const cartMap: Record<string, number> = {};
+      (cartsRes.data ?? []).forEach(c => { cartMap[c.contestant_id] = c.cart_number; });
+
+      const bagMap: Record<string, number | null> = {};
+      (checkinsRes.data ?? []).forEach(c => { bagMap[c.contestant_id] = c.bag_drop_number; });
+
+      const caddyProfileMap: Record<string, string> = {};
+      (caddyProfiles ?? []).forEach(p => { caddyProfileMap[p.id] = p.full_name ?? ""; });
+      const caddyMap: Record<string, string> = {};
+      (caddyRes.data ?? []).forEach(ca => { caddyMap[ca.contestant_id] = caddyProfileMap[ca.caddy_id] ?? ""; });
+
+      // Group pairing_players by pairing_id, enriched
+      const playersByPairing: Record<string, any[]> = {};
+      (ppRows ?? []).forEach(pp => {
+        if (!pp.contestant_id) return;
+        if (!playersByPairing[pp.pairing_id]) playersByPairing[pp.pairing_id] = [];
+        const ct = contestantMap[pp.contestant_id];
+        const pr = ct ? profileMap[ct.player_id] : null;
+        const fl = ct?.flight_id ? flightMap[ct.flight_id] : null;
+        playersByPairing[pp.pairing_id].push({
+          id: pp.id,
+          position: pp.position,
+          contestant_id: pp.contestant_id,
+          full_name: pr?.full_name ?? "Unknown",
+          avatar_url: pr?.avatar_url ?? null,
+          player_id: ct?.player_id ?? null,
+          hcp: ct?.hcp ?? pr?.handicap ?? null,
+          flight_name: fl?.flight_name ?? null,
+          club_name: ct ? (clubMap[ct.player_id] ?? "") : "",
+          cart_number: cartMap[pp.contestant_id] ?? null,
+          bag_number: bagMap[pp.contestant_id] ?? null,
+          caddy_name: caddyMap[pp.contestant_id] ?? null,
+        });
+      });
 
       return pairingData.map(p => ({
         ...p,
-        pairing_players: (ppByPairing[p.id] ?? []).sort((a: any, b: any) => (a.position ?? 0) - (b.position ?? 0)),
-        _clubMap: clubMap,
-        _cartMap: cartMap,
-        _bagMap: bagMap,
-        _caddyMap: caddyMap,
+        _players: playersByPairing,
       }));
     },
     enabled: !!id && !!event?.tour_id,
