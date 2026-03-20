@@ -99,38 +99,42 @@ const AppInner = () => {
         <AppLayout>
           <Routes>
             <Route path="/" element={<Navigate to="/login" replace />} />
-            <Route path="/admin" element={<AdminRoute requirePlatformAdmin><PlatformAdminDashboard /></AdminRoute>} />
-            <Route path="/admin/approvals" element={<AdminApprovals />} />
-            <Route path="/admin/club/:clubId" element={<AdminRoute><ClubAdminDashboard /></AdminRoute>} />
-            <Route path="/admin/course/:courseId" element={<CourseAdminDashboard />} />
-            <Route path="/export-queries" element={<ExportQueries />} />
+            {/* Public routes — no auth needed */}
             <Route path="/login" element={<Login />} />
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/news" element={<NewsFeed />} />
-            <Route path="/clubs" element={<Clubs />} />
-            <Route path="/clubs/:id" element={<ClubProfile />} />
-            <Route path="/tour" element={<TourList />} />
-            <Route path="/tour/:id" element={<TourDetail />} />
-            <Route path="/event/:id" element={<EventDetail />} />
-            <Route path="/event/:id/pairings" element={<EventPairings />} />
-            <Route path="/event/:id/leaderboard" element={<EventLeaderboard />} />
-            <Route path="/event/:id/scorecard" element={<ScorecardInput />} />
-            <Route path="/profile/:id" element={<PlayerProfile />} />
-            <Route path="/venue" element={<VenueList />} />
-            <Route path="/venue/:id" element={<Venue />} />
-            <Route path="/play" element={<Play />} />
-            <Route path="/record-round" element={<RecordRound />} />
-            <Route path="/record-round/:courseId" element={<CasualScorecardInput />} />
-            <Route path="/play/messages" element={<Messages />} />
-            <Route path="/profile" element={<GolferProfile />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/chat" element={<ChatList />} />
-            <Route path="/chat/:id" element={<ChatRoom />} />
-            <Route path="/book/:courseId" element={<BookTeeTime />} />
-            <Route path="/notifications" element={<Notifications />} />
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route path="/p/:username" element={<PublicProfile />} />
+
+            {/* Protected routes — require approved session */}
+            <Route path="/admin" element={<ProtectedRoute><AdminRoute requirePlatformAdmin><PlatformAdminDashboard /></AdminRoute></ProtectedRoute>} />
+            <Route path="/admin/approvals" element={<ProtectedRoute><AdminApprovals /></ProtectedRoute>} />
+            <Route path="/admin/club/:clubId" element={<ProtectedRoute><AdminRoute><ClubAdminDashboard /></AdminRoute></ProtectedRoute>} />
+            <Route path="/admin/course/:courseId" element={<ProtectedRoute><CourseAdminDashboard /></ProtectedRoute>} />
+            <Route path="/export-queries" element={<ProtectedRoute><ExportQueries /></ProtectedRoute>} />
+            <Route path="/news" element={<ProtectedRoute><NewsFeed /></ProtectedRoute>} />
+            <Route path="/clubs" element={<ProtectedRoute><Clubs /></ProtectedRoute>} />
+            <Route path="/clubs/:id" element={<ProtectedRoute><ClubProfile /></ProtectedRoute>} />
+            <Route path="/tour" element={<ProtectedRoute><TourList /></ProtectedRoute>} />
+            <Route path="/tour/:id" element={<ProtectedRoute><TourDetail /></ProtectedRoute>} />
+            <Route path="/event/:id" element={<ProtectedRoute><EventDetail /></ProtectedRoute>} />
+            <Route path="/event/:id/pairings" element={<ProtectedRoute><EventPairings /></ProtectedRoute>} />
+            <Route path="/event/:id/leaderboard" element={<ProtectedRoute><EventLeaderboard /></ProtectedRoute>} />
+            <Route path="/event/:id/scorecard" element={<ProtectedRoute><ScorecardInput /></ProtectedRoute>} />
+            <Route path="/profile/:id" element={<ProtectedRoute><PlayerProfile /></ProtectedRoute>} />
+            <Route path="/venue" element={<ProtectedRoute><VenueList /></ProtectedRoute>} />
+            <Route path="/venue/:id" element={<ProtectedRoute><Venue /></ProtectedRoute>} />
+            <Route path="/play" element={<ProtectedRoute><Play /></ProtectedRoute>} />
+            <Route path="/record-round" element={<ProtectedRoute><RecordRound /></ProtectedRoute>} />
+            <Route path="/record-round/:courseId" element={<ProtectedRoute><CasualScorecardInput /></ProtectedRoute>} />
+            <Route path="/play/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
+            <Route path="/profile" element={<ProtectedRoute><GolferProfile /></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+            <Route path="/chat" element={<ProtectedRoute><ChatList /></ProtectedRoute>} />
+            <Route path="/chat/:id" element={<ProtectedRoute><ChatRoom /></ProtectedRoute>} />
+            <Route path="/book/:courseId" element={<ProtectedRoute><BookTeeTime /></ProtectedRoute>} />
+            <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AppLayout>
