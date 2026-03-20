@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Calendar, MapPin, Users, Ticket, Trophy, Award, Shuffle, TrendingDown,
-  ClipboardCheck, Package, Lock, Car, UserCheck, ChevronRight, Pencil, Plus, RefreshCw, Clock, Download
+  ClipboardCheck, Package, Lock, Car, UserCheck, ChevronRight, Pencil, Plus, RefreshCw, Clock, Download, Flag
 } from "lucide-react";
 import html2canvas from "html2canvas";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
