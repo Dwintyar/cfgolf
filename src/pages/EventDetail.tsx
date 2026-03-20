@@ -1059,7 +1059,7 @@ const EventDetail = () => {
             <Button size="sm" variant="outline" className="h-7 gap-1 text-[10px]" onClick={async () => {
               if (!scoreboardRef.current) return;
               try {
-                const canvas = await html2canvas(scoreboardRef.current, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+                const canvas = await html2canvas(scoreboardRef.current, { scale: 2, useCORS: true, backgroundColor: null });
                 const link = document.createElement("a");
                 const eventName = (event?.name ?? "Event").replace(/\s+/g, "-");
                 link.download = `${eventName}-Scoreboard.png`;
