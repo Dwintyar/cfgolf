@@ -46,6 +46,9 @@ const EventDetail = () => {
   const [showWinners, setShowWinners] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [pairingsList, setPairingsList] = useState<any[]>([]);
+  const [hcpRows, setHcpRows] = useState<any[]>([]);
+  const [hcpLoading, setHcpLoading] = useState(true);
+  const hcpExportRef = useRef<HTMLDivElement>(null);
   const [playersByPairing, setPlayersByPairing] = useState<Record<string, any[]>>({});
   const [isDesktop, setIsDesktop] = useState(
     typeof window !== "undefined" ? window.innerWidth >= 1024 : false
