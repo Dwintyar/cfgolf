@@ -347,12 +347,26 @@ const EventDetail = () => {
         resultsMap[er.contestant_id] = (er.tournament_winner_categories as any)?.category_name ?? "";
       });
 
+      // Get club names via tickets
+      const { data: tickets } = await supabase
+        .from("tickets")
+        .select("assigned_player_id, clubs!inner(name)")
+        .eq("event_id", id);
+
+      const clubMap: Record<string, string> = {};
+      (tickets ?? []).forEach((t: any) => {
+        if (t.assigned_player_id) {
+          clubMap[t.assigned_player_id] = (t.clubs as any)?.name ?? "—";
+        }
+      });
+
       // Build rows
       const rows = eventContestants.map(ct => {
         const scores = scoreByPlayer[ct.player_id];
         return {
           player_id: ct.player_id,
           full_name: (ct.profiles as any)?.full_name ?? "Unknown",
+          club_name: clubMap[ct.player_id] ?? "—",
           out_score: scores?.out ?? null,
           in_score: scores?.in ?? null,
           tot: scores?.tot ?? null,
