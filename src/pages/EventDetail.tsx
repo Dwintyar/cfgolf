@@ -558,7 +558,7 @@ const EventDetail = () => {
 
         <Section title="Contestants" icon={Users} count={contestants?.length}>
           {contestants?.length === 0 && <EmptyState text="No contestants" />}
-          {contestants?.slice().sort((a: any, b: any) => ((a.profiles as any)?.full_name ?? "").localeCompare((b.profiles as any)?.full_name ?? "")).slice(0, 10).map((c) => (
+          {contestants?.slice().sort((a: any, b: any) => ((a.profiles as any)?.full_name ?? "").localeCompare((b.profiles as any)?.full_name ?? "", "id")).slice(0, 10).map((c) => (
             <div key={c.id} className="golf-card flex items-center gap-3 p-3">
               <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
                 {(c.profiles as any)?.full_name?.charAt(0) ?? "?"}
