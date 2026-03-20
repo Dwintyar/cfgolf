@@ -289,7 +289,7 @@ const EventDetail = () => {
         return eventContestants.map(ct => ({
           player_id: ct.player_id,
           full_name: (ct.profiles as any)?.full_name ?? "Unknown",
-          out_score: null, in_score: null, tot: null, nett: null,
+          club_name: "—", out_score: null, in_score: null, tot: null, nett: null,
           hcp: ct.hcp, flight_id: ct.flight_id,
           flight_name: (ct.tournament_flights as any)?.flight_name ?? "",
           hcp_min: (ct.tournament_flights as any)?.hcp_min ?? 0,
@@ -347,12 +347,26 @@ const EventDetail = () => {
         resultsMap[er.contestant_id] = (er.tournament_winner_categories as any)?.category_name ?? "";
       });
 
+      // Get club names via tickets
+      const { data: tickets } = await supabase
+        .from("tickets")
+        .select("assigned_player_id, clubs!inner(name)")
+        .eq("event_id", id);
+
+      const clubMap: Record<string, string> = {};
+      (tickets ?? []).forEach((t: any) => {
+        if (t.assigned_player_id) {
+          clubMap[t.assigned_player_id] = (t.clubs as any)?.name ?? "—";
+        }
+      });
+
       // Build rows
       const rows = eventContestants.map(ct => {
         const scores = scoreByPlayer[ct.player_id];
         return {
           player_id: ct.player_id,
           full_name: (ct.profiles as any)?.full_name ?? "Unknown",
+          club_name: clubMap[ct.player_id] ?? "—",
           out_score: scores?.out ?? null,
           in_score: scores?.in ?? null,
           tot: scores?.tot ?? null,
@@ -1119,6 +1133,7 @@ const EventDetail = () => {
                         <tr className="bg-muted/50 border-b border-border">
                           <th className="w-[40px] text-center py-1 px-1 border-r border-border font-bold text-muted-foreground">NO</th>
                           <th className="text-left py-1 px-2 border-r border-border font-bold text-muted-foreground">PLAYER'S NAME</th>
+                          <th className="text-left py-1 px-2 border-r border-border font-bold text-muted-foreground max-w-[120px]">CLUB</th>
                           <th className="w-[50px] text-center py-1 px-1 border-r border-border font-bold text-muted-foreground">OUT</th>
                           <th className="w-[50px] text-center py-1 px-1 border-r border-border font-bold text-muted-foreground">IN</th>
                           <th className="w-[50px] text-center py-1 px-1 border-r border-border font-bold text-muted-foreground">TOT</th>
@@ -1141,6 +1156,7 @@ const EventDetail = () => {
                             <tr key={row.player_id} className={`border-b border-border/50 ${idx % 2 === 0 ? "bg-card" : "bg-muted/20"} hover:bg-accent/10`}>
                               <td className="text-center py-1 px-1 border-r border-border/50 text-muted-foreground">{idx + 1}</td>
                               <td className="py-1 px-2 border-r border-border/50 font-medium text-foreground truncate max-w-[180px]">{row.full_name}</td>
+                              <td className="py-1 px-2 border-r border-border/50 text-foreground truncate max-w-[120px] text-[10px]">{row.club_name}</td>
                               <td className="text-center py-1 px-1 border-r border-border/50 tabular-nums text-foreground">{isNR ? <span className="text-destructive/60 text-[10px]">NR</span> : row.out_score}</td>
                               <td className="text-center py-1 px-1 border-r border-border/50 tabular-nums text-foreground">{isNR ? <span className="text-destructive/60 text-[10px]">NR</span> : row.in_score}</td>
                               <td className="text-center py-1 px-1 border-r border-border/50 tabular-nums text-foreground">{isNR ? <span className="text-destructive/60 text-[10px]">NR</span> : row.tot}</td>
