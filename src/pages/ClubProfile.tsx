@@ -1,4 +1,4 @@
-import { ArrowLeft, Search, Mail, Mic, Settings, UserPlus, Check, X, LogIn, Users } from "lucide-react";
+import { ArrowLeft, Search, Mail, Mic, Settings, UserPlus, Check, X, LogIn, Users, Loader2 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
@@ -24,6 +24,7 @@ const ClubProfile = () => {
   const [showInvite, setShowInvite] = useState(false);
   const [tab, setTab] = useState<Tab>("members");
   const [joining, setJoining] = useState(false);
+  const [processingId, setProcessingId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -195,25 +196,41 @@ const ClubProfile = () => {
   };
 
   const handleAcceptInvitation = async (invitationId: string, userId: string) => {
-    const { error: memberError } = await supabase.from("members").insert({
-      club_id: id!,
-      user_id: userId,
-      role: "member",
-    });
-    if (memberError) {
-      toast({ title: "Gagal", description: memberError.message, variant: "destructive" });
-      return;
+    setProcessingId(invitationId);
+    try {
+      const { error: memberError } = await supabase.from("members").insert({
+        club_id: id!,
+        user_id: userId,
+        role: "member",
+      });
+      if (memberError && memberError.code !== "23505") {
+        toast({ title: "Gagal", description: memberError.message, variant: "destructive" });
+        return;
+      }
+      await supabase.from("club_invitations").update({ status: "accepted" }).eq("id", invitationId);
+      toast({ title: "Member diterima!" });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["club-members", id] }),
+        queryClient.invalidateQueries({ queryKey: ["club-invitations", id] }),
+      ]);
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setProcessingId(null);
     }
-    await supabase.from("club_invitations").update({ status: "accepted" }).eq("id", invitationId);
-    toast({ title: "Member diterima!" });
-    queryClient.invalidateQueries({ queryKey: ["club-members", id] });
-    queryClient.invalidateQueries({ queryKey: ["club-invitations", id] });
   };
 
   const handleRejectInvitation = async (invitationId: string) => {
-    await supabase.from("club_invitations").update({ status: "declined" }).eq("id", invitationId);
-    toast({ title: "Undangan ditolak" });
-    queryClient.invalidateQueries({ queryKey: ["club-invitations", id] });
+    setProcessingId(invitationId);
+    try {
+      await supabase.from("club_invitations").update({ status: "declined" }).eq("id", invitationId);
+      toast({ title: "Undangan ditolak" });
+      await queryClient.invalidateQueries({ queryKey: ["club-invitations", id] });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setProcessingId(null);
+    }
   };
 
   const pendingCount = pendingInvitations?.length ?? 0;
@@ -415,13 +432,15 @@ const ClubProfile = () => {
                   <div className="flex gap-1.5">
                     <button
                       onClick={() => handleAcceptInvitation(inv.id, inv.invited_user_id)}
-                      className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                      disabled={processingId === inv.id}
+                      className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
                     >
-                      <Check className="h-4 w-4" />
+                      {processingId === inv.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                     </button>
                     <button
                       onClick={() => handleRejectInvitation(inv.id)}
-                      className="flex h-8 w-8 items-center justify-center rounded-full bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors"
+                      disabled={processingId === inv.id}
+                      className="flex h-8 w-8 items-center justify-center rounded-full bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors disabled:opacity-50"
                     >
                       <X className="h-4 w-4" />
                     </button>

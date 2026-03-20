@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,7 +6,7 @@ import {
   Users, UserCheck, Calendar, Bell, ChevronRight, Plus, ArrowLeft,
   Settings as SettingsIcon, Building2, Shield, Trash2, MessageSquare,
   Crown, AlertTriangle, MapPin, ChevronDown, ChevronUp, Trophy, Megaphone, DollarSign, Clock,
-  Check, X
+  Check, X, Loader2
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -304,10 +304,88 @@ const ClubAdminDashboard = () => {
     enabled: !!clubId && isDrivingRange,
   });
 
+  // Realtime subscription for new join requests
+  useEffect(() => {
+    if (!clubId || !userId) return;
+
+    const channel = supabase
+      .channel(`club-join-requests-${clubId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "club_invitations",
+          filter: `club_id=eq.${clubId}`,
+        },
+        async (payload) => {
+          const inv = payload.new as any;
+          // Only handle self-initiated join requests (not admin invites)
+          if (inv.invited_by !== inv.invited_user_id) return;
+          // Don't notify about own actions
+          if (inv.invited_user_id === userId) return;
+
+          // Fetch requester name
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("full_name")
+            .eq("id", inv.invited_user_id)
+            .single();
+
+          const playerName = profile?.full_name ?? "Seseorang";
+          const clubName = club?.name ?? "klub Anda";
+
+          // Invalidate queries immediately for badge update
+          queryClient.invalidateQueries({ queryKey: ["club-join-requests", clubId] });
+          queryClient.invalidateQueries({ queryKey: ["club-admin-pending", clubId] });
+
+          // Show toast with Accept/Decline buttons
+          toast(`${playerName} ingin bergabung ke ${clubName}`, {
+            description: "Permintaan bergabung baru",
+            duration: 10000,
+            action: {
+              label: "Terima",
+              onClick: async () => {
+                const { error } = await supabase
+                  .from("members")
+                  .insert({
+                    club_id: clubId,
+                    user_id: inv.invited_user_id,
+                    role: "member",
+                    joined_at: new Date().toISOString(),
+                  });
+                if (error && error.code !== "23505") {
+                  toast.error(error.message);
+                  return;
+                }
+                await supabase
+                  .from("club_invitations")
+                  .update({ status: "accepted" })
+                  .eq("id", inv.id);
+                toast.success("Member diterima!");
+                queryClient.invalidateQueries({ queryKey: ["club-join-requests", clubId] });
+                queryClient.invalidateQueries({ queryKey: ["club-admin-pending", clubId] });
+                queryClient.invalidateQueries({ queryKey: ["club-admin-members", clubId] });
+              },
+            },
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [clubId, userId, club?.name, queryClient]);
+
+  // Track which request is being processed
+  const [processingRequestId, setProcessingRequestId] = useState<string | null>(null);
+
   // KPI computations
   const memberCount = members?.length ?? 0;
   const staffCount = staff?.length ?? 0;
-  const pendingCount = (pendingInvitations?.length ?? 0) + (joinRequests?.length ?? 0);
+  // joinRequests is a subset of pendingInvitations, so only use joinRequests
+  const pendingCount = joinRequests?.length ?? 0;
   const totalTours = clubTours?.length ?? 0;
   const today = new Date().toISOString().split("T")[0];
   const todayBookings = courseBookings?.filter((b) => b.booking_date === today).length ?? 0;
@@ -475,43 +553,64 @@ const ClubAdminDashboard = () => {
               </div>
               <div className="flex gap-1.5 shrink-0">
                 <Button size="sm" className="h-7 px-2 text-xs gap-1"
+                  disabled={processingRequestId === req.id}
                   onClick={async () => {
-                    const { error } = await supabase
-                      .from("members")
-                      .insert({
-                        club_id: clubId,
-                        user_id: req.invited_user_id,
-                        role: "member",
-                        joined_at: new Date().toISOString()
-                      });
-                    if (error && error.code !== "23505") {
-                      toast.error(error.message);
-                      return;
+                    setProcessingRequestId(req.id);
+                    try {
+                      const { error } = await supabase
+                        .from("members")
+                        .insert({
+                          club_id: clubId,
+                          user_id: req.invited_user_id,
+                          role: "member",
+                          joined_at: new Date().toISOString()
+                        });
+                      if (error && error.code !== "23505") {
+                        toast.error(error.message);
+                        return;
+                      }
+                      await supabase
+                        .from("club_invitations")
+                        .update({ status: "accepted" })
+                        .eq("id", req.id);
+                      toast.success("Member diterima!");
+                      await Promise.all([
+                        queryClient.invalidateQueries({ queryKey: ["club-join-requests", clubId] }),
+                        queryClient.invalidateQueries({ queryKey: ["club-admin-members", clubId] }),
+                        queryClient.invalidateQueries({ queryKey: ["club-admin-pending", clubId] }),
+                      ]);
+                    } catch (err: any) {
+                      toast.error(err.message);
+                    } finally {
+                      setProcessingRequestId(null);
                     }
-                    await supabase
-                      .from("club_invitations")
-                      .update({ status: "accepted" })
-                      .eq("id", req.id);
-                    toast.success("Member diterima!");
-                    refetchRequests();
-                    refetchMembers();
-                    queryClient.invalidateQueries({ queryKey: ["club-join-requests", clubId] });
-                    queryClient.invalidateQueries({ queryKey: ["club-admin-members", clubId] });
-                    queryClient.invalidateQueries({ queryKey: ["notifications"] });
                   }}>
-                  <Check className="h-3 w-3" /> Terima
+                  {processingRequestId === req.id ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Check className="h-3 w-3" />
+                  )} Terima
                 </Button>
                 <Button size="sm" variant="outline"
                   className="h-7 px-2 text-xs gap-1 text-destructive border-destructive/30"
+                  disabled={processingRequestId === req.id}
                   onClick={async () => {
-                    await supabase
-                      .from("club_invitations")
-                      .update({ status: "declined" })
-                      .eq("id", req.id);
-                    toast.success("Request ditolak");
-                    refetchRequests();
-                    queryClient.invalidateQueries({ queryKey: ["club-join-requests", clubId] });
-                    queryClient.invalidateQueries({ queryKey: ["notifications"] });
+                    setProcessingRequestId(req.id);
+                    try {
+                      await supabase
+                        .from("club_invitations")
+                        .update({ status: "declined" })
+                        .eq("id", req.id);
+                      toast.success("Request ditolak");
+                      await Promise.all([
+                        queryClient.invalidateQueries({ queryKey: ["club-join-requests", clubId] }),
+                        queryClient.invalidateQueries({ queryKey: ["club-admin-pending", clubId] }),
+                      ]);
+                    } catch (err: any) {
+                      toast.error(err.message);
+                    } finally {
+                      setProcessingRequestId(null);
+                    }
                   }}>
                   <X className="h-3 w-3" /> Tolak
                 </Button>
