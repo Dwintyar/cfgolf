@@ -516,6 +516,41 @@ export type Database = {
         }
         Relationships: []
       }
+      course_bagdrop_slots: {
+        Row: {
+          course_id: string | null
+          created_at: string | null
+          id: string
+          location_note: string | null
+          slot_number: number
+          status: string | null
+        }
+        Insert: {
+          course_id?: string | null
+          created_at?: string | null
+          id?: string
+          location_note?: string | null
+          slot_number: number
+          status?: string | null
+        }
+        Update: {
+          course_id?: string | null
+          created_at?: string | null
+          id?: string
+          location_note?: string | null
+          slot_number?: number
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_bagdrop_slots_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       course_holes: {
         Row: {
           course_id: string
@@ -544,6 +579,41 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "course_holes_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_lockers: {
+        Row: {
+          course_id: string | null
+          created_at: string | null
+          id: string
+          locker_number: number
+          locker_room: string | null
+          status: string | null
+        }
+        Insert: {
+          course_id?: string | null
+          created_at?: string | null
+          id?: string
+          locker_number: number
+          locker_room?: string | null
+          status?: string | null
+        }
+        Update: {
+          course_id?: string | null
+          created_at?: string | null
+          id?: string
+          locker_number?: number
+          locker_room?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_lockers_course_id_fkey"
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "courses"
@@ -648,32 +718,45 @@ export type Database = {
       event_checkins: {
         Row: {
           bag_drop_number: number | null
+          bag_drop_slot_id: string | null
           checked_in_at: string
           contestant_id: string
           event_id: string
           id: string
+          locker_id: string | null
           locker_number: number | null
           notes: string | null
         }
         Insert: {
           bag_drop_number?: number | null
+          bag_drop_slot_id?: string | null
           checked_in_at?: string
           contestant_id: string
           event_id: string
           id?: string
+          locker_id?: string | null
           locker_number?: number | null
           notes?: string | null
         }
         Update: {
           bag_drop_number?: number | null
+          bag_drop_slot_id?: string | null
           checked_in_at?: string
           contestant_id?: string
           event_id?: string
           id?: string
+          locker_id?: string | null
           locker_number?: number | null
           notes?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "event_checkins_bag_drop_slot_id_fkey"
+            columns: ["bag_drop_slot_id"]
+            isOneToOne: false
+            referencedRelation: "course_bagdrop_slots"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "event_checkins_contestant_id_fkey"
             columns: ["contestant_id"]
@@ -693,6 +776,13 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_checkins_locker_id_fkey"
+            columns: ["locker_id"]
+            isOneToOne: false
+            referencedRelation: "course_lockers"
             referencedColumns: ["id"]
           },
         ]
@@ -728,6 +818,139 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "event_holes_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_incidents: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          event_id: string | null
+          hole_number: number | null
+          id: string
+          incident_type: string
+          pairing_id: string | null
+          player_id: string | null
+          reported_at: string | null
+          reported_by: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          event_id?: string | null
+          hole_number?: number | null
+          id?: string
+          incident_type: string
+          pairing_id?: string | null
+          player_id?: string | null
+          reported_at?: string | null
+          reported_by?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          event_id?: string | null
+          hole_number?: number | null
+          id?: string
+          incident_type?: string
+          pairing_id?: string | null
+          player_id?: string | null
+          reported_at?: string | null
+          reported_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_incidents_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_incidents_pairing_id_fkey"
+            columns: ["pairing_id"]
+            isOneToOne: false
+            referencedRelation: "pairings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_incidents_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_incidents_reported_by_fkey"
+            columns: ["reported_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_resource_allocations: {
+        Row: {
+          assigned_at: string | null
+          contestant_id: string | null
+          course_id: string | null
+          created_at: string | null
+          event_id: string | null
+          id: string
+          resource_id: string
+          resource_type: string | null
+          status: string | null
+        }
+        Insert: {
+          assigned_at?: string | null
+          contestant_id?: string | null
+          course_id?: string | null
+          created_at?: string | null
+          event_id?: string | null
+          id?: string
+          resource_id: string
+          resource_type?: string | null
+          status?: string | null
+        }
+        Update: {
+          assigned_at?: string | null
+          contestant_id?: string | null
+          course_id?: string | null
+          created_at?: string | null
+          event_id?: string | null
+          id?: string
+          resource_id?: string
+          resource_type?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_resource_allocations_contestant_id_fkey"
+            columns: ["contestant_id"]
+            isOneToOne: false
+            referencedRelation: "contestants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_resource_allocations_contestant_id_fkey"
+            columns: ["contestant_id"]
+            isOneToOne: false
+            referencedRelation: "event_leaderboard"
+            referencedColumns: ["contestant_id"]
+          },
+          {
+            foreignKeyName: "event_resource_allocations_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_resource_allocations_event_id_fkey"
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
@@ -837,6 +1060,180 @@ export type Database = {
           {
             foreignKeyName: "event_roles_user_id_fkey"
             columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_staff_assignments: {
+        Row: {
+          club_id: string | null
+          created_at: string | null
+          event_id: string | null
+          hole_number: number | null
+          id: string
+          notes: string | null
+          staff_id: string | null
+          staff_role: string
+        }
+        Insert: {
+          club_id?: string | null
+          created_at?: string | null
+          event_id?: string | null
+          hole_number?: number | null
+          id?: string
+          notes?: string | null
+          staff_id?: string | null
+          staff_role: string
+        }
+        Update: {
+          club_id?: string | null
+          created_at?: string | null
+          event_id?: string | null
+          hole_number?: number | null
+          id?: string
+          notes?: string | null
+          staff_id?: string | null
+          staff_role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_staff_assignments_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_staff_assignments_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_staff_assignments_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_teeoff_log: {
+        Row: {
+          actual_teeoff_at: string | null
+          created_at: string | null
+          event_id: string | null
+          id: string
+          notes: string | null
+          pairing_id: string | null
+          starter_staff_id: string | null
+        }
+        Insert: {
+          actual_teeoff_at?: string | null
+          created_at?: string | null
+          event_id?: string | null
+          id?: string
+          notes?: string | null
+          pairing_id?: string | null
+          starter_staff_id?: string | null
+        }
+        Update: {
+          actual_teeoff_at?: string | null
+          created_at?: string | null
+          event_id?: string | null
+          id?: string
+          notes?: string | null
+          pairing_id?: string | null
+          starter_staff_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_teeoff_log_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_teeoff_log_pairing_id_fkey"
+            columns: ["pairing_id"]
+            isOneToOne: false
+            referencedRelation: "pairings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_teeoff_log_starter_staff_id_fkey"
+            columns: ["starter_staff_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_venue_reports: {
+        Row: {
+          actual_end_at: string | null
+          actual_start_at: string | null
+          cart_issues: string | null
+          course_id: string | null
+          created_at: string | null
+          event_id: string | null
+          id: string
+          incident_count: number | null
+          notes: string | null
+          submitted_at: string | null
+          submitted_by: string | null
+          total_checkin: number | null
+        }
+        Insert: {
+          actual_end_at?: string | null
+          actual_start_at?: string | null
+          cart_issues?: string | null
+          course_id?: string | null
+          created_at?: string | null
+          event_id?: string | null
+          id?: string
+          incident_count?: number | null
+          notes?: string | null
+          submitted_at?: string | null
+          submitted_by?: string | null
+          total_checkin?: number | null
+        }
+        Update: {
+          actual_end_at?: string | null
+          actual_start_at?: string | null
+          cart_issues?: string | null
+          course_id?: string | null
+          created_at?: string | null
+          event_id?: string | null
+          id?: string
+          incident_count?: number | null
+          notes?: string | null
+          submitted_at?: string | null
+          submitted_by?: string | null
+          total_checkin?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_venue_reports_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_venue_reports_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_venue_reports_submitted_by_fkey"
+            columns: ["submitted_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -1178,31 +1575,37 @@ export type Database = {
           created_at: string | null
           event_id: string | null
           flight_id: string | null
-          group_number: number | null
           id: string
+          pairing_label: string | null
+          slot: string | null
           start_hole: number | null
           start_type: string
           tee_time: string | null
+          teeoff_group_number: number | null
         }
         Insert: {
           created_at?: string | null
           event_id?: string | null
           flight_id?: string | null
-          group_number?: number | null
           id?: string
+          pairing_label?: string | null
+          slot?: string | null
           start_hole?: number | null
           start_type?: string
           tee_time?: string | null
+          teeoff_group_number?: number | null
         }
         Update: {
           created_at?: string | null
           event_id?: string | null
           flight_id?: string | null
-          group_number?: number | null
           id?: string
+          pairing_label?: string | null
+          slot?: string | null
           start_hole?: number | null
           start_type?: string
           tee_time?: string | null
+          teeoff_group_number?: number | null
         }
         Relationships: [
           {
