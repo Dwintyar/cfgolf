@@ -842,13 +842,13 @@ const GolferProfile = () => {
             )}
 
             {tab === "gallery" && (
-              <div className="flex flex-col items-center justify-center py-16 text-center animate-fade-in">
-                <div className="h-16 w-16 rounded-full bg-secondary flex items-center justify-center mb-4">
-                  <Camera className="h-8 w-8 text-muted-foreground/40" />
+              <div className="flex flex-col items-center justify-center py-20 text-center animate-fade-in">
+                <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                  <Camera className="h-8 w-8 text-primary/60" />
                 </div>
-                <p className="text-base font-semibold">Belum ada foto</p>
+                <p className="text-lg font-semibold text-foreground">No photos yet</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Foto akan muncul setelah mengikuti event
+                  Photos from your rounds will appear here.
                 </p>
               </div>
             )}

@@ -149,16 +149,16 @@ const NewsFeed = () => {
         )}
 
         {!isLoading && (!posts || posts.length === 0) && (
-          <div className="flex flex-col items-center justify-center py-16 px-8 text-center">
-            <div className="h-16 w-16 rounded-full bg-secondary flex items-center justify-center mb-4">
-              <MessageSquare className="h-8 w-8 text-muted-foreground/40" />
+          <div className="flex flex-col items-center justify-center py-20 px-8 text-center">
+            <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+              <MessageSquare className="h-8 w-8 text-primary/60" />
             </div>
-            <p className="text-base font-semibold">Belum ada post</p>
+            <p className="text-lg font-semibold text-foreground">Nothing here yet</p>
             <p className="text-sm text-muted-foreground mt-1">
-              Jadilah yang pertama berbagi cerita golf Anda!
+              Be the first to post something for your club.
             </p>
             <Button className="mt-4" onClick={() => setShowCreate(true)}>
-              Buat Post Pertama
+              Create Post
             </Button>
           </div>
         )}

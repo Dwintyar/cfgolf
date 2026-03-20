@@ -8,7 +8,6 @@ const tabs = [
   { path: "/play", label: "Buddies", icon: Users, showChatBadge: true },
   { path: "/clubs", label: "Clubs", icon: Trophy },
   { path: "/tour", label: "Events", icon: Play },
-  { path: "/venue", label: "Venues", icon: MapPin },
 ];
 
 const hiddenPaths = ["/login", "/reset-password"];
