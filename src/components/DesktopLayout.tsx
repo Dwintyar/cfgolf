@@ -112,6 +112,21 @@ const DesktopLayout = ({ children, sidebarRightHidden = false }: { children: Rea
     staleTime: 1000 * 60 * 5,
   });
 
+  const isAdmin = userEmail === "dwintyar@gmail.com";
+
+  const { data: pendingCount } = useQuery({
+    queryKey: ["sidebar-pending-approvals-count"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("pending_approvals")
+        .select("id")
+        .eq("status", "pending");
+      return data?.length ?? 0;
+    },
+    enabled: isAdmin,
+    refetchInterval: 30000,
+  });
+
   const navItems = [
     { path: "/news", label: "Feeds", icon: Newspaper },
     { path: "/play", label: "Buddies", icon: Users },
