@@ -196,25 +196,41 @@ const ClubProfile = () => {
   };
 
   const handleAcceptInvitation = async (invitationId: string, userId: string) => {
-    const { error: memberError } = await supabase.from("members").insert({
-      club_id: id!,
-      user_id: userId,
-      role: "member",
-    });
-    if (memberError) {
-      toast({ title: "Gagal", description: memberError.message, variant: "destructive" });
-      return;
+    setProcessingId(invitationId);
+    try {
+      const { error: memberError } = await supabase.from("members").insert({
+        club_id: id!,
+        user_id: userId,
+        role: "member",
+      });
+      if (memberError && memberError.code !== "23505") {
+        toast({ title: "Gagal", description: memberError.message, variant: "destructive" });
+        return;
+      }
+      await supabase.from("club_invitations").update({ status: "accepted" }).eq("id", invitationId);
+      toast({ title: "Member diterima!" });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["club-members", id] }),
+        queryClient.invalidateQueries({ queryKey: ["club-invitations", id] }),
+      ]);
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setProcessingId(null);
     }
-    await supabase.from("club_invitations").update({ status: "accepted" }).eq("id", invitationId);
-    toast({ title: "Member diterima!" });
-    queryClient.invalidateQueries({ queryKey: ["club-members", id] });
-    queryClient.invalidateQueries({ queryKey: ["club-invitations", id] });
   };
 
   const handleRejectInvitation = async (invitationId: string) => {
-    await supabase.from("club_invitations").update({ status: "declined" }).eq("id", invitationId);
-    toast({ title: "Undangan ditolak" });
-    queryClient.invalidateQueries({ queryKey: ["club-invitations", id] });
+    setProcessingId(invitationId);
+    try {
+      await supabase.from("club_invitations").update({ status: "declined" }).eq("id", invitationId);
+      toast({ title: "Undangan ditolak" });
+      await queryClient.invalidateQueries({ queryKey: ["club-invitations", id] });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setProcessingId(null);
+    }
   };
 
   const pendingCount = pendingInvitations?.length ?? 0;
