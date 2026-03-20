@@ -328,13 +328,7 @@ const TourDetail = () => {
     queryClient.invalidateQueries({ queryKey: ["tour-players-detail", id] });
   };
 
-  const statusColors: Record<string, string> = {
-    draft: "border-muted-foreground/30 text-muted-foreground",
-    registration: "border-accent/40 text-accent",
-    checkin: "border-accent/40 text-accent",
-    playing: "border-primary/40 text-primary",
-    completed: "border-primary/60 text-primary",
-  };
+  const statusColors: Record<string, string> = {};
 
   if (isLoading) return (
     <div className="bottom-nav-safe space-y-4 p-4">
