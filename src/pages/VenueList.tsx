@@ -149,15 +149,15 @@ const VenueList = () => {
         ))}
       </div>
 
-      {/* Golf Courses Tab */}
-      {venueTab === "golf" && (
+      {/* Courses (shown in "all" and "golf" tabs) */}
+      {(venueTab === "all" || venueTab === "golf") && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 px-4">
           {isLoading &&
             Array.from({ length: 3 }).map((_, i) => (
               <Skeleton key={i} className="h-32 w-full rounded-xl" />
             ))}
 
-          {!isLoading && sortedGolfCourses.length === 0 && (
+          {!isLoading && sortedDisplayCourses.length === 0 && venueTab === "golf" && (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <div className="h-16 w-16 rounded-full bg-secondary flex items-center justify-center mb-4">
                 <Flag className="h-8 w-8 text-muted-foreground/40" />
@@ -169,7 +169,7 @@ const VenueList = () => {
             </div>
           )}
 
-          {sortedGolfCourses.map((course, i) => {
+          {sortedDisplayCourses.map((course, i) => {
             const isOwned = isMyCourse(course);
             return (
               <div
@@ -218,7 +218,6 @@ const VenueList = () => {
               </div>
             );
           })}
-
         </div>
       )}
 
