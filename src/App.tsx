@@ -117,6 +117,8 @@ const AppInner = () => {
             <Route path="/venue" element={<VenueList />} />
             <Route path="/venue/:id" element={<Venue />} />
             <Route path="/play" element={<Play />} />
+            <Route path="/record-round" element={<RecordRound />} />
+            <Route path="/record-round/:courseId" element={<CasualScorecardInput />} />
             <Route path="/play/messages" element={<Messages />} />
             <Route path="/profile" element={<GolferProfile />} />
             <Route path="/settings" element={<Settings />} />
