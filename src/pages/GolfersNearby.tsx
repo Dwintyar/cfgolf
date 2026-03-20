@@ -7,10 +7,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, UserRound, Settings } from "lucide-react";
-import AppHeader from "@/components/AppHeader";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
 
 const GolfersNearby = () => {
   const navigate = useNavigate();
