@@ -198,19 +198,7 @@ const EventDetail = () => {
     enabled: !!id,
   });
 
-  const { data: pairings, refetch: refetchPairings } = useQuery({
-    queryKey: ["event-pairings", id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("pairings")
-        .select("*, pairing_players(*, contestants(*, profiles(full_name, handicap)))")
-        .eq("event_id", id!)
-        .order("teeoff_group_number");
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!id,
-  });
+  const refetchPairings = async () => { /* trigger useEffect reload */ setPairingsList([]); setPlayersByPairing({}); setTimeout(() => loadPairingsData(), 100); };
 
   const { data: leaderboard, refetch: refetchLeaderboard } = useQuery({
     queryKey: ["event-leaderboard", id],
