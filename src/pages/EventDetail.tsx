@@ -893,7 +893,7 @@ const EventDetail = () => {
           </div>
         )}
 
-        {event?.pairing_approval_required && pairings && pairings.length > 0 && showAdminActions && (
+        {event?.pairing_approval_required && pairingsList.length > 0 && showAdminActions && (
           <div className="golf-card border-accent/30 p-3">
             <div className="flex items-center justify-between">
               <div>
