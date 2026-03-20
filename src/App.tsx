@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import BottomNav from "@/components/BottomNav";
 import DesktopLayout from "@/components/DesktopLayout";
 import AdminRoute from "@/components/AdminRoute";
+import ProtectedRoute from "@/components/ProtectedRoute";
 import { useChatNotifications } from "@/hooks/use-chat-notifications";
 
 export const ChatNotifContext = createContext<{ unreadCount: number }>({ unreadCount: 0 });
