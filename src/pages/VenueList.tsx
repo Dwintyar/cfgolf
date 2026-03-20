@@ -14,7 +14,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 const VenueList = () => {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
-  const [venueTab, setVenueTab] = useState<"golf" | "range">("golf");
+  const [venueTab, setVenueTab] = useState<"all" | "golf" | "range">("all");
   const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
