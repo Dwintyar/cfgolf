@@ -7,7 +7,7 @@ import { ChatNotifContext } from "@/App";
 import {
   Newspaper, Users, Trophy, MapPin,
   Bell, MessageCircle, Settings,
-  Building2, Search, Play
+  Building2, Search, Flag
 } from "lucide-react";
 import logo from "@/assets/logo.svg";
 
