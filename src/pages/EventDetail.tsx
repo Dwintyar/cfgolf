@@ -306,12 +306,16 @@ const EventDetail = () => {
         .eq("round_id", roundId)
         .in("player_id", playerIds);
 
+      console.log("Scorecards found:", scorecards?.length);
+
       const scIds = (scorecards ?? []).map(s => s.id);
 
-      // Fetch hole_scores
+      // Fetch hole_scores with higher limit for 144×18 rows
       const { data: holeScores } = scIds.length > 0
-        ? await supabase.from("hole_scores").select("scorecard_id, hole_number, strokes").in("scorecard_id", scIds)
+        ? await supabase.from("hole_scores").select("scorecard_id, hole_number, strokes").in("scorecard_id", scIds).limit(3000)
         : { data: [] as any[] };
+
+      console.log("Hole scores found:", holeScores?.length);
 
       // Compute OUT/IN per scorecard
       const outInMap: Record<string, { out: number; in: number }> = {};
