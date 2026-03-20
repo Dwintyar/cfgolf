@@ -328,18 +328,6 @@ const EventDetail = () => {
         };
       });
 
-      // Get contestants for this event with flight info
-      const { data: eventContestants } = await supabase
-        .from("contestants")
-        .select(`
-          id, player_id, hcp, flight_id,
-          profiles ( full_name ),
-          tournament_flights ( flight_name, hcp_min, hcp_max, display_order )
-        `)
-        .eq("event_id", id!);
-
-      if (!eventContestants?.length) return [];
-
       // Get event results for remarks
       const { data: eventResults } = await supabase
         .from("event_results")
@@ -356,7 +344,7 @@ const EventDetail = () => {
 
       // Build rows from contestants
       const rows = eventContestants.map(ct => {
-        const scores = scorecardByPlayer[ct.player_id];
+        const scores = scoreByPlayer[ct.player_id];
         const categoryName = resultsMap[ct.id] ?? "";
 
         return {
