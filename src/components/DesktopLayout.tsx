@@ -4,10 +4,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect, useContext } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ChatNotifContext } from "@/App";
+import { Badge } from "@/components/ui/badge";
 import {
   Newspaper, Users, Trophy, MapPin,
   Bell, MessageCircle, Settings,
-  Building2, Search, Flag
+  Building2, Search, Flag, ShieldCheck
 } from "lucide-react";
 import logo from "@/assets/logo.svg";
 
