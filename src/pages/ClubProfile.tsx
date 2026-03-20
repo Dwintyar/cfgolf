@@ -133,6 +133,14 @@ const ClubProfile = () => {
   const filteredMembers = members?.filter((m) => {
     const name = (m.profiles as any)?.full_name ?? "";
     return name.toLowerCase().includes(search.toLowerCase());
+  })?.sort((a, b) => {
+    const roleOrder: Record<string, number> = { owner: 0, admin: 1, member: 2 };
+    const ra = roleOrder[a.role] ?? 2;
+    const rb = roleOrder[b.role] ?? 2;
+    if (ra !== rb) return ra - rb;
+    const na = (a.profiles as any)?.full_name ?? "";
+    const nb = (b.profiles as any)?.full_name ?? "";
+    return na.localeCompare(nb, "id");
   });
 
   const getRoleLabel = (role: string) => {
