@@ -553,43 +553,64 @@ const ClubAdminDashboard = () => {
               </div>
               <div className="flex gap-1.5 shrink-0">
                 <Button size="sm" className="h-7 px-2 text-xs gap-1"
+                  disabled={processingRequestId === req.id}
                   onClick={async () => {
-                    const { error } = await supabase
-                      .from("members")
-                      .insert({
-                        club_id: clubId,
-                        user_id: req.invited_user_id,
-                        role: "member",
-                        joined_at: new Date().toISOString()
-                      });
-                    if (error && error.code !== "23505") {
-                      toast.error(error.message);
-                      return;
+                    setProcessingRequestId(req.id);
+                    try {
+                      const { error } = await supabase
+                        .from("members")
+                        .insert({
+                          club_id: clubId,
+                          user_id: req.invited_user_id,
+                          role: "member",
+                          joined_at: new Date().toISOString()
+                        });
+                      if (error && error.code !== "23505") {
+                        toast.error(error.message);
+                        return;
+                      }
+                      await supabase
+                        .from("club_invitations")
+                        .update({ status: "accepted" })
+                        .eq("id", req.id);
+                      toast.success("Member diterima!");
+                      await Promise.all([
+                        queryClient.invalidateQueries({ queryKey: ["club-join-requests", clubId] }),
+                        queryClient.invalidateQueries({ queryKey: ["club-admin-members", clubId] }),
+                        queryClient.invalidateQueries({ queryKey: ["club-admin-pending", clubId] }),
+                      ]);
+                    } catch (err: any) {
+                      toast.error(err.message);
+                    } finally {
+                      setProcessingRequestId(null);
                     }
-                    await supabase
-                      .from("club_invitations")
-                      .update({ status: "accepted" })
-                      .eq("id", req.id);
-                    toast.success("Member diterima!");
-                    refetchRequests();
-                    refetchMembers();
-                    queryClient.invalidateQueries({ queryKey: ["club-join-requests", clubId] });
-                    queryClient.invalidateQueries({ queryKey: ["club-admin-members", clubId] });
-                    queryClient.invalidateQueries({ queryKey: ["notifications"] });
                   }}>
-                  <Check className="h-3 w-3" /> Terima
+                  {processingRequestId === req.id ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Check className="h-3 w-3" />
+                  )} Terima
                 </Button>
                 <Button size="sm" variant="outline"
                   className="h-7 px-2 text-xs gap-1 text-destructive border-destructive/30"
+                  disabled={processingRequestId === req.id}
                   onClick={async () => {
-                    await supabase
-                      .from("club_invitations")
-                      .update({ status: "declined" })
-                      .eq("id", req.id);
-                    toast.success("Request ditolak");
-                    refetchRequests();
-                    queryClient.invalidateQueries({ queryKey: ["club-join-requests", clubId] });
-                    queryClient.invalidateQueries({ queryKey: ["notifications"] });
+                    setProcessingRequestId(req.id);
+                    try {
+                      await supabase
+                        .from("club_invitations")
+                        .update({ status: "declined" })
+                        .eq("id", req.id);
+                      toast.success("Request ditolak");
+                      await Promise.all([
+                        queryClient.invalidateQueries({ queryKey: ["club-join-requests", clubId] }),
+                        queryClient.invalidateQueries({ queryKey: ["club-admin-pending", clubId] }),
+                      ]);
+                    } catch (err: any) {
+                      toast.error(err.message);
+                    } finally {
+                      setProcessingRequestId(null);
+                    }
                   }}>
                   <X className="h-3 w-3" /> Tolak
                 </Button>

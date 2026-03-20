@@ -432,13 +432,15 @@ const ClubProfile = () => {
                   <div className="flex gap-1.5">
                     <button
                       onClick={() => handleAcceptInvitation(inv.id, inv.invited_user_id)}
-                      className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                      disabled={processingId === inv.id}
+                      className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
                     >
-                      <Check className="h-4 w-4" />
+                      {processingId === inv.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                     </button>
                     <button
                       onClick={() => handleRejectInvitation(inv.id)}
-                      className="flex h-8 w-8 items-center justify-center rounded-full bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors"
+                      disabled={processingId === inv.id}
+                      className="flex h-8 w-8 items-center justify-center rounded-full bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors disabled:opacity-50"
                     >
                       <X className="h-4 w-4" />
                     </button>
