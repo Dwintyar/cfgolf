@@ -34,7 +34,6 @@ const EventDetail = () => {
   const [firstTee, setFirstTee] = useState("07:00");
   const [interval, setInterval] = useState("8");
   const [activeTab, setActiveTab] = useState("overview");
-  const [pairingFilter, setPairingFilter] = useState<string>("all");
   const [userId, setUserId] = useState<string | null>(null);
   const [checkingIn, setCheckingIn] = useState(false);
   const [showCheckinDialog, setShowCheckinDialog] = useState(false);
@@ -375,81 +374,91 @@ const EventDetail = () => {
 
   const scoreboardRef = useRef<HTMLDivElement>(null);
 
-  // Tee-off groups: pairings enriched with club + flight info
+  // Tee-off groups: separate queries joined in JS
   const { data: teeoffGroups } = useQuery({
     queryKey: ["event-teeoff-groups", id, event?.tour_id],
     queryFn: async () => {
+      // Query A — pairings
       const { data: pairingData, error } = await supabase
         .from("pairings")
-        .select(`
-          id, pairing_label, start_hole, slot, tee_time, start_type, teeoff_group_number,
-          pairing_players (
-            id, position, contestant_id,
-            contestants (
-              id, player_id, hcp, flight_id,
-              profiles ( id, full_name, handicap, avatar_url ),
-              tournament_flights ( flight_name )
-            )
-          )
-        `)
+        .select("id, pairing_label, start_hole, slot, tee_time, start_type, teeoff_group_number")
         .eq("event_id", id!)
         .order("start_hole")
         .order("slot");
-      if (error) {
-        console.error("teeoff query error:", error);
-        return [];
-      }
-      if (!pairingData?.length) return [];
+      if (error || !pairingData?.length) return [];
+
+      const pairingIds = pairingData.map(p => p.id);
+
+      // Query B — pairing_players with contestant + profile data
+      const { data: ppData } = await supabase
+        .from("pairing_players")
+        .select(`
+          pairing_id, position, contestant_id,
+          contestants!inner (
+            id, player_id, hcp, flight_id,
+            profiles!inner ( id, full_name, handicap, avatar_url ),
+            tournament_flights ( flight_name )
+          )
+        `)
+        .in("pairing_id", pairingIds)
+        .order("position");
+
+      // Query C — cart assignments
+      const { data: cartData } = await supabase
+        .from("golf_cart_assignments")
+        .select("contestant_id, cart_number")
+        .eq("event_id", id!);
+
+      // Query D — check-ins
+      const { data: checkinData } = await supabase
+        .from("event_checkins")
+        .select("contestant_id, bag_drop_number")
+        .eq("event_id", id!);
+
+      // Query E — caddy assignments
+      const { data: caddyData } = await supabase
+        .from("caddy_assignments")
+        .select("contestant_id, caddy_id, profiles!caddy_assignments_caddy_id_fkey(full_name)")
+        .eq("event_id", id!);
+
+      // Build lookup maps
+      const ppByPairing: Record<string, any[]> = {};
+      (ppData ?? []).forEach((pp: any) => {
+        if (!ppByPairing[pp.pairing_id]) ppByPairing[pp.pairing_id] = [];
+        ppByPairing[pp.pairing_id].push(pp);
+      });
+
+      const cartMap: Record<string, number> = {};
+      (cartData ?? []).forEach(c => { cartMap[c.contestant_id] = c.cart_number; });
+
+      const bagMap: Record<string, number | null> = {};
+      (checkinData ?? []).forEach(c => { bagMap[c.contestant_id] = c.bag_drop_number; });
+
+      const caddyMap: Record<string, string> = {};
+      (caddyData ?? []).forEach((c: any) => { caddyMap[c.contestant_id] = (c.profiles as any)?.full_name ?? ""; });
 
       // Fetch club names via tour_players
-      const playerIds = pairingData.flatMap(p =>
-        ((p.pairing_players as any[]) ?? []).map((pp: any) => pp.contestants?.player_id).filter(Boolean)
-      );
+      const allPlayerIds = (ppData ?? []).map((pp: any) => pp.contestants?.player_id).filter(Boolean);
       const clubMap: Record<string, string> = {};
-      if (playerIds.length > 0 && event?.tour_id) {
+      if (allPlayerIds.length > 0 && event?.tour_id) {
         const { data: tourPlayers } = await supabase
           .from("tour_players")
           .select("player_id, clubs(name)")
           .eq("tour_id", event.tour_id)
-          .in("player_id", [...new Set(playerIds)]);
+          .in("player_id", [...new Set(allPlayerIds)]);
         (tourPlayers ?? []).forEach((tp: any) => {
           clubMap[tp.player_id] = (tp.clubs as any)?.name ?? "";
         });
       }
 
-      // Fetch cart assignments
-      const { data: cartData } = await supabase
-        .from("golf_cart_assignments")
-        .select("cart_number, contestant_id")
-        .eq("event_id", id!);
-      const cartMap: Record<string, number> = {};
-      (cartData ?? []).forEach(c => { cartMap[c.contestant_id] = c.cart_number; });
-
-      // Fetch checkin data (bag drop + locker)
-      const { data: checkinData } = await supabase
-        .from("event_checkins")
-        .select("contestant_id, bag_drop_number, locker_number")
-        .eq("event_id", id!);
-      const checkinMap: Record<string, { bag_drop_number: number | null; locker_number: number | null }> = {};
-      (checkinData ?? []).forEach(c => {
-        checkinMap[c.contestant_id] = { bag_drop_number: c.bag_drop_number, locker_number: c.locker_number };
-      });
-
-      // Fetch caddy assignments
-      const { data: caddyData } = await supabase
-        .from("caddy_assignments")
-        .select(`
-          contestant_id,
-          caddy_id,
-          profiles!caddy_assignments_caddy_id_fkey ( full_name )
-        `)
-        .eq("event_id", id!);
-      const caddyMap: Record<string, string> = {};
-      (caddyData ?? []).forEach((c: any) => {
-        caddyMap[c.contestant_id] = (c.profiles as any)?.full_name ?? "";
-      });
-
-      return pairingData.map(p => ({ ...p, _clubMap: clubMap, _cartMap: cartMap, _checkinMap: checkinMap, _caddyMap: caddyMap }));
+      return pairingData.map(p => ({
+        ...p,
+        pairing_players: (ppByPairing[p.id] ?? []).sort((a: any, b: any) => (a.position ?? 0) - (b.position ?? 0)),
+        _clubMap: clubMap,
+        _cartMap: cartMap,
+        _bagMap: bagMap,
+        _caddyMap: caddyMap,
+      }));
     },
     enabled: !!id && !!event?.tour_id,
   });
@@ -901,18 +910,6 @@ const EventDetail = () => {
             return { label: "C", cls: "bg-muted text-muted-foreground border-border" };
           };
 
-          // Apply filters
-          const filteredGroups = groups.filter(g => {
-            const hole = g.start_hole ?? 1;
-            const players = ((g.pairing_players as any[]) ?? []);
-            if (pairingFilter === "front9") return hole >= 1 && hole <= 9;
-            if (pairingFilter === "back9") return hole >= 10 && hole <= 18;
-            if (pairingFilter === "flightA") return players.some((pp: any) => { const h = pp.contestants?.hcp; return h != null && h <= 16; });
-            if (pairingFilter === "flightB") return players.some((pp: any) => { const h = pp.contestants?.hcp; return h != null && h > 16 && h <= 22; });
-            if (pairingFilter === "flightC") return players.some((pp: any) => { const h = pp.contestants?.hcp; return h != null && h > 22; });
-            return true;
-          });
-
           return (
             <>
               {/* Summary */}
@@ -924,42 +921,18 @@ const EventDetail = () => {
                 <p className="text-xs text-muted-foreground">Shotgun start · All groups tee off simultaneously</p>
               </div>
 
-              {/* Sticky filter bar */}
-              <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm py-2 flex gap-1.5 overflow-x-auto scrollbar-none">
-                {[
-                  { key: "all", label: "All" },
-                  { key: "front9", label: "Hole 1–9" },
-                  { key: "back9", label: "Hole 10–18" },
-                  { key: "flightA", label: "Flight A" },
-                  { key: "flightB", label: "Flight B" },
-                  { key: "flightC", label: "Flight C" },
-                ].map(f => (
-                  <button
-                    key={f.key}
-                    onClick={() => setPairingFilter(f.key)}
-                    className={`shrink-0 rounded-full px-3 py-1 text-[11px] font-medium border transition-colors ${
-                      pairingFilter === f.key
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "bg-secondary/50 text-muted-foreground border-border hover:bg-secondary"
-                    }`}
-                  >
-                    {f.label}
-                  </button>
-                ))}
-              </div>
-
-              {/* Card grid */}
+              {/* Card grid — no filter, show all */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {filteredGroups.map((g: any) => {
+                {groups.map((g: any) => {
                   const slotLabel = g.slot ?? "A";
                   const badgeLabel = g.pairing_label ?? `${g.start_hole ?? 1}${slotLabel}`;
                   const badgeCls = slotLabel === "A"
                     ? "bg-blue-500/10 text-blue-600 border-blue-500/30"
                     : "bg-amber-500/10 text-amber-600 border-amber-500/30";
-                   const players = ((g.pairing_players as any[]) ?? []).sort((a: any, b: any) => (a.position ?? 0) - (b.position ?? 0));
+                   const players = ((g.pairing_players as any[]) ?? []);
                    const clubMap = g._clubMap ?? {};
                    const cartMap = g._cartMap ?? {};
-                   const checkinMap = g._checkinMap ?? {};
+                   const bagMap = g._bagMap ?? {};
                    const caddyMap = g._caddyMap ?? {};
                    const par = parMap[g.start_hole ?? 1];
                    const teeTime = g.tee_time ? (() => {
@@ -986,8 +959,7 @@ const EventDetail = () => {
                            const clubName = clubMap[pp.contestants?.player_id] ?? "";
                            const level = getFlightLevel(hcp);
                            const cartNum = cartMap[pp.contestant_id];
-                           const checkin = checkinMap[pp.contestant_id];
-                           const bagDrop = checkin?.bag_drop_number;
+                           const bagDrop = bagMap[pp.contestant_id];
                            const caddyName = caddyMap[pp.contestant_id];
 
                            return (
@@ -1008,7 +980,6 @@ const EventDetail = () => {
                                  {level && <Badge variant="outline" className={`text-[9px] ${level.cls}`}>Lvl {level.label}</Badge>}
                                </div>
                                {clubName && <p className="text-[9px] text-muted-foreground truncate w-full">{clubName}</p>}
-                               {/* Divider + operational info */}
                                {(cartNum != null || bagDrop != null || caddyName) && (
                                  <div className="w-full border-t border-border/50 pt-1.5 mt-0.5 space-y-0.5">
                                    {cartNum != null && (
@@ -1039,10 +1010,6 @@ const EventDetail = () => {
                   );
                 })}
               </div>
-
-              {filteredGroups.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-6">No groups match this filter</p>
-              )}
             </>
           );
         })()}
