@@ -611,6 +611,13 @@ const TourDetail = () => {
                         )}
                       </p>
                     </div>
+                    {(() => {
+                      const hcp = player.hcp_at_registration ?? (profile?.handicap ?? null);
+                      if (hcp == null) return null;
+                      const level = hcp <= 16 ? "A" : hcp <= 22 ? "B" : "C";
+                      const cls = level === "A" ? "bg-blue-500/10 text-blue-600 border-blue-500/30" : level === "B" ? "bg-amber-500/10 text-amber-600 border-amber-500/30" : "bg-muted text-muted-foreground border-border";
+                      return <Badge variant="outline" className={`text-[9px] shrink-0 ${cls}`}>Level {level}</Badge>;
+                    })()}
                     <Badge variant="outline" className="text-[9px] shrink-0">{player.status}</Badge>
                     {showActions && (
                       <div className="flex gap-0.5 shrink-0">
