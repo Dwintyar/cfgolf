@@ -40,6 +40,8 @@ import Notifications from "./pages/Notifications";
 import CourseAdminDashboard from "./pages/CourseAdminDashboard";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import PublicProfile from "./pages/PublicProfile";
+import RecordRound from "./pages/RecordRound";
+import CasualScorecardInput from "./pages/CasualScorecardInput";
 
 const queryClient = new QueryClient();
 
