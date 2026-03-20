@@ -67,22 +67,32 @@ const EventDetail = () => {
       setHcpLoading(true);
       const { data: hcpData } = await supabase
         .from("handicap_history")
-        .select("player_id, old_hcp, new_hcp, gross_score, net_score, sandbagging_flag")
+        .select("player_id, old_hcp, new_hcp, gross_score, net_score, sandbagging_flag, tour_id")
         .eq("event_id", id)
         .order("new_hcp", { ascending: true });
 
       if (!hcpData?.length) { setHcpRows([]); setHcpLoading(false); return; }
 
       const pIds = hcpData.map(h => h.player_id);
-      const [{ data: profs }, { data: tix }] = await Promise.all([
+      const tourId = hcpData[0]?.tour_id;
+      const [{ data: profs }, { data: tix }, { data: flightsData }] = await Promise.all([
         supabase.from("profiles").select("id, full_name").in("id", pIds),
         supabase.from("tickets").select("assigned_player_id, clubs!inner(name)").eq("event_id", id),
+        tourId
+          ? supabase.from("tournament_flights").select("flight_name, hcp_min, hcp_max").eq("tour_id", tourId).order("hcp_min")
+          : Promise.resolve({ data: [] as any[] }),
       ]);
 
       const profMap: Record<string, string> = {};
       (profs ?? []).forEach((p: any) => { profMap[p.id] = p.full_name; });
       const clubMap: Record<string, string> = {};
       (tix ?? []).forEach((t: any) => { if (t.assigned_player_id) clubMap[t.assigned_player_id] = (t.clubs as any)?.name ?? "—"; });
+
+      const getFlightName = (hcp: number | null) => {
+        if (hcp == null || !flightsData?.length) return "?";
+        const fl = flightsData.find((f: any) => hcp >= f.hcp_min && hcp <= f.hcp_max);
+        return fl?.flight_name?.slice(-1) ?? "?";
+      };
 
       setHcpRows(hcpData.map((h: any, i: number) => ({
         no: i + 1,
@@ -92,7 +102,9 @@ const EventDetail = () => {
         old_hcp: h.old_hcp,
         new_hcp: h.new_hcp,
         delta: (h.old_hcp ?? 0) - (h.new_hcp ?? 0),
-        sandbagging: h.sandbagging_flag,
+        old_flight: getFlightName(h.old_hcp),
+        new_flight: getFlightName(h.new_hcp),
+        moved: getFlightName(h.old_hcp) !== getFlightName(h.new_hcp),
       })));
       setHcpLoading(false);
     };
@@ -1288,7 +1300,7 @@ const EventDetail = () => {
         {(() => {
           const totalCorrected = hcpRows.length;
           const avgCorrection = totalCorrected > 0 ? (hcpRows.reduce((s: number, r: any) => s + r.delta, 0) / totalCorrected).toFixed(1) : "0";
-          const flagCount = hcpRows.filter((r: any) => r.sandbagging).length;
+          const promoCount = hcpRows.filter((r: any) => r.moved).length;
 
           const handleExportHcp = async () => {
             if (!hcpExportRef.current) return;
@@ -1317,7 +1329,7 @@ const EventDetail = () => {
                 </Button>
               </div>
 
-              <div className="grid grid-cols-3 gap-2 mb-3">
+              <div className="grid grid-cols-3 gap-2 mb-3"> 
                 <div className="golf-card p-3 text-center">
                   <p className="text-lg font-bold text-foreground">{totalCorrected}</p>
                   <p className="text-[10px] text-muted-foreground">Total Corrected</p>
@@ -1327,8 +1339,8 @@ const EventDetail = () => {
                   <p className="text-[10px] text-muted-foreground">Avg Correction</p>
                 </div>
                 <div className="golf-card p-3 text-center">
-                  <p className={`text-lg font-bold ${flagCount > 0 ? "text-destructive" : "text-foreground"}`}>{flagCount}</p>
-                  <p className="text-[10px] text-muted-foreground">Sandbagging Flags</p>
+                  <p className={`text-lg font-bold ${promoCount > 0 ? "text-primary" : "text-foreground"}`}>{promoCount}</p>
+                  <p className="text-[10px] text-muted-foreground">Flight Promotion</p>
                 </div>
               </div>
 
@@ -1342,7 +1354,7 @@ const EventDetail = () => {
                       <th className="py-1.5 px-2 text-center font-semibold">HCP AWAL</th>
                       <th className="py-1.5 px-2 text-center font-semibold">HCP KOREKSI</th>
                       <th className="py-1.5 px-2 text-center font-semibold">DELTA</th>
-                      <th className="py-1.5 px-2 text-center font-semibold">FLAG</th>
+                      <th className="py-1.5 px-2 text-center font-semibold" title="Flight level after correction">FLIGHT</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1359,10 +1371,15 @@ const EventDetail = () => {
                           {row.delta > 0 ? `–${row.delta}` : row.delta === 0 ? "0" : `+${Math.abs(row.delta)}`}
                         </td>
                         <td className="text-center py-1.5 px-2">
-                          {row.sandbagging ? (
-                            <Badge variant="destructive" className="text-[9px] px-1.5 py-0">⚠ Sandbagging</Badge>
+                          {row.moved ? (
+                            <span className="inline-flex items-center gap-0.5 text-[10px]">
+                              <Badge variant="outline" className={`text-[9px] px-1 py-0 ${row.old_flight === "A" ? "border-blue-500 text-blue-500" : row.old_flight === "B" ? "border-amber-500 text-amber-500" : "border-muted-foreground text-muted-foreground"}`}>{row.old_flight}</Badge>
+                              <span className="text-muted-foreground">→</span>
+                              <Badge variant="outline" className={`text-[9px] px-1 py-0 ${row.new_flight === "A" ? "border-blue-500 text-blue-500" : row.new_flight === "B" ? "border-amber-500 text-amber-500" : "border-muted-foreground text-muted-foreground"}`}>{row.new_flight}</Badge>
+                              <span className="text-green-500 font-bold">⬆</span>
+                            </span>
                           ) : (
-                            <span className="text-muted-foreground/50">—</span>
+                            <Badge variant="outline" className={`text-[9px] px-1.5 py-0 ${row.new_flight === "A" ? "border-blue-500 text-blue-500" : row.new_flight === "B" ? "border-amber-500 text-amber-500" : "border-muted-foreground text-muted-foreground"}`}>{row.new_flight}</Badge>
                           )}
                         </td>
                       </tr>
