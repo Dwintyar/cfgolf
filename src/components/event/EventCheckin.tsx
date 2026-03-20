@@ -20,60 +20,59 @@ const EventCheckin = ({ eventId, isAdmin, userId, event }: EventCheckinProps) =>
   const [search, setSearch] = useState("");
   const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
 
-  // Contestants with club info via tour_players
+  // Contestants with club info via tickets table (authoritative source)
   const { data: contestants } = useQuery({
-    queryKey: ["checkin-contestants-v2", eventId],
+    queryKey: ["checkin-contestants-v3", eventId],
     queryFn: async () => {
-      // Get tour_id from event
-      const { data: ev } = await supabase
-        .from("events")
-        .select("tour_id")
-        .eq("id", eventId)
-        .single();
-      if (!ev) return [];
-
-      const { data, error } = await supabase
-        .from("contestants")
-        .select("id, player_id, hcp, flight_id, status, tournament_flights(flight_name)")
-        .eq("event_id", eventId);
-      if (error) throw error;
-      if (!data || data.length === 0) return [];
-
-      const playerIds = data.map(c => c.player_id);
-
-      // Parallel: profiles, tour_players, tickets
-      const [profilesRes, tourPlayersRes, ticketsRes] = await Promise.all([
-        supabase.from("profiles").select("id, full_name, avatar_url").in("id", playerIds),
-        supabase.from("tour_players").select("player_id, club_id").eq("tour_id", ev.tour_id).in("player_id", playerIds),
-        supabase.from("tickets").select("assigned_player_id, club_id").eq("event_id", eventId).in("assigned_player_id", playerIds),
+      const [checkinListRes, ticketRes] = await Promise.all([
+        supabase
+          .from("contestants")
+          .select(`
+            id,
+            player_id,
+            hcp,
+            flight_id,
+            profiles!inner ( full_name, avatar_url ),
+            tournament_flights ( flight_name ),
+            event_checkins ( checked_in_at, bag_drop_number )
+          `)
+          .eq("event_id", eventId),
+        supabase
+          .from("tickets")
+          .select("assigned_player_id, club_id, ticket_number, clubs!inner(name)")
+          .eq("event_id", eventId),
       ]);
 
-      // Build club_id maps: tour_players primary, tickets fallback
-      const tpMap = new Map((tourPlayersRes.data ?? []).map(tp => [tp.player_id, tp.club_id]));
-      const ticketClubMap = new Map((ticketsRes.data ?? []).map(t => [t.assigned_player_id!, t.club_id]));
+      if (checkinListRes.error) throw checkinListRes.error;
+      const checkinList = checkinListRes.data ?? [];
+      const ticketData = ticketRes.data ?? [];
 
-      // Collect all unique club IDs from both sources
-      const allClubIds = new Set<string>();
-      (tourPlayersRes.data ?? []).forEach(tp => allClubIds.add(tp.club_id));
-      (ticketsRes.data ?? []).forEach(t => { if (t.club_id) allClubIds.add(t.club_id); });
+      // Build club lookup by player_id from tickets
+      const clubByPlayer: Record<string, { club_id: string; club_name: string; ticket_number: number }> = {};
+      ticketData.forEach((t: any) => {
+        if (t.assigned_player_id) {
+          clubByPlayer[t.assigned_player_id] = {
+            club_id: t.club_id,
+            club_name: t.clubs?.name ?? "Unknown",
+            ticket_number: t.ticket_number,
+          };
+        }
+      });
 
-      const clubIdsArr = [...allClubIds];
-      const { data: clubs } = clubIdsArr.length > 0
-        ? await supabase.from("clubs").select("id, name").in("id", clubIdsArr)
-        : { data: [] as { id: string; name: string }[] };
-
-      const profileMap = new Map((profilesRes.data ?? []).map(p => [p.id, p]));
-      const clubMap = new Map((clubs ?? []).map(c => [c.id, c.name]));
-
-      return data.map(c => {
-        const clubId = tpMap.get(c.player_id) ?? ticketClubMap.get(c.player_id) ?? null;
-        const clubName = clubId ? (clubMap.get(clubId) ?? "Unknown") : "Unknown";
+      return checkinList.map((ct: any) => {
+        const club = clubByPlayer[ct.player_id] ?? { club_name: "Unknown", club_id: null, ticket_number: null };
         return {
-          ...c,
-          full_name: profileMap.get(c.player_id)?.full_name ?? "Unknown",
-          club_id: clubId,
-          club_name: clubName,
-          flight_name: (c.tournament_flights as any)?.flight_name ?? null,
+          id: ct.id,
+          player_id: ct.player_id,
+          hcp: ct.hcp,
+          flight_id: ct.flight_id,
+          full_name: ct.profiles?.full_name ?? "Unknown",
+          club_id: club.club_id,
+          club_name: club.club_name,
+          ticket_number: club.ticket_number,
+          flight_name: ct.tournament_flights?.flight_name ?? null,
+          checked_in_at: Array.isArray(ct.event_checkins) ? ct.event_checkins[0]?.checked_in_at : ct.event_checkins?.checked_in_at ?? null,
+          bag_number: Array.isArray(ct.event_checkins) ? ct.event_checkins[0]?.bag_drop_number : ct.event_checkins?.bag_drop_number ?? null,
         };
       });
     },
