@@ -1044,44 +1044,152 @@ const EventDetail = () => {
         })()}
       </TabsContent>
 
-      {/* LEADERBOARD */}
-      <TabsContent value="leaderboard" className="space-y-2 pt-2">
+      {/* BOARD (EGC Scoreboard) */}
+      <TabsContent value="leaderboard" className="space-y-3 pt-2">
         <div className="flex items-center justify-between mb-2">
-          <p className="text-xs text-muted-foreground">{leaderboard?.length ?? 0} players</p>
-          <Button size="sm" variant="ghost" className="h-7 gap-1 text-[10px]" onClick={() => refetchLeaderboard()}>
-            <RefreshCw className="h-3 w-3" /> Refresh
-          </Button>
+          <p className="text-xs text-muted-foreground">{scoreboardData?.length ?? 0} players</p>
+          <div className="flex gap-1.5">
+            <Button size="sm" variant="ghost" className="h-7 gap-1 text-[10px]" onClick={() => refetchScoreboard()}>
+              <RefreshCw className="h-3 w-3" /> Refresh
+            </Button>
+            <Button size="sm" variant="outline" className="h-7 gap-1 text-[10px]" onClick={async () => {
+              if (!scoreboardRef.current) return;
+              try {
+                const canvas = await html2canvas(scoreboardRef.current, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+                const link = document.createElement("a");
+                const eventName = (event?.name ?? "Event").replace(/\s+/g, "-");
+                link.download = `${eventName}-Scoreboard.png`;
+                link.href = canvas.toDataURL("image/png");
+                link.click();
+                toast.success("Scoreboard exported!");
+              } catch (err: any) { toast.error("Export failed: " + err.message); }
+            }}>
+              <Download className="h-3 w-3" /> Export PNG
+            </Button>
+          </div>
         </div>
 
-        {(!leaderboard || leaderboard.length === 0) && (
+        {(!scoreboardData || scoreboardData.length === 0) ? (
           <div className="golf-card p-6 text-center">
             <Trophy className="mx-auto h-8 w-8 text-muted-foreground/40" />
             <p className="mt-2 text-sm text-muted-foreground">No scores yet</p>
-            {myContestant && isCheckedIn && (
-              <Button size="sm" className="mt-3 gap-1" onClick={() => navigate(`/event/${id}/scorecard`)}>
-                <Pencil className="h-3.5 w-3.5" /> Be the first to enter scores
-              </Button>
-            )}
           </div>
-        )}
+        ) : (() => {
+          // Group by flight
+          const flights: Record<string, { name: string; min: number; max: number; order: number; rows: typeof scoreboardData }> = {};
+          scoreboardData.forEach(r => {
+            const key = r.flight_id ?? "unknown";
+            if (!flights[key]) flights[key] = { name: r.flight_name, min: r.hcp_min, max: r.hcp_max, order: r.display_order, rows: [] };
+            flights[key].rows.push(r);
+          });
+          const sortedFlights = Object.entries(flights).sort(([, a], [, b]) => a.order - b.order);
 
-        {leaderboard?.map((row, i) => (
-          <div key={row.contestant_id} className="golf-card flex items-center gap-3 p-3">
-            <div className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
-              i < 3 ? "bg-accent/20 text-accent" : "bg-muted text-muted-foreground"
-            }`}>
-              {row.rank_net ?? i + 1}
+          const getRemarkAbbr = (cat: string) => {
+            if (!cat) return "";
+            if (cat.includes("Best Gross Overall")) return "BGO";
+            if (cat.includes("Best Nett Overall")) return "BNO";
+            if (cat.includes("Best Gross") && cat.includes("A")) return "BG A";
+            if (cat.includes("Best Gross") && cat.includes("B")) return "BG B";
+            if (cat.includes("Best Gross") && cat.includes("C")) return "BG C";
+            if (cat.includes("Best Nett II")) return "BN II";
+            if (cat.includes("Best Nett I")) return "BN I";
+            if (cat.includes("Best Nett") && cat.includes("A")) return "BN A";
+            if (cat.includes("Best Nett") && cat.includes("B")) return "BN B";
+            if (cat.includes("Best Nett") && cat.includes("C")) return "BN C";
+            return cat.length > 8 ? cat.slice(0, 8) : cat;
+          };
+
+          const flightHeaderCls = (name: string) => {
+            const n = name.toLowerCase();
+            if (n.includes("a")) return "bg-blue-700 text-white";
+            if (n.includes("b")) return "bg-amber-600 text-white";
+            return "bg-gray-600 text-white";
+          };
+
+          const courseRating = (event?.courses as any)?.par ?? "";
+          const courseName = (event?.courses as any)?.name ?? "";
+          const tourName = (event?.tours as any)?.name ?? "";
+
+          return (
+            <div ref={scoreboardRef} className="bg-white rounded-lg overflow-hidden">
+              {/* Scoreboard header */}
+              <div className="text-center py-3 px-4 border-b-2 border-gray-800 bg-white">
+                <h2 className="text-sm font-bold tracking-wider text-gray-900 uppercase">{tourName}</h2>
+                <p className="text-xs text-gray-600 mt-0.5">
+                  {courseName} — {event?.event_date ? new Date(event.event_date).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" }) : ""} — CR {courseRating}
+                </p>
+              </div>
+
+              {/* Flight tables */}
+              {sortedFlights.map(([flightId, flight]) => {
+                const headerLabel = `${flight.name.toUpperCase()}   ${flight.min} – ${flight.max}`;
+                return (
+                  <div key={flightId} className="mb-0">
+                    {/* Flight header */}
+                    <div className={`px-3 py-1.5 flex items-center justify-between ${flightHeaderCls(flight.name)}`}>
+                      <span className="text-xs font-bold tracking-wide">{headerLabel}</span>
+                      <span className="text-[10px] font-medium opacity-80">({flight.rows.length} players)</span>
+                    </div>
+                    {/* Table */}
+                    <table className="w-full border-collapse text-xs" style={{ fontFamily: "'Courier New', Courier, monospace" }}>
+                      <thead>
+                        <tr className="bg-gray-100 border-b border-gray-400">
+                          <th className="w-[40px] text-center py-1 px-1 border-r border-gray-300 font-bold text-gray-700">NO</th>
+                          <th className="text-left py-1 px-2 border-r border-gray-300 font-bold text-gray-700">PLAYER'S NAME</th>
+                          <th className="w-[50px] text-center py-1 px-1 border-r border-gray-300 font-bold text-gray-700">OUT</th>
+                          <th className="w-[50px] text-center py-1 px-1 border-r border-gray-300 font-bold text-gray-700">IN</th>
+                          <th className="w-[50px] text-center py-1 px-1 border-r border-gray-300 font-bold text-gray-700">TOT</th>
+                          <th className="w-[45px] text-center py-1 px-1 border-r border-gray-300 font-bold text-gray-700">HCP</th>
+                          <th className="w-[50px] text-center py-1 px-1 border-r border-gray-300 font-bold text-gray-700">NETT</th>
+                          <th className="w-[90px] text-center py-1 px-1 font-bold text-gray-700">REMARKS</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {flight.rows.map((row, idx) => {
+                          const remark = getRemarkAbbr(row.category_name);
+                          const hasRemark = !!remark;
+                          const isOverall = remark === "BGO" || remark === "BNO";
+                          const remarkCls = isOverall
+                            ? "text-amber-600 font-bold"
+                            : hasRemark ? "text-blue-600 font-bold" : "";
+                          const isNR = row.tot == null;
+
+                          return (
+                            <tr key={row.player_id} className={`border-b border-gray-200 ${idx % 2 === 0 ? "bg-white" : "bg-gray-50"} hover:bg-blue-50/30`}>
+                              <td className="text-center py-1 px-1 border-r border-gray-200 text-gray-500">{idx + 1}</td>
+                              <td className="py-1 px-2 border-r border-gray-200 font-medium text-gray-900 truncate max-w-[180px]">{row.full_name}</td>
+                              <td className="text-center py-1 px-1 border-r border-gray-200 tabular-nums">{isNR ? <span className="text-red-400 text-[10px]">NR</span> : row.out_score}</td>
+                              <td className="text-center py-1 px-1 border-r border-gray-200 tabular-nums">{isNR ? <span className="text-red-400 text-[10px]">NR</span> : row.in_score}</td>
+                              <td className="text-center py-1 px-1 border-r border-gray-200 tabular-nums">{isNR ? <span className="text-red-400 text-[10px]">NR</span> : row.tot}</td>
+                              <td className="text-center py-1 px-1 border-r border-gray-200 tabular-nums text-gray-600">{row.hcp ?? "—"}</td>
+                              <td className="text-center py-1 px-1 border-r border-gray-200 tabular-nums font-bold">
+                                {isNR ? (
+                                  <span className="text-red-400 text-[10px]">NR</span>
+                                ) : hasRemark ? (
+                                  <span className="inline-flex items-center justify-center h-5 w-5 rounded-full border-2 border-current text-[10px] leading-none" style={{ borderColor: isOverall ? '#d97706' : '#2563eb', color: isOverall ? '#d97706' : '#2563eb' }}>
+                                    {row.nett}
+                                  </span>
+                                ) : (
+                                  row.nett ?? "—"
+                                )}
+                              </td>
+                              <td className={`text-center py-1 px-1 text-[10px] ${remarkCls}`}>{remark}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })}
+
+              {/* Footer */}
+              <div className="text-center py-2 border-t border-gray-300 bg-gray-50">
+                <p className="text-[10px] text-gray-400">Generated by CFGolf · {new Date().toLocaleDateString('id-ID')}</p>
+              </div>
             </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium truncate">{(row as any).profiles?.full_name ?? "Player"}</p>
-              <p className="text-xs text-muted-foreground">HCP {row.hcp ?? "—"}</p>
-            </div>
-            <div className="text-right shrink-0">
-              <p className="text-sm font-bold">{row.total_net ?? "—"}</p>
-              <p className="text-[10px] text-muted-foreground">Gross {row.total_gross ?? "—"}</p>
-            </div>
-          </div>
-        ))}
+          );
+        })()}
 
         <Button variant="outline" size="sm" className="w-full mt-2 gap-1 text-xs" onClick={() => navigate(`/event/${id}/leaderboard`)}>
           <Trophy className="h-3.5 w-3.5" /> Full Leaderboard
