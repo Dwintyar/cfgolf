@@ -131,8 +131,9 @@ const VenueList = () => {
 
       <div className="flex mx-4 mb-3 rounded-xl overflow-hidden border border-border/50">
         {[
-          { id: "golf" as const, label: "Golf Courses", count: golfCourses.length },
-          { id: "range" as const, label: "Driving Ranges", count: filteredRanges.length },
+          { id: "all" as const, label: "All", count: allCount },
+          { id: "golf" as const, label: "Golf Course", count: golfCourses.length },
+          { id: "range" as const, label: "Driving Range", count: filteredRanges.length },
         ].map((t) => (
           <button
             key={t.id}
