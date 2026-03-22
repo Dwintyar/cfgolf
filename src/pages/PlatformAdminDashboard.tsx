@@ -41,17 +41,17 @@ const PlatformAdminDashboard = () => {
   const { data: stats, isLoading } = useQuery({
     queryKey: ["platform-admin-stats"],
     queryFn: async () => {
-      const [users, clubs, events, bookings] = await Promise.all([
+      const [users, clubs, events, venues] = await Promise.all([
         supabase.from("profiles").select("id", { count: "exact", head: true }),
         supabase.from("clubs").select("id", { count: "exact", head: true }).eq("is_personal", false),
-        supabase.from("events").select("id", { count: "exact", head: true }).in("status", ["registration", "checkin", "playing"]),
-        supabase.from("tee_time_bookings").select("id", { count: "exact", head: true }).eq("booking_date", new Date().toISOString().split("T")[0]),
+        supabase.from("events").select("id", { count: "exact", head: true }),
+        supabase.from("courses").select("id", { count: "exact", head: true }),
       ]);
       return {
         totalUsers: users.count ?? 0,
         totalClubs: clubs.count ?? 0,
-        activeEvents: events.count ?? 0,
-        todayBookings: bookings.count ?? 0,
+        totalEvents: events.count ?? 0,
+        totalVenues: venues.count ?? 0,
       };
     },
   });
@@ -168,8 +168,8 @@ const PlatformAdminDashboard = () => {
         <div className="grid grid-cols-2 gap-3">
           <StatCard icon={Users} label="Total Users" value={stats?.totalUsers ?? 0} />
           <StatCard icon={Building2} label="Total Clubs" value={stats?.totalClubs ?? 0} color="text-accent" />
-          <StatCard icon={Calendar} label="Active Events" value={stats?.activeEvents ?? 0} />
-          <StatCard icon={MapPin} label="Today Bookings" value={stats?.todayBookings ?? 0} color="text-accent" />
+          <StatCard icon={Calendar} label="Total Events" value={stats?.totalEvents ?? 0} />
+          <StatCard icon={MapPin} label="Total Venues" value={stats?.totalVenues ?? 0} color="text-accent" />
         </div>
 
         {/* Tabs */}
@@ -346,8 +346,8 @@ const PlatformAdminDashboard = () => {
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div className="flex justify-between"><span className="text-muted-foreground">Total Users</span><span className="font-bold">{stats?.totalUsers}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Total Clubs</span><span className="font-bold">{stats?.totalClubs}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Active Events</span><span className="font-bold">{stats?.activeEvents}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Today Bookings</span><span className="font-bold">{stats?.todayBookings}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Active Events</span><span className="font-bold">{stats?.totalEvents}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Today Bookings</span><span className="font-bold">{stats?.totalVenues}</span></div>
               </div>
             </div>
           </TabsContent>
