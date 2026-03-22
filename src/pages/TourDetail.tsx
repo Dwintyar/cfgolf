@@ -28,7 +28,7 @@ const TourDetail = () => {
   const [showCategories, setShowCategories] = useState(false);
   const [showCreateEvent, setShowCreateEvent] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
-  const [groupByClub, setGroupByClub] = useState(false);
+  const [groupByClub, setGroupByClub] = useState(true);
   const [selectedClubForAdd, setSelectedClubForAdd] = useState<string | null>(null);
   const [showAddPlayerDialog, setShowAddPlayerDialog] = useState(false);
   const [searchAddPlayer, setSearchAddPlayer] = useState("");
