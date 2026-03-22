@@ -1,4 +1,5 @@
 import { ArrowLeft, Search, Mail, Mic, Settings, UserPlus, Check, X, LogIn, Users, Loader2 } from "lucide-react";
+import CommitteeRoleBadges from "@/components/CommitteeRoleBadges";
 import { useNavigate, useParams } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
@@ -78,6 +79,23 @@ const ClubProfile = () => {
       return Object.fromEntries(
         (data ?? []).map(s => [s.user_id, s.staff_role])
       );
+    },
+    enabled: !!id,
+  });
+
+  const { data: committeeRoleMap } = useQuery({
+    queryKey: ["club-committee-roles", id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("club_committee_roles")
+        .select("user_id, role")
+        .eq("club_id", id!);
+      const map: Record<string, string[]> = {};
+      data?.forEach((cr) => {
+        if (!map[cr.user_id!]) map[cr.user_id!] = [];
+        map[cr.user_id!].push(cr.role);
+      });
+      return map;
     },
     enabled: !!id,
   });
@@ -392,6 +410,7 @@ const ClubProfile = () => {
                           </span>
                         )}
                       </div>
+                      <CommitteeRoleBadges roles={committeeRoleMap?.[m.user_id] ?? []} />
                     </div>
                     <button className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
                       <Mail className="h-4 w-4" />

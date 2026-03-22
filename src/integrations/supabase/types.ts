@@ -243,6 +243,71 @@ export type Database = {
           },
         ]
       }
+      club_committee_roles: {
+        Row: {
+          appointed_at: string | null
+          appointed_by: string | null
+          club_id: string | null
+          created_at: string | null
+          id: string
+          notes: string | null
+          role: string
+          tour_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          appointed_at?: string | null
+          appointed_by?: string | null
+          club_id?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          role: string
+          tour_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          appointed_at?: string | null
+          appointed_by?: string | null
+          club_id?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          role?: string
+          tour_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_committee_roles_appointed_by_fkey"
+            columns: ["appointed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "club_committee_roles_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "club_committee_roles_tour_id_fkey"
+            columns: ["tour_id"]
+            isOneToOne: false
+            referencedRelation: "tours"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "club_committee_roles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       club_invitations: {
         Row: {
           club_id: string
