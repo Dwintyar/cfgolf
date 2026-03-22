@@ -286,7 +286,22 @@ const Play = () => {
     <div className="bottom-nav-safe">
       <AppHeader title="Buddies" />
 
-      {/* Search bar */}
+      {/* Record Round Banner */}
+      <div
+        className="mx-4 mt-4 mb-2 golf-card p-4 flex items-center gap-3 cursor-pointer hover:bg-secondary/50 transition-colors border-primary/20"
+        onClick={() => navigate("/record-round")}
+      >
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+          <Flag className="h-5 w-5 text-primary" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-bold">Record a Round</p>
+          <p className="text-xs text-muted-foreground">Input skor casual di course manapun</p>
+        </div>
+        <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+      </div>
+
+
       <div className="px-4 pb-3">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
