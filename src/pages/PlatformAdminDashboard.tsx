@@ -35,6 +35,7 @@ const PlatformAdminDashboard = () => {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("users");
   const [userSearch, setUserSearch] = useState("");
+  const [userSort, setUserSort] = useState<"name" | "date_asc" | "date_desc" | "hcp">("name");
   const [eventStatusFilter, setEventStatusFilter] = useState("all");
 
   // KPI Stats
@@ -58,9 +59,16 @@ const PlatformAdminDashboard = () => {
 
   // --- Tab: Users ---
   const { data: allUsers } = useQuery({
-    queryKey: ["admin-users", userSearch],
+    queryKey: ["admin-users", userSearch, userSort],
     queryFn: async () => {
-      let q = supabase.from("profiles").select("*").order("full_name", { ascending: true }).limit(50);
+      const sortMap = {
+        name: { col: "full_name", asc: true },
+        date_asc: { col: "created_at", asc: true },
+        date_desc: { col: "created_at", asc: false },
+        hcp: { col: "handicap", asc: true },
+      };
+      const { col, asc } = sortMap[userSort];
+      let q = supabase.from("profiles").select("*").order(col, { ascending: asc }).limit(100);
       if (userSearch) q = q.ilike("full_name", `%${userSearch}%`);
       const { data } = await q;
       return data ?? [];
@@ -192,6 +200,26 @@ const PlatformAdminDashboard = () => {
                 onChange={e => setUserSearch(e.target.value)}
                 className="pl-9 h-9 text-sm"
               />
+            </div>
+            <div className="flex gap-1.5 flex-wrap">
+              {([
+                { value: "name", label: "A–Z" },
+                { value: "date_desc", label: "Terbaru" },
+                { value: "date_asc", label: "Terlama" },
+                { value: "hcp", label: "HCP" },
+              ] as const).map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => setUserSort(opt.value)}
+                  className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
+                    userSort === opt.value
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-transparent text-muted-foreground border-border hover:border-primary/50"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
             </div>
             <div className="space-y-2">
               {allUsers?.map(u => (
