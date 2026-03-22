@@ -60,7 +60,7 @@ const PlatformAdminDashboard = () => {
   const { data: allUsers } = useQuery({
     queryKey: ["admin-users", userSearch],
     queryFn: async () => {
-      let q = supabase.from("profiles").select("*").order("created_at", { ascending: false }).limit(50);
+      let q = supabase.from("profiles").select("*").order("full_name", { ascending: true }).limit(50);
       if (userSearch) q = q.ilike("full_name", `%${userSearch}%`);
       const { data } = await q;
       return data ?? [];
