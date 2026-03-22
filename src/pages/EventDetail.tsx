@@ -1224,7 +1224,8 @@ const EventDetail = () => {
                       <span className="text-[10px] font-medium opacity-80">({flight.rows.length} players)</span>
                     </div>
                     {/* Table */}
-                    <table className="w-full border-collapse text-xs" style={{ fontFamily: "'Courier New', Courier, monospace" }}>
+                    <div className="overflow-x-auto w-full -mx-0">
+                    <table className="w-full border-collapse text-xs" style={{ fontFamily: "'Courier New', Courier, monospace", minWidth: "500px" }}>
                       <thead>
                         <tr className="bg-muted/50 border-b border-border">
                           <th className="w-[40px] text-center py-1 px-1 border-r border-border font-bold text-muted-foreground">NO</th>
@@ -1274,6 +1275,7 @@ const EventDetail = () => {
                         })}
                       </tbody>
                     </table>
+                    </div>
                   </div>
                 );
               })}
@@ -1367,7 +1369,8 @@ const EventDetail = () => {
               </div>
 
               <div ref={hcpExportRef} className="rounded-lg overflow-hidden border border-border bg-card">
-                <table className="w-full text-[11px]">
+                <div className="overflow-x-auto w-full">
+                <table className="w-full text-[11px]" style={{minWidth:"480px"}}>
                   <thead>
                     <tr className="bg-muted/60 border-b border-border">
                       <th className="py-1.5 px-2 text-center font-semibold w-8">NO</th>
@@ -1408,6 +1411,7 @@ const EventDetail = () => {
                     ))}
                   </tbody>
                 </table>
+                </div>
               </div>
             </>
           );
