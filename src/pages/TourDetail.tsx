@@ -102,6 +102,24 @@ const TourDetail = () => {
     enabled: !!id,
   });
 
+  // Separate query for active player counts per club
+  const { data: activePlayerCounts } = useQuery({
+    queryKey: ["tour-active-player-counts", id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("tour_players")
+        .select("club_id")
+        .eq("tour_id", id!)
+        .in("status", ["active", "registered"]);
+      const countMap: Record<string, number> = {};
+      data?.forEach(tp => {
+        countMap[tp.club_id] = (countMap[tp.club_id] ?? 0) + 1;
+      });
+      return countMap;
+    },
+    enabled: !!id,
+  });
+
   const { data: allContestants } = useQuery({
     queryKey: ["tour-all-contestants", id, events?.map(e => e.id)],
     queryFn: async () => {
@@ -761,35 +779,61 @@ const TourDetail = () => {
           )}
         </TabsContent>
 
-        <TabsContent value="clubs" className="space-y-2 pt-2">
+        <TabsContent value="clubs" className="space-y-3 pt-2">
           {tourClubs?.length === 0 && (
             <div className="golf-card p-6 text-center text-sm text-muted-foreground">No clubs invited</div>
           )}
-          {tourClubs
-            ?.filter(tc => tc.status === "accepted")
-            .sort((a, b) => ((a.clubs as any)?.name ?? "").localeCompare((b.clubs as any)?.name ?? ""))
-            .map((tc) => {
-              const clubPlayerCount = playersByClub[tc.club_id]?.players?.filter((p: any) => p.status !== "pending").length ?? 0;
-              return (
-                <div key={tc.id} className="golf-card flex items-center gap-3 p-3">
-                  <Avatar className="h-9 w-9 rounded-lg">
-                    <AvatarImage src={(tc.clubs as any)?.logo_url ?? ""} />
-                    <AvatarFallback className="rounded-lg bg-primary/10 text-xs font-bold text-primary">
-                      {((tc.clubs as any)?.name ?? "?").charAt(0)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{(tc.clubs as any)?.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      Quota: {tc.ticket_quota} · Players: {clubPlayerCount}
-                    </p>
-                  </div>
-                  <Badge variant="outline" className={`text-[10px] ${tc.status === "accepted" ? "text-primary border-primary/30" : "text-accent border-accent/30"}`}>
-                    {tc.status}
-                  </Badge>
+          {(() => {
+            const accepted = tourClubs?.filter(tc => tc.status === "accepted") ?? [];
+            if (!accepted.length) return null;
+            const totalPlayers = Object.values(activePlayerCounts ?? {}).reduce((s, n) => s + n, 0);
+            const totalQuota = accepted.reduce((s, tc) => s + (tc.ticket_quota ?? 0), 0);
+            return (
+              <>
+                <div className="golf-card p-3">
+                  <p className="text-xs text-muted-foreground">
+                    <span className="font-semibold text-foreground">{accepted.length}</span> Clubs · <span className="font-semibold text-foreground">{totalPlayers}</span> Players registered · <span className="font-semibold text-foreground">{totalQuota}</span> Total quota
+                  </p>
                 </div>
-              );
-            })}
+                {accepted
+                  .sort((a, b) => ((a.clubs as any)?.name ?? "").localeCompare((b.clubs as any)?.name ?? ""))
+                  .map((tc) => {
+                    const playerCount = (activePlayerCounts ?? {})[tc.club_id] ?? 0;
+                    const quota = tc.ticket_quota ?? 0;
+                    const pct = quota > 0 ? Math.min((playerCount / quota) * 100, 100) : 0;
+                    return (
+                      <div key={tc.id} className="golf-card p-3 space-y-2">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-9 w-9 rounded-lg">
+                            <AvatarImage src={(tc.clubs as any)?.logo_url ?? ""} />
+                            <AvatarFallback className="rounded-lg bg-primary/10 text-xs font-bold text-primary">
+                              {((tc.clubs as any)?.name ?? "?").charAt(0)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{(tc.clubs as any)?.name}</p>
+                            <p className="text-[10px] text-muted-foreground">
+                              Quota: {quota} · Players: <span className="font-semibold text-foreground">{playerCount}</span> / {quota}
+                            </p>
+                          </div>
+                          <Badge variant="outline" className="text-[10px] text-primary border-primary/30">
+                            {tc.status}
+                          </Badge>
+                        </div>
+                        {quota > 0 && (
+                          <div className="h-1.5 w-full rounded-full bg-secondary overflow-hidden">
+                            <div
+                              className={`h-full rounded-full transition-all ${playerCount >= quota ? "bg-primary" : "bg-accent"}`}
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+              </>
+            );
+          })()}
         </TabsContent>
 
         <TabsContent value="leaderboard">
