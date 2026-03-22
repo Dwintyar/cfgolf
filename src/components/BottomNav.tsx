@@ -1,14 +1,14 @@
 import { useContext, useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Newspaper, Users, Trophy, Flag, MessageCircle } from "lucide-react";
+import { Newspaper, MessageCircle, Trophy, Flag, MapPin } from "lucide-react";
 import { ChatNotifContext } from "@/App";
 
 const tabs = [
   { path: "/news", label: "Feeds", icon: Newspaper },
-  { path: "/play", label: "Buddies", icon: Users },
+  { path: "/chat", label: "Messages", icon: MessageCircle, showChatBadge: true },
   { path: "/clubs", label: "Clubs", icon: Trophy },
   { path: "/tour", label: "Play", icon: Flag },
-  { path: "/chat", label: "Messages", icon: MessageCircle, showChatBadge: true },
+  { path: "/venue", label: "Venues", icon: MapPin },
 ];
 
 const hiddenPaths = ["/login", "/reset-password"];
