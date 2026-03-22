@@ -1,7 +1,7 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Download, Loader2, Trophy } from "lucide-react";
+import { Download, Loader2, MapPin, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -16,6 +16,13 @@ interface Props {
 const TourLeaderboard = ({ tourId, tourName }: Props) => {
   const tableRef = useRef<HTMLDivElement>(null);
   const [exporting, setExporting] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) setCurrentUserId(user.id);
+    });
+  }, []);
 
   const { data: leaderboard, isLoading } = useQuery({
     queryKey: ["tour-leaderboard-v2", tourId],
@@ -123,6 +130,7 @@ const TourLeaderboard = ({ tourId, tourName }: Props) => {
 
   const rows = leaderboard?.rows ?? [];
   const totalEvents = leaderboard?.totalEvents ?? 0;
+  const myPosition = currentUserId ? rows.find(r => r.playerId === currentUserId) ?? null : null;
 
   const exportPNG = async () => {
     if (!tableRef.current) return;
@@ -187,6 +195,24 @@ const TourLeaderboard = ({ tourId, tourName }: Props) => {
           No scores recorded yet
         </div>
       ) : (
+        <>
+          {/* My Position Banner */}
+          {myPosition && (
+            <div className="flex items-center gap-3 rounded-xl border border-primary/40 bg-primary/8 px-4 py-3">
+              <MapPin className="h-4 w-4 text-primary shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-[11px] text-muted-foreground">Posisi Anda</p>
+                <p className="text-sm font-bold leading-tight">
+                  #{myPosition.rank} · Net {myPosition.totalNet} · Avg {myPosition.avgNet}
+                </p>
+              </div>
+              <div className="text-right shrink-0">
+                <p className="text-[10px] text-muted-foreground">Main</p>
+                <p className="text-xs font-semibold">{myPosition.eventsPlayed}{totalEvents > 0 ? `/${totalEvents}` : ""}</p>
+              </div>
+            </div>
+          )}
+
         <div ref={tableRef} className="golf-card overflow-hidden">
           {/* Header */}
           <div className="grid grid-cols-[2.5rem_1fr_3rem_3rem_3rem] gap-1 px-3 py-2 bg-muted/50 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
@@ -199,10 +225,11 @@ const TourLeaderboard = ({ tourId, tourName }: Props) => {
 
           {rows.map((row) => {
             const level = getFlightLevel(row.handicap);
+            const isMe = row.playerId === currentUserId;
             return (
               <div
                 key={row.playerId}
-                className={`grid grid-cols-[2.5rem_1fr_3rem_3rem_3rem] gap-1 items-center px-3 py-2.5 border-t border-border/30 ${rankBg(row.rank)}`}
+                className={`grid grid-cols-[2.5rem_1fr_3rem_3rem_3rem] gap-1 items-center px-3 py-2.5 border-t border-border/30 ${isMe ? "bg-primary/8 border-l-2 border-l-primary" : rankBg(row.rank)}`}
               >
                 <span className="text-sm font-bold text-foreground flex items-center gap-1">
                   {row.rank <= 3 && <Trophy className={`h-3 w-3 ${row.rank === 1 ? "text-yellow-500" : row.rank === 2 ? "text-slate-400" : "text-amber-600"}`} />}
@@ -217,12 +244,13 @@ const TourLeaderboard = ({ tourId, tourName }: Props) => {
                   </Avatar>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1">
-                      <p className="text-xs font-semibold truncate">{row.profile?.full_name ?? "Unknown"}</p>
+                      <p className={`text-xs font-semibold truncate ${isMe ? "text-primary" : ""}`}>{row.profile?.full_name ?? "Unknown"}</p>
                       {level && (
                         <Badge variant="outline" className={`text-[8px] px-1 py-0 shrink-0 ${level.cls}`}>
                           {level.label}
                         </Badge>
                       )}
+                      {isMe && <span className="text-[8px] text-primary font-bold shrink-0">YOU</span>}
                     </div>
                     {row.clubName && <p className="text-[10px] text-muted-foreground truncate">{row.clubName}</p>}
                   </div>
@@ -230,12 +258,13 @@ const TourLeaderboard = ({ tourId, tourName }: Props) => {
                 <span className="text-center text-[11px] text-muted-foreground">
                   {row.eventsPlayed}{totalEvents > 0 ? `/${totalEvents}` : ""}
                 </span>
-                <span className="text-center text-[11px] font-bold text-primary">{row.totalNet}</span>
+                <span className={`text-center text-[11px] font-bold ${isMe ? "text-primary" : "text-primary"}`}>{row.totalNet}</span>
                 <span className="text-center text-[11px] text-muted-foreground">{row.avgNet}</span>
               </div>
             );
           })}
         </div>
+        </>
       )}
     </div>
   );
