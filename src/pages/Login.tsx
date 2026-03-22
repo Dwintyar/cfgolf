@@ -13,6 +13,7 @@ const Login = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
   const [isForgot, setIsForgot] = useState(false);
@@ -80,6 +81,16 @@ const Login = () => {
     if (isSignUp) {
       if (!fullName.trim()) {
         toast.error("Nama lengkap wajib diisi");
+        setLoading(false);
+        return;
+      }
+      if (password.length < 8) {
+        toast.error("Password minimal 8 karakter");
+        setLoading(false);
+        return;
+      }
+      if (password !== confirmPassword) {
+        toast.error("Password tidak cocok");
         setLoading(false);
         return;
       }
@@ -217,7 +228,17 @@ const Login = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="h-12 rounded-xl border-border/50 bg-card/80 backdrop-blur"
-              minLength={6}
+              minLength={8}
+            />
+          )}
+          {isSignUp && !isForgot && (
+            <Input
+              type="password"
+              placeholder="Konfirmasi Password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="h-12 rounded-xl border-border/50 bg-card/80 backdrop-blur"
+              minLength={8}
             />
           )}
 
