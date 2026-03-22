@@ -83,9 +83,11 @@ const EventDetail = () => {
         .single();
       const tourId = eventData?.tour_id;
 
-      const [{ data: profs }, { data: tix }, { data: flightsData }] = await Promise.all([
+      const [{ data: profs }, { data: tourPlayerClubs }, { data: flightsData }] = await Promise.all([
         supabase.from("profiles").select("id, full_name").in("id", pIds),
-        supabase.from("tickets").select("assigned_player_id, clubs!inner(name)").eq("event_id", id),
+        tourId
+          ? supabase.from("tour_players").select("player_id, clubs!inner(name)").eq("tour_id", tourId).in("player_id", pIds)
+          : Promise.resolve({ data: [] as any[] }),
         tourId
           ? supabase.from("tournament_flights").select("flight_name, hcp_min, hcp_max").eq("tour_id", tourId).order("hcp_min", { ascending: true })
           : Promise.resolve({ data: [] as any[] }),
@@ -96,7 +98,7 @@ const EventDetail = () => {
       const profMap: Record<string, string> = {};
       (profs ?? []).forEach((p: any) => { profMap[p.id] = p.full_name; });
       const clubMap: Record<string, string> = {};
-      (tix ?? []).forEach((t: any) => { if (t.assigned_player_id) clubMap[t.assigned_player_id] = (t.clubs as any)?.name ?? "—"; });
+      (tourPlayerClubs ?? []).forEach((tp: any) => { if (tp.player_id) clubMap[tp.player_id] = (tp.clubs as any)?.name ?? "—"; });
 
       const getFlightName = (hcp: number | null) => {
         if (hcp == null || !flightsData?.length) return "?";
@@ -319,7 +321,7 @@ const EventDetail = () => {
       // Get event info
       const { data: eventInfo } = await supabase
         .from("events")
-        .select("course_id, event_date")
+        .select("course_id, event_date, tour_id")
         .eq("id", id)
         .single();
       if (!eventInfo?.course_id) return [];
@@ -429,16 +431,19 @@ const EventDetail = () => {
         resultsMap[er.contestant_id] = (er.tournament_winner_categories as any)?.category_name ?? "";
       });
 
-      // Get club names via tickets
-      const { data: tickets } = await supabase
-        .from("tickets")
-        .select("assigned_player_id, clubs!inner(name)")
-        .eq("event_id", id);
+      // Get club names via tour_players (authoritative source for tournament context)
+      const { data: tourPlayerClubs } = eventInfo.tour_id
+        ? await supabase
+            .from("tour_players")
+            .select("player_id, clubs!inner(name)")
+            .eq("tour_id", eventInfo.tour_id)
+            .in("player_id", playerIds)
+        : { data: [] as any[] };
 
       const clubMap: Record<string, string> = {};
-      (tickets ?? []).forEach((t: any) => {
-        if (t.assigned_player_id) {
-          clubMap[t.assigned_player_id] = (t.clubs as any)?.name ?? "—";
+      (tourPlayerClubs ?? []).forEach((tp: any) => {
+        if (tp.player_id) {
+          clubMap[tp.player_id] = (tp.clubs as any)?.name ?? "—";
         }
       });
 
