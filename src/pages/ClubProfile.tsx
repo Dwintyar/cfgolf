@@ -490,7 +490,149 @@ const ClubProfile = () => {
             })}
           </div>
         )}
+
+        {/* Settings tab (owner only) */}
+        {tab === "settings" && isOwner && (
+          <div className="animate-fade-in space-y-6 pb-8">
+            {/* Transfer Ownership Section */}
+            <div className="rounded-lg border border-destructive/30 p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Shield className="h-5 w-5 text-destructive" />
+                <h3 className="text-sm font-bold">Transfer Kepemilikan Club</h3>
+              </div>
+              <p className="text-xs text-muted-foreground mb-3">
+                Pindahkan kepemilikan club ini ke anggota lain. Anda akan otomatis menjadi admin setelah transfer.
+              </p>
+
+              <div className="rounded-md bg-accent/60 border border-accent p-3 mb-4">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="h-4 w-4 text-accent-foreground/70 mt-0.5 shrink-0" />
+                  <p className="text-xs text-accent-foreground/80">
+                    ⚠ Tindakan ini tidak dapat dibatalkan tanpa persetujuan pemilik baru. Pastikan Anda memilih orang yang tepat.
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <Select
+                  value={selectedTransferMember ?? ""}
+                  onValueChange={(val) => setSelectedTransferMember(val || null)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Pilih anggota..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {members
+                      ?.filter((m) => m.user_id !== currentUserId)
+                      .sort((a, b) => {
+                        const na = (a.profiles as any)?.full_name ?? "";
+                        const nb = (b.profiles as any)?.full_name ?? "";
+                        return na.localeCompare(nb, "id");
+                      })
+                      .map((m) => {
+                        const profile = m.profiles as any;
+                        return (
+                          <SelectItem key={m.user_id} value={m.user_id}>
+                            {profile?.full_name || "Golfer"} ({getRoleLabel(m.role)})
+                          </SelectItem>
+                        );
+                      })}
+                  </SelectContent>
+                </Select>
+
+                <Button
+                  variant="destructive"
+                  className="w-full"
+                  disabled={!selectedTransferMember || transferring}
+                  onClick={() => setShowTransferConfirm(true)}
+                >
+                  {transferring ? (
+                    <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Transferring...</>
+                  ) : (
+                    "Transfer Ownership"
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Transfer Confirmation Dialog */}
+      <AlertDialog open={showTransferConfirm} onOpenChange={setShowTransferConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Transfer Kepemilikan</AlertDialogTitle>
+            <AlertDialogDescription>
+              Apakah Anda yakin ingin mentransfer kepemilikan <strong>{club?.name}</strong> kepada{" "}
+              <strong>
+                {(() => {
+                  const m = members?.find((m) => m.user_id === selectedTransferMember);
+                  return (m?.profiles as any)?.full_name || "Golfer";
+                })()}
+              </strong>
+              ?
+              <br /><br />
+              Anda akan menjadi admin setelah transfer ini.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={transferring}>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={transferring}
+              onClick={async (e) => {
+                e.preventDefault();
+                if (!selectedTransferMember || !currentUserId || !id) return;
+                setTransferring(true);
+                try {
+                  // Step 1: Update club owner
+                  const { error: e1 } = await supabase
+                    .from("clubs")
+                    .update({ owner_id: selectedTransferMember })
+                    .eq("id", id);
+                  if (e1) throw e1;
+
+                  // Step 2: Update member roles
+                  const { error: e2 } = await supabase
+                    .from("members")
+                    .update({ role: "owner" as any })
+                    .eq("club_id", id)
+                    .eq("user_id", selectedTransferMember);
+                  if (e2) throw e2;
+
+                  const { error: e3 } = await supabase
+                    .from("members")
+                    .update({ role: "admin" as any })
+                    .eq("club_id", id)
+                    .eq("user_id", currentUserId);
+                  if (e3) throw e3;
+
+                  const selectedName = (() => {
+                    const m = members?.find((m) => m.user_id === selectedTransferMember);
+                    return (m?.profiles as any)?.full_name || "Golfer";
+                  })();
+
+                  toast({
+                    title: "Kepemilikan club berhasil ditransfer",
+                    description: `Kepemilikan telah dipindahkan kepada ${selectedName}`,
+                  });
+
+                  navigate(`/clubs/${id}`);
+                } catch (err: any) {
+                  toast({ title: "Gagal", description: err.message, variant: "destructive" });
+                } finally {
+                  setTransferring(false);
+                  setShowTransferConfirm(false);
+                }
+              }}
+            >
+              {transferring ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Ya, Transfer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Dialogs */}
       {club && showEdit && (
