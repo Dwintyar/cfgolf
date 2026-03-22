@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, UserPlus, Users, MessageCircle, X, Check, Plus, Flag } from "lucide-react";
+import { Search, UserPlus, Users, MessageCircle, X, Check, Plus, Flag, ChevronRight } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
