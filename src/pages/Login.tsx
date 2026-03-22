@@ -13,6 +13,7 @@ const Login = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
   const [isForgot, setIsForgot] = useState(false);
