@@ -42,6 +42,9 @@ const ClubProfile = () => {
   const [showInvite, setShowInvite] = useState(false);
   const [tab, setTab] = useState<Tab>("members");
   const [joining, setJoining] = useState(false);
+  const [selectedTransferMember, setSelectedTransferMember] = useState<string | null>(null);
+  const [showTransferConfirm, setShowTransferConfirm] = useState(false);
+  const [transferring, setTransferring] = useState(false);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
