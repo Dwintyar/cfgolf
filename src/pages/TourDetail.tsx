@@ -706,37 +706,16 @@ const TourDetail = () => {
                         return (
                           <div key={clubId} className="golf-card overflow-hidden">
                             {/* Club header */}
-                            <div className="flex items-center gap-3 p-3 bg-secondary/50 border-b border-border/50">
-                              <Avatar className="h-8 w-8 rounded-lg">
-                                <AvatarImage src={clubData.club?.logo_url ?? ""} />
-                                <AvatarFallback className="rounded-lg bg-primary/10 text-xs font-bold text-primary">
-                                  {(clubData.club?.name ?? "?").charAt(0)}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-semibold truncate">
-                                  {clubData.club?.name ?? "Unknown Club"}
-                                </p>
-                                <p className="text-[10px] text-muted-foreground">
-                                  {playerCount} player terdaftar
-                                  {quota > 0 && (
-                                    <span className={`ml-1.5 font-medium ${
-                                      playerCount > quota ? "text-destructive" : "text-primary"
-                                    }`}>
-                                      · Quota: {playerCount}/{quota} tiket
-                                    </span>
-                                  )}
-                                </p>
+                            <div className="bg-accent px-3 py-2 flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <Building2 className="h-3.5 w-3.5 text-accent-foreground/70" />
+                                <span className="text-sm font-bold text-accent-foreground">{clubData.club?.name ?? "Unknown Club"}</span>
+                                <span className="text-xs text-accent-foreground/60">({playerCount} players)</span>
                               </div>
-                              {quota > 0 && (
-                                <div className={`px-2 py-1 rounded-lg text-[10px] font-bold ${
-                                  playerCount >= quota
-                                    ? "bg-primary/10 text-primary"
-                                    : "bg-accent/10 text-accent"
-                                }`}>
-                                  {playerCount}/{quota}
-                                </div>
-                              )}
+                              <div className="flex items-center gap-2">
+                                {quota > 0 && (
+                                  <span className="text-xs font-semibold text-accent-foreground/80">Quota: {quota}</span>
+                                )}
                               {canAddToClub && (
                                 <Button
                                   size="sm"
