@@ -84,6 +84,16 @@ const Login = () => {
         setLoading(false);
         return;
       }
+      if (password.length < 8) {
+        toast.error("Password minimal 8 karakter");
+        setLoading(false);
+        return;
+      }
+      if (password !== confirmPassword) {
+        toast.error("Password tidak cocok");
+        setLoading(false);
+        return;
+      }
       const { data: signUpData, error } = await supabase.auth.signUp({
         email,
         password,
@@ -218,7 +228,17 @@ const Login = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="h-12 rounded-xl border-border/50 bg-card/80 backdrop-blur"
-              minLength={6}
+              minLength={8}
+            />
+          )}
+          {isSignUp && !isForgot && (
+            <Input
+              type="password"
+              placeholder="Konfirmasi Password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="h-12 rounded-xl border-border/50 bg-card/80 backdrop-blur"
+              minLength={8}
             />
           )}
 
