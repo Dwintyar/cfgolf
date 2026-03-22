@@ -266,18 +266,65 @@ const GolferProfile = () => {
         tourPlayers.map(async (tp: any) => {
           const { data: contestantData } = await supabase
             .from("contestants")
-            .select("hcp, events(id, name, event_date, status, courses(name))")
+            .select("hcp, events(id, name, event_date, status, course_id, courses(name))")
             .eq("player_id", targetId!)
             .filter("events.tour_id", "eq", tp.tour_id);
-          const events = (contestantData ?? [])
-            .filter(c => (c.events as any)?.status === "completed")
-            .map(c => ({ event: c.events as any, hcp: c.hcp }));
+          const completedEvents = (contestantData ?? [])
+            .filter(c => (c.events as any)?.status === "completed");
+
+          // Fetch scorecard + hole scores for each completed event
+          const events = await Promise.all(
+            completedEvents.map(async (c: any) => {
+              const ev = c.events as any;
+              // Get round_id for this event's course
+              const { data: roundData } = await supabase
+                .from("rounds")
+                .select("id")
+                .eq("course_id", ev.course_id)
+                .order("created_at", { ascending: false })
+                .limit(1)
+                .maybeSingle();
+
+              if (!roundData) return { event: ev, hcp: c.hcp, out: null, in: null, gross: null, net: null };
+
+              // Get scorecard
+              const { data: sc } = await supabase
+                .from("scorecards")
+                .select("id, gross_score, net_score")
+                .eq("round_id", roundData.id)
+                .eq("player_id", targetId!)
+                .maybeSingle();
+
+              if (!sc) return { event: ev, hcp: c.hcp, out: null, in: null, gross: null, net: null };
+
+              // Get hole scores for OUT/IN
+              const { data: holes } = await supabase
+                .from("hole_scores")
+                .select("hole_number, strokes")
+                .eq("scorecard_id", sc.id);
+
+              const out = holes?.filter(h => h.hole_number <= 9).reduce((s, h) => s + (h.strokes ?? 0), 0) ?? null;
+              const inn = holes?.filter(h => h.hole_number >= 10).reduce((s, h) => s + (h.strokes ?? 0), 0) ?? null;
+
+              return {
+                event: ev,
+                hcp: c.hcp,
+                out: out && out > 0 ? out : null,
+                in: inn && inn > 0 ? inn : null,
+                gross: sc.gross_score,
+                net: sc.net_score,
+              };
+            })
+          );
+
           return {
             tour: tp.tours as any,
             club: tp.clubs as any,
             hcpAtReg: tp.hcp_at_registration,
             hcpCurrent: tp.hcp_tour,
-            events,
+            events: events.sort((a, b) =>
+              new Date(b.event?.event_date ?? 0).getTime() - new Date(a.event?.event_date ?? 0).getTime()
+            ),
           };
         })
       );
@@ -359,17 +406,34 @@ const GolferProfile = () => {
                 {t.events.length > 0 ? (
                   <div className="divide-y divide-border/30">
                     {t.events.map((e: any, j: number) => (
-                      <div key={j} className="flex items-center justify-between px-3 py-2">
-                        <div className="min-w-0 flex-1">
-                          <p className="text-xs truncate">{e.event?.name}</p>
-                          <p className="text-[10px] text-muted-foreground">
-                            {e.event?.event_date} · {(e.event?.courses as any)?.name}
-                          </p>
+                      <div key={j} className="px-3 py-2">
+                        <div className="flex items-start justify-between mb-1.5">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-medium truncate">{e.event?.name}</p>
+                            <p className="text-[10px] text-muted-foreground">
+                              {e.event?.event_date} · {(e.event?.courses as any)?.name}
+                            </p>
+                          </div>
+                          <div className="text-right shrink-0 ml-2">
+                            <p className="text-[10px] text-muted-foreground">HCP</p>
+                            <p className="text-xs font-medium">{e.hcp ?? "—"}</p>
+                          </div>
                         </div>
-                        <div className="text-right shrink-0 ml-2">
-                          <p className="text-[10px] text-muted-foreground">HCP used</p>
-                          <p className="text-xs font-medium">{e.hcp ?? "—"}</p>
-                        </div>
+                        {(e.gross !== null || e.out !== null) && (
+                          <div className="grid grid-cols-4 gap-1 mt-1">
+                            {[
+                              { label: "OUT", val: e.out },
+                              { label: "IN", val: e.in },
+                              { label: "GROSS", val: e.gross },
+                              { label: "NETT", val: e.net },
+                            ].map(({ label, val }) => (
+                              <div key={label} className="bg-secondary/60 rounded px-1.5 py-1 text-center">
+                                <p className="text-[9px] text-muted-foreground uppercase tracking-wide">{label}</p>
+                                <p className="text-xs font-bold tabular-nums">{val ?? "—"}</p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
