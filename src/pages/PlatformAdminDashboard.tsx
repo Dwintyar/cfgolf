@@ -346,8 +346,8 @@ const PlatformAdminDashboard = () => {
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div className="flex justify-between"><span className="text-muted-foreground">Total Users</span><span className="font-bold">{stats?.totalUsers}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Total Clubs</span><span className="font-bold">{stats?.totalClubs}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Active Events</span><span className="font-bold">{stats?.totalEvents}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Today Bookings</span><span className="font-bold">{stats?.totalVenues}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Total Events</span><span className="font-bold">{stats?.totalEvents}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Total Venues</span><span className="font-bold">{stats?.totalVenues}</span></div>
               </div>
             </div>
           </TabsContent>
