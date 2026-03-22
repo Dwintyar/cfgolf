@@ -13,18 +13,19 @@ interface EventCheckinProps {
   isAdmin: boolean;
   userId: string | null;
   event: any;
+  tourId?: string;
 }
 
-const EventCheckin = ({ eventId, isAdmin, userId, event }: EventCheckinProps) => {
+const EventCheckin = ({ eventId, isAdmin, userId, event, tourId }: EventCheckinProps) => {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
 
-  // Contestants with club info via tickets table (authoritative source)
+  // Contestants with club info via tour_players table (authoritative source)
   const { data: contestants } = useQuery({
-    queryKey: ["checkin-contestants-v3", eventId],
+    queryKey: ["checkin-contestants-v4", eventId, tourId],
     queryFn: async () => {
-      const [checkinListRes, ticketRes] = await Promise.all([
+      const [checkinListRes, tourPlayersRes] = await Promise.all([
         supabase
           .from("contestants")
           .select(`
@@ -37,30 +38,35 @@ const EventCheckin = ({ eventId, isAdmin, userId, event }: EventCheckinProps) =>
             event_checkins ( checked_in_at, bag_drop_number )
           `)
           .eq("event_id", eventId),
-        supabase
-          .from("tickets")
-          .select("assigned_player_id, club_id, ticket_number, clubs!inner(name)")
-          .eq("event_id", eventId),
+        tourId
+          ? supabase
+              .from("tour_players")
+              .select("player_id, club_id, clubs!inner(name)")
+              .eq("tour_id", tourId)
+          : supabase
+              .from("tickets")
+              .select("assigned_player_id, club_id, ticket_number, clubs!inner(name)")
+              .eq("event_id", eventId),
       ]);
 
       if (checkinListRes.error) throw checkinListRes.error;
       const checkinList = checkinListRes.data ?? [];
-      const ticketData = ticketRes.data ?? [];
+      const playerClubData = tourPlayersRes.data ?? [];
 
-      // Build club lookup by player_id from tickets
-      const clubByPlayer: Record<string, { club_id: string; club_name: string; ticket_number: number }> = {};
-      ticketData.forEach((t: any) => {
-        if (t.assigned_player_id) {
-          clubByPlayer[t.assigned_player_id] = {
+      // Build club lookup by player_id
+      const clubByPlayer: Record<string, { club_id: string; club_name: string }> = {};
+      playerClubData.forEach((t: any) => {
+        const playerId = t.player_id ?? t.assigned_player_id;
+        if (playerId) {
+          clubByPlayer[playerId] = {
             club_id: t.club_id,
-            club_name: t.clubs?.name ?? "Unknown",
-            ticket_number: t.ticket_number,
+            club_name: (t.clubs as any)?.name ?? "Unknown",
           };
         }
       });
 
       return checkinList.map((ct: any) => {
-        const club = clubByPlayer[ct.player_id] ?? { club_name: "Unknown", club_id: null, ticket_number: null };
+        const club = clubByPlayer[ct.player_id] ?? { club_name: "Unknown", club_id: null };
         return {
           id: ct.id,
           player_id: ct.player_id,
@@ -69,7 +75,7 @@ const EventCheckin = ({ eventId, isAdmin, userId, event }: EventCheckinProps) =>
           full_name: ct.profiles?.full_name ?? "Unknown",
           club_id: club.club_id,
           club_name: club.club_name,
-          ticket_number: club.ticket_number,
+          ticket_number: null,
           flight_name: ct.tournament_flights?.flight_name ?? null,
           checked_in_at: Array.isArray(ct.event_checkins) ? ct.event_checkins[0]?.checked_in_at : ct.event_checkins?.checked_in_at ?? null,
           bag_number: Array.isArray(ct.event_checkins) ? ct.event_checkins[0]?.bag_drop_number : ct.event_checkins?.bag_drop_number ?? null,
@@ -130,7 +136,6 @@ const EventCheckin = ({ eventId, isAdmin, userId, event }: EventCheckinProps) =>
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key)!.push(c);
     });
-    // Sort clubs alphabetically, sort players within each club
     return [...groups.entries()]
       .sort(([a], [b]) => a.localeCompare(b, "id"))
       .map(([name, members]) => ({
