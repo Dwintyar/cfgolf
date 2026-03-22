@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, LayoutDashboard, Grid3X3, Clock, Settings, Save, Plus, AlertTriangle } from "lucide-react";
+import { ArrowLeft, LayoutDashboard, Grid3X3, Clock, Settings, Save, Plus, AlertTriangle, Layers, Pencil, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 const TABS = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
   { id: "holes", label: "Holes", icon: Grid3X3 },
+  { id: "teebox", label: "Tee Box", icon: Layers },
   { id: "teetimes", label: "Tee Times", icon: Clock },
   { id: "settings", label: "Settings", icon: Settings },
 ] as const;
@@ -49,7 +50,7 @@ const CourseAdminDashboard = () => {
       if (isNew) return null;
       const { data, error } = await supabase
         .from("courses")
-        .select("*, course_holes(*), clubs(name)")
+        .select("*, course_holes(*), course_tees(*), clubs(name)")
         .eq("id", courseId!)
         .single();
       if (error) throw error;
@@ -325,6 +326,56 @@ const CourseAdminDashboard = () => {
     },
   });
 
+  // ═══ TEE BOX ═══
+  interface TeeData { id?: string; tee_name: string; color: string; rating: number | null; slope: number | null; }
+  const [tees, setTees] = useState<TeeData[]>([]);
+  const [teeForm, setTeeForm] = useState<TeeData>({ tee_name: "", color: "#FFFFFF", rating: null, slope: null });
+  const [editingTeeId, setEditingTeeId] = useState<string | null>(null);
+  const [showTeeForm, setShowTeeForm] = useState(false);
+  const [savingTee, setSavingTee] = useState(false);
+
+  useEffect(() => {
+    const raw = (course as any)?.course_tees ?? [];
+    setTees([...raw].sort((a: any, b: any) => (a.tee_name ?? "").localeCompare(b.tee_name ?? "")));
+  }, [course]);
+
+  const handleSaveTee = async () => {
+    if (!courseId || !teeForm.tee_name.trim()) return;
+    setSavingTee(true);
+    if (editingTeeId) {
+      const { error } = await supabase.from("course_tees").update({
+        tee_name: teeForm.tee_name.trim(),
+        color: teeForm.color,
+        rating: teeForm.rating,
+        slope: teeForm.slope,
+      }).eq("id", editingTeeId);
+      if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); }
+      else { toast({ title: "Tee updated!" }); }
+    } else {
+      const { error } = await supabase.from("course_tees").insert({
+        course_id: courseId,
+        tee_name: teeForm.tee_name.trim(),
+        color: teeForm.color,
+        rating: teeForm.rating,
+        slope: teeForm.slope,
+      });
+      if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); }
+      else { toast({ title: "Tee added!" }); }
+    }
+    setSavingTee(false);
+    setShowTeeForm(false);
+    setEditingTeeId(null);
+    setTeeForm({ tee_name: "", color: "#FFFFFF", rating: null, slope: null });
+    queryClient.invalidateQueries({ queryKey: ["course-admin", courseId] });
+  };
+
+  const handleDeleteTee = async (teeId: string) => {
+    if (!window.confirm("Hapus tee box ini?")) return;
+    const { error } = await supabase.from("course_tees").delete().eq("id", teeId);
+    if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); }
+    else { toast({ title: "Tee deleted" }); queryClient.invalidateQueries({ queryKey: ["course-admin", courseId] }); }
+  };
+
   if (!isNew && isLoading) {
     return (
       <div className="p-4 space-y-4">
@@ -473,6 +524,103 @@ const CourseAdminDashboard = () => {
                   </div>
                 )}
               </>
+            )}
+          </div>
+        )}
+
+        {/* ═══ TEE BOX ═══ */}
+        {tab === "teebox" && !isNew && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold">Tee Boxes ({tees.length})</p>
+              <Button size="sm" onClick={() => { setTeeForm({ tee_name: "", color: "#FFFFFF", rating: null, slope: null }); setEditingTeeId(null); setShowTeeForm(true); }}>
+                <Plus className="h-3.5 w-3.5 mr-1" /> Add Tee
+              </Button>
+            </div>
+
+            {tees.length === 0 && !showTeeForm && (
+              <div className="golf-card p-8 text-center">
+                <Layers className="mx-auto h-10 w-10 text-muted-foreground/40" />
+                <p className="mt-3 text-sm text-muted-foreground">No tee boxes configured yet</p>
+                <p className="text-xs text-muted-foreground/70 mt-1">Add tee boxes (White, Yellow, Red, Blue) with rating & slope</p>
+              </div>
+            )}
+
+            {tees.map(tee => (
+              <div key={tee.id} className="golf-card p-3 flex items-center gap-3">
+                <div className="h-8 w-8 rounded-full border-2 border-border/50 shrink-0"
+                  style={{ backgroundColor: tee.color ?? "#ccc" }} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold">{tee.tee_name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Rating: {tee.rating ?? "—"} · Slope: {tee.slope ?? "—"}
+                  </p>
+                </div>
+                <div className="flex gap-1.5 shrink-0">
+                  <button className="text-muted-foreground hover:text-foreground p-1"
+                    onClick={() => {
+                      setTeeForm({ tee_name: tee.tee_name, color: tee.color ?? "#FFFFFF", rating: tee.rating, slope: tee.slope });
+                      setEditingTeeId(tee.id ?? null);
+                      setShowTeeForm(true);
+                    }}>
+                    <Pencil className="h-3.5 w-3.5" />
+                  </button>
+                  <button className="text-destructive/60 hover:text-destructive p-1"
+                    onClick={() => tee.id && handleDeleteTee(tee.id)}>
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            {/* Add / Edit Form */}
+            {showTeeForm && (
+              <div className="golf-card p-4 space-y-3 border-primary/30">
+                <p className="text-sm font-semibold">{editingTeeId ? "Edit Tee Box" : "New Tee Box"}</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Tee Name</Label>
+                    <Input placeholder="e.g. White, Yellow, Red"
+                      value={teeForm.tee_name}
+                      onChange={e => setTeeForm(f => ({ ...f, tee_name: e.target.value }))}
+                      className="mt-1 h-9 text-sm" />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Color</Label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <input type="color" value={teeForm.color ?? "#FFFFFF"}
+                        onChange={e => setTeeForm(f => ({ ...f, color: e.target.value }))}
+                        className="h-9 w-12 rounded border border-input cursor-pointer" />
+                      <Input value={teeForm.color ?? ""} onChange={e => setTeeForm(f => ({ ...f, color: e.target.value }))}
+                        className="h-9 text-sm font-mono flex-1" placeholder="#FFFFFF" />
+                    </div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Course Rating</Label>
+                    <Input type="number" step="0.1" placeholder="72.0"
+                      value={teeForm.rating ?? ""}
+                      onChange={e => setTeeForm(f => ({ ...f, rating: e.target.value ? Number(e.target.value) : null }))}
+                      className="mt-1 h-9 text-sm" />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Slope Rating</Label>
+                    <Input type="number" placeholder="113"
+                      value={teeForm.slope ?? ""}
+                      onChange={e => setTeeForm(f => ({ ...f, slope: e.target.value ? Number(e.target.value) : null }))}
+                      className="mt-1 h-9 text-sm" />
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={handleSaveTee} disabled={savingTee || !teeForm.tee_name.trim()} className="flex-1">
+                    <Save className="h-3.5 w-3.5 mr-1" /> {savingTee ? "Saving..." : "Save"}
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => { setShowTeeForm(false); setEditingTeeId(null); }}>
+                    Cancel
+                  </Button>
+                </div>
+              </div>
             )}
           </div>
         )}
