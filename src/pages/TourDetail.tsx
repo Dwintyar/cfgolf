@@ -102,6 +102,24 @@ const TourDetail = () => {
     enabled: !!id,
   });
 
+  // Separate query for active player counts per club
+  const { data: activePlayerCounts } = useQuery({
+    queryKey: ["tour-active-player-counts", id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("tour_players")
+        .select("club_id")
+        .eq("tour_id", id!)
+        .in("status", ["active", "registered"]);
+      const countMap: Record<string, number> = {};
+      data?.forEach(tp => {
+        countMap[tp.club_id] = (countMap[tp.club_id] ?? 0) + 1;
+      });
+      return countMap;
+    },
+    enabled: !!id,
+  });
+
   const { data: allContestants } = useQuery({
     queryKey: ["tour-all-contestants", id, events?.map(e => e.id)],
     queryFn: async () => {
