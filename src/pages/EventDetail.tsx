@@ -948,7 +948,7 @@ const EventDetail = () => {
 
       {/* CHECK-IN */}
       <TabsContent value="checkin" className="pt-0">
-        <EventCheckin eventId={id!} isAdmin={showAdminActions} userId={userId} event={event} />
+        <EventCheckin eventId={id!} isAdmin={showAdminActions} userId={userId} event={event} tourId={(event?.tours as any)?.id} />
       </TabsContent>
 
 
