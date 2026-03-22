@@ -11,9 +11,25 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
 import EditClubDialog from "@/components/EditClubDialog";
-import InviteMemberDialog from "@/components/InviteMemberDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-type Tab = "members" | "requests";
+type Tab = "members" | "requests" | "settings";
 
 const ClubProfile = () => {
   const navigate = useNavigate();
