@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
 import EditClubDialog from "@/components/EditClubDialog";
+import InviteMemberDialog from "@/components/InviteMemberDialog";
 import {
   AlertDialog,
   AlertDialogAction,
