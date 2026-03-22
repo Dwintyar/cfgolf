@@ -1,4 +1,5 @@
-import { ArrowLeft, Globe, Mail, Camera, UserPlus, UserCheck, MessageCircle, Crown, Check, X, BarChart3, TrendingDown, Trophy, MapPin, Settings, Clock, Share2 } from "lucide-react";
+import { ArrowLeft, Globe, Mail, Camera, UserPlus, UserCheck, MessageCircle, Crown, Check, X, BarChart3, TrendingDown, Trophy, MapPin, Settings, Clock, Share2, Shield } from "lucide-react";
+import CommitteeRoleBadges from "@/components/CommitteeRoleBadges";
 import { useNavigate, useParams } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -201,6 +202,18 @@ const GolferProfile = () => {
         .select("staff_role, status, clubs(name)")
         .eq("user_id", targetId!)
         .eq("status", "active");
+      return data ?? [];
+    },
+    enabled: !!targetId,
+  });
+
+  const { data: committeeRoles } = useQuery({
+    queryKey: ["committee-roles-profile", targetId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("club_committee_roles")
+        .select("role, tour_id, clubs!inner(name), tours(name)")
+        .eq("user_id", targetId!);
       return data ?? [];
     },
     enabled: !!targetId,
