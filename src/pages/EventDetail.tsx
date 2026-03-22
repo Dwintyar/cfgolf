@@ -365,37 +365,44 @@ const EventDetail = () => {
         }));
       }
 
-      // Fetch all scorecards for this round
+      // Fetch scorecards for this round filtered to event contestants only
       const { data: scorecards } = await supabase
         .from("scorecards")
         .select("id, player_id, gross_score, net_score")
         .eq("round_id", roundId)
-        .limit(200);
+        .in("player_id", playerIds)
+        .limit(300);
 
       console.log("Scorecards found:", scorecards?.length);
 
+      // Fetch hole_scores in chunks of scorecard IDs to avoid large .in() issues
       const scIds = (scorecards ?? []).map(s => s.id);
       let allHoles: any[] = [];
-      const pageSize = 1000;
-      let page = 0;
-      let keepFetching = scIds.length > 0;
+      const chunkSize = 50;
 
-      while (keepFetching) {
-        const from = page * pageSize;
-        const to = from + pageSize - 1;
+      for (let i = 0; i < scIds.length; i += chunkSize) {
+        const chunk = scIds.slice(i, i + chunkSize);
+        const pageSize = 1000;
+        let page = 0;
+        let keepFetching = true;
 
-        const { data: batch } = await supabase
-          .from("hole_scores")
-          .select("scorecard_id, hole_number, strokes")
-          .in("scorecard_id", scIds)
-          .range(from, to);
+        while (keepFetching) {
+          const from = page * pageSize;
+          const to = from + pageSize - 1;
 
-        if (batch && batch.length > 0) {
-          allHoles = [...allHoles, ...batch];
-          page += 1;
-          if (batch.length < pageSize) keepFetching = false;
-        } else {
-          keepFetching = false;
+          const { data: batch } = await supabase
+            .from("hole_scores")
+            .select("scorecard_id, hole_number, strokes")
+            .in("scorecard_id", chunk)
+            .range(from, to);
+
+          if (batch && batch.length > 0) {
+            allHoles = [...allHoles, ...batch];
+            page += 1;
+            if (batch.length < pageSize) keepFetching = false;
+          } else {
+            keepFetching = false;
+          }
         }
       }
 
@@ -405,15 +412,16 @@ const EventDetail = () => {
       const outInMap: Record<string, { out: number; in: number }> = {};
       allHoles.forEach((h: any) => {
         if (!outInMap[h.scorecard_id]) outInMap[h.scorecard_id] = { out: 0, in: 0 };
-        if (h.hole_number <= 9) outInMap[h.scorecard_id].out += (h.strokes ?? 0);
-        else outInMap[h.scorecard_id].in += (h.strokes ?? 0);
+        if (h.hole_number >= 1 && h.hole_number <= 9) outInMap[h.scorecard_id].out += (h.strokes ?? 0);
+        else if (h.hole_number >= 10 && h.hole_number <= 18) outInMap[h.scorecard_id].in += (h.strokes ?? 0);
       });
 
       // Build scoreByPlayer (dedupe: keep first match per player)
       const scoreByPlayer: Record<string, { out: number; in: number; tot: number | null; net: number | null }> = {};
       (scorecards ?? []).forEach((sc: any) => {
         if (scoreByPlayer[sc.player_id]) return;
-        const oi = outInMap[sc.id] ?? { out: 0, in: 0 };
+        const oi = outInMap[sc.id];
+        if (!oi) return; // skip scorecards with no hole scores
         scoreByPlayer[sc.player_id] = {
           out: oi.out, in: oi.in,
           tot: sc.gross_score, net: sc.net_score,
