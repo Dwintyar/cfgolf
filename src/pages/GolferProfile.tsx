@@ -657,6 +657,28 @@ const GolferProfile = () => {
                 </div>
               </div>
             )}
+
+            {/* Committee Roles */}
+            {committeeRoles && committeeRoles.length > 0 && (
+              <div className="golf-card p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Shield className="h-4 w-4 text-primary" />
+                  <p className="text-sm font-semibold">Club Roles</p>
+                </div>
+                <div className="space-y-2">
+                  {committeeRoles.map((cr: any, i: number) => (
+                    <div key={i} className="flex items-start gap-2">
+                      <CommitteeRoleBadges roles={[cr.role]} />
+                      <p className="text-[10px] text-muted-foreground leading-4">
+                        {cr.tours?.name
+                          ? `${cr.tours.name} @ ${(cr.clubs as any)?.name}`
+                          : `${(cr.clubs as any)?.name} (All Tours)`}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* KOLOM KANAN (65%) — Tabs konten */}
