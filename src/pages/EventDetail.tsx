@@ -337,20 +337,16 @@ const EventDetail = () => {
 
       const playerIds = eventContestants.map(c => c.player_id);
 
-      // Find the round for this course matching event_date
+      // Find the round for this event's course + date
       const eventDate = eventInfo.event_date?.slice(0, 10);
       const { data: roundRows } = await supabase
         .from("rounds")
         .select("id, created_at")
         .eq("course_id", eventInfo.course_id)
-        .order("created_at", { ascending: false })
-        .limit(5);
-      console.log("All rounds for this course:", roundRows);
+        .order("created_at", { ascending: false });
 
       const matchedRound = roundRows?.find(r => r.created_at?.slice(0, 10) === eventDate)
-        ?? roundRows?.[0]
-        ?? { id: "a837d62f-f8bc-40f0-9aa0-021c9c54d4f7" };
-      console.log("Using round:", matchedRound?.id);
+        ?? roundRows?.[0];
       const roundId = matchedRound?.id;
 
       if (!roundId) {
