@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Users, Building2, Calendar, MapPin, BarChart3, Search, Shield, Eye, Trash2,
-  ChevronRight, Plus, CheckCircle, Filter, TrendingUp
+  ChevronRight, Plus, CheckCircle, Filter, TrendingUp, Trophy, Flag
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -42,17 +42,19 @@ const PlatformAdminDashboard = () => {
   const { data: stats, isLoading } = useQuery({
     queryKey: ["platform-admin-stats"],
     queryFn: async () => {
-      const [users, clubs, events, venues] = await Promise.all([
+      const [users, clubs, events, venues, tours] = await Promise.all([
         supabase.from("profiles").select("id", { count: "exact", head: true }),
         supabase.from("clubs").select("id", { count: "exact", head: true }).eq("is_personal", false),
         supabase.from("events").select("id", { count: "exact", head: true }),
         supabase.from("courses").select("id", { count: "exact", head: true }),
+        supabase.from("tours").select("id", { count: "exact", head: true }),
       ]);
       return {
         totalUsers: users.count ?? 0,
         totalClubs: clubs.count ?? 0,
         totalEvents: events.count ?? 0,
         totalVenues: venues.count ?? 0,
+        totalTours: tours.count ?? 0,
       };
     },
   });
@@ -122,6 +124,19 @@ const PlatformAdminDashboard = () => {
     queryClient.invalidateQueries({ queryKey: ["admin-clubs"] });
   };
 
+  // --- Tab: Tours ---
+  const { data: allTours } = useQuery({
+    queryKey: ["admin-tours"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("tours")
+        .select("*, clubs(name), events(id)")
+        .order("start_date", { ascending: false })
+        .limit(50);
+      return data ?? [];
+    },
+  });
+
   // --- Tab: Events ---
   const { data: allEvents } = useQuery({
     queryKey: ["admin-events", eventStatusFilter],
@@ -173,18 +188,21 @@ const PlatformAdminDashboard = () => {
       <AppHeader title="Platform Admin Dashboard" />
       <div className="space-y-4 p-4">
         {/* KPI Cards */}
-        <div className="grid grid-cols-2 gap-3">
-          <StatCard icon={Users} label="Total Users" value={stats?.totalUsers ?? 0} />
-          <StatCard icon={Building2} label="Total Clubs" value={stats?.totalClubs ?? 0} color="text-accent" />
-          <StatCard icon={Calendar} label="Total Events" value={stats?.totalEvents ?? 0} />
-          <StatCard icon={MapPin} label="Total Venues" value={stats?.totalVenues ?? 0} color="text-accent" />
+        <div className="grid grid-cols-3 gap-2">
+          <StatCard icon={Users} label="Users" value={stats?.totalUsers ?? 0} />
+          <StatCard icon={Building2} label="Clubs" value={stats?.totalClubs ?? 0} color="text-accent" />
+          <StatCard icon={Trophy} label="Tours" value={stats?.totalTours ?? 0} />
+          <StatCard icon={Calendar} label="Events" value={stats?.totalEvents ?? 0} color="text-accent" />
+          <StatCard icon={MapPin} label="Venues" value={stats?.totalVenues ?? 0} />
+          <StatCard icon={Flag} label="Active" value={(allTours ?? []).filter((t: any) => t.status === "active").length} color="text-accent" />
         </div>
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="w-full">
+          <TabsList className="w-full overflow-x-auto flex">
             <TabsTrigger value="users" className="flex-1 text-xs">Users</TabsTrigger>
             <TabsTrigger value="clubs" className="flex-1 text-xs">Clubs</TabsTrigger>
+            <TabsTrigger value="tours" className="flex-1 text-xs">Tours</TabsTrigger>
             <TabsTrigger value="events" className="flex-1 text-xs">Events</TabsTrigger>
             <TabsTrigger value="venues" className="flex-1 text-xs">Venues</TabsTrigger>
             <TabsTrigger value="reports" className="flex-1 text-xs">Reports</TabsTrigger>
@@ -292,6 +310,32 @@ const PlatformAdminDashboard = () => {
                   )}
                 </div>
               </div>
+            ))}
+          </TabsContent>
+
+          {/* TAB: TOURS */}
+          <TabsContent value="tours" className="space-y-2 pt-2">
+            {(!allTours || allTours.length === 0) ? (
+              <p className="text-center text-sm text-muted-foreground py-8">No tours found</p>
+            ) : allTours.map((t: any) => (
+              <button key={t.id} onClick={() => navigate(`/tour/${t.id}`)} className="golf-card w-full text-left flex items-center gap-3 p-3 hover:border-primary/30 transition-colors">
+                <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <Trophy className="h-4 w-4 text-primary" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium truncate">{t.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {(t.clubs as any)?.name ?? "—"} · {(t.events as any[])?.length ?? 0} events
+                    {t.start_date ? ` · ${new Date(t.start_date).getFullYear()}` : ""}
+                  </p>
+                </div>
+                <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium border ${
+                  t.status === "active" ? "bg-green-500/10 text-green-500 border-green-500/30" :
+                  t.status === "completed" ? "bg-muted text-muted-foreground border-border" :
+                  "bg-accent/10 text-accent border-accent/30"
+                }`}>{t.status ?? "draft"}</span>
+                <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+              </button>
             ))}
           </TabsContent>
 
