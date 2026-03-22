@@ -716,6 +716,7 @@ const TourDetail = () => {
                                 {quota > 0 && (
                                   <span className="text-xs font-semibold text-accent-foreground/80">Quota: {quota}</span>
                                 )}
+                              </div>
                               {canAddToClub && (
                                 <Button
                                   size="sm"
