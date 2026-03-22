@@ -2,6 +2,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Trophy, Calendar, Users, MapPin, ChevronRight, Settings, UserPlus, Layers, Award, Check, X, Building2, Star, UserMinus, Search, FileText, Loader2, Download } from "lucide-react";
+import CommitteeRoleBadges from "@/components/CommitteeRoleBadges";
 import html2canvas from "html2canvas";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -118,6 +119,30 @@ const TourDetail = () => {
       return countMap;
     },
     enabled: !!id,
+  });
+
+  // Committee roles for players in this tour
+  const { data: committeeRoleMap } = useQuery({
+    queryKey: ["tour-committee-roles", id],
+    queryFn: async () => {
+      // Get all club IDs in this tour
+      const clubIds = tourClubs?.map(tc => tc.club_id) ?? [];
+      if (!clubIds.length) return {};
+      const { data } = await supabase
+        .from("club_committee_roles")
+        .select("user_id, role, tour_id")
+        .in("club_id", clubIds);
+      // Filter: tour_id matches current tour OR tour_id is null
+      const map: Record<string, string[]> = {};
+      data?.forEach((cr) => {
+        if (cr.tour_id && cr.tour_id !== id) return;
+        const uid = cr.user_id!;
+        if (!map[uid]) map[uid] = [];
+        map[uid].push(cr.role);
+      });
+      return map;
+    },
+    enabled: !!id && !!tourClubs,
   });
 
   const { data: allContestants } = useQuery({
@@ -621,6 +646,7 @@ const TourDetail = () => {
                           <span className="ml-1.5">· {(player.clubs as any)?.name}</span>
                         )}
                       </p>
+                      <CommitteeRoleBadges roles={committeeRoleMap?.[player.player_id] ?? []} />
                     </div>
                     {(() => {
                       const hcp = player.hcp_at_registration ?? (profile?.handicap ?? null);
