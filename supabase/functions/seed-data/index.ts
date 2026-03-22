@@ -1101,7 +1101,7 @@ Deno.serve(async (req) => {
         { content: 'Season finale coming up! Who is leading the CFGolf Tour standings? Check the leaderboard 📊', category: 'tournament' },
       ]
       const postInserts = postContents.map((p, idx) => ({
-        author_id: profileIds[idx % profileIds.length],
+        author_id: profiles[idx % profiles.length].id,
         content: p.content,
         category: p.category,
         likes_count: Math.floor(Math.random() * 40),
@@ -1120,7 +1120,7 @@ Deno.serve(async (req) => {
     })
   } catch (err) {
     console.error('Seed error:', err)
-    return new Response(JSON.stringify({ error: err.message }), {
+    return new Response(JSON.stringify({ error: (err as Error).message }), {
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   }
