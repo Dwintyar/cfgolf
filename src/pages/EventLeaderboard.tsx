@@ -55,7 +55,8 @@ const EventLeaderboard = () => {
       const { data: allRounds } = await supabase
         .from("rounds")
         .select("id, created_at")
-        .eq("course_id", eventInfo.course_id);
+        .eq("course_id", eventInfo.course_id)
+        .order("created_at", { ascending: false });
 
       const matchedRound = allRounds?.find(r => r.created_at.slice(0, 10) === eventDate)
         ?? allRounds?.[0];
