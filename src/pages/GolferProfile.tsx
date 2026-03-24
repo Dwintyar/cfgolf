@@ -264,18 +264,38 @@ const GolferProfile = () => {
       if (!tourPlayers?.length) return [];
       const results = await Promise.all(
         tourPlayers.map(async (tp: any) => {
+          // Get all events for this tour first
+          const { data: tourEvents } = await supabase
+            .from("events")
+            .select("id, name, event_date, status, course_id, courses(name)")
+            .eq("tour_id", tp.tour_id);
+          const completedEventIds = (tourEvents ?? [])
+            .filter(e => e.status === "completed")
+            .map(e => e.id);
+          if (!completedEventIds.length) {
+            return {
+              tour: tp.tours as any,
+              club: tp.clubs as any,
+              hcpAtReg: tp.hcp_at_registration,
+              hcpCurrent: tp.hcp_tour,
+              events: [],
+            };
+          }
           const { data: contestantData } = await supabase
             .from("contestants")
-            .select("hcp, events(id, name, event_date, status, course_id, courses(name))")
+            .select("hcp, event_id")
             .eq("player_id", targetId!)
-            .filter("events.tour_id", "eq", tp.tour_id);
-          const completedEvents = (contestantData ?? [])
-            .filter(c => (c.events as any)?.status === "completed");
+            .in("event_id", completedEventIds);
+          const completedEvents = (contestantData ?? []).map(c => ({
+            hcp: c.hcp,
+            events: tourEvents?.find(e => e.id === c.event_id),
+          })).filter(c => c.events);
 
           // Fetch scorecard + hole scores for each completed event
           const events = await Promise.all(
             completedEvents.map(async (c: any) => {
               const ev = c.events as any;
+              if (!ev) return { event: null, hcp: c.hcp, out: null, in: null, gross: null, net: null };
               // Get round_id for this event's course
               const { data: roundData } = await supabase
                 .from("rounds")
