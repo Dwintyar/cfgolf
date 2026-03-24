@@ -37,6 +37,8 @@ const PlatformAdminDashboard = () => {
   const [userSearch, setUserSearch] = useState("");
   const [userSort, setUserSort] = useState<"name" | "date_asc" | "date_desc" | "hcp">("name");
   const [eventStatusFilter, setEventStatusFilter] = useState("all");
+  const [userPage, setUserPage] = useState(1);
+  const USER_PAGE_SIZE = 50;
 
   // KPI Stats
   const { data: stats, isLoading } = useQuery({
@@ -68,14 +70,14 @@ const PlatformAdminDashboard = () => {
         .select("id, user_id, email, full_name, requested_at, status")
         .eq("status", "pending")
         .order("requested_at", { ascending: true });
-      return data ?? [];
+      return { data: data ?? [], count: count ?? 0 };
     },
     refetchInterval: 30000,
   });
 
   // --- Tab: Users ---
   const { data: allUsers } = useQuery({
-    queryKey: ["admin-users", userSearch, userSort],
+    queryKey: ["admin-users", userSearch, userSort, userPage],
     queryFn: async () => {
       const sortMap = {
         name: { col: "full_name", asc: true },
@@ -84,7 +86,8 @@ const PlatformAdminDashboard = () => {
         hcp: { col: "handicap", asc: true },
       };
       const { col, asc } = sortMap[userSort];
-      let q = supabase.from("profiles").select("*").order(col, { ascending: asc });
+      const from = (userPage - 1) * USER_PAGE_SIZE;
+      let q = supabase.from("profiles").select("*", { count: "exact" }).order(col, { ascending: asc }).range(from, from + USER_PAGE_SIZE - 1);
       if (userSearch) q = q.ilike("full_name", `%${userSearch}%`);
       const { data } = await q;
       return data ?? [];
@@ -269,7 +272,7 @@ const PlatformAdminDashboard = () => {
               <Input
                 placeholder="Cari nama user..."
                 value={userSearch}
-                onChange={e => setUserSearch(e.target.value)}
+                onChange={e => { setUserSearch(e.target.value); setUserPage(1); }}
                 className="pl-9 h-9 text-sm"
               />
             </div>
@@ -282,7 +285,7 @@ const PlatformAdminDashboard = () => {
               ] as const).map(opt => (
                 <button
                   key={opt.value}
-                  onClick={() => setUserSort(opt.value)}
+                  onClick={() => { setUserSort(opt.value); setUserPage(1); }}
                   className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
                     userSort === opt.value
                       ? "bg-primary text-primary-foreground border-primary"
@@ -294,7 +297,7 @@ const PlatformAdminDashboard = () => {
               ))}
             </div>
             <div className="space-y-2">
-              {allUsers?.map(u => (
+              {allUsers?.data?.map(u => (
                 <div key={u.id} className="golf-card flex items-center gap-3 p-3">
                   <Avatar className="h-9 w-9">
                     <AvatarImage src={u.avatar_url ?? ""} />
@@ -331,6 +334,31 @@ const PlatformAdminDashboard = () => {
                 </div>
               ))}
             </div>
+
+            {/* Pagination */}
+            {allUsers && allUsers.count > USER_PAGE_SIZE && (
+              <div className="flex items-center justify-between pt-2 pb-1">
+                <p className="text-xs text-muted-foreground">
+                  {((userPage - 1) * USER_PAGE_SIZE) + 1}–{Math.min(userPage * USER_PAGE_SIZE, allUsers.count)} dari {allUsers.count} user
+                </p>
+                <div className="flex gap-1.5">
+                  <button
+                    onClick={() => setUserPage(p => Math.max(1, p - 1))}
+                    disabled={userPage === 1}
+                    className="px-3 py-1 rounded-lg text-xs font-medium border border-border disabled:opacity-40 hover:bg-muted transition-colors"
+                  >
+                    ← Prev
+                  </button>
+                  <button
+                    onClick={() => setUserPage(p => p + 1)}
+                    disabled={userPage * USER_PAGE_SIZE >= allUsers.count}
+                    className="px-3 py-1 rounded-lg text-xs font-medium border border-border disabled:opacity-40 hover:bg-muted transition-colors"
+                  >
+                    Next →
+                  </button>
+                </div>
+              </div>
+            )}
           </TabsContent>
 
           {/* TAB: CLUBS */}
