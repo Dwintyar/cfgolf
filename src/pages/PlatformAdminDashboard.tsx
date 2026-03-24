@@ -84,7 +84,7 @@ const PlatformAdminDashboard = () => {
         hcp: { col: "handicap", asc: true },
       };
       const { col, asc } = sortMap[userSort];
-      let q = supabase.from("profiles").select("*").order(col, { ascending: asc }).limit(100);
+      let q = supabase.from("profiles").select("*").order(col, { ascending: asc });
       if (userSearch) q = q.ilike("full_name", `%${userSearch}%`);
       const { data } = await q;
       return data ?? [];
