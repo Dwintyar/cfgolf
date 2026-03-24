@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Settings, UserCircle, MessageCircle, Bell } from "lucide-react";
 import logo from "@/assets/logo.png";
+import { usePendingApprovals } from "@/hooks/use-pending-approvals";
 
 interface AppHeaderProps {
   title: string;
@@ -10,6 +11,7 @@ interface AppHeaderProps {
 
 const AppHeader = ({ title, icon, rightContent }: AppHeaderProps) => {
   const navigate = useNavigate();
+  const { pendingCount, isAdmin } = usePendingApprovals();
 
   return (
     <div className="flex items-center justify-between px-4 py-3">
@@ -21,12 +23,16 @@ const AppHeader = ({ title, icon, rightContent }: AppHeaderProps) => {
       <div className="flex items-center gap-1">
         {rightContent}
         <button
-          onClick={() => navigate("/notifications")}
+          onClick={() => navigate(isAdmin ? "/admin/approvals" : "/notifications")}
           className="relative rounded-full p-2 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
           aria-label="Notifications"
         >
           <Bell className="h-5 w-5" />
-          <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-primary" />
+          {isAdmin && pendingCount > 0 && (
+            <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-bold text-white">
+              {pendingCount > 9 ? "9+" : pendingCount}
+            </span>
+          )}
         </button>
         <button
           onClick={() => navigate("/chat")}

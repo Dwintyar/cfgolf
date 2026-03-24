@@ -59,6 +59,20 @@ const PlatformAdminDashboard = () => {
     },
   });
 
+  // --- Pending Approvals ---
+  const { data: pendingApprovals } = useQuery({
+    queryKey: ["admin-pending-approvals-dashboard"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("pending_approvals")
+        .select("id, user_id, email, full_name, requested_at, status")
+        .eq("status", "pending")
+        .order("requested_at", { ascending: true });
+      return data ?? [];
+    },
+    refetchInterval: 30000,
+  });
+
   // --- Tab: Users ---
   const { data: allUsers } = useQuery({
     queryKey: ["admin-users", userSearch, userSort],
@@ -200,7 +214,14 @@ const PlatformAdminDashboard = () => {
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="w-full overflow-x-auto flex">
-            <TabsTrigger value="users" className="flex-1 text-xs">Users</TabsTrigger>
+            <TabsTrigger value="users" className="flex-1 text-xs relative">
+              Users
+              {pendingApprovals && pendingApprovals.length > 0 && (
+                <span className="ml-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-bold text-white">
+                  {pendingApprovals.length}
+                </span>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="clubs" className="flex-1 text-xs">Clubs</TabsTrigger>
             <TabsTrigger value="tours" className="flex-1 text-xs">Tours</TabsTrigger>
             <TabsTrigger value="events" className="flex-1 text-xs">Events</TabsTrigger>
@@ -210,6 +231,39 @@ const PlatformAdminDashboard = () => {
 
           {/* TAB: USERS */}
           <TabsContent value="users" className="space-y-3 pt-2">
+            {/* Pending Approvals */}
+            {pendingApprovals && pendingApprovals.length > 0 && (
+              <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold text-destructive flex items-center gap-1.5">
+                    <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-white px-1">
+                      {pendingApprovals.length}
+                    </span>
+                    Pending Approval
+                  </p>
+                  <button
+                    onClick={() => navigate("/admin/approvals")}
+                    className="text-xs text-primary font-semibold"
+                  >
+                    Lihat semua →
+                  </button>
+                </div>
+                {pendingApprovals.slice(0, 3).map((u: any) => (
+                  <div key={u.id} className="flex items-center justify-between gap-2 rounded-lg bg-card px-3 py-2">
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold truncate">{u.full_name ?? "—"}</p>
+                      <p className="text-[10px] text-muted-foreground truncate">{u.email}</p>
+                    </div>
+                    <button
+                      onClick={() => navigate("/admin/approvals")}
+                      className="shrink-0 text-[10px] font-semibold text-primary border border-primary/30 rounded-full px-2 py-0.5"
+                    >
+                      Review
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
