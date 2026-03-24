@@ -249,11 +249,9 @@ const Clubs = () => {
       </div>
 
       <Tabs defaultValue="my-clubs" className="px-4">
-        <TabsList className="w-full grid grid-cols-4">
+        <TabsList className="w-full grid grid-cols-2">
           <TabsTrigger value="my-clubs" className="text-xs">My Clubs</TabsTrigger>
           <TabsTrigger value="community" className="text-xs">Community</TabsTrigger>
-          <TabsTrigger value="courses" className="text-xs">Golf Course</TabsTrigger>
-          <TabsTrigger value="ranges" className="text-xs">Driving Range</TabsTrigger>
         </TabsList>
 
         <TabsContent value="my-clubs">
@@ -261,12 +259,6 @@ const Clubs = () => {
         </TabsContent>
         <TabsContent value="community">
           {renderList(communityClubs, false, "Tidak ada community club tersedia.")}
-        </TabsContent>
-        <TabsContent value="courses">
-          {renderList(courseClubs, false, "Tidak ada golf course club tersedia.")}
-        </TabsContent>
-        <TabsContent value="ranges">
-          {renderList(rangeClubs, false, "Tidak ada driving range tersedia.")}
         </TabsContent>
       </Tabs>
     </div>
