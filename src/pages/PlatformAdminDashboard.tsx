@@ -298,6 +298,29 @@ const PlatformAdminDashboard = () => {
                 </button>
               ))}
             </div>
+            {/* Alphabet filter */}
+            {!userSearch && (
+              <div className="flex flex-wrap gap-1 pt-1 pb-2">
+                {"ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").map(letter => (
+                  <button
+                    key={letter}
+                    onClick={() => setUserLetter(letter)}
+                    className={`h-7 w-7 rounded-md text-xs font-bold transition-colors ${
+                      userLetter === letter
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground hover:bg-primary/20 hover:text-primary"
+                    }`}
+                  >
+                    {letter}
+                  </button>
+                ))}
+              </div>
+            )}
+            {allUsers && (
+              <p className="text-xs text-muted-foreground pb-1">
+                {allUsers.count} user{userSearch ? ` ditemukan` : ` berawalan "${userLetter}"`}
+              </p>
+            )}
             <div className="space-y-2">
               {allUsers?.data?.map(u => (
                 <div key={u.id} className="golf-card flex items-center gap-3 p-3">
@@ -337,29 +360,6 @@ const PlatformAdminDashboard = () => {
               ))}
             </div>
 
-            {/* Alphabet filter */}
-            {!userSearch && (
-              <div className="flex flex-wrap gap-1 pt-1 pb-2">
-                {"ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").map(letter => (
-                  <button
-                    key={letter}
-                    onClick={() => setUserLetter(letter)}
-                    className={`h-7 w-7 rounded-md text-xs font-bold transition-colors ${
-                      userLetter === letter
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-muted-foreground hover:bg-primary/20 hover:text-primary"
-                    }`}
-                  >
-                    {letter}
-                  </button>
-                ))}
-              </div>
-            )}
-            {allUsers && (
-              <p className="text-xs text-muted-foreground pb-1">
-                {allUsers.count} user{userSearch ? ` ditemukan` : ` berawalan "${userLetter}"`}
-              </p>
-            )}
           </TabsContent>
 
           {/* TAB: CLUBS */}
