@@ -89,8 +89,8 @@ const PlatformAdminDashboard = () => {
       const from = (userPage - 1) * USER_PAGE_SIZE;
       let q = supabase.from("profiles").select("*", { count: "exact" }).order(col, { ascending: asc }).range(from, from + USER_PAGE_SIZE - 1);
       if (userSearch) q = q.ilike("full_name", `%${userSearch}%`);
-      const { data } = await q;
-      return data ?? [];
+      const { data, count } = await q;
+      return { data: data ?? [], count: count ?? 0 };
     },
   });
 
