@@ -193,7 +193,7 @@ const PlatformAdminDashboard = () => {
 
   if (isLoading) return (
     <div className="bottom-nav-safe">
-      <AppHeader title="Platform Admin" />
+      <AppHeader title="Platform Admin" rightContent={<button onClick={() => navigate("/settings")} className="text-xs text-muted-foreground hover:text-foreground px-2">← Back</button>} />
       <div className="space-y-4 p-4">
         <div className="grid grid-cols-2 gap-3">
           {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-24 rounded-xl" />)}
@@ -204,7 +204,7 @@ const PlatformAdminDashboard = () => {
 
   return (
     <div className="bottom-nav-safe">
-      <AppHeader title="Platform Admin Dashboard" />
+      <AppHeader title="Platform Admin Dashboard" rightContent={<button onClick={() => navigate("/settings")} className="text-xs text-muted-foreground hover:text-foreground px-2">← Back</button>} />
       <div className="space-y-4 p-4">
         {/* KPI Cards */}
         <div className="grid grid-cols-3 gap-2">
