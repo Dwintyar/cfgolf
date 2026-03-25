@@ -1,4 +1,4 @@
-import { ArrowLeft, Globe, Mail, Camera, UserPlus, UserCheck, MessageCircle, Crown, Check, X, BarChart3, TrendingDown, Trophy, MapPin, Settings, Clock, Share2, Shield } from "lucide-react";
+import { ArrowLeft, Globe, Mail, Camera, UserPlus, UserCheck, MessageCircle, Crown, Check, X, BarChart3, TrendingDown, Trophy, MapPin, Settings, Clock, Share2, Shield, CalendarDays, Loader2 } from "lucide-react";
 import CommitteeRoleBadges from "@/components/CommitteeRoleBadges";
 import { useNavigate, useParams } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -11,7 +11,7 @@ import { useQuery } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
 import CreateClubDialog from "@/components/CreateClubDialog";
 
-type Tab = "about" | "clubs" | "stats" | "gallery";
+type Tab = "about" | "clubs" | "stats" | "gallery" | "bookings";
 type DesktopTab = "overview" | "stats" | "history";
 
 interface Profile {
@@ -248,6 +248,35 @@ const GolferProfile = () => {
     enabled: !!targetId,
   });
 
+  // My Bookings — only load for own profile
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const { data: myBookings, refetch: refetchBookings } = useQuery({
+    queryKey: ["my-bookings", targetId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("tee_time_bookings")
+        .select("*, courses:course_id(name, location)")
+        .eq("user_id", targetId!)
+        .order("booking_date", { ascending: false })
+        .order("tee_time", { ascending: false });
+      return data ?? [];
+    },
+    enabled: !!targetId && isOwnProfile,
+  });
+
+  const handleCancelBooking = async (bookingId: string) => {
+    setCancellingId(bookingId);
+    const { error } = await supabase
+      .from("tee_time_bookings")
+      .update({ status: "cancelled" })
+      .eq("id", bookingId)
+      .eq("user_id", userId!);
+    setCancellingId(null);
+    if (error) { toast({ title: "Gagal membatalkan booking", variant: "destructive" }); return; }
+    toast({ title: "Booking dibatalkan" });
+    refetchBookings();
+  };
+
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
@@ -428,6 +457,7 @@ const GolferProfile = () => {
     { id: "clubs", label: "CLUBS" },
     { id: "stats", label: "STATS" },
     { id: "gallery", label: "GALLERY" },
+    ...(isOwnProfile ? [{ id: "bookings" as Tab, label: "BOOKINGS" }] : []),
   ];
 
   if (loading) {
@@ -1131,6 +1161,83 @@ const GolferProfile = () => {
                       {isOwnProfile ? "Tap tombol di atas untuk tambah foto pertama." : "Belum ada foto yang dibagikan."}
                     </p>
                   </div>
+                )}
+              </div>
+            )}
+
+            {tab === "bookings" && isOwnProfile && (
+              <div className="animate-fade-in space-y-3">
+                {!myBookings || myBookings.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-16 text-center">
+                    <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                      <CalendarDays className="h-8 w-8 text-primary/60" />
+                    </div>
+                    <p className="text-base font-semibold">Belum ada booking</p>
+                    <p className="text-sm text-muted-foreground mt-1">Booking tee time dari halaman Venues.</p>
+                  </div>
+                ) : (
+                  myBookings.map((b: any) => {
+                    const isPast = b.booking_date < new Date().toISOString().split("T")[0];
+                    const isCancelled = b.status === "cancelled";
+                    const statusColor = isCancelled
+                      ? "text-red-400 bg-red-400/10"
+                      : isPast
+                      ? "text-muted-foreground bg-muted"
+                      : "text-green-400 bg-green-400/10";
+                    const statusLabel = isCancelled ? "Dibatalkan" : isPast ? "Selesai" : "Confirmed";
+
+                    return (
+                      <div key={b.id} className="rounded-xl border border-border bg-card p-4 space-y-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <p className="font-semibold text-sm leading-tight">
+                              {(b.courses as any)?.name ?? "Golf Course"}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              {(b.courses as any)?.location ?? ""}
+                            </p>
+                          </div>
+                          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${statusColor}`}>
+                            {statusLabel}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <CalendarDays className="h-3 w-3" />
+                            {new Date(b.booking_date).toLocaleDateString("id-ID", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            {b.tee_time}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-muted-foreground">{b.players_count} pemain · Rp {Number(b.total_price ?? 0).toLocaleString("id-ID")}</span>
+                          {!isCancelled && !isPast && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 px-2 text-xs text-red-400 hover:text-red-300 hover:bg-red-400/10"
+                              disabled={cancellingId === b.id}
+                              onClick={() => handleCancelBooking(b.id)}
+                            >
+                              {cancellingId === b.id ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : "Batalkan"}
+                            </Button>
+                          )}
+                        </div>
+
+                        {b.notes && (
+                          <p className="text-xs text-muted-foreground italic border-t border-border pt-2">
+                            "{b.notes}"
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })
                 )}
               </div>
             )}
