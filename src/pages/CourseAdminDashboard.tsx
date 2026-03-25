@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, LayoutDashboard, Grid3X3, Clock, Settings, Save, Plus, AlertTriangle, Layers, Pencil, Trash2, Search, UserCog } from "lucide-react";
+import { ArrowLeft, LayoutDashboard, Grid3X3, Clock, Settings, Save, Plus, AlertTriangle, Layers, Pencil, Trash2, Search, UserCog, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -18,6 +18,7 @@ const TABS = [
   { id: "holes", label: "Holes", icon: Grid3X3 },
   { id: "teebox", label: "Tee Box", icon: Layers },
   { id: "teetimes", label: "Tee Times", icon: Clock },
+  { id: "caddies", label: "Caddies", icon: Users },
   { id: "settings", label: "Settings", icon: Settings },
 ] as const;
 
@@ -168,6 +169,77 @@ const CourseAdminDashboard = () => {
   const [priceWeekday, setPriceWeekday] = useState("");
   const [priceWeekend, setPriceWeekend] = useState("");
   const [savingSlots, setSavingSlots] = useState(false);
+
+  // ═══ CADDY STATE ═══
+  const [caddyForm, setCaddyForm] = useState({ name: "", caddy_number: "", notes: "" });
+  const [editingCaddy, setEditingCaddy] = useState<any | null>(null);
+  const [showCaddyDialog, setShowCaddyDialog] = useState(false);
+  const [savingCaddy, setSavingCaddy] = useState(false);
+  const [deletingCaddyId, setDeletingCaddyId] = useState<string | null>(null);
+
+  const { data: caddies, refetch: refetchCaddies } = useQuery({
+    queryKey: ["course-caddies", courseId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("course_caddies")
+        .select("*")
+        .eq("course_id", courseId!)
+        .order("name");
+      return data ?? [];
+    },
+    enabled: !!courseId && !isNew,
+  });
+
+  const handleOpenCaddyDialog = (caddy?: any) => {
+    if (caddy) {
+      setEditingCaddy(caddy);
+      setCaddyForm({ name: caddy.name, caddy_number: caddy.caddy_number ?? "", notes: caddy.notes ?? "" });
+    } else {
+      setEditingCaddy(null);
+      setCaddyForm({ name: "", caddy_number: "", notes: "" });
+    }
+    setShowCaddyDialog(true);
+  };
+
+  const handleSaveCaddy = async () => {
+    if (!caddyForm.name.trim()) { toast({ title: "Nama caddy wajib diisi", variant: "destructive" }); return; }
+    setSavingCaddy(true);
+    if (editingCaddy) {
+      const { error } = await supabase.from("course_caddies").update({
+        name: caddyForm.name.trim(),
+        caddy_number: caddyForm.caddy_number.trim() || null,
+        notes: caddyForm.notes.trim() || null,
+      }).eq("id", editingCaddy.id);
+      if (error) { toast({ title: "Gagal menyimpan", variant: "destructive" }); setSavingCaddy(false); return; }
+    } else {
+      const { error } = await supabase.from("course_caddies").insert({
+        course_id: courseId!,
+        name: caddyForm.name.trim(),
+        caddy_number: caddyForm.caddy_number.trim() || null,
+        notes: caddyForm.notes.trim() || null,
+      });
+      if (error) { toast({ title: "Gagal menambah caddy", variant: "destructive" }); setSavingCaddy(false); return; }
+    }
+    toast({ title: editingCaddy ? "Caddy diperbarui" : "Caddy ditambahkan" });
+    setSavingCaddy(false);
+    setShowCaddyDialog(false);
+    refetchCaddies();
+  };
+
+  const handleDeleteCaddy = async (id: string) => {
+    setDeletingCaddyId(id);
+    const { error } = await supabase.from("course_caddies").delete().eq("id", id);
+    if (error) toast({ title: "Gagal menghapus", variant: "destructive" });
+    else { toast({ title: "Caddy dihapus" }); refetchCaddies(); }
+    setDeletingCaddyId(null);
+  };
+
+  const handleToggleCaddyActive = async (caddy: any) => {
+    const { error } = await supabase.from("course_caddies")
+      .update({ is_active: !caddy.is_active }).eq("id", caddy.id);
+    if (error) toast({ title: "Gagal memperbarui status", variant: "destructive" });
+    else refetchCaddies();
+  };
 
   useEffect(() => {
     if (slotConfig) {
@@ -840,6 +912,87 @@ const CourseAdminDashboard = () => {
           </div>
         )}
 
+        {/* ═══ CADDIES ═══ */}
+        {tab === "caddies" && !isNew && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold">Daftar Caddy</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {caddies?.filter(c => c.is_active).length ?? 0} caddy aktif
+                </p>
+              </div>
+              <Button size="sm" className="gap-2 h-8" onClick={() => handleOpenCaddyDialog()}>
+                <Plus className="h-3.5 w-3.5" /> Tambah Caddy
+              </Button>
+            </div>
+
+            {!caddies || caddies.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                  <Users className="h-8 w-8 text-primary/60" />
+                </div>
+                <p className="text-base font-semibold">Belum ada caddy</p>
+                <p className="text-sm text-muted-foreground mt-1">Tambah caddy untuk di-assign saat pairing tournament.</p>
+                <Button size="sm" className="mt-4 gap-2" onClick={() => handleOpenCaddyDialog()}>
+                  <Plus className="h-3.5 w-3.5" /> Tambah Caddy Pertama
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {caddies.map((caddy: any) => (
+                  <div key={caddy.id} className={`rounded-xl border p-3 flex items-center gap-3 ${!caddy.is_active ? "opacity-50 border-dashed" : "border-border bg-card"}`}>
+                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                      <Users className="h-5 w-5 text-primary/70" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-sm truncate">{caddy.name}</p>
+                        {caddy.caddy_number && (
+                          <span className="text-[10px] font-mono bg-muted px-1.5 py-0.5 rounded shrink-0">
+                            #{caddy.caddy_number}
+                          </span>
+                        )}
+                        {!caddy.is_active && (
+                          <span className="text-[10px] text-muted-foreground shrink-0">Nonaktif</span>
+                        )}
+                      </div>
+                      {caddy.notes && (
+                        <p className="text-xs text-muted-foreground truncate mt-0.5">{caddy.notes}</p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Button
+                        variant="ghost" size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                        onClick={() => handleOpenCaddyDialog(caddy)}
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost" size="icon"
+                        className={`h-8 w-8 ${caddy.is_active ? "text-yellow-500 hover:text-yellow-400" : "text-green-500 hover:text-green-400"}`}
+                        onClick={() => handleToggleCaddyActive(caddy)}
+                        title={caddy.is_active ? "Nonaktifkan" : "Aktifkan"}
+                      >
+                        {caddy.is_active ? <AlertTriangle className="h-3.5 w-3.5" /> : <Save className="h-3.5 w-3.5" />}
+                      </Button>
+                      <Button
+                        variant="ghost" size="icon"
+                        className="h-8 w-8 text-red-400 hover:text-red-300"
+                        disabled={deletingCaddyId === caddy.id}
+                        onClick={() => handleDeleteCaddy(caddy.id)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* ═══ SETTINGS ═══ */}
         {(tab === "settings" || isNew) && (
           <div className="space-y-4">
@@ -997,6 +1150,50 @@ const CourseAdminDashboard = () => {
             <DialogFooter>
               <Button variant="outline" onClick={() => setShowLockConfirm(false)}>Batalkan</Button>
               <Button onClick={() => { setShowLockConfirm(false); saveMutation.mutate(); }}>Ya, Update</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* ═══ CADDY DIALOG ═══ */}
+        <Dialog open={showCaddyDialog} onOpenChange={setShowCaddyDialog}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle>{editingCaddy ? "Edit Caddy" : "Tambah Caddy"}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3 py-2">
+              <div>
+                <Label className="text-xs">Nama Caddy <span className="text-red-400">*</span></Label>
+                <Input
+                  className="mt-1"
+                  placeholder="Nama lengkap caddy"
+                  value={caddyForm.name}
+                  onChange={e => setCaddyForm(f => ({ ...f, name: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label className="text-xs">Nomor Caddy</Label>
+                <Input
+                  className="mt-1"
+                  placeholder="Contoh: 001"
+                  value={caddyForm.caddy_number}
+                  onChange={e => setCaddyForm(f => ({ ...f, caddy_number: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label className="text-xs">Catatan</Label>
+                <Input
+                  className="mt-1"
+                  placeholder="Spesialisasi, keterangan, dll"
+                  value={caddyForm.notes}
+                  onChange={e => setCaddyForm(f => ({ ...f, notes: e.target.value }))}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowCaddyDialog(false)}>Batal</Button>
+              <Button onClick={handleSaveCaddy} disabled={savingCaddy}>
+                {savingCaddy ? "Menyimpan..." : "Simpan"}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
