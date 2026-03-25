@@ -38,6 +38,11 @@ const PlatformAdminDashboard = () => {
   const [userSort, setUserSort] = useState<"name" | "date_asc" | "date_desc" | "hcp">("name");
   const [eventStatusFilter, setEventStatusFilter] = useState("all");
   const [userLetter, setUserLetter] = useState("A");
+  const [showMergeDialog, setShowMergeDialog] = useState(false);
+  const [mergeTarget, setMergeTarget] = useState<any>(null);
+  const [mergeSearch, setMergeSearch] = useState("");
+  const [mergeResults, setMergeResults] = useState<any[]>([]);
+  const [merging, setMerging] = useState(false);
 
   // KPI Stats
   const { data: stats, isLoading } = useQuery({
@@ -190,6 +195,43 @@ const PlatformAdminDashboard = () => {
       return Object.entries(months).slice(-6).map(([month, count]) => ({ month, count }));
     },
   });
+
+  const handleMergeSearch = async (q: string) => {
+    setMergeSearch(q);
+    if (q.trim().length < 2) { setMergeResults([]); return; }
+    const { data } = await supabase.from("profiles")
+      .select("id, full_name, handicap, created_at, email")
+      .ilike("full_name", `%${q.trim()}%`)
+      .limit(10);
+    setMergeResults((data ?? []).filter(p => p.id !== mergeTarget?.id));
+  };
+
+  const handleMerge = async (oldProfileId: string, oldName: string) => {
+    if (!mergeTarget || merging) return;
+    setMerging(true);
+    try {
+      const updates = [
+        supabase.from("contestants").update({ player_id: mergeTarget.id }).eq("player_id", oldProfileId),
+        supabase.from("tour_players").update({ player_id: mergeTarget.id }).eq("player_id", oldProfileId),
+        supabase.from("handicap_history").update({ player_id: mergeTarget.id }).eq("player_id", oldProfileId),
+        supabase.from("scorecards").update({ player_id: mergeTarget.id }).eq("player_id", oldProfileId),
+        supabase.from("members").update({ user_id: mergeTarget.id }).eq("user_id", oldProfileId),
+        supabase.from("round_players").update({ user_id: mergeTarget.id }).eq("user_id", oldProfileId),
+      ];
+      await Promise.all(updates);
+      await supabase.from("profiles").delete().eq("id", oldProfileId);
+      toast.success(`Profile "${oldName}" berhasil digabung ke "${mergeTarget.full_name}"`);
+      setShowMergeDialog(false);
+      setMergeTarget(null);
+      setMergeSearch("");
+      setMergeResults([]);
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+    } catch (err: any) {
+      toast.error(err.message || "Gagal merge");
+    } finally {
+      setMerging(false);
+    }
+  };
 
   if (isLoading) return (
     <div className="bottom-nav-safe">
@@ -354,6 +396,9 @@ const PlatformAdminDashboard = () => {
                           <Shield className="h-3.5 w-3.5 mr-2" /> Grant Moderator
                         </DropdownMenuItem>
                       )}
+                      <DropdownMenuItem onClick={() => { setMergeTarget(u); setShowMergeDialog(true); }}>
+                        <Users className="h-3.5 w-3.5 mr-2" /> Merge Profile
+                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
@@ -516,6 +561,73 @@ const PlatformAdminDashboard = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Merge Profile Dialog */}
+      {showMergeDialog && mergeTarget && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
+          <div className="w-full max-w-md golf-card p-5 space-y-4">
+            <div>
+              <h3 className="font-bold text-base">Merge Profile</h3>
+              <p className="text-xs text-muted-foreground mt-1">
+                Semua data tournament, scorecard, dan membership dari profile lama akan dipindahkan ke:
+              </p>
+              <div className="mt-2 rounded-lg bg-primary/10 px-3 py-2 flex items-center gap-2">
+                <div className="h-7 w-7 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary shrink-0">
+                  {(mergeTarget.full_name ?? "?").charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <p className="text-sm font-semibold">{mergeTarget.full_name}</p>
+                  <p className="text-[10px] text-muted-foreground">{mergeTarget.location || "—"} · HCP {mergeTarget.handicap ?? "N/A"}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-muted-foreground">Cari profile lama yang akan digabung:</p>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input
+                  placeholder="Nama player lama..."
+                  value={mergeSearch}
+                  onChange={e => handleMergeSearch(e.target.value)}
+                  className="pl-8 h-9 text-sm"
+                  autoFocus
+                />
+              </div>
+              {mergeResults.length > 0 && (
+                <div className="rounded-xl border border-border overflow-hidden max-h-48 overflow-y-auto">
+                  {mergeResults.map((p: any) => (
+                    <button
+                      key={p.id}
+                      onClick={() => handleMerge(p.id, p.full_name)}
+                      disabled={merging}
+                      className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left hover:bg-secondary/50 border-b border-border/30 last:border-0 transition-colors"
+                    >
+                      <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0">
+                        {(p.full_name ?? "?").charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{p.full_name}</p>
+                        <p className="text-[10px] text-muted-foreground">HCP {p.handicap ?? "N/A"} · {new Date(p.created_at).toLocaleDateString("id-ID")}</p>
+                      </div>
+                      <span className="text-[10px] text-destructive font-semibold shrink-0">
+                        {merging ? "Merging..." : "Gabung →"}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <button
+              onClick={() => { setShowMergeDialog(false); setMergeTarget(null); setMergeSearch(""); setMergeResults([]); }}
+              className="w-full text-sm text-muted-foreground hover:text-foreground py-2"
+            >
+              Batal
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

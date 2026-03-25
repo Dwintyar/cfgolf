@@ -22,6 +22,11 @@ const Onboarding = () => {
   const [avatarUrl, setAvatarUrl] = useState("");
   const [uploading, setUploading] = useState(false);
 
+  // Step 1.5 — Claim existing profile
+  const [claimCandidates, setClaimCandidates] = useState<any[]>([]);
+  const [claimChecked, setClaimChecked] = useState(false);
+  const [claiming, setClaiming] = useState(false);
+
   // Step 2 state
   const [joinedClubIds, setJoinedClubIds] = useState<Set<string>>(new Set());
   const [joiningId, setJoiningId] = useState<string | null>(null);
@@ -97,11 +102,59 @@ const Onboarding = () => {
         updated_at: new Date().toISOString(),
       })
       .eq("id", userId);
-    if (error) {
-      toast.error(error.message);
-      return;
+    if (error) { toast.error(error.message); return; }
+
+    // Check for existing profiles with same name (potential claim)
+    if (!claimChecked) {
+      const { data: matches } = await supabase
+        .from("profiles")
+        .select("id, full_name, handicap, created_at")
+        .ilike("full_name", fullName.trim())
+        .neq("id", userId)
+        .lt("created_at", "2026-01-01"); // only old seed profiles
+      if (matches && matches.length > 0) {
+        setClaimCandidates(matches);
+        setClaimChecked(true);
+        setStep(1.5 as any);
+        return;
+      }
     }
     setStep(2);
+  };
+
+  const handleClaimProfile = async (oldProfileId: string) => {
+    if (!userId || claiming) return;
+    setClaiming(true);
+    try {
+      // Tables that reference profiles by player_id/user_id
+      const updates = [
+        supabase.from("contestants").update({ player_id: userId }).eq("player_id", oldProfileId),
+        supabase.from("tour_players").update({ player_id: userId }).eq("player_id", oldProfileId),
+        supabase.from("handicap_history").update({ player_id: userId }).eq("player_id", oldProfileId),
+        supabase.from("scorecards").update({ player_id: userId }).eq("player_id", oldProfileId),
+        supabase.from("members").update({ user_id: userId }).eq("user_id", oldProfileId),
+      ];
+      await Promise.all(updates);
+
+      // Copy HCP from old profile if user hasn't set one
+      if (!handicap) {
+        const { data: old } = await supabase.from("profiles").select("handicap").eq("id", oldProfileId).single();
+        if (old?.handicap) {
+          await supabase.from("profiles").update({ handicap: old.handicap }).eq("id", userId);
+        }
+      }
+
+      // Delete old profile (it's now orphaned)
+      await supabase.from("profiles").delete().eq("id", oldProfileId);
+
+      toast.success("Profile berhasil diklaim! Data tournament Anda sudah terhubung.");
+      setClaimCandidates([]);
+      setStep(2);
+    } catch (err: any) {
+      toast.error(err.message || "Gagal klaim profile");
+    } finally {
+      setClaiming(false);
+    }
   };
 
   const handleJoinClub = async (clubId: string) => {
@@ -234,6 +287,52 @@ const Onboarding = () => {
                 onClick={handleStep1Next}
               >
                 Lanjut <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
+          )}
+
+          {/* STEP 1.5 — Claim existing profile */}
+          {(step as any) === 1.5 && (
+            <div className="flex-1 flex flex-col p-6 animate-fade-in">
+              <div className="text-center mb-6">
+                <div className="mx-auto h-14 w-14 rounded-full bg-accent/15 flex items-center justify-center mb-3">
+                  <Trophy className="h-7 w-7 text-accent" />
+                </div>
+                <h2 className="text-xl font-bold">Ada Data Atas Nama Anda?</h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Kami menemukan profile lama dengan nama yang sama. Apakah ini Anda?
+                </p>
+              </div>
+
+              <div className="space-y-3 flex-1">
+                {claimCandidates.map((c: any) => (
+                  <div key={c.id} className="golf-card p-4 border-accent/30">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="h-10 w-10 rounded-full bg-accent/15 flex items-center justify-center shrink-0 font-bold text-accent">
+                        {(c.full_name ?? "?").charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="font-semibold">{c.full_name}</p>
+                        <p className="text-xs text-muted-foreground">HCP {c.handicap ?? "N/A"}</p>
+                      </div>
+                    </div>
+                    <Button
+                      className="w-full h-9 text-sm"
+                      disabled={claiming}
+                      onClick={() => handleClaimProfile(c.id)}
+                    >
+                      {claiming ? "Mengklaim..." : "Ya, ini saya — Klaim Profile"}
+                    </Button>
+                  </div>
+                ))}
+              </div>
+
+              <Button
+                variant="ghost"
+                className="w-full mt-4 text-muted-foreground"
+                onClick={() => { setClaimCandidates([]); setStep(2); }}
+              >
+                Bukan saya, lewati →
               </Button>
             </div>
           )}
