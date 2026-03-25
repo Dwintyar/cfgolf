@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import loginBg from "@/assets/golf-login-bg.jpg";
-import logo from "@/assets/logo.svg";
+import logo from "@/assets/logo.png";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -191,7 +191,7 @@ const Login = () => {
 
       <div className="relative z-10 w-full max-w-sm px-6 pb-12">
         <div className="mb-8 text-center">
-          <img src={logo} alt="CFGolf" className="mx-auto h-20 w-20 rounded-2xl shadow-lg mb-4 object-contain" />
+          <img src={logo} alt="CFGolf" className="mx-auto h-20 w-20 mb-4 object-contain" />
           <h1 className="font-display text-3xl font-bold tracking-tight">
             CF<span className="text-primary">Golf</span>
           </h1>
