@@ -143,14 +143,12 @@ const Notifications = () => {
             .eq("status", "pending");
 
           if (pendingErr) console.error("pending error:", pendingErr);
-          console.log("All pending for my clubs:", pendingAll?.length, pendingAll);
 
           // Filter join requests: invited_by === invited_user_id
           const joinReqs = (pendingAll ?? []).filter(
             (r: any) => r.invited_by === r.invited_user_id
           );
 
-          console.log("Self join requests:", joinReqs.length);
 
           joinReqs.forEach((r: any) => {
             const profile = r.profiles as any;

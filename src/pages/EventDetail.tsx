@@ -93,7 +93,6 @@ const EventDetail = () => {
           : Promise.resolve({ data: [] as any[] }),
       ]);
 
-      console.log("flights loaded:", flightsData);
 
       const profMap: Record<string, string> = {};
       (profs ?? []).forEach((p: any) => { profMap[p.id] = p.full_name; });
@@ -373,7 +372,6 @@ const EventDetail = () => {
         .in("player_id", playerIds)
         .limit(300);
 
-      console.log("Scorecards found:", scorecards?.length);
 
       // Fetch hole_scores in chunks of scorecard IDs to avoid large .in() issues
       const scIds = (scorecards ?? []).map(s => s.id);
@@ -406,7 +404,6 @@ const EventDetail = () => {
         }
       }
 
-      console.log("Total hole scores fetched:", allHoles.length);
 
       // Compute OUT/IN per scorecard
       const outInMap: Record<string, { out: number; in: number }> = {};
@@ -503,7 +500,6 @@ const EventDetail = () => {
       .eq("event_id", eventId)
       .order("start_hole")
       .order("slot");
-    console.log("STEP1 pairings:", p?.length, pe);
     if (!p?.length) return;
 
     // Step 2
@@ -511,7 +507,6 @@ const EventDetail = () => {
       .from("pairing_players")
       .select("pairing_id, contestant_id, position")
       .in("pairing_id", p.map(x => x.id));
-    console.log("STEP2 pairing_players:", pp?.length, ppe);
     if (!pp?.length) { setPairingsList(p); return; }
 
     // Step 3
@@ -519,14 +514,12 @@ const EventDetail = () => {
       .from("contestants")
       .select("id, player_id, hcp, flight_id")
       .in("id", pp.map(x => x.contestant_id).filter(Boolean));
-    console.log("STEP3 contestants:", ct?.length, cte);
 
     // Step 4
     const { data: pr, error: pre } = await supabase
       .from("profiles")
       .select("id, full_name, avatar_url")
       .in("id", (ct ?? []).map(x => x.player_id));
-    console.log("STEP4 profiles:", pr?.length, pre);
 
     // Step 5
     const flIds = [...new Set((ct ?? []).map(c => c.flight_id).filter(Boolean))] as string[];
@@ -585,7 +578,6 @@ const EventDetail = () => {
         caddy_name: cdyMap[row.contestant_id!] ?? null,
       });
     });
-    console.log("STEP9 byPairing keys:", Object.keys(byPairing).length);
 
     setPairingsList(p);
     setPlayersByPairing(byPairing);
