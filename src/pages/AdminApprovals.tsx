@@ -277,6 +277,7 @@ const AdminApprovals = () => {
                   <TableHead>Email</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Tanggal</TableHead>
+                  <TableHead></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -293,6 +294,19 @@ const AdminApprovals = () => {
                       {a.reviewed_at
                         ? format(new Date(a.reviewed_at), "dd MMM yyyy HH:mm", { locale: idLocale })
                         : "—"}
+                    </TableCell>
+                    <TableCell>
+                      {a.status === "rejected" && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-xs text-emerald-600 border-emerald-600/30 hover:bg-emerald-600/10"
+                          disabled={actionLoading === a.id}
+                          onClick={() => handleApprove(a)}
+                        >
+                          {actionLoading === a.id ? "..." : "Setujui"}
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
