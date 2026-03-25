@@ -222,6 +222,10 @@ const TourDetail = () => {
   const myClubQuota = myClubInTour?.ticket_quota ?? 0;
   const myClubName = (myClubInTour?.clubs as any)?.name ?? "";
 
+  // My own registration status
+  const myTourPlayer = players?.find((p: any) => p.player_id === userId);
+  const amIRegistered = !!myTourPlayer && myTourPlayer.status !== "pending";
+
   // Determine caller's club in this tour
   const { data: callerClubId } = useQuery({
     queryKey: ["tour-caller-club", id, userId],
@@ -454,10 +458,26 @@ const TourDetail = () => {
 
       {/* Regular user Actions (non-organizer, non-club-admin) */}
       {!isOrganizer && !isClubAdmin && userId && (
-        <div className="flex gap-2 overflow-x-auto px-4 pb-3 scrollbar-none">
-          <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowRegister(true)}>
-            <UserPlus className="h-3 w-3" /> Register Player
-          </Button>
+        <div className="px-4 pb-3 space-y-2">
+          {amIRegistered ? (
+            <div className="golf-card p-3 border-green-500/30 bg-green-500/5 flex items-center gap-3">
+              <div className="h-8 w-8 rounded-full bg-green-500/15 flex items-center justify-center shrink-0">
+                <span className="text-green-500 text-sm">✓</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-green-500">Terdaftar</p>
+                <p className="text-[10px] text-muted-foreground">
+                  {(myTourPlayer as any)?.clubs?.name ?? "—"} · HCP {(myTourPlayer as any)?.hcp_at_registration ?? "—"}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowRegister(true)}>
+                <UserPlus className="h-3 w-3" /> Register Player
+              </Button>
+            </div>
+          )}
         </div>
       )}
 
