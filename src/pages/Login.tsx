@@ -21,15 +21,32 @@ const Login = () => {
   const [pendingApproval, setPendingApproval] = useState(false);
 
   const checkOnboarding = async (userId: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
     const { data } = await supabase
       .from("profiles")
       .select("onboarding_completed, is_approved")
       .eq("id", userId)
-      .single();
+      .maybeSingle();
+
+    // Profile belum ada — user baru via Google OAuth
+    if (!data) {
+      // Insert ke pending_approvals
+      const email = user?.email ?? "";
+      const fullName = user?.user_metadata?.full_name ?? user?.user_metadata?.name ?? "";
+      await supabase.from("pending_approvals").upsert({
+        user_id: userId,
+        email,
+        full_name: fullName,
+        status: "pending",
+      }, { onConflict: "user_id" });
+      await supabase.auth.signOut();
+      setPendingApproval(true);
+      return;
+    }
 
     if (!data?.is_approved) {
       await supabase.auth.signOut();
-      toast.error("Akun Anda belum disetujui oleh admin EGC. Silakan hubungi dwintyar@gmail.com");
+      setPendingApproval(true);
       return;
     }
 
@@ -142,7 +159,7 @@ const Login = () => {
   const handleSocialLogin = async (provider: "google" | "facebook" | "linkedin_oidc") => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
-      options: { redirectTo: `${window.location.origin}/news` },
+      options: { redirectTo: `${window.location.origin}/login` },
     });
     if (error) toast.error(error.message);
   };
