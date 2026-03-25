@@ -153,12 +153,12 @@ const NewsFeed = () => {
             <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
               <MessageSquare className="h-8 w-8 text-primary/60" />
             </div>
-            <p className="text-lg font-semibold text-foreground">Nothing here yet</p>
+            <p className="text-lg font-semibold text-foreground">Belum ada postingan</p>
             <p className="text-sm text-muted-foreground mt-1">
-              Be the first to post something for your club.
+              Jadilah yang pertama berbagi momen golf hari ini.
             </p>
             <Button className="mt-4" onClick={() => setShowCreate(true)}>
-              Create Post
+              Buat Postingan
             </Button>
           </div>
         )}

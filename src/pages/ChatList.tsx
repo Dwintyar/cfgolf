@@ -181,14 +181,17 @@ const ChatList = () => {
             <p className="text-center text-sm text-muted-foreground py-8">Loading chats...</p>
           )}
           {!loadingChats && (!conversations || conversations.length === 0) && (
-            <div className="p-8 text-center">
-              <Mail className="mx-auto h-10 w-10 text-muted-foreground/40" />
-              <p className="mt-3 text-sm text-muted-foreground">No conversations yet</p>
+            <div className="flex flex-col items-center justify-center py-16 px-8 text-center">
+              <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center mb-3">
+                <Mail className="h-7 w-7 text-primary/60" />
+              </div>
+              <p className="text-base font-semibold">Belum ada percakapan</p>
+              <p className="text-sm text-muted-foreground mt-1">Mulai chat dengan sesama golfer.</p>
               <button
                 onClick={() => setNewMsgOpen(true)}
                 className="mt-3 text-sm font-semibold text-primary"
               >
-                Start a new chat
+                Mulai chat baru
               </button>
             </div>
           )}
@@ -237,14 +240,17 @@ const ChatList = () => {
             <p className="text-center text-sm text-muted-foreground py-8">Loading contacts...</p>
           )}
           {!loadingContacts && (!contacts || contacts.length === 0) && (
-            <div className="p-8 text-center">
-              <Users className="mx-auto h-10 w-10 text-muted-foreground/40" />
-              <p className="mt-3 text-sm text-muted-foreground">No buddies yet</p>
+            <div className="flex flex-col items-center justify-center py-16 px-8 text-center">
+              <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center mb-3">
+                <Users className="h-7 w-7 text-primary/60" />
+              </div>
+              <p className="text-base font-semibold">Belum ada kontak</p>
+              <p className="text-sm text-muted-foreground mt-1">Tambah buddies dulu untuk bisa chat.</p>
               <button
                 onClick={() => navigate("/play")}
                 className="mt-3 text-sm font-semibold text-primary"
               >
-                Find buddies
+                Cari golfer
               </button>
             </div>
           )}

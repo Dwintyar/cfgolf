@@ -362,9 +362,13 @@ const Play = () => {
                   People you may know
                 </p>
                 {filteredSuggestions.length === 0 && (
-                  <p className="text-center text-sm text-muted-foreground py-8">
-                    No suggestions available
-                  </p>
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
+                      <Search className="h-6 w-6 text-primary/60" />
+                    </div>
+                    <p className="text-sm font-semibold">Tidak ada saran</p>
+                    <p className="text-xs text-muted-foreground mt-1">Coba cari nama golfer di atas.</p>
+                  </div>
                 )}
                 {filteredSuggestions.map((p, i) => {
                   const isSent = sentRequests.has(p.id);
@@ -415,9 +419,13 @@ const Play = () => {
                   Buddy Requests
                 </p>
                 {requests.length === 0 && (
-                  <p className="text-center text-sm text-muted-foreground py-8">
-                    No pending requests
-                  </p>
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
+                      <UserPlus className="h-6 w-6 text-primary/60" />
+                    </div>
+                    <p className="text-sm font-semibold">Tidak ada permintaan</p>
+                    <p className="text-xs text-muted-foreground mt-1">Permintaan buddy baru akan muncul di sini.</p>
+                  </div>
                 )}
                 {requests.map((r, i) => (
                   <div
@@ -470,9 +478,17 @@ const Play = () => {
                   Your Buddies ({filteredBuddies.length})
                 </p>
                 {filteredBuddies.length === 0 && (
-                  <p className="text-center text-sm text-muted-foreground py-8">
-                    {search ? "No buddies found" : "You haven't added any buddies yet"}
-                  </p>
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
+                      <Users className="h-6 w-6 text-primary/60" />
+                    </div>
+                    <p className="text-sm font-semibold">
+                      {search ? "Tidak ada hasil" : "Belum ada buddy"}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {search ? "Coba kata kunci lain." : "Cari golfer di tab Discover dan kirim permintaan."}
+                    </p>
+                  </div>
                 )}
                 {filteredBuddies.map((b, i) => (
                   <div

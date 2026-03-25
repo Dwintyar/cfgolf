@@ -396,9 +396,14 @@ const Notifications = () => {
         ))}
 
         {!isLoading && (!notifications || notifications.length === 0) && (
-          <div className="p-8 text-center">
-            <Bell className="mx-auto h-10 w-10 text-muted-foreground/40" />
-            <p className="mt-3 text-sm text-muted-foreground">No notifications</p>
+          <div className="flex flex-col items-center justify-center py-20 px-8 text-center">
+            <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+              <Bell className="h-8 w-8 text-primary/60" />
+            </div>
+            <p className="text-base font-semibold">Belum ada notifikasi</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Notifikasi klub, tournament, dan aktivitas teman akan muncul di sini.
+            </p>
           </div>
         )}
 
