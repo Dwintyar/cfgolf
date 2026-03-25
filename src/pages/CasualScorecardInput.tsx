@@ -164,7 +164,32 @@ const CasualScorecardInput = () => {
         });
       }
 
-      toast.success("Scorecard saved!");
+      // === HCP Update (Simple Formula) ===
+      // Score Differential = Gross - Course Rating
+      // New HCP = Old HCP + (Differential × 0.1), capped 0–36
+      const courseRating = course?.course_rating ?? course?.par ?? 72;
+      const oldHcp = profile?.handicap ?? 36;
+      const differential = grossTotal - courseRating;
+      const rawNewHcp = Number(oldHcp) + (differential * 0.1);
+      const newHcp = Math.min(36, Math.max(0, Math.round(rawNewHcp * 10) / 10));
+
+      if (newHcp !== Number(oldHcp)) {
+        await supabase.from("profiles")
+          .update({ handicap: newHcp })
+          .eq("id", userId);
+
+        await supabase.from("handicap_history").insert({
+          player_id: userId,
+          old_hcp: oldHcp,
+          new_hcp: newHcp,
+          gross_score: grossTotal,
+          net_score: netTotal,
+          event_id: courseId, // using course_id as reference for casual rounds
+        });
+      }
+      // === End HCP Update ===
+
+      toast.success(`Scorecard saved! HCP: ${oldHcp} → ${newHcp}`);
       navigate("/play");
     } catch (err: any) {
       toast.error(err.message || "Failed to save");

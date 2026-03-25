@@ -283,8 +283,32 @@ const ScorecardInput = () => {
         await supabase.from("rounds").update({ status: "completed", finished_at: new Date().toISOString() }).eq("id", roundId);
       }
 
+      // === HCP Update (Simple Formula) ===
+      const courseRating = (event?.courses as any)?.course_rating ?? (event?.courses as any)?.par ?? 72;
+      const oldHcp = (contestant?.profiles as any)?.handicap ?? 36;
+      const differential = grossTotal - courseRating;
+      const rawNewHcp = Number(oldHcp) + (differential * 0.1);
+      const newHcp = Math.min(36, Math.max(0, Math.round(rawNewHcp * 10) / 10));
+
+      if (newHcp !== Number(oldHcp)) {
+        await supabase.from("profiles")
+          .update({ handicap: newHcp })
+          .eq("id", userId);
+
+        await supabase.from("handicap_history").insert({
+          player_id: userId,
+          old_hcp: oldHcp,
+          new_hcp: newHcp,
+          gross_score: grossTotal,
+          net_score: netTotal,
+          event_id: eventId!,
+        });
+      }
+      // === End HCP Update ===
+
       queryClient.invalidateQueries({ queryKey: ["event-leaderboard"] });
-      toast.success("Scorecard saved!");
+      queryClient.invalidateQueries({ queryKey: ["my-profile-casual"] });
+      toast.success(`Scorecard saved! HCP: ${oldHcp} → ${newHcp}`);
       navigate(`/event/${eventId}`);
     } catch (err: any) {
       toast.error(err.message || "Failed to save scorecard");
