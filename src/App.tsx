@@ -9,7 +9,7 @@ import DesktopLayout from "@/components/DesktopLayout";
 import AdminRoute from "@/components/AdminRoute";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { useChatNotifications } from "@/hooks/use-chat-notifications";
-import { usePushNotifications } from "@/hooks/use-push-notifications";
+import PushNotifBanner from "@/components/PushNotifBanner";
 
 export const ChatNotifContext = createContext<{ unreadCount: number }>({ unreadCount: 0 });
 import Login from "./pages/Login";
@@ -93,21 +93,11 @@ const App = () => {
 
 const AppInner = () => {
   const { unreadCount } = useChatNotifications();
-  const { subscribe } = usePushNotifications();
-
-  // Auto-request push permission after user logs in (3s delay to not interrupt flow)
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        const timer = setTimeout(() => subscribe(), 3000);
-        return () => clearTimeout(timer);
-      }
-    });
-  }, [subscribe]);
 
   return (
     <ChatNotifContext.Provider value={{ unreadCount }}>
       <div className="min-h-screen">
+        <PushNotifBanner />
         <AppLayout>
           <Routes>
             <Route path="/" element={<Navigate to="/login" replace />} />
