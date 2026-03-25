@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, LayoutDashboard, Grid3X3, Clock, Settings, Save, Plus, AlertTriangle, Layers, Pencil, Trash2 } from "lucide-react";
+import { ArrowLeft, LayoutDashboard, Grid3X3, Clock, Settings, Save, Plus, AlertTriangle, Layers, Pencil, Trash2, Search, UserCog } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -42,6 +42,10 @@ const CourseAdminDashboard = () => {
 
   const [tab, setTab] = useState<TabId>(isNew ? "settings" : "overview");
   const [showLockConfirm, setShowLockConfirm] = useState(false);
+  const [adminSearch, setAdminSearch] = useState("");
+  const [adminSearchResults, setAdminSearchResults] = useState<any[]>([]);
+  const [searchingAdmin, setSearchingAdmin] = useState(false);
+  const [assigningAdmin, setAssigningAdmin] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
 
@@ -357,6 +361,72 @@ const CourseAdminDashboard = () => {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     },
   });
+
+  // ═══ COURSE ADMINS ═══
+  const { data: courseAdmins, refetch: refetchAdmins } = useQuery({
+    queryKey: ["course-admins", courseId],
+    queryFn: async () => {
+      if (!courseId || isNew) return [];
+      // Get club_id for this course
+      const { data: c } = await supabase.from("courses").select("club_id").eq("id", courseId).single();
+      if (!c?.club_id) return [];
+      const { data } = await supabase
+        .from("club_staff")
+        .select("id, user_id, profiles(full_name, email, avatar_url)")
+        .eq("club_id", c.club_id)
+        .eq("staff_role", "course_admin")
+        .eq("status", "active");
+      return data ?? [];
+    },
+    enabled: !!courseId && !isNew && isPlatformAdmin,
+  });
+
+  const handleSearchAdmin = async (q: string) => {
+    setAdminSearch(q);
+    if (q.trim().length < 2) { setAdminSearchResults([]); return; }
+    setSearchingAdmin(true);
+    const { data } = await supabase
+      .from("profiles")
+      .select("id, full_name, email, avatar_url")
+      .ilike("full_name", `%${q.trim()}%`)
+      .eq("is_approved", true)
+      .limit(10);
+    setAdminSearchResults(data ?? []);
+    setSearchingAdmin(false);
+  };
+
+  const handleAssignAdmin = async (targetUser: any) => {
+    if (!courseId || assigningAdmin) return;
+    setAssigningAdmin(true);
+    try {
+      // Get club_id
+      const { data: c } = await supabase.from("courses").select("club_id").eq("id", courseId).single();
+      if (!c?.club_id) throw new Error("Club not found");
+      // Upsert club_staff
+      const { error } = await supabase.from("club_staff").upsert({
+        club_id: c.club_id,
+        user_id: targetUser.id,
+        staff_role: "course_admin",
+        status: "active",
+      }, { onConflict: "club_id,user_id" });
+      if (error) throw error;
+      toast({ title: "✅ Course Admin assigned", description: `${targetUser.full_name} dapat mengelola course ini` });
+      setAdminSearch("");
+      setAdminSearchResults([]);
+      refetchAdmins();
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setAssigningAdmin(false);
+    }
+  };
+
+  const handleRemoveAdmin = async (staffId: string, name: string) => {
+    const { error } = await supabase.from("club_staff").delete().eq("id", staffId);
+    if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
+    toast({ title: "Admin removed", description: `${name} dihapus dari Course Admin` });
+    refetchAdmins();
+  };
 
   // ═══ TEE BOX ═══
   interface TeeData { id?: string; tee_name: string; color: string; rating: number | null; slope: number | null; }
@@ -828,6 +898,75 @@ const CourseAdminDashboard = () => {
                 </div>
               </div>
             </div>
+            {/* Course Admin Assignment — Platform Admin only */}
+            {isPlatformAdmin && !isNew && (
+              <div className="space-y-3 pt-2 border-t border-border/50">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Course Admin</p>
+
+                {/* Current admins */}
+                {courseAdmins && courseAdmins.length > 0 ? (
+                  <div className="space-y-2">
+                    {courseAdmins.map((a: any) => (
+                      <div key={a.id} className="flex items-center gap-2.5 golf-card p-2.5">
+                        <div className="h-8 w-8 rounded-full bg-primary/15 flex items-center justify-center shrink-0 text-xs font-bold text-primary">
+                          {((a.profiles as any)?.full_name ?? "?").charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{(a.profiles as any)?.full_name ?? "—"}</p>
+                          <p className="text-[10px] text-muted-foreground truncate">{(a.profiles as any)?.email ?? "—"}</p>
+                        </div>
+                        <button
+                          onClick={() => handleRemoveAdmin(a.id, (a.profiles as any)?.full_name ?? "Admin")}
+                          className="text-destructive/60 hover:text-destructive text-xs font-medium px-2 py-1 rounded"
+                        >
+                          Hapus
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground italic">Belum ada Course Admin ditugaskan</p>
+                )}
+
+                {/* Search & assign */}
+                <div className="space-y-1.5">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                    <Input
+                      placeholder="Cari user untuk dijadikan Course Admin..."
+                      value={adminSearch}
+                      onChange={e => handleSearchAdmin(e.target.value)}
+                      className="pl-8 h-9 text-sm"
+                    />
+                  </div>
+                  {searchingAdmin && <p className="text-xs text-muted-foreground px-1">Mencari...</p>}
+                  {adminSearchResults.length > 0 && (
+                    <div className="rounded-xl border border-border bg-card shadow-lg overflow-hidden">
+                      {adminSearchResults.map((u: any) => (
+                        <button
+                          key={u.id}
+                          onClick={() => handleAssignAdmin(u)}
+                          disabled={assigningAdmin}
+                          className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left hover:bg-secondary/50 transition-colors border-b border-border/30 last:border-0"
+                        >
+                          <div className="h-7 w-7 rounded-full bg-primary/15 flex items-center justify-center shrink-0 text-xs font-bold text-primary">
+                            {(u.full_name ?? "?").charAt(0).toUpperCase()}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{u.full_name}</p>
+                            <p className="text-[10px] text-muted-foreground truncate">{u.email}</p>
+                          </div>
+                          <span className="text-[10px] text-primary font-semibold shrink-0">
+                            {assigningAdmin ? "..." : "Tugaskan"}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             <Button onClick={() => {
               if (isCourseLocked && !isNew) {
                 setShowLockConfirm(true);
