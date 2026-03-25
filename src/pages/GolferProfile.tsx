@@ -233,6 +233,52 @@ const GolferProfile = () => {
     enabled: !!targetId,
   });
 
+  // Gallery — posts with images
+  const { data: galleryPosts, refetch: refetchGallery } = useQuery({
+    queryKey: ["gallery-posts", targetId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("posts")
+        .select("id, image_url, content, created_at, likes_count")
+        .eq("author_id", targetId!)
+        .not("image_url", "is", null)
+        .order("created_at", { ascending: false });
+      return data ?? [];
+    },
+    enabled: !!targetId,
+  });
+
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+
+  const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !userId) return;
+    setUploadingPhoto(true);
+    try {
+      const ext = file.name.split(".").pop();
+      const path = `${userId}/gallery/${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, { upsert: false });
+      if (upErr) throw upErr;
+      const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
+      // Create a post with this image
+      const { error: postErr } = await supabase.from("posts").insert({
+        author_id: userId,
+        content: "",
+        category: "general",
+        image_url: urlData.publicUrl,
+      });
+      if (postErr) throw postErr;
+      toast({ title: "Foto berhasil diunggah!" });
+      refetchGallery();
+    } catch (err: any) {
+      toast({ title: "Upload gagal", description: err.message, variant: "destructive" });
+    } finally {
+      setUploadingPhoto(false);
+      e.target.value = "";
+    }
+  };
+
   const { data: playerStats } = useQuery({
     queryKey: ["player-stats", targetId],
     queryFn: async () => {
@@ -1033,14 +1079,59 @@ const GolferProfile = () => {
             )}
 
             {tab === "gallery" && (
-              <div className="flex flex-col items-center justify-center py-20 text-center animate-fade-in">
-                <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                  <Camera className="h-8 w-8 text-primary/60" />
-                </div>
-                <p className="text-lg font-semibold text-foreground">No photos yet</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Photos from your rounds will appear here.
-                </p>
+              <div className="animate-fade-in space-y-3">
+                {/* Upload button — own profile only */}
+                {isOwnProfile && (
+                  <div>
+                    <input
+                      ref={galleryInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleGalleryUpload}
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full gap-2 h-9"
+                      disabled={uploadingPhoto}
+                      onClick={() => galleryInputRef.current?.click()}
+                    >
+                      <Camera className="h-4 w-4" />
+                      {uploadingPhoto ? "Mengunggah..." : "Tambah Foto"}
+                    </Button>
+                  </div>
+                )}
+
+                {/* Photo grid */}
+                {galleryPosts && galleryPosts.length > 0 ? (
+                  <div className="grid grid-cols-3 gap-1">
+                    {galleryPosts.map((p: any) => (
+                      <div key={p.id} className="relative aspect-square overflow-hidden rounded-lg bg-muted">
+                        <img
+                          src={p.image_url}
+                          alt="Gallery photo"
+                          className="w-full h-full object-cover hover:scale-105 transition-transform duration-200"
+                        />
+                        {p.likes_count > 0 && (
+                          <div className="absolute bottom-1 right-1 bg-black/50 rounded-full px-1.5 py-0.5 flex items-center gap-0.5">
+                            <span className="text-[9px] text-white">♥ {p.likes_count}</span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-16 text-center">
+                    <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                      <Camera className="h-8 w-8 text-primary/60" />
+                    </div>
+                    <p className="text-base font-semibold">Belum ada foto</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {isOwnProfile ? "Tap tombol di atas untuk tambah foto pertama." : "Belum ada foto yang dibagikan."}
+                    </p>
+                  </div>
+                )}
               </div>
             )}
           </div>
