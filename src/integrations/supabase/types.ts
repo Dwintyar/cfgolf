@@ -2567,6 +2567,7 @@ export type Database = {
           id: string
           name: string
           organizer_club_id: string
+          status: string
           tournament_type: string
           year: number
         }
@@ -2577,6 +2578,7 @@ export type Database = {
           id?: string
           name: string
           organizer_club_id: string
+          status?: string
           tournament_type?: string
           year?: number
         }
@@ -2587,6 +2589,7 @@ export type Database = {
           id?: string
           name?: string
           organizer_club_id?: string
+          status?: string
           tournament_type?: string
           year?: number
         }

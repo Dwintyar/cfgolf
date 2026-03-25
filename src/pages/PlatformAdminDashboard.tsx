@@ -213,7 +213,7 @@ const PlatformAdminDashboard = () => {
           <StatCard icon={Trophy} label="Tours" value={stats?.totalTours ?? 0} />
           <StatCard icon={Calendar} label="Events" value={stats?.totalEvents ?? 0} color="text-accent" />
           <StatCard icon={MapPin} label="Venues" value={stats?.totalVenues ?? 0} />
-          <StatCard icon={Flag} label="Tours" value={allTours?.length ?? 0} color="text-accent" />
+          <StatCard icon={Flag} label="Active" value={(allTours ?? []).filter((t: any) => t.status === "active").length} color="text-accent" />
         </div>
 
         {/* Tabs */}
@@ -412,9 +412,12 @@ const PlatformAdminDashboard = () => {
                     {t.year ? ` · ${t.year}` : ""}
                   </p>
                 </div>
-                <span className="text-[10px] px-2 py-0.5 rounded-full font-medium border bg-primary/10 text-primary border-primary/30">
-                  {t.tournament_type ?? "tournament"}
-                </span>
+                <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium border ${
+                  t.status === "active" ? "bg-green-500/10 text-green-500 border-green-500/30" :
+                  t.status === "completed" ? "bg-muted text-muted-foreground border-border" :
+                  t.status === "cancelled" ? "bg-destructive/10 text-destructive border-destructive/30" :
+                  "bg-accent/10 text-accent border-accent/30"
+                }`}>{t.status ?? "upcoming"}</span>
                 <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
               </button>
             ))}
