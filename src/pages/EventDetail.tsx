@@ -48,6 +48,9 @@ const EventDetail = () => {
   const [pairingsList, setPairingsList] = useState<any[]>([]);
   const [hcpRows, setHcpRows] = useState<any[]>([]);
   const [hcpLoading, setHcpLoading] = useState(true);
+  const [selectedScoreboardPlayer, setSelectedScoreboardPlayer] = useState<any>(null);
+  const [playerHoleScores, setPlayerHoleScores] = useState<Record<number, number>>({});
+  const [playerHoleLoading, setPlayerHoleLoading] = useState(false);
   const hcpExportRef = useRef<HTMLDivElement>(null);
   const [playersByPairing, setPlayersByPairing] = useState<Record<string, any[]>>({});
   const [isDesktop, setIsDesktop] = useState(
@@ -583,6 +586,48 @@ const EventDetail = () => {
   useEffect(() => {
     loadPairingsData();
   }, [id]);
+
+  // Fetch per-hole scores when a player is selected from the Board tab
+  useEffect(() => {
+    if (!selectedScoreboardPlayer) { setPlayerHoleScores({}); return; }
+    const fetchHoles = async () => {
+      setPlayerHoleLoading(true);
+      try {
+        const { data: eventInfo } = await supabase
+          .from("events")
+          .select("course_id, event_date")
+          .eq("id", id!)
+          .single();
+        if (!eventInfo) { setPlayerHoleScores({}); setPlayerHoleLoading(false); return; }
+        const eventDate = eventInfo.event_date?.slice(0, 10);
+        const { data: roundRows } = await supabase
+          .from("rounds")
+          .select("id, created_at")
+          .eq("course_id", eventInfo.course_id)
+          .order("created_at", { ascending: false });
+        const matchedRound = roundRows?.find(r => r.created_at?.slice(0, 10) === eventDate) ?? roundRows?.[0];
+        if (!matchedRound) { setPlayerHoleScores({}); setPlayerHoleLoading(false); return; }
+        const { data: sc } = await supabase
+          .from("scorecards")
+          .select("id")
+          .eq("round_id", matchedRound.id)
+          .eq("player_id", selectedScoreboardPlayer.player_id)
+          .maybeSingle();
+        if (!sc) { setPlayerHoleScores({}); setPlayerHoleLoading(false); return; }
+        const { data: holes } = await supabase
+          .from("hole_scores")
+          .select("hole_number, strokes")
+          .eq("scorecard_id", sc.id)
+          .order("hole_number");
+        const map: Record<number, number> = {};
+        (holes ?? []).forEach(h => { map[h.hole_number] = h.strokes; });
+        setPlayerHoleScores(map);
+      } finally {
+        setPlayerHoleLoading(false);
+      }
+    };
+    fetchHoles();
+  }, [selectedScoreboardPlayer, id]);
 
   // Check if user is contestant & checked in
   const myContestant = contestants?.find(c => c.player_id === userId);
@@ -1291,7 +1336,7 @@ const EventDetail = () => {
                           const isNR = row.tot == null;
 
                           return (
-                            <tr key={row.player_id} className={`border-b border-border/50 ${idx % 2 === 0 ? "bg-card" : "bg-muted/20"} hover:bg-accent/10`}>
+                            <tr key={row.player_id} className={`border-b border-border/50 ${idx % 2 === 0 ? "bg-card" : "bg-muted/20"} hover:bg-accent/10 cursor-pointer`} onClick={() => setSelectedScoreboardPlayer(row)}>
                               <td className="text-center py-1 px-1 border-r border-border/50 text-muted-foreground">{idx + 1}</td>
                               <td className="py-1 px-2 border-r border-border/50 font-medium text-foreground truncate max-w-[180px]">{row.full_name}</td>
                               <td className="py-1 px-2 border-r border-border/50 text-foreground truncate max-w-[120px] text-[10px]">{row.club_name}</td>
@@ -1578,6 +1623,129 @@ const EventDetail = () => {
               {finalizing ? "Finalizing…" : "Ya, Finalize"}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Personal Scorecard Modal — tap any row in Board tab */}
+      <Dialog open={!!selectedScoreboardPlayer} onOpenChange={(open) => { if (!open) setSelectedScoreboardPlayer(null); }}>
+        <DialogContent className="max-w-sm p-0 overflow-hidden">
+          <DialogHeader className="px-4 pt-4 pb-2">
+            <DialogTitle className="text-sm font-bold truncate">
+              {selectedScoreboardPlayer?.full_name ?? "Scorecard"}
+            </DialogTitle>
+            <p className="text-[11px] text-muted-foreground">
+              {selectedScoreboardPlayer?.club_name ?? ""} · Flight {selectedScoreboardPlayer?.flight_name ?? "—"} · HCP {selectedScoreboardPlayer?.hcp ?? "—"}
+            </p>
+          </DialogHeader>
+
+          {playerHoleLoading ? (
+            <div className="px-4 pb-4 space-y-2">
+              {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-4 w-full" />)}
+            </div>
+          ) : (
+            <div className="px-4 pb-4 space-y-3">
+              {/* OUT holes */}
+              {Object.keys(playerHoleScores).length > 0 ? (
+                <>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-[11px] border-collapse" style={{ fontFamily: "'Courier New', monospace" }}>
+                      <thead>
+                        <tr className="bg-muted/60">
+                          <th className="text-left py-1 px-2 font-semibold text-muted-foreground">Hole</th>
+                          {[1,2,3,4,5,6,7,8,9].map(h => (
+                            <th key={h} className="text-center py-1 px-1 font-semibold text-muted-foreground w-7">{h}</th>
+                          ))}
+                          <th className="text-center py-1 px-1 font-bold w-8">OUT</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr className="border-t border-border/50">
+                          <td className="py-1 px-2 text-muted-foreground font-medium">Score</td>
+                          {[1,2,3,4,5,6,7,8,9].map(h => (
+                            <td key={h} className="text-center py-1 px-1 tabular-nums">
+                              {playerHoleScores[h] ?? <span className="text-muted-foreground/40">—</span>}
+                            </td>
+                          ))}
+                          <td className="text-center py-1 px-1 font-bold tabular-nums">
+                            {selectedScoreboardPlayer?.out_score ?? "—"}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-[11px] border-collapse" style={{ fontFamily: "'Courier New', monospace" }}>
+                      <thead>
+                        <tr className="bg-muted/60">
+                          <th className="text-left py-1 px-2 font-semibold text-muted-foreground">Hole</th>
+                          {[10,11,12,13,14,15,16,17,18].map(h => (
+                            <th key={h} className="text-center py-1 px-1 font-semibold text-muted-foreground w-7">{h}</th>
+                          ))}
+                          <th className="text-center py-1 px-1 font-bold w-8">IN</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr className="border-t border-border/50">
+                          <td className="py-1 px-2 text-muted-foreground font-medium">Score</td>
+                          {[10,11,12,13,14,15,16,17,18].map(h => (
+                            <td key={h} className="text-center py-1 px-1 tabular-nums">
+                              {playerHoleScores[h] ?? <span className="text-muted-foreground/40">—</span>}
+                            </td>
+                          ))}
+                          <td className="text-center py-1 px-1 font-bold tabular-nums">
+                            {selectedScoreboardPlayer?.in_score ?? "—"}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  {/* Summary row */}
+                  <div className="grid grid-cols-3 gap-2 pt-1 border-t border-border/50">
+                    <div className="text-center">
+                      <p className="text-xs font-bold">{selectedScoreboardPlayer?.tot ?? "—"}</p>
+                      <p className="text-[10px] text-muted-foreground">GROSS</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-xs font-bold">{selectedScoreboardPlayer?.hcp ?? "—"}</p>
+                      <p className="text-[10px] text-muted-foreground">HCP</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-xs font-bold text-primary">{selectedScoreboardPlayer?.nett ?? "—"}</p>
+                      <p className="text-[10px] text-muted-foreground">NETT</p>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-6 text-sm text-muted-foreground">
+                  <Flag className="mx-auto h-6 w-6 mb-2 opacity-30" />
+                  <p>Scorecard belum diisi</p>
+                  <div className="mt-3 grid grid-cols-3 gap-2 border-t border-border/50 pt-3">
+                    <div className="text-center">
+                      <p className="text-xs font-bold">{selectedScoreboardPlayer?.tot ?? "—"}</p>
+                      <p className="text-[10px] text-muted-foreground">GROSS</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-xs font-bold">{selectedScoreboardPlayer?.hcp ?? "—"}</p>
+                      <p className="text-[10px] text-muted-foreground">HCP</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-xs font-bold text-primary">{selectedScoreboardPlayer?.nett ?? "—"}</p>
+                      <p className="text-[10px] text-muted-foreground">NETT</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full text-xs gap-1"
+                onClick={() => { setSelectedScoreboardPlayer(null); navigate(`/golfer/${selectedScoreboardPlayer?.player_id}`); }}
+              >
+                <User className="h-3 w-3" /> Lihat Profil
+              </Button>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </>
