@@ -458,15 +458,22 @@ const PlatformAdminDashboard = () => {
               <Plus className="h-3.5 w-3.5" /> Add Venue
             </Button>
             {allCourses?.map((c: any) => (
-              <button key={c.id} onClick={() => navigate(`/venue/${c.id}`)} className="golf-card w-full text-left flex items-center justify-between p-3 hover:border-primary/30 transition-colors">
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium truncate">{c.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {c.location} · Par {c.par} · {formatIDR(c.green_fee_price)} · {(c.clubs as any)?.name ?? "—"}
-                  </p>
+              <div key={c.id} className="golf-card p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium truncate">{c.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {c.location} · Par {c.par} · {(c.clubs as any)?.name ?? "—"}
+                    </p>
+                  </div>
+                  <div className="flex gap-1.5 shrink-0">
+                    <Button size="sm" variant="outline" className="h-7 text-[10px]"
+                      onClick={() => navigate(`/venue/${c.id}`)}>View</Button>
+                    <Button size="sm" className="h-7 text-[10px]"
+                      onClick={() => navigate(`/admin/course/${c.id}`)}>Manage</Button>
+                  </div>
                 </div>
-                <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-              </button>
+              </div>
             ))}
           </TabsContent>
 

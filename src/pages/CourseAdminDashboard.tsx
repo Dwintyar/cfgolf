@@ -42,6 +42,38 @@ const CourseAdminDashboard = () => {
 
   const [tab, setTab] = useState<TabId>(isNew ? "settings" : "overview");
   const [showLockConfirm, setShowLockConfirm] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUserId(session?.user?.id ?? null);
+      setUserEmail(session?.user?.email ?? null);
+    });
+  }, []);
+
+  const isPlatformAdmin = userEmail === "dwintyar@gmail.com";
+
+  // Access control: check if user is owner/admin of the club that owns this course
+  const { data: hasAccess } = useQuery({
+    queryKey: ["course-admin-access", courseId, userId],
+    queryFn: async () => {
+      if (!userId || isNew) return true; // new course: check later
+      // Get club_id of this course
+      const { data: courseData } = await supabase
+        .from("courses").select("club_id").eq("id", courseId!).single();
+      if (!courseData?.club_id) return false;
+      // Check members (owner/admin) OR club_staff (course_admin)
+      const [{ data: memberData }, { data: staffData }] = await Promise.all([
+        supabase.from("members").select("id").eq("user_id", userId)
+          .eq("club_id", courseData.club_id).in("role", ["owner", "admin"]).limit(1),
+        supabase.from("club_staff").select("id").eq("user_id", userId)
+          .eq("club_id", courseData.club_id).eq("staff_role", "course_admin").limit(1),
+      ]);
+      return (memberData && memberData.length > 0) || (staffData && staffData.length > 0);
+    },
+    enabled: !!userId && !isNew,
+  });
 
   // Course data
   const { data: course, isLoading } = useQuery({
@@ -381,6 +413,22 @@ const CourseAdminDashboard = () => {
       <div className="p-4 space-y-4">
         <Skeleton className="h-10 w-full rounded-xl" />
         <Skeleton className="h-40 w-full rounded-xl" />
+      </div>
+    );
+  }
+
+  // Access denied
+  if (!isNew && hasAccess === false && !isPlatformAdmin) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen gap-4 p-8 text-center">
+        <div className="h-16 w-16 rounded-full bg-destructive/10 flex items-center justify-center">
+          <span className="text-2xl">🔒</span>
+        </div>
+        <h2 className="text-lg font-bold">Akses Ditolak</h2>
+        <p className="text-sm text-muted-foreground">Anda tidak memiliki akses untuk mengelola venue ini.</p>
+        <button onClick={() => navigate("/venue")} className="text-sm text-primary font-semibold">
+          ← Kembali ke Venues
+        </button>
       </div>
     );
   }

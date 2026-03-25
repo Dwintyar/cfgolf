@@ -52,12 +52,16 @@ const VenueList = () => {
     queryKey: ["my-admin-clubs", userId],
     queryFn: async () => {
       if (!userId) return [];
-      const { data } = await supabase
-        .from("members")
-        .select("club_id")
-        .eq("user_id", userId)
-        .in("role", ["owner", "admin"]);
-      return [...new Set((data ?? []).map(m => m.club_id))];
+      // Check members (owner/admin) AND club_staff (course_admin)
+      const [{ data: memberData }, { data: staffData }] = await Promise.all([
+        supabase.from("members").select("club_id").eq("user_id", userId).in("role", ["owner", "admin"]),
+        supabase.from("club_staff").select("club_id").eq("user_id", userId).eq("staff_role", "course_admin"),
+      ]);
+      const clubIds = [
+        ...(memberData ?? []).map(m => m.club_id),
+        ...(staffData ?? []).map(s => s.club_id),
+      ];
+      return [...new Set(clubIds)];
     },
     enabled: !!userId,
   });
