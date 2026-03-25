@@ -258,7 +258,7 @@ const EventDetail = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("caddy_assignments")
-        .select("*, contestants(profiles(full_name)), profiles!caddy_assignments_caddy_id_fkey(full_name)")
+        .select("*, contestants(profiles(full_name)), course_caddies(name, caddy_number)")
         .eq("event_id", id!);
       if (error) throw error;
       return data;
@@ -542,11 +542,8 @@ const EventDetail = () => {
     // Step 8
     const { data: cdy } = await supabase
       .from("caddy_assignments")
-      .select("contestant_id, caddy_id")
+      .select("contestant_id, course_caddy_id, course_caddies(name)")
       .eq("event_id", eventId);
-    const { data: cdyPr } = (cdy ?? []).length
-      ? await supabase.from("profiles").select("id, full_name").in("id", cdy!.map(x => x.caddy_id))
-      : { data: [] as any[] };
 
     // Maps
     const ctMap = Object.fromEntries((ct ?? []).map(c => [c.id, c]));
@@ -555,7 +552,7 @@ const EventDetail = () => {
     const caMap = Object.fromEntries((ca ?? []).map(x => [x.contestant_id, x.cart_number]));
     const ecMap = Object.fromEntries((ec ?? []).map(x => [x.contestant_id, x.bag_drop_number]));
     const cdyMap = Object.fromEntries((cdy ?? []).map(x => [
-      x.contestant_id, (cdyPr ?? []).find((cp: any) => cp.id === x.caddy_id)?.full_name ?? "—"
+      x.contestant_id, (x.course_caddies as any)?.name ?? "—"
     ]));
 
     // Group players by pairing
@@ -747,10 +744,15 @@ const EventDetail = () => {
 
   const handleAssignCaddy = async () => {
     if (!id || !selectedContestantForCaddy || !selectedCaddy) return;
+    // Remove existing assignment for this contestant in this event first
+    await supabase.from("caddy_assignments")
+      .delete()
+      .eq("event_id", id)
+      .eq("contestant_id", selectedContestantForCaddy);
     await supabase.from("caddy_assignments").insert({
       event_id: id,
       contestant_id: selectedContestantForCaddy,
-      caddy_id: selectedCaddy,
+      course_caddy_id: selectedCaddy,
     });
     toast.success("Caddy assigned!");
     refetchCaddies();
@@ -759,17 +761,18 @@ const EventDetail = () => {
     setSelectedCaddy("");
   };
 
-  // Fetch staff for caddy dropdown
-  const { data: clubStaff } = useQuery({
-    queryKey: ["club-staff-caddies", event?.tours],
+  // Fetch course caddies for caddy dropdown
+  const { data: courseCaddies } = useQuery({
+    queryKey: ["course-caddies-event", event?.course_id],
     queryFn: async () => {
-      const clubId = (event?.tours as any)?.organizer_club_id;
-      if (!clubId) return [];
+      const courseId = (event?.courses as any)?.id;
+      if (!courseId) return [];
       const { data } = await supabase
-        .from("club_staff")
-        .select("*, profiles(full_name)")
-        .eq("club_id", clubId)
-        .eq("status", "active");
+        .from("course_caddies")
+        .select("id, name, caddy_number")
+        .eq("course_id", courseId)
+        .eq("is_active", true)
+        .order("name");
       return data ?? [];
     },
     enabled: !!event,
@@ -1519,7 +1522,7 @@ const EventDetail = () => {
             <div>
               <Label className="text-xs">Contestant</Label>
               <Select value={selectedContestantForCaddy} onValueChange={setSelectedContestantForCaddy}>
-                <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Select player" /></SelectTrigger>
+                <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Pilih pemain" /></SelectTrigger>
                 <SelectContent>
                   {contestants?.map(c => (
                     <SelectItem key={c.id} value={c.id}>{(c.profiles as any)?.full_name ?? "Unknown"}</SelectItem>
@@ -1529,18 +1532,27 @@ const EventDetail = () => {
             </div>
             <div>
               <Label className="text-xs">Caddy</Label>
-              <Select value={selectedCaddy} onValueChange={setSelectedCaddy}>
-                <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Select caddy" /></SelectTrigger>
-                <SelectContent>
-                  {clubStaff?.map((s: any) => (
-                    <SelectItem key={s.user_id} value={s.user_id}>{(s.profiles as any)?.full_name ?? "Staff"} ({s.staff_role})</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {(!courseCaddies || courseCaddies.length === 0) ? (
+                <div className="mt-1 rounded-lg border border-dashed border-border p-3 text-center">
+                  <p className="text-xs text-muted-foreground">Belum ada caddy terdaftar untuk course ini.</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Tambah caddy di Course Admin → tab Caddies.</p>
+                </div>
+              ) : (
+                <Select value={selectedCaddy} onValueChange={setSelectedCaddy}>
+                  <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Pilih caddy" /></SelectTrigger>
+                  <SelectContent>
+                    {courseCaddies.map((c: any) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}{c.caddy_number ? ` (#${c.caddy_number})` : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCaddyDialog(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setShowCaddyDialog(false)}>Batal</Button>
             <Button onClick={handleAssignCaddy} disabled={!selectedContestantForCaddy || !selectedCaddy}>Assign</Button>
           </DialogFooter>
         </DialogContent>
