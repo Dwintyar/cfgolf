@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { Bell, X } from "lucide-react";
 import { usePushNotifications } from "@/hooks/use-push-notifications";
+
+const NO_BANNER_PATHS = ["/login", "/onboarding", "/reset-password", "/privacy-policy"];
 
 /**
  * Shown once to logged-in users who haven't granted push permission yet.
@@ -9,6 +12,9 @@ import { usePushNotifications } from "@/hooks/use-push-notifications";
 export default function PushNotifBanner() {
   const { permission, isSubscribed, isLoading, subscribe } = usePushNotifications();
   const [dismissed, setDismissed] = useState(false);
+  const location = useLocation();
+
+  const isAuthPage = NO_BANNER_PATHS.some(p => location.pathname.startsWith(p));
 
   useEffect(() => {
     const wasDismissed = localStorage.getItem("push-banner-dismissed");
@@ -29,6 +35,7 @@ export default function PushNotifBanner() {
   };
 
   // Hide if: already dismissed, already granted/denied/unsupported, or already subscribed
+  if (isAuthPage) return null;
   if (dismissed) return null;
   if (permission === "granted" || permission === "denied" || permission === "unsupported") return null;
   if (isSubscribed) return null;
