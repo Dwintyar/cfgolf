@@ -150,7 +150,7 @@ const PlatformAdminDashboard = () => {
       const { data } = await supabase
         .from("tours")
         .select("*, clubs(name), events(id)")
-        .order("start_date", { ascending: false })
+        .order("created_at", { ascending: false })
         .limit(50);
       return data ?? [];
     },
