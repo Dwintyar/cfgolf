@@ -600,6 +600,12 @@ const EventDetail = () => {
   const myCheckin = checkins?.find(ci => ci.contestant_id === myContestant?.id);
   const isCheckedIn = !!myCheckin;
 
+  // Find my pairing group
+  const myPairing = pairingsList.find(p =>
+    (playersByPairing[p.id] ?? []).some((pl: any) => pl.player_id === userId)
+  );
+  const myGroupPlayers = myPairing ? (playersByPairing[myPairing.id] ?? []) : [];
+
   // Check if user is club admin for the event's organizing club
   const { data: isEventAdmin } = useQuery({
     queryKey: ["event-admin-check", id, userId],
@@ -822,6 +828,46 @@ const EventDetail = () => {
       </div>
     </div>
   );
+
+  // My Group card — shown to checked-in players when pairings exist
+  const myGroupBlock = myContestant && isCheckedIn && myPairing ? (
+    <div className="mx-4 mb-3">
+      <div className="golf-card p-4 border-primary/30 bg-primary/5">
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-sm font-bold text-primary flex items-center gap-1.5">
+            <Flag className="h-4 w-4" /> Grup Saya
+          </p>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            {myPairing.tee_time && (
+              <span className="font-semibold text-foreground">
+                {(() => { try { return new Date(myPairing.tee_time).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false }); } catch { return myPairing.tee_time; } })()}
+              </span>
+            )}
+            <span>Hole {myPairing.start_hole ?? 1}</span>
+            <span className="font-semibold text-foreground">{myPairing.pairing_label}</span>
+          </div>
+        </div>
+        <div className="space-y-2">
+          {myGroupPlayers.map((pl: any) => {
+            const isMe = pl.player_id === userId;
+            return (
+              <div key={pl.player_id} className={`flex items-center gap-2.5 rounded-lg px-2.5 py-2 ${isMe ? "bg-primary/10 border border-primary/20" : "bg-card/60"}`}>
+                <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0 text-xs font-bold text-primary">
+                  {(pl.full_name ?? "?").charAt(0).toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className={`text-sm font-semibold truncate ${isMe ? "text-primary" : ""}`}>
+                    {pl.full_name ?? "—"} {isMe && <span className="text-[10px] font-normal">(Anda)</span>}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">HCP {pl.hcp ?? "—"}</p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  ) : null;
 
   const actionButtonsBlock = (
     <div className="flex gap-2 overflow-x-auto px-4 pb-3 scrollbar-none">
@@ -1541,6 +1587,7 @@ const EventDetail = () => {
           <div className="flex-1 min-w-0 space-y-4">
             {headerBlock}
             {actionButtonsBlock}
+            {myGroupBlock}
             {tabsBlock}
           </div>
 
@@ -1663,6 +1710,7 @@ const EventDetail = () => {
             </div>
           </div>
           {actionButtonsBlock}
+          {myGroupBlock}
           {tabsBlock}
         </>
       )}
