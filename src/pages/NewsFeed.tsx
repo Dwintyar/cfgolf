@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Heart, MessageCircle, Share2, Plus, Image, MapPin, Tag, X, MessageSquare, Loader2 } from "lucide-react";
+import { Heart, MessageCircle, Share2, Plus, Image, MapPin, Tag, X, MessageSquare, Loader2, Trash2, MoreHorizontal } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
 import heroImg from "@/assets/golf-hero.jpg";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -146,6 +146,14 @@ const NewsFeed = () => {
     }
   };
 
+  const handleDeletePost = async (postId: string) => {
+    if (!window.confirm("Hapus postingan ini?")) return;
+    const { error } = await supabase.from("posts").delete().eq("id", postId).eq("author_id", userId!);
+    if (error) { toast.error("Gagal menghapus postingan"); return; }
+    toast.success("Postingan dihapus");
+    queryClient.invalidateQueries({ queryKey: ["feed-posts"] });
+  };
+
   const handleSubmitComment = async (postId: string) => {
     const text = commentTexts[postId]?.trim();
     if (!text || !userId) return;
@@ -272,6 +280,14 @@ const NewsFeed = () => {
                       <p className="text-[10px] uppercase tracking-wider text-foreground/70">{post.category?.replace("_", " ")}</p>
                     </div>
                   </div>
+                  {post.author_id === userId && (
+                    <button
+                      onClick={() => handleDeletePost(post.id)}
+                      className="absolute top-2 right-2 p-1.5 rounded-full bg-black/50 text-white hover:bg-red-500/80 transition-colors"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  )}
                 </div>
               )}
 
@@ -282,10 +298,18 @@ const NewsFeed = () => {
                       <AvatarImage src={profile?.avatar_url ?? ""} />
                       <AvatarFallback className="bg-secondary text-xs font-semibold">{getInitials(profile?.full_name)}</AvatarFallback>
                     </Avatar>
-                    <div>
+                    <div className="flex-1">
                       <p className="text-xs font-semibold">{profile?.full_name ?? "User"}</p>
                       <p className="text-[10px] text-muted-foreground">{timeAgo(post.created_at)}</p>
                     </div>
+                    {post.author_id === userId && (
+                      <button
+                        onClick={() => handleDeletePost(post.id)}
+                        className="p-1.5 rounded-full text-muted-foreground hover:text-red-400 hover:bg-red-400/10 transition-colors"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    )}
                   </div>
                 )}
                 {post.content && <p className="text-sm leading-relaxed">{post.content}</p>}
