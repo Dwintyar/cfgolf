@@ -64,6 +64,36 @@ const NewsFeed = () => {
     },
   });
 
+  const [expandedComments, setExpandedComments] = useState<Set<string>>(new Set());
+
+  const toggleComments = (postId: string) => {
+    setExpandedComments(prev => {
+      const s = new Set(prev);
+      s.has(postId) ? s.delete(postId) : s.add(postId);
+      return s;
+    });
+  };
+
+  const { data: allComments } = useQuery({
+    queryKey: ["post-comments", Array.from(expandedComments)],
+    queryFn: async () => {
+      if (expandedComments.size === 0) return {};
+      const { data } = await supabase
+        .from("post_comments")
+        .select("*, profiles:author_id(full_name, avatar_url)")
+        .in("post_id", Array.from(expandedComments))
+        .order("created_at", { ascending: true });
+      // Group by post_id
+      const grouped: Record<string, any[]> = {};
+      (data ?? []).forEach(c => {
+        if (!grouped[c.post_id]) grouped[c.post_id] = [];
+        grouped[c.post_id].push(c);
+      });
+      return grouped;
+    },
+    enabled: expandedComments.size > 0,
+  });
+
   const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !userId) return;
@@ -134,15 +164,23 @@ const NewsFeed = () => {
   const handleSubmitComment = async () => {
     if (!commentText.trim() || !userId || !commentPostId) return;
     setSubmittingComment(true);
-    // Store comment in post content via a simple approach — append to comments_count
-    await supabase.from("posts").update({ 
-      comments_count: (posts?.find(p => p.id === commentPostId)?.comments_count ?? 0) + 1 
-    }).eq("id", commentPostId);
+    const { error } = await supabase.from("post_comments").insert({
+      post_id: commentPostId,
+      author_id: userId,
+      content: commentText.trim(),
+    });
+    if (error) { toast.error("Gagal mengirim komentar"); setSubmittingComment(false); return; }
+    // Update comments_count
+    const { count } = await supabase
+      .from("post_comments").select("id", { count: "exact", head: true })
+      .eq("post_id", commentPostId);
+    await supabase.from("posts").update({ comments_count: count ?? 0 }).eq("id", commentPostId);
     setSubmittingComment(false);
     setCommentText("");
     setCommentPostId(null);
     toast.success("Komentar ditambahkan!");
     queryClient.invalidateQueries({ queryKey: ["feed-posts"] });
+    queryClient.invalidateQueries({ queryKey: ["post-comments"] });
   };
 
   const getInitials = (name: string | null) =>
@@ -288,7 +326,7 @@ const NewsFeed = () => {
                     )}
                   </button>
                   <button
-                    onClick={() => { setCommentPostId(post.id); setCommentText(""); }}
+                    onClick={() => { toggleComments(post.id); }}
                     className="flex-1 flex items-center justify-center gap-2 py-1.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-secondary transition-colors"
                   >
                     <MessageCircle className="h-4 w-4" />
@@ -305,6 +343,50 @@ const NewsFeed = () => {
                     <span>Share</span>
                   </button>
                 </div>
+
+                {/* Comments section */}
+                {expandedComments.has(post.id) && (
+                  <div className="border-t border-border/30 pt-3 mt-1 space-y-3">
+                    {/* Existing comments */}
+                    {(allComments?.[post.id] ?? []).map((c: any) => (
+                      <div key={c.id} className="flex gap-2">
+                        <Avatar className="h-7 w-7 shrink-0 border border-primary/20">
+                          <AvatarImage src={c.profiles?.avatar_url ?? ""} />
+                          <AvatarFallback className="text-[10px]">{getInitials(c.profiles?.full_name)}</AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 bg-secondary/40 rounded-xl px-3 py-2">
+                          <p className="text-[11px] font-semibold">{c.profiles?.full_name ?? "User"}</p>
+                          <p className="text-xs mt-0.5 leading-relaxed">{c.content}</p>
+                        </div>
+                      </div>
+                    ))}
+                    {/* Inline comment input */}
+                    <div className="flex gap-2 items-center">
+                      <Avatar className="h-7 w-7 shrink-0 border border-primary/20">
+                        <AvatarImage src={(myProfile as any)?.avatar_url ?? ""} />
+                        <AvatarFallback className="text-[10px]">{getInitials((myProfile as any)?.full_name)}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 flex gap-1">
+                        <input
+                          type="text"
+                          placeholder="Tulis komentar..."
+                          className="flex-1 bg-secondary/40 rounded-full px-3 py-1.5 text-xs outline-none focus:ring-1 focus:ring-primary/40"
+                          value={commentPostId === post.id ? commentText : ""}
+                          onFocus={() => { setCommentPostId(post.id); }}
+                          onChange={e => setCommentText(e.target.value)}
+                          onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSubmitComment(); } }}
+                        />
+                        <button
+                          disabled={submittingComment || !commentText.trim() || commentPostId !== post.id}
+                          onClick={handleSubmitComment}
+                          className="text-primary disabled:opacity-40 text-xs font-semibold px-2"
+                        >
+                          {submittingComment && commentPostId === post.id ? "..." : "Kirim"}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </article>
           );
