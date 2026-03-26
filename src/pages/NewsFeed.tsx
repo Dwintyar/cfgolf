@@ -480,29 +480,9 @@ const NewsFeed = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Comment Dialog */}
-      <Dialog open={!!commentPostId} onOpenChange={(o) => { if (!o) setCommentPostId(null); }}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Tambah Komentar</DialogTitle>
-          </DialogHeader>
-          <Textarea
-            placeholder="Tulis komentar..."
-            value={commentText}
-            onChange={e => setCommentText(e.target.value)}
-            className="min-h-[80px] resize-none"
-            autoFocus
-          />
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setCommentPostId(null)}>Batal</Button>
-            <Button onClick={handleSubmitComment} disabled={submittingComment || !commentText.trim()}>
-              {submittingComment ? "Mengirim..." : "Kirim"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
+};
 };
 
 export default NewsFeed;
