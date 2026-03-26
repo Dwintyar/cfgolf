@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, User, Building2, Lock, Palette, LogOut, ChevronRight, Camera, LayoutDashboard } from "lucide-react";
+import { ArrowLeft, User, Building2, Lock, Palette, LogOut, ChevronRight, Camera, LayoutDashboard, Bell } from "lucide-react";
+import { usePushNotifications } from "@/hooks/use-push-notifications";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,6 +18,7 @@ type AdminAccess = "none" | "platform" | "club";
 const Settings = () => {
   const navigate = useNavigate();
   const [section, setSection] = useState<Section>("main");
+  const { permission, isSubscribed, isLoading: pushLoading, subscribe, unsubscribe } = usePushNotifications();
   const [userId, setUserId] = useState<string | null>(null);
   const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem("theme");
@@ -384,6 +386,46 @@ const Settings = () => {
             <span className="text-sm font-medium">Dark Mode</span>
           </div>
           <Switch checked={darkMode} onCheckedChange={setDarkMode} />
+        </div>
+
+        <div className="golf-card flex items-center justify-between p-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted">
+              <Bell className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <div>
+              <span className="text-sm font-medium">Push Notifications</span>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {permission === "denied"
+                  ? "Blocked in browser settings"
+                  : permission === "unsupported"
+                  ? "Not supported on this device"
+                  : isSubscribed
+                  ? "You'll receive activity alerts"
+                  : "Enable to get activity alerts"}
+              </p>
+            </div>
+          </div>
+          {permission === "denied" || permission === "unsupported" ? (
+            <span className="text-xs text-muted-foreground">
+              {permission === "denied" ? "Blocked" : "N/A"}
+            </span>
+          ) : (
+            <Switch
+              checked={isSubscribed}
+              disabled={pushLoading}
+              onCheckedChange={async (checked) => {
+                if (checked) {
+                  const ok = await subscribe();
+                  if (!ok && permission !== "denied") toast.error("Failed to enable notifications");
+                  else if (ok) toast.success("Notifications enabled!");
+                } else {
+                  await unsubscribe();
+                  toast.success("Notifications disabled");
+                }
+              }}
+            />
+          )}
         </div>
 
         <Separator className="my-3" />
