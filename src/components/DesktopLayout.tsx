@@ -1,7 +1,7 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect, useContext, useRef } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ChatNotifContext } from "@/App";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +16,11 @@ const useWindowWidth = () => {
   const [width, setWidth] = useState(
     typeof window !== "undefined" ? window.innerWidth : 0
   );
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchResults, setSearchResults] = useState<{ golfers: any[], clubs: any[], events: any[] }>({ golfers: [], clubs: [], events: [] });
+  const [searching, setSearching] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const handler = () => setWidth(window.innerWidth);
     window.addEventListener("resize", handler);
@@ -127,6 +132,33 @@ const DesktopLayout = ({ children, sidebarRightHidden = false }: { children: Rea
     refetchInterval: 30000,
   });
 
+  // Close search on click outside
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setSearchOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const handleSearch = async (q: string) => {
+    setSearchQuery(q);
+    if (q.trim().length < 2) { setSearchResults({ golfers: [], clubs: [], events: [] }); setSearchOpen(false); return; }
+    setSearching(true);
+    setSearchOpen(true);
+    const [{ data: golfers }, { data: clubs }, { data: events }] = await Promise.all([
+      supabase.from("profiles").select("id, full_name, avatar_url, handicap").ilike("full_name", `%${q}%`).limit(4),
+      supabase.from("clubs").select("id, name, facility_type, logo_url").ilike("name", `%${q}%`).limit(4),
+      supabase.from("events").select("id, name, event_date, tours(name)").ilike("name", `%${q}%`).limit(4),
+    ]);
+    setSearchResults({ golfers: golfers ?? [], clubs: clubs ?? [], events: events ?? [] });
+    setSearching(false);
+  };
+
+  const hasResults = searchResults.golfers.length > 0 || searchResults.clubs.length > 0 || searchResults.events.length > 0;
+
   const navItems = [
     { path: "/news", label: "Feeds", icon: Newspaper },
     { path: "/chat", label: "Messages", icon: MessageCircle },
@@ -154,19 +186,75 @@ const DesktopLayout = ({ children, sidebarRightHidden = false }: { children: Rea
         </div>
 
         {/* Tengah: Search bar */}
-        <div className="flex-1 max-w-xs">
+        <div className="flex-1 max-w-xs relative" ref={searchRef}>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
+              value={searchQuery}
               placeholder="Cari golfer, klub, event..."
               className="w-full pl-9 pr-4 py-1.5 text-sm rounded-full bg-secondary border-none outline-none focus:ring-2 focus:ring-primary/30 text-foreground placeholder:text-muted-foreground"
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  navigate(`/play?q=${(e.target as HTMLInputElement).value}`);
-                }
-              }}
+              onChange={(e) => handleSearch(e.target.value)}
+              onFocus={() => { if (searchQuery.length >= 2) setSearchOpen(true); }}
             />
           </div>
+
+          {/* Search dropdown */}
+          {searchOpen && searchQuery.length >= 2 && (
+            <div className="absolute top-full mt-2 left-0 right-0 bg-card border border-border rounded-xl shadow-xl z-50 overflow-hidden max-h-80 overflow-y-auto">
+              {searching && (
+                <div className="p-3 text-xs text-muted-foreground text-center">Mencari...</div>
+              )}
+              {!searching && !hasResults && (
+                <div className="p-3 text-xs text-muted-foreground text-center">Tidak ada hasil untuk "{searchQuery}"</div>
+              )}
+              {!searching && searchResults.golfers.length > 0 && (
+                <div>
+                  <div className="px-3 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider bg-secondary/50">Golfer</div>
+                  {searchResults.golfers.map((p: any) => (
+                    <button key={p.id} onClick={() => { navigate(`/profile/${p.id}`); setSearchOpen(false); setSearchQuery(""); }}
+                      className="w-full flex items-center gap-2 px-3 py-2 hover:bg-secondary/50 text-left transition-colors">
+                      <Avatar className="h-7 w-7 border border-border shrink-0">
+                        <AvatarImage src={p.avatar_url ?? ""} />
+                        <AvatarFallback className="text-[10px]">{p.full_name?.charAt(0)}</AvatarFallback>
+                      </Avatar>
+                      <span className="text-sm flex-1 truncate">{p.full_name}</span>
+                      {p.handicap != null && <span className="text-[10px] text-muted-foreground">HCP {p.handicap}</span>}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {!searching && searchResults.clubs.length > 0 && (
+                <div>
+                  <div className="px-3 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider bg-secondary/50">Klub</div>
+                  {searchResults.clubs.map((c: any) => (
+                    <button key={c.id} onClick={() => { navigate(`/clubs/${c.id}`); setSearchOpen(false); setSearchQuery(""); }}
+                      className="w-full flex items-center gap-2 px-3 py-2 hover:bg-secondary/50 text-left transition-colors">
+                      <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 text-xs font-bold text-primary">
+                        {c.name?.charAt(0)}
+                      </div>
+                      <span className="text-sm flex-1 truncate">{c.name}</span>
+                      <span className="text-[10px] text-muted-foreground">{c.facility_type}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {!searching && searchResults.events.length > 0 && (
+                <div>
+                  <div className="px-3 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider bg-secondary/50">Event</div>
+                  {searchResults.events.map((e: any) => (
+                    <button key={e.id} onClick={() => { navigate(`/event/${e.id}`); setSearchOpen(false); setSearchQuery(""); }}
+                      className="w-full flex items-center gap-2 px-3 py-2 hover:bg-secondary/50 text-left transition-colors">
+                      <div className="h-7 w-7 rounded-lg bg-accent/10 flex items-center justify-center shrink-0 text-xs">🏆</div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm truncate">{e.name}</p>
+                        <p className="text-[10px] text-muted-foreground">{(e.tours as any)?.name} · {e.event_date}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Kanan: Actions */}
