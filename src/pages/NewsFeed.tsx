@@ -64,26 +64,13 @@ const NewsFeed = () => {
     },
   });
 
-  const [expandedComments, setExpandedComments] = useState<Set<string>>(new Set());
-
-  const toggleComments = (postId: string) => {
-    setExpandedComments(prev => {
-      const s = new Set(prev);
-      s.has(postId) ? s.delete(postId) : s.add(postId);
-      return s;
-    });
-  };
-
   const { data: allComments } = useQuery({
-    queryKey: ["post-comments", Array.from(expandedComments)],
+    queryKey: ["post-comments"],
     queryFn: async () => {
-      if (expandedComments.size === 0) return {};
       const { data } = await supabase
         .from("post_comments")
         .select("*, profiles:author_id(full_name, avatar_url)")
-        .in("post_id", Array.from(expandedComments))
         .order("created_at", { ascending: true });
-      // Group by post_id
       const grouped: Record<string, any[]> = {};
       (data ?? []).forEach(c => {
         if (!grouped[c.post_id]) grouped[c.post_id] = [];
@@ -91,7 +78,6 @@ const NewsFeed = () => {
       });
       return grouped;
     },
-    enabled: expandedComments.size > 0,
   });
 
   const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -326,7 +312,7 @@ const NewsFeed = () => {
                     )}
                   </button>
                   <button
-                    onClick={() => { toggleComments(post.id); }}
+                    onClick={() => { setCommentPostId(post.id); document.getElementById(`comment-input-${post.id}`)?.focus(); }}
                     className="flex-1 flex items-center justify-center gap-2 py-1.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-secondary transition-colors"
                   >
                     <MessageCircle className="h-4 w-4" />
@@ -345,7 +331,7 @@ const NewsFeed = () => {
                 </div>
 
                 {/* Comments section */}
-                {expandedComments.has(post.id) && (
+                {(
                   <div className="border-t border-border/30 pt-3 mt-1 space-y-3">
                     {/* Existing comments */}
                     {(allComments?.[post.id] ?? []).map((c: any) => (
@@ -368,11 +354,12 @@ const NewsFeed = () => {
                       </Avatar>
                       <div className="flex-1 flex gap-1">
                         <input
+                          id={`comment-input-${post.id}`}
                           type="text"
                           placeholder="Tulis komentar..."
                           className="flex-1 bg-secondary/40 rounded-full px-3 py-1.5 text-xs outline-none focus:ring-1 focus:ring-primary/40"
                           value={commentPostId === post.id ? commentText : ""}
-                          onFocus={() => { setCommentPostId(post.id); }}
+                          onFocus={() => setCommentPostId(post.id)}
                           onChange={e => setCommentText(e.target.value)}
                           onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSubmitComment(); } }}
                         />
