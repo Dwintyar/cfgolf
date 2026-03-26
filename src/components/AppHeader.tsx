@@ -16,7 +16,7 @@ const AppHeader = ({ title, icon, rightContent }: AppHeaderProps) => {
   return (
     <div className="flex items-center justify-between px-4 py-3">
       <div className="flex items-center gap-2.5">
-        <img src={logo} alt="CFGolf" className="h-8 w-8 object-contain" />
+        <img src={logo} alt="GolfBuana" className="h-8 w-8 object-contain" />
         <h1 className="font-display text-xl font-bold leading-none">{title}</h1>
         {icon}
       </div>

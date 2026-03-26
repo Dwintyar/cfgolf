@@ -147,7 +147,7 @@ const AdminApprovals = () => {
         </Button>
         <div>
           <h1 className="text-2xl font-bold text-foreground">Persetujuan Pengguna</h1>
-          <p className="text-sm text-muted-foreground">Kelola pendaftaran pengguna baru CFGolf</p>
+          <p className="text-sm text-muted-foreground">Kelola pendaftaran pengguna baru GolfBuana</p>
         </div>
       </div>
 

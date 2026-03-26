@@ -149,8 +149,8 @@ const DesktopLayout = ({ children, sidebarRightHidden = false }: { children: Rea
       <header className="fixed top-0 left-0 right-0 h-14 z-50 border-b border-border/50 bg-card/95 backdrop-blur-lg flex items-center justify-between px-4 gap-4">
         {/* Kiri: Logo */}
         <div className="flex items-center gap-2 w-56 shrink-0">
-          <img src={logo} alt="CFGolf" className="h-8 w-8 rounded-lg object-contain" />
-          <span className="font-display text-lg font-bold text-foreground">CFGolf</span>
+          <img src={logo} alt="GolfBuana" className="h-8 w-8 rounded-lg object-contain" />
+          <span className="font-display text-lg font-bold text-foreground">GolfBuana</span>
         </div>
 
         {/* Tengah: Search bar */}

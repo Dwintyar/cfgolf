@@ -138,7 +138,7 @@ const NewsFeed = () => {
     const url = `${window.location.origin}/news`;
     if (navigator.share) {
       try {
-        await navigator.share({ title: "CFGolf", text: postContent.substring(0, 100), url });
+        await navigator.share({ title: "GolfBuana", text: postContent.substring(0, 100), url });
       } catch { /* user cancelled */ }
     } else {
       await navigator.clipboard.writeText(url);

@@ -23,7 +23,7 @@ const PrivacyPolicy = () => {
         <div className="space-y-2">
           <h2 className="font-semibold text-base">1. Data yang Kami Kumpulkan</h2>
           <p className="text-muted-foreground leading-relaxed">
-            CFGolf mengumpulkan informasi yang Anda berikan saat mendaftar,
+            GolfBuana mengumpulkan informasi yang Anda berikan saat mendaftar,
             termasuk nama, alamat email, lokasi, dan data aktivitas golf seperti
             skor, handicap, dan partisipasi tournament. Data ini diperlukan untuk
             menjalankan layanan platform komunitas golf.
@@ -68,16 +68,16 @@ const PrivacyPolicy = () => {
           <p className="text-muted-foreground leading-relaxed">
             Untuk pertanyaan atau keberatan terkait kebijakan privasi ini,
             silakan hubungi administrator melalui fitur pesan di dalam aplikasi
-            atau melalui halaman profil admin CFGolf.
+            atau melalui halaman profil admin GolfBuana.
           </p>
         </div>
 
         <div className="golf-card p-4 text-center">
           <p className="text-xs text-muted-foreground">
-            CFGolf adalah platform golf komunitas Indonesia
+            GolfBuana adalah platform golf komunitas Indonesia
           </p>
           <p className="text-xs text-muted-foreground mt-1">
-            © 2026 CFGolf. Hak cipta dilindungi.
+            © 2026 GolfBuana. Hak cipta dilindungi.
           </p>
         </div>
       </div>

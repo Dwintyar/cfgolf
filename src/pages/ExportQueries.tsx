@@ -207,7 +207,7 @@ const ExportQueries = () => {
       { wch: 120 },
     ];
     XLSX.utils.book_append_sheet(wb, ws, 'SQL Queries');
-    XLSX.writeFile(wb, 'CFGolf_SQL_Queries.xlsx');
+    XLSX.writeFile(wb, 'GolfBuana_SQL_Queries.xlsx');
   };
 
   const escapeSQL = (val: unknown): string => {
@@ -229,7 +229,7 @@ const ExportQueries = () => {
       'conversations', 'conversation_participants', 'chat_messages',
     ] as const;
 
-    let sql = `-- CFGolf Database Export\n-- Generated: ${new Date().toISOString()}\n\n`;
+    let sql = `-- GolfBuana Database Export\n-- Generated: ${new Date().toISOString()}\n\n`;
 
     try {
       for (const table of tableNames) {
@@ -257,7 +257,7 @@ const ExportQueries = () => {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'CFGolf_Data_Export.sql';
+      a.download = 'GolfBuana_Data_Export.sql';
       a.click();
       URL.revokeObjectURL(url);
     } catch (e) {
@@ -331,7 +331,7 @@ const ExportQueries = () => {
       const url = URL.createObjectURL(zipBlob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'CFGolf_Pages_Screenshots.zip';
+      a.download = 'GolfBuana_Pages_Screenshots.zip';
       a.click();
       URL.revokeObjectURL(url);
     } catch (e) {
@@ -366,7 +366,7 @@ const ExportQueries = () => {
       const url = URL.createObjectURL(zipBlob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'CFGolf_Saved_Screenshots.zip';
+      a.download = 'GolfBuana_Saved_Screenshots.zip';
       a.click();
       URL.revokeObjectURL(url);
     } catch (e) {

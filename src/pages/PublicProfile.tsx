@@ -77,7 +77,7 @@ const PublicProfile = () => {
 
   const handleShareWhatsApp = () => {
     const url = `${window.location.origin}/p/${username}`;
-    const text = `Lihat profil golf ${profile?.full_name} di CFGolf! HCP ${profile?.handicap ?? "N/A"} 🏌️`;
+    const text = `Lihat profil golf ${profile?.full_name} di GolfBuana! HCP ${profile?.handicap ?? "N/A"} 🏌️`;
     window.open(
       `https://wa.me/?text=${encodeURIComponent(text + " " + url)}`
     );
@@ -111,9 +111,9 @@ const PublicProfile = () => {
         <Users className="h-16 w-16 text-muted-foreground/30 mb-4" />
         <h1 className="text-xl font-bold mb-2">Profil tidak ditemukan</h1>
         <p className="text-sm text-muted-foreground mb-6">
-          Username @{username} tidak terdaftar di CFGolf
+          Username @{username} tidak terdaftar di GolfBuana
         </p>
-        <Button onClick={() => navigate("/login")}>Masuk ke CFGolf</Button>
+        <Button onClick={() => navigate("/login")}>Masuk ke GolfBuana</Button>
       </div>
     );
 
@@ -125,10 +125,10 @@ const PublicProfile = () => {
           <div className="flex items-center gap-2">
             <img
               src="/favicon.png"
-              alt="CFGolf"
+              alt="GolfBuana"
               className="h-7 w-7 rounded-lg"
             />
-            <span className="font-bold text-lg">CFGolf</span>
+            <span className="font-bold text-lg">GolfBuana</span>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" onClick={handleShare}>
@@ -239,7 +239,7 @@ const PublicProfile = () => {
         {/* CTA */}
         <div className="golf-card mx-4 mt-4 p-6 text-center">
           <Trophy className="h-10 w-10 text-primary mx-auto mb-3" />
-          <h2 className="text-lg font-bold mb-1">Bergabung di CFGolf</h2>
+          <h2 className="text-lg font-bold mb-1">Bergabung di GolfBuana</h2>
           <p className="text-sm text-muted-foreground mb-4">
             Platform golf komunitas Indonesia — scorecard digital, tournament,
             handicap, dan koneksi antar golfer.
