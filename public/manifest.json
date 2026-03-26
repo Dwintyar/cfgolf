@@ -1,12 +1,16 @@
 {
+  "id": "com.cfgolf.app",
   "name": "CFGolf - Platform Golf Komunitas Indonesia",
   "short_name": "CFGolf",
   "description": "CFGolf — Platform Golf Komunitas Indonesia. Kelola klub, tournament, handicap, dan terhubung dengan sesama golfer.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#0a1a12",
   "theme_color": "#1D9E75",
   "orientation": "portrait",
+  "lang": "id",
+  "categories": ["sports", "social", "lifestyle"],
   "icons": [
     {
       "src": "/icon-192.png",
@@ -26,5 +30,15 @@
       "type": "image/png",
       "purpose": "maskable"
     }
-  ]
+  ],
+  "screenshots": [
+    {
+      "src": "/favicon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "CFGolf App"
+    }
+  ],
+  "prefer_related_applications": false
 }

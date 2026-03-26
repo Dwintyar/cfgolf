@@ -32,5 +32,14 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // Register service worker on load (required for PWA/TWA)
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('/sw.js', { scope: '/' })
+            .catch(function(err) { console.warn('SW registration failed:', err); });
+        });
+      }
+    </script>
   </body>
 </html>
