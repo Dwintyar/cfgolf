@@ -20,25 +20,40 @@ const NewMessageDialog = ({ open, onOpenChange, userId }: Props) => {
   const [loadingBuddies, setLoadingBuddies] = useState(false);
   const [creating, setCreating] = useState(false);
 
-  // Load accepted buddies on open
   useEffect(() => {
     if (!open || !userId) return;
     setLoadingBuddies(true);
-    supabase
-      .from("buddy_connections")
-      .select("requester_id, addressee_id, profiles!buddy_connections_requester_id_fkey(id, full_name, avatar_url, handicap), profiles!buddy_connections_addressee_id_fkey(id, full_name, avatar_url, handicap)")
-      .eq("status", "accepted")
-      .or(`requester_id.eq.${userId},addressee_id.eq.${userId}`)
-      .then(({ data }) => {
-        const list = (data ?? []).map((b: any) => {
-          // Return the other person's profile
-          return b.requester_id === userId
-            ? b["profiles!buddy_connections_addressee_id_fkey"]
-            : b["profiles!buddy_connections_requester_id_fkey"];
-        }).filter(Boolean);
-        setBuddies(list);
+
+    const load = async () => {
+      // Step 1: fetch accepted connections
+      const { data: connections } = await supabase
+        .from("buddy_connections")
+        .select("requester_id, addressee_id")
+        .eq("status", "accepted")
+        .or(`requester_id.eq.${userId},addressee_id.eq.${userId}`);
+
+      if (!connections || connections.length === 0) {
+        setBuddies([]);
         setLoadingBuddies(false);
-      });
+        return;
+      }
+
+      // Step 2: get other person's ID from each connection
+      const otherIds = connections.map((c: any) =>
+        c.requester_id === userId ? c.addressee_id : c.requester_id
+      );
+
+      // Step 3: fetch profiles for those IDs
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, full_name, avatar_url, handicap")
+        .in("id", otherIds);
+
+      setBuddies(profiles ?? []);
+      setLoadingBuddies(false);
+    };
+
+    load();
   }, [open, userId]);
 
   const filtered = search.trim().length < 1
@@ -97,7 +112,7 @@ const NewMessageDialog = ({ open, onOpenChange, userId }: Props) => {
           <DialogTitle>Pesan Baru</DialogTitle>
         </DialogHeader>
 
-        {buddies.length > 0 && (
+        {!loadingBuddies && buddies.length > 0 && (
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
