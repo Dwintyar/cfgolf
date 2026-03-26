@@ -234,12 +234,12 @@ const NewsFeed = () => {
 
         {(posts ?? []).map((post: any, i: number) => {
           const profile = post.profiles as any;
-          const showImage = !!post.image_url || i === 0;
+          const showImage = !!post.image_url;
           return (
             <article key={post.id} className="overflow-hidden animate-fade-in" style={{ animationDelay: `${i * 80}ms` }}>
               {showImage && (
                 <div className="relative rounded-xl overflow-hidden">
-                  <img src={heroImg} alt="Golf" className="h-56 w-full object-cover" />
+                  <img src={post.image_url} alt="Post" className="h-56 w-full object-cover" />
                   <div className="absolute inset-0 bg-gradient-to-t from-background via-background/30 to-transparent" />
                   <div className="absolute bottom-3 left-3 flex items-center gap-2">
                     <Avatar className="h-9 w-9 border-2 border-foreground/50">
@@ -267,7 +267,15 @@ const NewsFeed = () => {
                     </div>
                   </div>
                 )}
-                <p className="text-sm leading-relaxed">{post.content}</p>
+                {post.content && <p className="text-sm leading-relaxed">{post.content}</p>}
+                {post.course_id && (
+                  <div className="flex items-center gap-1 mt-1.5">
+                    <MapPin className="h-3 w-3 text-primary/70" />
+                    <span className="text-xs text-primary/70 font-medium">
+                      {courses?.find((c: any) => c.id === post.course_id)?.name ?? "Golf Course"}
+                    </span>
+                  </div>
+                )}
                 <div className="flex items-center border-t border-border/30 pt-2 mt-2 gap-1">
                   <button
                     onClick={() => handleLike(post.id)}
