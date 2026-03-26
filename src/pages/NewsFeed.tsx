@@ -32,9 +32,8 @@ const NewsFeed = () => {
   const [showCourseSheet, setShowCourseSheet] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
-  const [commentPostId, setCommentPostId] = useState<string | null>(null);
-  const [commentText, setCommentText] = useState("");
-  const [submittingComment, setSubmittingComment] = useState(false);
+  const [commentTexts, setCommentTexts] = useState<Record<string, string>>({});
+  const [submittingComments, setSubmittingComments] = useState<Set<string>>(new Set());
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -147,24 +146,22 @@ const NewsFeed = () => {
     }
   };
 
-  const handleSubmitComment = async () => {
-    if (!commentText.trim() || !userId || !commentPostId) return;
-    setSubmittingComment(true);
+  const handleSubmitComment = async (postId: string) => {
+    const text = commentTexts[postId]?.trim();
+    if (!text || !userId) return;
+    setSubmittingComments(prev => new Set(prev).add(postId));
     const { error } = await supabase.from("post_comments").insert({
-      post_id: commentPostId,
+      post_id: postId,
       author_id: userId,
-      content: commentText.trim(),
+      content: text,
     });
-    if (error) { toast.error("Gagal mengirim komentar"); setSubmittingComment(false); return; }
-    // Update comments_count
+    if (error) { toast.error("Gagal mengirim komentar"); setSubmittingComments(prev => { const s = new Set(prev); s.delete(postId); return s; }); return; }
     const { count } = await supabase
       .from("post_comments").select("id", { count: "exact", head: true })
-      .eq("post_id", commentPostId);
-    await supabase.from("posts").update({ comments_count: count ?? 0 }).eq("id", commentPostId);
-    setSubmittingComment(false);
-    setCommentText("");
-    setCommentPostId(null);
-    toast.success("Komentar ditambahkan!");
+      .eq("post_id", postId);
+    await supabase.from("posts").update({ comments_count: count ?? 0 }).eq("id", postId);
+    setSubmittingComments(prev => { const s = new Set(prev); s.delete(postId); return s; });
+    setCommentTexts(prev => ({ ...prev, [postId]: "" }));
     queryClient.invalidateQueries({ queryKey: ["feed-posts"] });
     queryClient.invalidateQueries({ queryKey: ["post-comments"] });
   };
@@ -312,7 +309,7 @@ const NewsFeed = () => {
                     )}
                   </button>
                   <button
-                    onClick={() => { setCommentPostId(post.id); document.getElementById(`comment-input-${post.id}`)?.focus(); }}
+                    onClick={() => { document.getElementById(`comment-input-${post.id}`)?.focus(); }}
                     className="flex-1 flex items-center justify-center gap-2 py-1.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-secondary transition-colors"
                   >
                     <MessageCircle className="h-4 w-4" />
@@ -358,17 +355,16 @@ const NewsFeed = () => {
                           type="text"
                           placeholder="Tulis komentar..."
                           className="flex-1 bg-secondary/40 rounded-full px-3 py-1.5 text-xs outline-none focus:ring-1 focus:ring-primary/40"
-                          value={commentPostId === post.id ? commentText : ""}
-                          onFocus={() => setCommentPostId(post.id)}
-                          onChange={e => setCommentText(e.target.value)}
-                          onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSubmitComment(); } }}
+                          value={commentTexts[post.id] ?? ""}
+                          onChange={e => setCommentTexts(prev => ({ ...prev, [post.id]: e.target.value }))}
+                          onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSubmitComment(post.id); } }}
                         />
                         <button
-                          disabled={submittingComment || !commentText.trim() || commentPostId !== post.id}
-                          onClick={handleSubmitComment}
+                          disabled={submittingComments.has(post.id) || !commentTexts[post.id]?.trim()}
+                          onClick={() => handleSubmitComment(post.id)}
                           className="text-primary disabled:opacity-40 text-xs font-semibold px-2"
                         >
-                          {submittingComment && commentPostId === post.id ? "..." : "Kirim"}
+                          {submittingComments.has(post.id) ? "..." : "Kirim"}
                         </button>
                       </div>
                     </div>
