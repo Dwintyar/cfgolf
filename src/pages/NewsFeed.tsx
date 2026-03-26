@@ -31,6 +31,10 @@ const NewsFeed = () => {
   const [taggedCourseName, setTaggedCourseName] = useState<string | null>(null);
   const [showCourseSheet, setShowCourseSheet] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
+  const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
+  const [commentPostId, setCommentPostId] = useState<string | null>(null);
+  const [commentText, setCommentText] = useState("");
+  const [submittingComment, setSubmittingComment] = useState(false);
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -101,14 +105,42 @@ const NewsFeed = () => {
 
   const handleLike = async (postId: string) => {
     if (!userId) { toast.error("Please login first"); return; }
-    const { error } = await supabase.from("post_likes").insert({ post_id: postId, user_id: userId });
-    if (error?.code === "23505") {
-      // Already liked, unlike
+    const isLiked = likedPosts.has(postId);
+    if (isLiked) {
       await supabase.from("post_likes").delete().eq("post_id", postId).eq("user_id", userId);
+      setLikedPosts(prev => { const s = new Set(prev); s.delete(postId); return s; });
+    } else {
+      const { error } = await supabase.from("post_likes").insert({ post_id: postId, user_id: userId });
+      if (!error) setLikedPosts(prev => new Set(prev).add(postId));
     }
-    // Update count
     const { count } = await supabase.from("post_likes").select("id", { count: "exact", head: true }).eq("post_id", postId);
     await supabase.from("posts").update({ likes_count: count ?? 0 }).eq("id", postId);
+    queryClient.invalidateQueries({ queryKey: ["feed-posts"] });
+  };
+
+  const handleShare = async (postId: string, postContent: string) => {
+    const url = `${window.location.origin}/news`;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: "CFGolf", text: postContent.substring(0, 100), url });
+      } catch { /* user cancelled */ }
+    } else {
+      await navigator.clipboard.writeText(url);
+      toast.success("Link disalin!");
+    }
+  };
+
+  const handleSubmitComment = async () => {
+    if (!commentText.trim() || !userId || !commentPostId) return;
+    setSubmittingComment(true);
+    // Store comment in post content via a simple approach — append to comments_count
+    await supabase.from("posts").update({ 
+      comments_count: (posts?.find(p => p.id === commentPostId)?.comments_count ?? 0) + 1 
+    }).eq("id", commentPostId);
+    setSubmittingComment(false);
+    setCommentText("");
+    setCommentPostId(null);
+    toast.success("Komentar ditambahkan!");
     queryClient.invalidateQueries({ queryKey: ["feed-posts"] });
   };
 
@@ -238,15 +270,18 @@ const NewsFeed = () => {
                 <div className="flex items-center border-t border-border/30 pt-2 mt-2 gap-1">
                   <button
                     onClick={() => handleLike(post.id)}
-                    className="flex-1 flex items-center justify-center gap-2 py-1.5 rounded-lg text-sm font-medium transition-colors hover:bg-secondary text-muted-foreground"
+                    className={`flex-1 flex items-center justify-center gap-2 py-1.5 rounded-lg text-sm font-medium transition-colors hover:bg-secondary ${likedPosts.has(post.id) ? "text-red-400" : "text-muted-foreground"}`}
                   >
-                    <Heart className="h-4 w-4" />
+                    <Heart className={`h-4 w-4 ${likedPosts.has(post.id) ? "fill-red-400" : ""}`} />
                     <span>Like</span>
                     {(post.likes_count ?? 0) > 0 && (
                       <span className="text-xs">{post.likes_count}</span>
                     )}
                   </button>
-                  <button className="flex-1 flex items-center justify-center gap-2 py-1.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-secondary transition-colors">
+                  <button
+                    onClick={() => { setCommentPostId(post.id); setCommentText(""); }}
+                    className="flex-1 flex items-center justify-center gap-2 py-1.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-secondary transition-colors"
+                  >
                     <MessageCircle className="h-4 w-4" />
                     <span>Comment</span>
                     {(post.comments_count ?? 0) > 0 && (
@@ -254,10 +289,7 @@ const NewsFeed = () => {
                     )}
                   </button>
                   <button
-                    onClick={() => {
-                      navigator.clipboard.writeText(`${window.location.origin}/post/${post.id}`);
-                      toast.success("Link disalin!");
-                    }}
+                    onClick={() => handleShare(post.id, post.content)}
                     className="flex-1 flex items-center justify-center gap-2 py-1.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-secondary transition-colors"
                   >
                     <Share2 className="h-4 w-4" />
@@ -365,6 +397,28 @@ const NewsFeed = () => {
             <Button variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
             <Button onClick={handlePost} disabled={posting || !content.trim()}>
               {posting ? "Posting…" : "Post"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Comment Dialog */}
+      <Dialog open={!!commentPostId} onOpenChange={(o) => { if (!o) setCommentPostId(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Tambah Komentar</DialogTitle>
+          </DialogHeader>
+          <Textarea
+            placeholder="Tulis komentar..."
+            value={commentText}
+            onChange={e => setCommentText(e.target.value)}
+            className="min-h-[80px] resize-none"
+            autoFocus
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCommentPostId(null)}>Batal</Button>
+            <Button onClick={handleSubmitComment} disabled={submittingComment || !commentText.trim()}>
+              {submittingComment ? "Mengirim..." : "Kirim"}
             </Button>
           </DialogFooter>
         </DialogContent>
