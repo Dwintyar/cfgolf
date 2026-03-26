@@ -78,7 +78,7 @@ const CreateEventDialog = ({ tourId, open, onOpenChange, onDone }: Props) => {
         <div className="space-y-3">
           <div>
             <Label className="text-xs">Event Name</Label>
-            <Input value={name} onChange={e => setName(e.target.value)} placeholder="March Monthly" />
+            <Input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. March Monthly" />
           </div>
           <div>
             <Label className="text-xs">Course</Label>

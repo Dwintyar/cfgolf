@@ -96,7 +96,7 @@ const RegisterPlayerDialog = ({ tourId, tourType, organizerClubId, callerClubId,
     });
 
   const handleSubmit = async () => {
-    if (!playerId || !clubId) { toast.error("Select a player"); return; }
+    if (!playerId || !clubId) { toast.error("Please select a player"); return; }
     setLoading(true);
     const selectedMember = sortedAndFiltered.find(m => m.user_id === playerId);
     const hcpAtReg = (selectedMember?.profiles as any)?.handicap ?? 0;
@@ -138,7 +138,7 @@ const RegisterPlayerDialog = ({ tourId, tourType, organizerClubId, callerClubId,
           <div>
             <Label className="text-xs">Player</Label>
             <Input
-              placeholder="Cari nama member..."
+              placeholder="Search member name..."
               value={playerSearch}
               onChange={e => setPlayerSearch(e.target.value)}
               className="h-8 text-xs mt-1 mb-1"

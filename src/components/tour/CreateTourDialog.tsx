@@ -60,7 +60,7 @@ const CreateTourDialog = ({ open, onOpenChange, onCreated, defaultOrganizerClubI
         <div className="space-y-3">
           <div>
             <Label className="text-xs">Name</Label>
-            <Input value={name} onChange={e => setName(e.target.value)} placeholder="Spring Championship" />
+            <Input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Spring Championship" />
           </div>
           <div>
             <Label className="text-xs">Type</Label>

@@ -250,7 +250,7 @@ const Onboarding = () => {
 
               <div className="space-y-4 flex-1">
                 <div>
-                  <Label className="text-xs">Nama Lengkap *</Label>
+                  <Label className="text-xs">Full Name *</Label>
                   <Input
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
@@ -443,7 +443,7 @@ const Onboarding = () => {
               </div>
 
               <p className="text-sm text-muted-foreground text-center mt-6 max-w-xs">
-                Selamat datang di GolfBuana.
+                Welcome to GolfBuana.
                 <br />
                 Platform golf komunitas Indonesia.
               </p>

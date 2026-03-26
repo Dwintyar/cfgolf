@@ -77,7 +77,7 @@ const Login = () => {
     e.preventDefault();
 
     if (isForgot) {
-      if (!email) { toast.error("Masukkan email Anda"); return; }
+      if (!email) { toast.error("Please enter your email"); return; }
       setLoading(true);
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/reset-password`,
@@ -214,7 +214,7 @@ const Login = () => {
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
             {isForgot
-              ? "Masukkan email untuk reset password"
+              ? "Enter your email to reset password"
               : isSignUp
                 ? "Create your account"
                 : "Meet, Connect, Compete"}
@@ -266,7 +266,7 @@ const Login = () => {
                 className="text-xs text-muted-foreground hover:text-primary transition-colors"
                 onClick={() => setIsForgot(true)}
               >
-                Lupa password?
+                Forgot password?
               </button>
             </div>
           )}
@@ -351,7 +351,7 @@ const Login = () => {
         </p>
 
         <p className="text-center text-[10px] text-muted-foreground mt-4">
-          Dengan login, Anda menyetujui{" "}
+          By signing in, you agree to our{" "}
           <button
             onClick={() => navigate("/privacy-policy")}
             className="underline hover:text-foreground transition-colors"

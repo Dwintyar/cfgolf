@@ -66,7 +66,7 @@ const ManageFlightsDialog = ({ tourId, open, onOpenChange }: Props) => {
         </div>
         <div className="space-y-2 border-t border-border/50 pt-3">
           <Label className="text-xs">Add Flight</Label>
-          <Input value={name} onChange={e => setName(e.target.value)} placeholder="Flight A" />
+          <Input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Flight A" />
           <div className="flex gap-2">
             <div className="flex-1">
               <Label className="text-[10px]">HCP Min</Label>

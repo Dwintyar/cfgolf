@@ -58,7 +58,7 @@ const AssignContestantDialog = ({ eventId, tourId, open, onOpenChange, onDone }:
   });
 
   const handleSubmit = async () => {
-    if (!playerId) { toast.error("Select a player"); return; }
+    if (!playerId) { toast.error("Please select a player"); return; }
     setLoading(true);
     const { error } = await supabase.from("contestants").upsert({
       event_id: eventId,

@@ -29,7 +29,7 @@ const InviteClubDialog = ({ tourId, open, onOpenChange, onDone }: Props) => {
   });
 
   const handleSubmit = async () => {
-    if (!clubId) { toast.error("Select a club"); return; }
+    if (!clubId) { toast.error("Please select a club"); return; }
     setLoading(true);
     const { error } = await supabase.from("tour_clubs").insert({
       tour_id: tourId,

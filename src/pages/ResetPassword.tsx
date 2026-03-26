@@ -49,7 +49,7 @@ const ResetPassword = () => {
             Reset <span className="text-primary">Password</span>
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            {ready ? "Masukkan password baru Anda" : "Memverifikasi link reset…"}
+            {ready ? "Enter your new password" : "Verifying reset link…"}
           </p>
         </div>
         {ready ? (

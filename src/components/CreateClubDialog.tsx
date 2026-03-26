@@ -71,7 +71,7 @@ const CreateClubDialog = ({ open, onOpenChange, onCreated }: CreateClubDialogPro
             <Label htmlFor="club-name">Nama Klub</Label>
             <Input
               id="club-name"
-              placeholder="Masukkan nama klub"
+              placeholder="Enter club name"
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
