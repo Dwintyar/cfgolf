@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, Loader2 } from "lucide-react";
+import { Search, Loader2, Users } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -16,26 +16,34 @@ interface Props {
 const NewMessageDialog = ({ open, onOpenChange, userId }: Props) => {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
-  const [results, setResults] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [buddies, setBuddies] = useState<any[]>([]);
+  const [loadingBuddies, setLoadingBuddies] = useState(false);
   const [creating, setCreating] = useState(false);
 
-  const handleSearch = async (query: string) => {
-    setSearch(query);
-    if (query.trim().length < 2) {
-      setResults([]);
-      return;
-    }
-    setLoading(true);
-    const { data } = await supabase
-      .from("profiles")
-      .select("id, full_name, avatar_url, handicap")
-      .neq("id", userId)
-      .ilike("full_name", `%${query.trim()}%`)
-      .limit(15);
-    setResults(data ?? []);
-    setLoading(false);
-  };
+  // Load accepted buddies on open
+  useEffect(() => {
+    if (!open || !userId) return;
+    setLoadingBuddies(true);
+    supabase
+      .from("buddy_connections")
+      .select("requester_id, addressee_id, profiles!buddy_connections_requester_id_fkey(id, full_name, avatar_url, handicap), profiles!buddy_connections_addressee_id_fkey(id, full_name, avatar_url, handicap)")
+      .eq("status", "accepted")
+      .or(`requester_id.eq.${userId},addressee_id.eq.${userId}`)
+      .then(({ data }) => {
+        const list = (data ?? []).map((b: any) => {
+          // Return the other person's profile
+          return b.requester_id === userId
+            ? b["profiles!buddy_connections_addressee_id_fkey"]
+            : b["profiles!buddy_connections_requester_id_fkey"];
+        }).filter(Boolean);
+        setBuddies(list);
+        setLoadingBuddies(false);
+      });
+  }, [open, userId]);
+
+  const filtered = search.trim().length < 1
+    ? buddies
+    : buddies.filter(b => b.full_name?.toLowerCase().includes(search.toLowerCase()));
 
   const selectUser = async (targetId: string, targetName: string) => {
     setCreating(true);
@@ -66,18 +74,14 @@ const NewMessageDialog = ({ open, onOpenChange, userId }: Props) => {
     // Create new conversation
     const newId = crypto.randomUUID();
     const { error } = await supabase.from("conversations").insert({ id: newId });
-    if (error) {
-      toast.error("Failed to create conversation");
-      setCreating(false);
-      return;
-    }
+    if (error) { toast.error("Gagal membuat percakapan"); setCreating(false); return; }
 
     await supabase.from("conversation_participants").insert([
       { conversation_id: newId, user_id: userId },
       { conversation_id: newId, user_id: targetId },
     ]);
 
-    toast.success(`Chat started with ${targetName}`);
+    toast.success(`Chat dimulai dengan ${targetName}`);
     onOpenChange(false);
     navigate(`/chat/${newId}`);
     setCreating(false);
@@ -90,28 +94,46 @@ const NewMessageDialog = ({ open, onOpenChange, userId }: Props) => {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>New Message</DialogTitle>
+          <DialogTitle>Pesan Baru</DialogTitle>
         </DialogHeader>
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search by name..."
-            value={search}
-            onChange={(e) => handleSearch(e.target.value)}
-            className="pl-9"
-            autoFocus
-          />
-        </div>
+
+        {buddies.length > 0 && (
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Cari buddy..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9"
+              autoFocus
+            />
+          </div>
+        )}
+
         <div className="max-h-64 overflow-y-auto space-y-1">
-          {loading && (
+          {loadingBuddies && (
             <div className="flex justify-center py-6">
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
           )}
-          {!loading && search.trim().length >= 2 && results.length === 0 && (
-            <p className="text-center text-sm text-muted-foreground py-6">No players found</p>
+
+          {!loadingBuddies && buddies.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-10 text-center">
+              <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
+                <Users className="h-6 w-6 text-primary/60" />
+              </div>
+              <p className="text-sm font-semibold">Belum ada buddy</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Tambah buddy dulu di tab Play untuk bisa memulai chat.
+              </p>
+            </div>
           )}
-          {results.map((profile) => (
+
+          {!loadingBuddies && buddies.length > 0 && filtered.length === 0 && (
+            <p className="text-center text-sm text-muted-foreground py-6">Tidak ada hasil</p>
+          )}
+
+          {filtered.map((profile) => (
             <button
               key={profile.id}
               onClick={() => selectUser(profile.id, profile.full_name)}
