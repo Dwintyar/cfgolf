@@ -82,7 +82,8 @@ const NewsFeed = () => {
   };
 
   const handlePost = async () => {
-    if (!content.trim() || !userId) return;
+    if (!content.trim() && !photoUrl) return;
+    if (!userId) return;
     setPosting(true);
     const { error } = await supabase.from("posts").insert({
       author_id: userId,
@@ -395,7 +396,7 @@ const NewsFeed = () => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
-            <Button onClick={handlePost} disabled={posting || !content.trim()}>
+            <Button onClick={handlePost} disabled={posting || (!content.trim() && !photoUrl)}>
               {posting ? "Posting…" : "Post"}
             </Button>
           </DialogFooter>
