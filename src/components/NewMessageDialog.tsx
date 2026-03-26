@@ -89,7 +89,7 @@ const NewMessageDialog = ({ open, onOpenChange, userId }: Props) => {
     // Create new conversation
     const newId = crypto.randomUUID();
     const { error } = await supabase.from("conversations").insert({ id: newId });
-    if (error) { toast.error("Gagal membuat percakapan"); setCreating(false); return; }
+    if (error) { toast.error("Failed to create conversation"); setCreating(false); return; }
 
     await supabase.from("conversation_participants").insert([
       { conversation_id: newId, user_id: userId },
@@ -109,14 +109,14 @@ const NewMessageDialog = ({ open, onOpenChange, userId }: Props) => {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Pesan Baru</DialogTitle>
+          <DialogTitle>New Message</DialogTitle>
         </DialogHeader>
 
         {!loadingBuddies && buddies.length > 0 && (
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Cari buddy..."
+              placeholder="Search buddies..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9"
@@ -137,7 +137,7 @@ const NewMessageDialog = ({ open, onOpenChange, userId }: Props) => {
               <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
                 <Users className="h-6 w-6 text-primary/60" />
               </div>
-              <p className="text-sm font-semibold">Belum ada buddy</p>
+              <p className="text-sm font-semibold">No buddies yet</p>
               <p className="text-xs text-muted-foreground mt-1">
                 Tambah buddy dulu di tab Play untuk bisa memulai chat.
               </p>
@@ -145,7 +145,7 @@ const NewMessageDialog = ({ open, onOpenChange, userId }: Props) => {
           )}
 
           {!loadingBuddies && buddies.length > 0 && filtered.length === 0 && (
-            <p className="text-center text-sm text-muted-foreground py-6">Tidak ada hasil</p>
+            <p className="text-center text-sm text-muted-foreground py-6">No results</p>
           )}
 
           {filtered.map((profile) => (

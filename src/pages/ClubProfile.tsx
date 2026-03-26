@@ -211,7 +211,7 @@ const ClubProfile = () => {
       queryClient.invalidateQueries({ queryKey: ["my-join-request", id, currentUserId] });
       queryClient.invalidateQueries({ queryKey: ["club-invitations", id] });
     } catch (err: any) {
-      toast({ title: "Gagal", description: err.message, variant: "destructive" });
+      toast({ title: "Failed", description: err.message, variant: "destructive" });
       setJoining(false);
     }
   };
@@ -225,7 +225,7 @@ const ClubProfile = () => {
         role: "member",
       });
       if (memberError && memberError.code !== "23505") {
-        toast({ title: "Gagal", description: memberError.message, variant: "destructive" });
+        toast({ title: "Failed", description: memberError.message, variant: "destructive" });
         return;
       }
       await supabase.from("club_invitations").update({ status: "accepted" }).eq("id", invitationId);
@@ -373,7 +373,7 @@ const ClubProfile = () => {
             <div className="relative mb-4">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Ketik nama..."
+                placeholder="Type a name..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="h-10 rounded-xl border-border/50 bg-card/80 pl-10 pr-10"
@@ -398,7 +398,7 @@ const ClubProfile = () => {
                   <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
                     <Users className="h-8 w-8 text-primary/60" />
                   </div>
-                  <p className="text-lg font-semibold text-foreground">Belum ada member</p>
+                  <p className="text-lg font-semibold text-foreground">No members yet</p>
                   <p className="text-sm text-muted-foreground mt-1">
                     {search ? "No matching members found." : "Share your club link to invite golfers to join."}
                   </p>
@@ -577,7 +577,7 @@ const ClubProfile = () => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={transferring}>Batal</AlertDialogCancel>
+            <AlertDialogCancel disabled={transferring}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               disabled={transferring}
@@ -620,7 +620,7 @@ const ClubProfile = () => {
 
                   navigate(`/clubs/${id}`);
                 } catch (err: any) {
-                  toast({ title: "Gagal", description: err.message, variant: "destructive" });
+                  toast({ title: "Failed", description: err.message, variant: "destructive" });
                 } finally {
                   setTransferring(false);
                   setShowTransferConfirm(false);

@@ -51,7 +51,7 @@ export default function PushNotifBanner() {
         disabled={isLoading}
         className="shrink-0 rounded-full bg-white text-[#1D9E75] text-xs font-semibold px-3 py-1 disabled:opacity-60"
       >
-        {isLoading ? "..." : "Aktifkan"}
+        {isLoading ? "..." : "Enable"}
       </button>
       <button onClick={handleDismiss} className="shrink-0 opacity-70 hover:opacity-100">
         <X className="h-4 w-4" />

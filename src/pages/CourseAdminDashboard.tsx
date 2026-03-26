@@ -202,7 +202,7 @@ const CourseAdminDashboard = () => {
   };
 
   const handleSaveCaddy = async () => {
-    if (!caddyForm.name.trim()) { toast({ title: "Nama caddy wajib diisi", variant: "destructive" }); return; }
+    if (!caddyForm.name.trim()) { toast({ title: "Caddy name is required", variant: "destructive" }); return; }
     setSavingCaddy(true);
     if (editingCaddy) {
       const { error } = await supabase.from("course_caddies").update({
@@ -210,7 +210,7 @@ const CourseAdminDashboard = () => {
         caddy_number: caddyForm.caddy_number.trim() || null,
         notes: caddyForm.notes.trim() || null,
       }).eq("id", editingCaddy.id);
-      if (error) { toast({ title: "Gagal menyimpan", variant: "destructive" }); setSavingCaddy(false); return; }
+      if (error) { toast({ title: "Save failed", variant: "destructive" }); setSavingCaddy(false); return; }
     } else {
       const { error } = await supabase.from("course_caddies").insert({
         course_id: courseId!,
@@ -218,9 +218,9 @@ const CourseAdminDashboard = () => {
         caddy_number: caddyForm.caddy_number.trim() || null,
         notes: caddyForm.notes.trim() || null,
       });
-      if (error) { toast({ title: "Gagal menambah caddy", variant: "destructive" }); setSavingCaddy(false); return; }
+      if (error) { toast({ title: "Failed to add caddy", variant: "destructive" }); setSavingCaddy(false); return; }
     }
-    toast({ title: editingCaddy ? "Caddy diperbarui" : "Caddy ditambahkan" });
+    toast({ title: editingCaddy ? "Caddy updated" : "Caddy added" });
     setSavingCaddy(false);
     setShowCaddyDialog(false);
     refetchCaddies();
@@ -229,8 +229,8 @@ const CourseAdminDashboard = () => {
   const handleDeleteCaddy = async (id: string) => {
     setDeletingCaddyId(id);
     const { error } = await supabase.from("course_caddies").delete().eq("id", id);
-    if (error) toast({ title: "Gagal menghapus", variant: "destructive" });
-    else { toast({ title: "Caddy dihapus" }); refetchCaddies(); }
+    if (error) toast({ title: "Delete failed", variant: "destructive" });
+    else { toast({ title: "Caddy deleted" }); refetchCaddies(); }
     setDeletingCaddyId(null);
   };
 
@@ -827,7 +827,7 @@ const CourseAdminDashboard = () => {
                   <Input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className="mt-1 h-9 text-sm" />
                 </div>
                 <div>
-                  <Label className="text-xs text-muted-foreground">Tutup</Label>
+                  <Label className="text-xs text-muted-foreground">Close</Label>
                   <Input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className="mt-1 h-9 text-sm" />
                 </div>
               </div>
@@ -891,7 +891,7 @@ const CourseAdminDashboard = () => {
                 Upcoming Bookings ({upcomingBookings?.length ?? 0})
               </p>
               {upcomingBookings?.length === 0 && (
-                <p className="text-xs text-muted-foreground text-center py-4">Tidak ada booking mendatang</p>
+                <p className="text-xs text-muted-foreground text-center py-4">No upcoming bookings</p>
               )}
               {upcomingBookings?.map(b => (
                 <div key={b.id} className="flex items-center justify-between py-2.5 border-b border-border/50 last:border-0">
@@ -932,8 +932,8 @@ const CourseAdminDashboard = () => {
                 <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
                   <Users className="h-8 w-8 text-primary/60" />
                 </div>
-                <p className="text-base font-semibold">Belum ada caddy</p>
-                <p className="text-sm text-muted-foreground mt-1">Tambah caddy untuk di-assign saat pairing tournament.</p>
+                <p className="text-base font-semibold">No caddies yet</p>
+                <p className="text-sm text-muted-foreground mt-1">Add caddies to assign during tournament pairings.</p>
                 <Button size="sm" className="mt-4 gap-2" onClick={() => handleOpenCaddyDialog()}>
                   <Plus className="h-3.5 w-3.5" /> Tambah Caddy Pertama
                 </Button>
@@ -954,7 +954,7 @@ const CourseAdminDashboard = () => {
                           </span>
                         )}
                         {!caddy.is_active && (
-                          <span className="text-[10px] text-muted-foreground shrink-0">Nonaktif</span>
+                          <span className="text-[10px] text-muted-foreground shrink-0">Inactive</span>
                         )}
                       </div>
                       {caddy.notes && (
@@ -973,7 +973,7 @@ const CourseAdminDashboard = () => {
                         variant="ghost" size="icon"
                         className={`h-8 w-8 ${caddy.is_active ? "text-yellow-500 hover:text-yellow-400" : "text-green-500 hover:text-green-400"}`}
                         onClick={() => handleToggleCaddyActive(caddy)}
-                        title={caddy.is_active ? "Nonaktifkan" : "Aktifkan"}
+                        title={caddy.is_active ? "Disable" : "Enable"}
                       >
                         {caddy.is_active ? <AlertTriangle className="h-3.5 w-3.5" /> : <Save className="h-3.5 w-3.5" />}
                       </Button>
@@ -1092,7 +1092,7 @@ const CourseAdminDashboard = () => {
                       className="pl-8 h-9 text-sm"
                     />
                   </div>
-                  {searchingAdmin && <p className="text-xs text-muted-foreground px-1">Mencari...</p>}
+                  {searchingAdmin && <p className="text-xs text-muted-foreground px-1">Searching...</p>}
                   {adminSearchResults.length > 0 && (
                     <div className="rounded-xl border border-border bg-card shadow-lg overflow-hidden">
                       {adminSearchResults.map((u: any) => (
@@ -1148,7 +1148,7 @@ const CourseAdminDashboard = () => {
               Ada {activeEvents?.length} event aktif menggunakan course ini. Perubahan settings (nama, green fee, dll) akan berlaku segera, tapi data holes event yang sedang berjalan tidak berubah karena sudah menggunakan snapshot.
             </p>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setShowLockConfirm(false)}>Batalkan</Button>
+              <Button variant="outline" onClick={() => setShowLockConfirm(false)}>Cancel</Button>
               <Button onClick={() => { setShowLockConfirm(false); saveMutation.mutate(); }}>Ya, Update</Button>
             </DialogFooter>
           </DialogContent>
@@ -1158,14 +1158,14 @@ const CourseAdminDashboard = () => {
         <Dialog open={showCaddyDialog} onOpenChange={setShowCaddyDialog}>
           <DialogContent className="max-w-sm">
             <DialogHeader>
-              <DialogTitle>{editingCaddy ? "Edit Caddy" : "Tambah Caddy"}</DialogTitle>
+              <DialogTitle>{editingCaddy ? "Edit Caddy" : "Add Caddy"}</DialogTitle>
             </DialogHeader>
             <div className="space-y-3 py-2">
               <div>
                 <Label className="text-xs">Nama Caddy <span className="text-red-400">*</span></Label>
                 <Input
                   className="mt-1"
-                  placeholder="Nama lengkap caddy"
+                  placeholder="Caddy full name"
                   value={caddyForm.name}
                   onChange={e => setCaddyForm(f => ({ ...f, name: e.target.value }))}
                 />
@@ -1183,16 +1183,16 @@ const CourseAdminDashboard = () => {
                 <Label className="text-xs">Catatan</Label>
                 <Input
                   className="mt-1"
-                  placeholder="Spesialisasi, keterangan, dll"
+                  placeholder="Specialization, notes, etc"
                   value={caddyForm.notes}
                   onChange={e => setCaddyForm(f => ({ ...f, notes: e.target.value }))}
                 />
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setShowCaddyDialog(false)}>Batal</Button>
+              <Button variant="outline" onClick={() => setShowCaddyDialog(false)}>Cancel</Button>
               <Button onClick={handleSaveCaddy} disabled={savingCaddy}>
-                {savingCaddy ? "Menyimpan..." : "Simpan"}
+                {savingCaddy ? "Saving..." : "Save"}
               </Button>
             </DialogFooter>
           </DialogContent>

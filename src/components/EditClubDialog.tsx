@@ -95,7 +95,7 @@ const EditClubDialog = ({ open, onOpenChange, club, onUpdated }: EditClubDialogP
             <Textarea value={description} onChange={e => setDescription(e.target.value)} rows={3} />
           </div>
           <Button onClick={handleSave} disabled={loading || uploading} className="w-full">
-            {loading ? "Menyimpan..." : "Simpan"}
+            {loading ? "Saving..." : "Save"}
           </Button>
         </div>
       </DialogContent>

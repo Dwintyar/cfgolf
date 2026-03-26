@@ -92,14 +92,14 @@ const InviteMemberDialog = ({ clubId, open, onOpenChange, onDone }: Props) => {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Cari nama golfer..."
+              placeholder="Search golfer name..."
               value={search}
               onChange={e => handleSearch(e.target.value)}
               className="pl-10"
             />
           </div>
           <div className="max-h-64 overflow-y-auto divide-y divide-border/30">
-            {loading && <p className="text-xs text-muted-foreground py-3 text-center">Mencari...</p>}
+            {loading && <p className="text-xs text-muted-foreground py-3 text-center">Searching...</p>}
             {results.map(p => (
               <div key={p.id} className="flex items-center gap-3 py-2.5">
                 <Avatar className="h-9 w-9">

@@ -225,7 +225,7 @@ const Login = () => {
           {isSignUp && !isForgot && (
             <Input
               type="text"
-              placeholder="Nama Lengkap"
+              placeholder="Full Name"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               className="h-12 rounded-xl border-border/50 bg-card/80 backdrop-blur"
@@ -294,7 +294,7 @@ const Login = () => {
           <>
             <div className="my-6 flex items-center gap-3">
               <Separator className="flex-1" />
-              <span className="text-xs text-muted-foreground">atau masuk dengan</span>
+              <span className="text-xs text-muted-foreground">or sign in with</span>
               <Separator className="flex-1" />
             </div>
 

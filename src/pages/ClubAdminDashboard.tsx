@@ -623,7 +623,7 @@ const ClubAdminDashboard = () => {
         <Plus className="h-3.5 w-3.5" /> Invite Member
       </Button>
       <Input
-        placeholder="Cari member..."
+        placeholder="Search members..."
         value={memberSearch}
         onChange={e => setMemberSearch(e.target.value)}
         className="h-8 text-xs"
@@ -704,7 +704,7 @@ const ClubAdminDashboard = () => {
         </div>
       ))}
       {displayMembers.length === 0 && memberSearch && (
-        <p className="text-xs text-muted-foreground text-center py-4">Tidak ditemukan</p>
+        <p className="text-xs text-muted-foreground text-center py-4">Not found</p>
       )}
     </TabsContent>
   );
@@ -712,7 +712,7 @@ const ClubAdminDashboard = () => {
   const renderStaffTab = () => (
     <TabsContent value="staff" className="space-y-2 pt-2">
       {staff?.length === 0 && (
-        <div className="golf-card p-6 text-center text-sm text-muted-foreground">Belum ada staf</div>
+        <div className="golf-card p-6 text-center text-sm text-muted-foreground">No staff yet</div>
       )}
       {staff?.map((s: any) => (
         <div key={s.id} className="golf-card flex items-center gap-3 p-3">
@@ -915,7 +915,7 @@ const ClubAdminDashboard = () => {
 
       <h3 className="text-xs font-semibold text-muted-foreground mt-2">Today's Bookings</h3>
       {todayRangeBookings === 0 && (
-        <div className="golf-card p-6 text-center text-sm text-muted-foreground">Tidak ada booking hari ini</div>
+        <div className="golf-card p-6 text-center text-sm text-muted-foreground">No bookings today</div>
       )}
       {rangeBookings?.map((b: any) => (
         <div key={b.id} className="golf-card flex items-center gap-3 p-3">
@@ -986,7 +986,7 @@ const ClubAdminDashboard = () => {
         {announcements?.length === 0 && (
           <div className="golf-card p-6 text-center text-sm text-muted-foreground">
             <Megaphone className="mx-auto h-8 w-8 text-muted-foreground/40 mb-2" />
-            <p>Belum ada pengumuman</p>
+            <p>No announcements yet</p>
           </div>
         )}
         {pinnedAnnouncements.length > 0 && (
@@ -1112,7 +1112,7 @@ const ClubAdminDashboard = () => {
                   ))}
                 </SelectContent>
               </Select>
-              <Button size="sm" variant="outline" className="w-full mt-2 text-xs" onClick={handleSaveSuccession}>Simpan Succession</Button>
+              <Button size="sm" variant="outline" className="w-full mt-2 text-xs" onClick={handleSaveSuccession}>Save Succession</Button>
             </div>
             <div className="border-t border-border pt-4">
               <Label className="text-xs text-muted-foreground mb-1 block">Transfer Ownership</Label>
@@ -1139,7 +1139,7 @@ const ClubAdminDashboard = () => {
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel>Batalkan</AlertDialogCancel>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
                     <AlertDialogAction onClick={handleTransferOwnership}>Ya, Transfer</AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
@@ -1173,7 +1173,7 @@ const ClubAdminDashboard = () => {
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>Batalkan</AlertDialogCancel>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
                   <AlertDialogAction onClick={handleArchiveClub} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Ya, Archive</AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
@@ -1391,11 +1391,11 @@ const ClubAdminDashboard = () => {
           <div className="space-y-3 py-2">
             <div>
               <Label className="text-xs text-muted-foreground">Title</Label>
-              <Input value={annTitle} onChange={(e) => setAnnTitle(e.target.value)} className="mt-1" placeholder="Judul pengumuman" />
+              <Input value={annTitle} onChange={(e) => setAnnTitle(e.target.value)} className="mt-1" placeholder="Announcement title" />
             </div>
             <div>
               <Label className="text-xs text-muted-foreground">Content</Label>
-              <Textarea value={annContent} onChange={(e) => setAnnContent(e.target.value)} className="mt-1" rows={4} placeholder="Tulis pengumuman..." />
+              <Textarea value={annContent} onChange={(e) => setAnnContent(e.target.value)} className="mt-1" rows={4} placeholder="Write your announcement..." />
             </div>
             <div className="flex items-center gap-2">
               <Switch checked={annPinned} onCheckedChange={setAnnPinned} />

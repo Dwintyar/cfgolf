@@ -147,7 +147,7 @@ const Play = () => {
       .update({ status: "accepted", updated_at: new Date().toISOString() })
       .eq("id", connectionId);
     if (error) {
-      toast({ title: "Gagal", description: error.message, variant: "destructive" });
+      toast({ title: "Failed", description: error.message, variant: "destructive" });
     } else {
       toast({ title: "Buddy diterima!" });
       fetchData();
@@ -162,7 +162,7 @@ const Play = () => {
       .update({ status: "declined", updated_at: new Date().toISOString() })
       .eq("id", connectionId);
     if (error) {
-      toast({ title: "Gagal", description: error.message, variant: "destructive" });
+      toast({ title: "Failed", description: error.message, variant: "destructive" });
     } else {
       toast({ title: "Permintaan ditolak" });
       fetchData();
@@ -177,7 +177,7 @@ const Play = () => {
       .delete()
       .eq("id", connectionId);
     if (error) {
-      toast({ title: "Gagal", description: error.message, variant: "destructive" });
+      toast({ title: "Failed", description: error.message, variant: "destructive" });
     } else {
       toast({ title: "Buddy dihapus" });
       fetchData();
@@ -224,7 +224,7 @@ const Play = () => {
       .insert({ id: newId });
 
     if (convError) {
-      toast({ title: "Gagal membuat percakapan", description: convError.message, variant: "destructive" });
+      toast({ title: "Failed to create conversation", description: convError.message, variant: "destructive" });
       return;
     }
 
@@ -366,8 +366,8 @@ const Play = () => {
                     <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
                       <Search className="h-6 w-6 text-primary/60" />
                     </div>
-                    <p className="text-sm font-semibold">Tidak ada saran</p>
-                    <p className="text-xs text-muted-foreground mt-1">Coba cari nama golfer di atas.</p>
+                    <p className="text-sm font-semibold">No suggestions</p>
+                    <p className="text-xs text-muted-foreground mt-1">Try searching for a golfer above.</p>
                   </div>
                 )}
                 {filteredSuggestions.map((p, i) => {
@@ -423,8 +423,8 @@ const Play = () => {
                     <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
                       <UserPlus className="h-6 w-6 text-primary/60" />
                     </div>
-                    <p className="text-sm font-semibold">Tidak ada permintaan</p>
-                    <p className="text-xs text-muted-foreground mt-1">Permintaan buddy baru akan muncul di sini.</p>
+                    <p className="text-sm font-semibold">No requests</p>
+                    <p className="text-xs text-muted-foreground mt-1">New buddy requests will appear here.</p>
                   </div>
                 )}
                 {requests.map((r, i) => (
@@ -483,10 +483,10 @@ const Play = () => {
                       <Users className="h-6 w-6 text-primary/60" />
                     </div>
                     <p className="text-sm font-semibold">
-                      {search ? "Tidak ada hasil" : "Belum ada buddy"}
+                      {search ? "No results" : "No buddies yet"}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {search ? "Coba kata kunci lain." : "Cari golfer di tab Discover dan kirim permintaan."}
+                      {search ? "Try different keywords." : "Find golfers in the Discover tab and send a request."}
                     </p>
                   </div>
                 )}

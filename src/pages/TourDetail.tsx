@@ -1172,7 +1172,7 @@ const AddPlayerFromClubList = ({
     <div className="max-h-64 overflow-y-auto space-y-1">
       {filtered.length === 0 && (
         <p className="text-center text-xs text-muted-foreground py-4">
-          {clubMembers?.length === 0 ? "Semua member sudah terdaftar" : "Tidak ditemukan"}
+          {clubMembers?.length === 0 ? "Semua member sudah terdaftar" : "Not found"}
         </p>
       )}
       {filtered.map((m: any) => {

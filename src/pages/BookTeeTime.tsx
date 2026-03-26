@@ -133,7 +133,7 @@ const BookTeeTime = () => {
       return;
     }
     setConfirmed(true);
-    toast.success("Booking berhasil!");
+    toast.success("Booking confirmed!");
   };
 
   if (confirmed) {

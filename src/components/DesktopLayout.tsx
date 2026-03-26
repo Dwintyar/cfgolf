@@ -191,7 +191,7 @@ const DesktopLayout = ({ children, sidebarRightHidden = false }: { children: Rea
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
               value={searchQuery}
-              placeholder="Cari golfer, klub, event..."
+              placeholder="Search golfers, clubs, events..."
               className="w-full pl-9 pr-4 py-1.5 text-sm rounded-full bg-secondary border-none outline-none focus:ring-2 focus:ring-primary/30 text-foreground placeholder:text-muted-foreground"
               onChange={(e) => handleSearch(e.target.value)}
               onFocus={() => { if (searchQuery.length >= 2) setSearchOpen(true); }}
@@ -202,7 +202,7 @@ const DesktopLayout = ({ children, sidebarRightHidden = false }: { children: Rea
           {searchOpen && searchQuery.length >= 2 && (
             <div className="absolute top-full mt-2 left-0 right-0 bg-card border border-border rounded-xl shadow-xl z-50 overflow-hidden max-h-80 overflow-y-auto">
               {searching && (
-                <div className="p-3 text-xs text-muted-foreground text-center">Mencari...</div>
+                <div className="p-3 text-xs text-muted-foreground text-center">Searching...</div>
               )}
               {!searching && !hasResults && (
                 <div className="p-3 text-xs text-muted-foreground text-center">Tidak ada hasil untuk "{searchQuery}"</div>

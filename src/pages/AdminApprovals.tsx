@@ -287,7 +287,7 @@ const AdminApprovals = () => {
                     <TableCell className="text-muted-foreground text-sm">{a.email}</TableCell>
                     <TableCell>
                       <Badge variant={a.status === "approved" ? "default" : "destructive"} className={a.status === "approved" ? "bg-emerald-600" : ""}>
-                        {a.status === "approved" ? "Disetujui" : "Ditolak"}
+                        {a.status === "approved" ? "Disetujui" : "Rejected"}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">

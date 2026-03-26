@@ -400,7 +400,7 @@ const Notifications = () => {
             <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
               <Bell className="h-8 w-8 text-primary/60" />
             </div>
-            <p className="text-base font-semibold">Belum ada notifikasi</p>
+            <p className="text-base font-semibold">No notifications yet</p>
             <p className="text-sm text-muted-foreground mt-1">
               Notifikasi klub, tournament, dan aktivitas teman akan muncul di sini.
             </p>

@@ -141,7 +141,7 @@ const EventLeaderboard = () => {
         <span className="text-right">Net</span>
       </div>
       {rows.length === 0 && (
-        <div className="golf-card p-6 text-center text-sm text-muted-foreground">Belum ada skor</div>
+        <div className="golf-card p-6 text-center text-sm text-muted-foreground">No scores yet</div>
       )}
       {rows.map((r, idx) => (
         <div

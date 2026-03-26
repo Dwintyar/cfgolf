@@ -10,7 +10,7 @@ const PrivacyPolicy = () => {
         <button onClick={() => navigate(-1)} className="rounded-full p-1.5 hover:bg-muted">
           <ArrowLeft className="h-5 w-5" />
         </button>
-        <h1 className="font-display text-lg font-bold">Kebijakan Privasi</h1>
+        <h1 className="font-display text-lg font-bold">Privacy Policy</h1>
       </div>
 
       <div className="p-6 space-y-6 text-sm">

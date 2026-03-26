@@ -748,7 +748,7 @@ const EventDetail = () => {
       queryClient.invalidateQueries({ queryKey: ["event", id] });
       refetchResults();
     } catch (err: any) {
-      toast.error(err.message ?? "Terjadi kesalahan");
+      toast.error(err.message ?? "An error occurred");
     } finally {
       setFinalizing(false);
     }
@@ -780,7 +780,7 @@ const EventDetail = () => {
       contestant_id: selectedContestantForCart,
       cart_number: parseInt(cartNumber),
     });
-    toast.success("Cart berhasil di-assign!");
+    toast.success("Cart assigned!");
     refetchCarts();
     setShowCartDialog(false);
     setCartNumber("");
@@ -1251,7 +1251,7 @@ const EventDetail = () => {
         {(!scoreboardData || scoreboardData.length === 0) ? (
           <div className="golf-card p-6 text-center">
             <Trophy className="mx-auto h-8 w-8 text-muted-foreground/40" />
-            <p className="mt-2 text-sm text-muted-foreground">Belum ada skor</p>
+            <p className="mt-2 text-sm text-muted-foreground">No scores yet</p>
           </div>
         ) : (() => {
           // Group by flight
@@ -1470,7 +1470,7 @@ const EventDetail = () => {
                   </thead>
                   <tbody>
                     {hcpRows.length === 0 ? (
-                      <tr><td colSpan={7} className="text-center py-6 text-muted-foreground">Tidak ada koreksi HCP untuk event ini</td></tr>
+                      <tr><td colSpan={7} className="text-center py-6 text-muted-foreground">No HCP corrections for this event</td></tr>
                     ) : hcpRows.map((row: any) => (
                       <tr key={row.player_id} className="border-b border-border/30 hover:bg-muted/20 transition-colors">
                         <td className="text-center py-1.5 px-2 tabular-nums text-muted-foreground">{row.no}</td>
@@ -1525,7 +1525,7 @@ const EventDetail = () => {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCheckinDialog(false)}>Batal</Button>
+            <Button variant="outline" onClick={() => setShowCheckinDialog(false)}>Cancel</Button>
             <Button onClick={handleSelfCheckin} disabled={checkingIn}>
               {checkingIn ? "Checking in…" : "Konfirmasi Check-in"}
             </Button>
@@ -1554,7 +1554,7 @@ const EventDetail = () => {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCartDialog(false)}>Batal</Button>
+            <Button variant="outline" onClick={() => setShowCartDialog(false)}>Cancel</Button>
             <Button onClick={handleAssignCart} disabled={!selectedContestantForCart || !cartNumber}>Assign</Button>
           </DialogFooter>
         </DialogContent>
@@ -1597,7 +1597,7 @@ const EventDetail = () => {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCaddyDialog(false)}>Batal</Button>
+            <Button variant="outline" onClick={() => setShowCaddyDialog(false)}>Cancel</Button>
             <Button onClick={handleAssignCaddy} disabled={!selectedContestantForCaddy || !selectedCaddy}>Assign</Button>
           </DialogFooter>
         </DialogContent>
@@ -1618,7 +1618,7 @@ const EventDetail = () => {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setShowFinalizeConfirm(false)}>Batalkan</Button>
+            <Button variant="outline" onClick={() => setShowFinalizeConfirm(false)}>Cancel</Button>
             <Button onClick={handleFinalizeEvent} disabled={finalizing}>
               {finalizing ? "Finalizing…" : "Ya, Finalize"}
             </Button>

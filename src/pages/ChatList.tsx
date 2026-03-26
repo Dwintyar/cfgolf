@@ -185,8 +185,8 @@ const ChatList = () => {
               <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center mb-3">
                 <Mail className="h-7 w-7 text-primary/60" />
               </div>
-              <p className="text-base font-semibold">Belum ada percakapan</p>
-              <p className="text-sm text-muted-foreground mt-1">Mulai chat dengan sesama golfer.</p>
+              <p className="text-base font-semibold">No conversations yet</p>
+              <p className="text-sm text-muted-foreground mt-1">Start chatting with fellow golfers.</p>
               <button
                 onClick={() => setNewMsgOpen(true)}
                 className="mt-3 text-sm font-semibold text-primary"
@@ -244,8 +244,8 @@ const ChatList = () => {
               <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center mb-3">
                 <Users className="h-7 w-7 text-primary/60" />
               </div>
-              <p className="text-base font-semibold">Belum ada kontak</p>
-              <p className="text-sm text-muted-foreground mt-1">Tambah buddies dulu untuk bisa chat.</p>
+              <p className="text-base font-semibold">No contacts yet</p>
+              <p className="text-sm text-muted-foreground mt-1">Add buddies first to start chatting.</p>
               <button
                 onClick={() => navigate("/play")}
                 className="mt-3 text-sm font-semibold text-primary"

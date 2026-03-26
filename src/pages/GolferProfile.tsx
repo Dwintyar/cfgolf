@@ -104,20 +104,20 @@ const GolferProfile = () => {
 
   const handleAcceptBuddy = async (connectionId: string) => {
     const { error } = await supabase.from("buddy_connections").update({ status: "accepted" }).eq("id", connectionId);
-    if (error) toast({ title: "Gagal", description: error.message, variant: "destructive" });
+    if (error) toast({ title: "Failed", description: error.message, variant: "destructive" });
     else { setBuddyStatus("accepted"); toast({ title: "Buddy diterima!" }); }
   };
 
   const handleDeclineBuddy = async (connectionId: string) => {
     const { error } = await supabase.from("buddy_connections").update({ status: "declined" }).eq("id", connectionId);
-    if (error) toast({ title: "Gagal", description: error.message, variant: "destructive" });
+    if (error) toast({ title: "Failed", description: error.message, variant: "destructive" });
     else { setBuddyStatus(null); setBuddyConnectionId(null); toast({ title: "Permintaan ditolak" }); }
   };
 
   const handleRemoveBuddy = async () => {
     if (!buddyConnectionId) return;
     const { error } = await supabase.from("buddy_connections").delete().eq("id", buddyConnectionId);
-    if (error) toast({ title: "Gagal", description: error.message, variant: "destructive" });
+    if (error) toast({ title: "Failed", description: error.message, variant: "destructive" });
     else { setBuddyStatus(null); setBuddyConnectionId(null); toast({ title: "Buddy dihapus" }); }
   };
 
@@ -272,8 +272,8 @@ const GolferProfile = () => {
       .eq("id", bookingId)
       .eq("user_id", userId!);
     setCancellingId(null);
-    if (error) { toast({ title: "Gagal membatalkan booking", variant: "destructive" }); return; }
-    toast({ title: "Booking dibatalkan" });
+    if (error) { toast({ title: "Failed to cancel booking", variant: "destructive" }); return; }
+    toast({ title: "Booking cancelled" });
     refetchBookings();
   };
 
@@ -431,7 +431,7 @@ const GolferProfile = () => {
   const handleAddBuddy = async () => {
     if (!profile || !currentUserId) return;
     const { error } = await supabase.from("buddy_connections").insert({ requester_id: currentUserId, addressee_id: profile.id });
-    if (error) toast({ title: "Gagal", description: error.message, variant: "destructive" });
+    if (error) toast({ title: "Failed", description: error.message, variant: "destructive" });
     else { setBuddyStatus("sent"); toast({ title: "Permintaan buddy terkirim!" }); }
   };
 
@@ -1128,7 +1128,7 @@ const GolferProfile = () => {
                       onClick={() => galleryInputRef.current?.click()}
                     >
                       <Camera className="h-4 w-4" />
-                      {uploadingPhoto ? "Mengunggah..." : "Tambah Foto"}
+                      {uploadingPhoto ? "Uploading..." : "Add Photo"}
                     </Button>
                   </div>
                 )}
@@ -1156,7 +1156,7 @@ const GolferProfile = () => {
                     <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
                       <Camera className="h-8 w-8 text-primary/60" />
                     </div>
-                    <p className="text-base font-semibold">Belum ada foto</p>
+                    <p className="text-base font-semibold">No photos yet</p>
                     <p className="text-sm text-muted-foreground mt-1">
                       {isOwnProfile ? "Tap tombol di atas untuk tambah foto pertama." : "Belum ada foto yang dibagikan."}
                     </p>
@@ -1172,8 +1172,8 @@ const GolferProfile = () => {
                     <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
                       <CalendarDays className="h-8 w-8 text-primary/60" />
                     </div>
-                    <p className="text-base font-semibold">Belum ada booking</p>
-                    <p className="text-sm text-muted-foreground mt-1">Booking tee time dari halaman Venues.</p>
+                    <p className="text-base font-semibold">No bookings yet</p>
+                    <p className="text-sm text-muted-foreground mt-1">Book tee times from the Venues page.</p>
                   </div>
                 ) : (
                   myBookings.map((b: any) => {
@@ -1184,7 +1184,7 @@ const GolferProfile = () => {
                       : isPast
                       ? "text-muted-foreground bg-muted"
                       : "text-green-400 bg-green-400/10";
-                    const statusLabel = isCancelled ? "Dibatalkan" : isPast ? "Selesai" : "Confirmed";
+                    const statusLabel = isCancelled ? "Cancelled" : isPast ? "Completed" : "Confirmed";
 
                     return (
                       <div key={b.id} className="rounded-xl border border-border bg-card p-4 space-y-2">
@@ -1225,7 +1225,7 @@ const GolferProfile = () => {
                             >
                               {cancellingId === b.id ? (
                                 <Loader2 className="h-3 w-3 animate-spin" />
-                              ) : "Batalkan"}
+                              ) : "Cancel"}
                             </Button>
                           )}
                         </div>

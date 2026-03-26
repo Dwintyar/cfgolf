@@ -91,7 +91,7 @@ const NewsFeed = () => {
       const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(path);
       setPhotoUrl(publicUrl);
     } catch {
-      toast.error("Gagal upload foto");
+      toast.error("Failed to upload photo");
     }
     setUploadingPhoto(false);
   };
@@ -142,7 +142,7 @@ const NewsFeed = () => {
       } catch { /* user cancelled */ }
     } else {
       await navigator.clipboard.writeText(url);
-      toast.success("Link disalin!");
+      toast.success("Link copied!");
     }
   };
 
@@ -150,7 +150,7 @@ const NewsFeed = () => {
     if (!window.confirm("Hapus postingan ini?")) return;
     const { error } = await supabase.from("posts").delete().eq("id", postId).eq("author_id", userId!);
     if (error) { toast.error("Gagal menghapus postingan"); return; }
-    toast.success("Postingan dihapus");
+    toast.success("Post deleted");
     queryClient.invalidateQueries({ queryKey: ["feed-posts"] });
   };
 
@@ -163,7 +163,7 @@ const NewsFeed = () => {
       author_id: userId,
       content: text,
     });
-    if (error) { toast.error("Gagal mengirim komentar"); setSubmittingComments(prev => { const s = new Set(prev); s.delete(postId); return s; }); return; }
+    if (error) { toast.error("Failed to send comment"); setSubmittingComments(prev => { const s = new Set(prev); s.delete(postId); return s; }); return; }
     const { count } = await supabase
       .from("post_comments").select("id", { count: "exact", head: true })
       .eq("post_id", postId);
@@ -251,7 +251,7 @@ const NewsFeed = () => {
             <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
               <MessageSquare className="h-8 w-8 text-primary/60" />
             </div>
-            <p className="text-lg font-semibold text-foreground">Belum ada postingan</p>
+            <p className="text-lg font-semibold text-foreground">No posts yet</p>
             <p className="text-sm text-muted-foreground mt-1">
               Jadilah yang pertama berbagi momen golf hari ini.
             </p>
@@ -377,7 +377,7 @@ const NewsFeed = () => {
                         <input
                           id={`comment-input-${post.id}`}
                           type="text"
-                          placeholder="Tulis komentar..."
+                          placeholder="Write a comment..."
                           className="flex-1 bg-secondary/40 rounded-full px-3 py-1.5 text-xs outline-none focus:ring-1 focus:ring-primary/40"
                           value={commentTexts[post.id] ?? ""}
                           onChange={e => setCommentTexts(prev => ({ ...prev, [post.id]: e.target.value }))}
@@ -388,7 +388,7 @@ const NewsFeed = () => {
                           onClick={() => handleSubmitComment(post.id)}
                           className="text-primary disabled:opacity-40 text-xs font-semibold px-2"
                         >
-                          {submittingComments.has(post.id) ? "..." : "Kirim"}
+                          {submittingComments.has(post.id) ? "..." : "Send"}
                         </button>
                       </div>
                     </div>
@@ -442,7 +442,7 @@ const NewsFeed = () => {
                 onClick={() => photoInputRef.current?.click()}
               >
                 {uploadingPhoto ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Image className="h-3.5 w-3.5" />}
-                {photoUrl ? "Ganti Foto" : "Foto"}
+                {photoUrl ? "Change Photo" : "Foto"}
               </Button>
               <Button
                 size="sm" variant="outline"
