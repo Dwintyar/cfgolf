@@ -1,4 +1,5 @@
-import { Search, ArrowLeft, Mic } from "lucide-react";
+import { Search, ArrowLeft, Mic, Plus } from "lucide-react";
+import CreateClubDialog from "@/components/CreateClubDialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +26,7 @@ const Clubs = () => {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [showCreateClub, setShowCreateClub] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -246,6 +248,12 @@ const Clubs = () => {
           />
           <Mic className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         </div>
+        <button
+          onClick={() => setShowCreateClub(true)}
+          className="rounded-full p-1.5 bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shrink-0"
+        >
+          <Plus className="h-5 w-5" />
+        </button>
       </div>
 
       <Tabs defaultValue="my-clubs" className="px-4">
@@ -261,6 +269,15 @@ const Clubs = () => {
           {renderList(communityClubs, false, "Tidak ada community club tersedia.")}
         </TabsContent>
       </Tabs>
+
+      <CreateClubDialog
+        open={showCreateClub}
+        onOpenChange={setShowCreateClub}
+        onCreated={() => {
+          setShowCreateClub(false);
+          window.location.reload();
+        }}
+      />
     </div>
   );
 };
