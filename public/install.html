@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Install GolfBuana</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --green: #1D9E75;
+      --dark: #0a1a12;
+      --card: #0f231a;
+      --border: #1a3525;
+      --text: #e8f5ef;
+      --muted: #6b9e85;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--dark);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Animated background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 60% 40% at 80% 10%, rgba(29,158,117,0.12) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 50% at 10% 80%, rgba(29,158,117,0.08) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 40px 24px 60px;
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+      margin-bottom: 48px;
+      animation: fadeUp 0.6s ease both;
+    }
+
+    .logo-wrap {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 80px;
+      height: 80px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      margin-bottom: 20px;
+      box-shadow: 0 0 40px rgba(29,158,117,0.2);
+    }
+
+    .logo-wrap img {
+      width: 56px;
+      height: 56px;
+      object-fit: contain;
+      border-radius: 12px;
+    }
+
+    h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 2rem;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      margin-bottom: 10px;
+    }
+
+    h1 span { color: var(--green); }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 0.9rem;
+      font-weight: 300;
+      line-height: 1.6;
+    }
+
+    /* Tab switcher */
+    .tabs {
+      display: flex;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 4px;
+      margin-bottom: 32px;
+      animation: fadeUp 0.6s 0.1s ease both;
+    }
+
+    .tab {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 500;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .tab.active {
+      background: var(--green);
+      color: white;
+    }
+
+    .tab-icon { font-size: 1rem; }
+
+    /* Platform content */
+    .platform { display: none; }
+    .platform.active { display: block; }
+
+    /* Steps */
+    .steps { display: flex; flex-direction: column; gap: 16px; }
+
+    .step {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+      animation: fadeUp 0.5s ease both;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+
+    .step:hover {
+      border-color: var(--green);
+      transform: translateY(-1px);
+    }
+
+    .step:nth-child(1) { animation-delay: 0.15s; }
+    .step:nth-child(2) { animation-delay: 0.25s; }
+    .step:nth-child(3) { animation-delay: 0.35s; }
+    .step:nth-child(4) { animation-delay: 0.45s; }
+
+    .step-num {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: rgba(29,158,117,0.15);
+      border: 1px solid rgba(29,158,117,0.3);
+      color: var(--green);
+      font-family: 'Playfair Display', serif;
+      font-size: 1rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .step-content { flex: 1; }
+
+    .step-title {
+      font-weight: 500;
+      font-size: 0.95rem;
+      margin-bottom: 4px;
+    }
+
+    .step-desc {
+      color: var(--muted);
+      font-size: 0.82rem;
+      line-height: 1.5;
+    }
+
+    .step-desc strong {
+      color: var(--green);
+      font-weight: 500;
+    }
+
+    /* Icon visual hints */
+    .icon-hint {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(29,158,117,0.1);
+      border: 1px solid rgba(29,158,117,0.2);
+      border-radius: 8px;
+      padding: 3px 8px;
+      font-size: 0.8rem;
+      color: var(--green);
+      margin-top: 6px;
+    }
+
+    /* CTA Button */
+    .cta-wrap {
+      margin-top: 36px;
+      text-align: center;
+      animation: fadeUp 0.6s 0.5s ease both;
+    }
+
+    .cta-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--green);
+      color: white;
+      text-decoration: none;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 500;
+      font-size: 1rem;
+      padding: 16px 32px;
+      border-radius: 14px;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 8px 32px rgba(29,158,117,0.35);
+      transition: all 0.2s;
+      letter-spacing: 0.01em;
+    }
+
+    .cta-btn:hover {
+      background: #17875f;
+      transform: translateY(-2px);
+      box-shadow: 0 12px 40px rgba(29,158,117,0.45);
+    }
+
+    .cta-note {
+      color: var(--muted);
+      font-size: 0.78rem;
+      margin-top: 12px;
+    }
+
+    /* Divider */
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 28px 0;
+      color: var(--muted);
+      font-size: 0.78rem;
+    }
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* Feature pills */
+    .features {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 32px;
+      justify-content: center;
+      animation: fadeUp 0.6s 0.6s ease both;
+    }
+
+    .pill {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 0.78rem;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 400px) {
+      h1 { font-size: 1.7rem; }
+      .container { padding: 32px 18px 48px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <div class="header">
+      <div class="logo-wrap">
+        <img src="/icon-512.png" alt="GolfBuana" />
+      </div>
+      <h1>Install <span>GolfBuana</span><br>di HP Anda</h1>
+      <p class="subtitle">Ikuti langkah berikut sesuai jenis HP Anda.<br>Gratis, tidak perlu App Store.</p>
+    </div>
+
+    <!-- Tab Switcher -->
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('android')">
+        <span class="tab-icon">🤖</span> Android
+      </button>
+      <button class="tab" onclick="switchTab('ios')">
+        <span class="tab-icon">🍎</span> iPhone / iPad
+      </button>
+    </div>
+
+    <!-- ANDROID -->
+    <div class="platform active" id="android">
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <div class="step-title">Buka Chrome</div>
+            <div class="step-desc">Pastikan menggunakan browser <strong>Google Chrome</strong> di Android Anda.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <div class="step-title">Kunjungi golfbuana.com</div>
+            <div class="step-desc">Ketik <strong>golfbuana.com</strong> di address bar Chrome.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <div class="step-title">Tap menu ⋮ lalu "Add to Home Screen"</div>
+            <div class="step-desc">Tap ikon tiga titik di pojok kanan atas, lalu pilih <strong>"Add to Home Screen"</strong> atau <strong>"Install App"</strong>.</div>
+            <div class="icon-hint">⋮ → Add to Home Screen</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-content">
+            <div class="step-title">Tap "Install" atau "Add"</div>
+            <div class="step-desc">Konfirmasi dengan tap <strong>Install</strong>. App GolfBuana langsung muncul di home screen.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cta-wrap">
+        <a href="https://golfbuana.com" class="cta-btn">
+          ⛳ Buka GolfBuana
+        </a>
+        <p class="cta-note">Gratis · Tidak perlu Play Store · Update otomatis</p>
+      </div>
+    </div>
+
+    <!-- iOS -->
+    <div class="platform" id="ios">
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <div class="step-title">Buka Safari</div>
+            <div class="step-desc">Harus menggunakan browser <strong>Safari</strong> — bukan Chrome atau browser lain di iPhone/iPad.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <div class="step-title">Kunjungi golfbuana.com</div>
+            <div class="step-desc">Ketik <strong>golfbuana.com</strong> di address bar Safari lalu buka.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <div class="step-title">Tap ikon Share ↑</div>
+            <div class="step-desc">Tap ikon <strong>kotak dengan panah ke atas</strong> di bagian bawah layar Safari.</div>
+            <div class="icon-hint">⬆ Share → Add to Home Screen</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-content">
+            <div class="step-title">Pilih "Add to Home Screen"</div>
+            <div class="step-desc">Scroll ke bawah di menu share, tap <strong>"Add to Home Screen"</strong>, lalu tap <strong>"Add"</strong> di pojok kanan atas.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cta-wrap">
+        <a href="https://golfbuana.com" class="cta-btn">
+          ⛳ Buka GolfBuana
+        </a>
+        <p class="cta-note">Gratis · Tidak perlu App Store · Update otomatis</p>
+      </div>
+    </div>
+
+    <div class="divider">fitur aplikasi</div>
+
+    <div class="features">
+      <div class="pill">🏌️ Manajemen Klub</div>
+      <div class="pill">🏆 Tournament</div>
+      <div class="pill">📊 Handicap</div>
+      <div class="pill">⛳ Tee Time</div>
+      <div class="pill">🔔 Notifikasi</div>
+      <div class="pill">👥 Buddy System</div>
+      <div class="pill">💬 Chat</div>
+      <div class="pill">📍 Venues</div>
+    </div>
+
+  </div>
+
+  <script>
+    function switchTab(platform) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.platform').forEach(p => p.classList.remove('active'));
+      document.getElementById(platform).classList.add('active');
+      event.target.closest('.tab').classList.add('active');
+
+      // Re-trigger animations
+      document.querySelectorAll('#' + platform + ' .step').forEach((el, i) => {
+        el.style.animation = 'none';
+        el.offsetHeight;
+        el.style.animation = `fadeUp 0.5s ${0.1 + i * 0.1}s ease both`;
+      });
+    }
+
+    // Auto-detect platform
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    if (isIOS) switchTab('ios');
+  </script>
+</body>
+</html>
