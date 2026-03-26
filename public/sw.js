@@ -3,6 +3,18 @@
 self.addEventListener('install', () => { self.skipWaiting(); });
 self.addEventListener('activate', (event) => { event.waitUntil(clients.claim()); });
 
+// Fetch handler — required for PWA/TWA packaging
+// Network-first strategy: always fetch fresh, fall back to cache
+self.addEventListener('fetch', (event) => {
+  // Only handle GET requests
+  if (event.request.method !== 'GET') return;
+
+  event.respondWith(
+    fetch(event.request)
+      .catch(() => caches.match(event.request))
+  );
+});
+
 self.addEventListener('push', (event) => {
   if (!event.data) return;
   let data = {};
