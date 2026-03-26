@@ -666,7 +666,7 @@ const CourseAdminDashboard = () => {
             {holes.length === 0 && !holesEditing && (
               <div className="golf-card p-8 text-center">
                 <Grid3X3 className="mx-auto h-10 w-10 text-muted-foreground/40" />
-                <p className="mt-3 text-sm text-muted-foreground">No holes configured yet</p>
+                <p className="mt-3 text-sm text-muted-foreground">Belum ada hole dikonfigurasi</p>
                 <Button onClick={setupHoles} className="mt-4" size="sm">
                   <Plus className="h-4 w-4 mr-1" /> Setup {course?.holes_count ?? 18} Holes
                 </Button>
@@ -731,8 +731,8 @@ const CourseAdminDashboard = () => {
             {tees.length === 0 && !showTeeForm && (
               <div className="golf-card p-8 text-center">
                 <Layers className="mx-auto h-10 w-10 text-muted-foreground/40" />
-                <p className="mt-3 text-sm text-muted-foreground">No tee boxes configured yet</p>
-                <p className="text-xs text-muted-foreground/70 mt-1">Add tee boxes (White, Yellow, Red, Blue) with rating & slope</p>
+                <p className="mt-3 text-sm text-muted-foreground">Belum ada tee box</p>
+                <p className="text-xs text-muted-foreground/70 mt-1">Tambahkan tee box (White, Yellow, Red, Blue) dengan rating & slope</p>
               </div>
             )}
 
@@ -823,11 +823,11 @@ const CourseAdminDashboard = () => {
               <p className="text-sm font-semibold">Schedule Template</p>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label className="text-xs text-muted-foreground">Open</Label>
+                  <Label className="text-xs text-muted-foreground">Buka</Label>
                   <Input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className="mt-1 h-9 text-sm" />
                 </div>
                 <div>
-                  <Label className="text-xs text-muted-foreground">Close</Label>
+                  <Label className="text-xs text-muted-foreground">Tutup</Label>
                   <Input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className="mt-1 h-9 text-sm" />
                 </div>
               </div>
@@ -891,7 +891,7 @@ const CourseAdminDashboard = () => {
                 Upcoming Bookings ({upcomingBookings?.length ?? 0})
               </p>
               {upcomingBookings?.length === 0 && (
-                <p className="text-xs text-muted-foreground text-center py-4">No upcoming bookings</p>
+                <p className="text-xs text-muted-foreground text-center py-4">Tidak ada booking mendatang</p>
               )}
               {upcomingBookings?.map(b => (
                 <div key={b.id} className="flex items-center justify-between py-2.5 border-b border-border/50 last:border-0">
@@ -1142,7 +1142,7 @@ const CourseAdminDashboard = () => {
         <Dialog open={showLockConfirm} onOpenChange={setShowLockConfirm}>
           <DialogContent className="max-w-sm">
             <DialogHeader>
-              <DialogTitle>Update Course Settings?</DialogTitle>
+              <DialogTitle>Update Pengaturan Course?</DialogTitle>
             </DialogHeader>
             <p className="text-sm text-muted-foreground">
               Ada {activeEvents?.length} event aktif menggunakan course ini. Perubahan settings (nama, green fee, dll) akan berlaku segera, tapi data holes event yang sedang berjalan tidak berubah karena sudah menggunakan snapshot.

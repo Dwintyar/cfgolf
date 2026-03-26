@@ -263,7 +263,7 @@ const BookTeeTime = () => {
             Catatan (opsional)
           </Label>
           <Input
-            placeholder="Contoh: Need cart, bringing own clubs..."
+            placeholder="Contoh: Butuh cart, bawa stik sendiri..."
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             className="mt-1.5 h-11 rounded-xl border-border/50 bg-card/80"

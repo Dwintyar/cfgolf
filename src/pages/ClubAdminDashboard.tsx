@@ -405,7 +405,7 @@ const ClubAdminDashboard = () => {
 
   const handleRemoveMember = async (memberId: string) => {
     await supabase.from("members").delete().eq("id", memberId);
-    toast.success("Member removed");
+    toast.success("Member dihapus");
     refetchMembers();
   };
 
@@ -417,7 +417,7 @@ const ClubAdminDashboard = () => {
     }).eq("id", clubId);
     setSaving(false);
     if (error) { toast.error(error.message); return; }
-    toast.success("Club settings updated");
+    toast.success("Pengaturan klub diperbarui");
     queryClient.invalidateQueries({ queryKey: ["club-admin-info", clubId] });
   };
 
@@ -425,14 +425,14 @@ const ClubAdminDashboard = () => {
     if (!clubId) return;
     const { error } = await supabase.from("clubs").update({ succession_user_id: successionUserId || null }).eq("id", clubId);
     if (error) { toast.error(error.message); return; }
-    toast.success("Succession member updated");
+    toast.success("Succession member diperbarui");
     queryClient.invalidateQueries({ queryKey: ["club-admin-info", clubId] });
   };
 
   const handleTransferOwnership = async () => {
     if (!clubId || !transferTargetId || !userId) return;
     const targetMember = members?.find((m) => m.user_id === transferTargetId && m.role === "admin");
-    if (!targetMember) { toast.error("Target must be an admin of this club"); return; }
+    if (!targetMember) { toast.error("Target harus admin klub ini"); return; }
     const currentOwnerMember = members?.find((m) => m.user_id === userId && m.role === "owner");
     if (!currentOwnerMember) return;
 
@@ -443,7 +443,7 @@ const ClubAdminDashboard = () => {
     await supabase.from("members").delete().eq("id", currentOwnerMember.id);
     await supabase.from("members").insert({ club_id: clubId, user_id: userId, role: "admin" });
 
-    toast.success("Ownership transferred successfully");
+    toast.success("Kepemilikan berhasil dipindahkan");
     queryClient.invalidateQueries({ queryKey: ["club-admin-info", clubId] });
     refetchMembers();
   };
@@ -452,7 +452,7 @@ const ClubAdminDashboard = () => {
     if (!clubId) return;
     const { error } = await supabase.from("clubs").update({ is_personal: true }).eq("id", clubId);
     if (error) { toast.error(error.message); return; }
-    toast.success("Club archived");
+    toast.success("Klub diarsipkan");
     navigate("/clubs");
   };
 
@@ -466,7 +466,7 @@ const ClubAdminDashboard = () => {
       is_pinned: annPinned,
     });
     if (error) { toast.error(error.message); return; }
-    toast.success("Announcement published");
+    toast.success("Pengumuman dipublikasikan");
     setShowCreateAnnouncement(false);
     setAnnTitle("");
     setAnnContent("");
@@ -477,7 +477,7 @@ const ClubAdminDashboard = () => {
   const handleDeleteAnnouncement = async (annId: string) => {
     const { error } = await supabase.from("club_announcements").delete().eq("id", annId);
     if (error) { toast.error(error.message); return; }
-    toast.success("Announcement deleted");
+    toast.success("Pengumuman dihapus");
     refetchAnnouncements();
   };
 
@@ -498,7 +498,7 @@ const ClubAdminDashboard = () => {
   if (!clubId) return (
     <div className="bottom-nav-safe p-4 text-center text-muted-foreground">
       <Building2 className="mx-auto h-10 w-10 text-muted-foreground/40 mb-2" />
-      <p>No club selected</p>
+      <p>Tidak ada klub dipilih</p>
     </div>
   );
 
@@ -712,7 +712,7 @@ const ClubAdminDashboard = () => {
   const renderStaffTab = () => (
     <TabsContent value="staff" className="space-y-2 pt-2">
       {staff?.length === 0 && (
-        <div className="golf-card p-6 text-center text-sm text-muted-foreground">No staff assigned</div>
+        <div className="golf-card p-6 text-center text-sm text-muted-foreground">Belum ada staf</div>
       )}
       {staff?.map((s: any) => (
         <div key={s.id} className="golf-card flex items-center gap-3 p-3">
@@ -737,10 +737,10 @@ const ClubAdminDashboard = () => {
         <Plus className="h-3.5 w-3.5" /> Create Tournament
       </Button>
       {!clubTours && (
-        <div className="golf-card p-4 text-center text-xs text-muted-foreground">Loading tournaments...</div>
+        <div className="golf-card p-4 text-center text-xs text-muted-foreground">Memuat tournament...</div>
       )}
       {clubTours?.length === 0 && (
-        <div className="golf-card p-6 text-center text-sm text-muted-foreground">No tournaments yet. Create your first tournament.</div>
+        <div className="golf-card p-6 text-center text-sm text-muted-foreground">Belum ada tournament. Buat tournament pertama.</div>
       )}
       {clubTours?.map((tour: any) => {
         const events = tour.events ?? [];
@@ -776,7 +776,7 @@ const ClubAdminDashboard = () => {
               <CollapsibleContent>
                 <div className="border-t border-border">
                   {events.length === 0 && (
-                    <p className="p-3 text-xs text-muted-foreground text-center">No events in this tour</p>
+                    <p className="p-3 text-xs text-muted-foreground text-center">Belum ada event dalam tour ini</p>
                   )}
                   {events.map((e: any) => (
                     <div key={e.id} className="flex items-center gap-2 px-3 py-2.5 border-b border-border last:border-b-0">
@@ -915,7 +915,7 @@ const ClubAdminDashboard = () => {
 
       <h3 className="text-xs font-semibold text-muted-foreground mt-2">Today's Bookings</h3>
       {todayRangeBookings === 0 && (
-        <div className="golf-card p-6 text-center text-sm text-muted-foreground">No bookings today</div>
+        <div className="golf-card p-6 text-center text-sm text-muted-foreground">Tidak ada booking hari ini</div>
       )}
       {rangeBookings?.map((b: any) => (
         <div key={b.id} className="golf-card flex items-center gap-3 p-3">
@@ -986,7 +986,7 @@ const ClubAdminDashboard = () => {
         {announcements?.length === 0 && (
           <div className="golf-card p-6 text-center text-sm text-muted-foreground">
             <Megaphone className="mx-auto h-8 w-8 text-muted-foreground/40 mb-2" />
-            <p>No announcements yet</p>
+            <p>Belum ada pengumuman</p>
           </div>
         )}
         {pinnedAnnouncements.length > 0 && (
@@ -1049,7 +1049,7 @@ const ClubAdminDashboard = () => {
           </CardHeader>
           <CardContent className="space-y-3">
             {admins.length === 0 ? (
-              <p className="text-xs text-muted-foreground">No admins assigned yet.</p>
+              <p className="text-xs text-muted-foreground">Belum ada admin.</p>
             ) : (
               <div className="space-y-2">
                 {admins.map((a: any) => (
@@ -1105,14 +1105,14 @@ const ClubAdminDashboard = () => {
                 If you're inactive for 180 days, this person will automatically become owner.
               </p>
               <Select value={successionUserId} onValueChange={setSuccessionUserId}>
-                <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Select an admin" /></SelectTrigger>
+                <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Pilih admin" /></SelectTrigger>
                 <SelectContent>
                   {admins.map((a: any) => (
                     <SelectItem key={a.user_id} value={a.user_id}>{a.profiles?.full_name || "Admin"}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              <Button size="sm" variant="outline" className="w-full mt-2 text-xs" onClick={handleSaveSuccession}>Save Succession</Button>
+              <Button size="sm" variant="outline" className="w-full mt-2 text-xs" onClick={handleSaveSuccession}>Simpan Succession</Button>
             </div>
             <div className="border-t border-border pt-4">
               <Label className="text-xs text-muted-foreground mb-1 block">Transfer Ownership</Label>
@@ -1120,7 +1120,7 @@ const ClubAdminDashboard = () => {
                 Transfer full ownership to an admin. You will become an Admin. This cannot be undone.
               </p>
               <Select value={transferTargetId} onValueChange={setTransferTargetId}>
-                <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Select admin to transfer to" /></SelectTrigger>
+                <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Pilih admin tujuan" /></SelectTrigger>
                 <SelectContent>
                   {admins.map((a: any) => (
                     <SelectItem key={a.user_id} value={a.user_id}>{a.profiles?.full_name || "Admin"}</SelectItem>
@@ -1337,7 +1337,7 @@ const ClubAdminDashboard = () => {
       {myAdminClubs && myAdminClubs.length > 1 && (
         <div className="px-4 pb-3">
           <Select value={selectedClubId} onValueChange={(v) => { setSelectedClubId(v); navigate(`/admin/club/${v}`, { replace: true }); }}>
-            <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Select club" /></SelectTrigger>
+            <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Pilih klub" /></SelectTrigger>
             <SelectContent>
               {myAdminClubs.map((m: any) => (
                 <SelectItem key={m.club_id} value={m.club_id}>
@@ -1391,11 +1391,11 @@ const ClubAdminDashboard = () => {
           <div className="space-y-3 py-2">
             <div>
               <Label className="text-xs text-muted-foreground">Title</Label>
-              <Input value={annTitle} onChange={(e) => setAnnTitle(e.target.value)} className="mt-1" placeholder="Announcement title" />
+              <Input value={annTitle} onChange={(e) => setAnnTitle(e.target.value)} className="mt-1" placeholder="Judul pengumuman" />
             </div>
             <div>
               <Label className="text-xs text-muted-foreground">Content</Label>
-              <Textarea value={annContent} onChange={(e) => setAnnContent(e.target.value)} className="mt-1" rows={4} placeholder="Write your announcement..." />
+              <Textarea value={annContent} onChange={(e) => setAnnContent(e.target.value)} className="mt-1" rows={4} placeholder="Tulis pengumuman..." />
             </div>
             <div className="flex items-center gap-2">
               <Switch checked={annPinned} onCheckedChange={setAnnPinned} />

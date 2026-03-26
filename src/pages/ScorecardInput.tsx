@@ -323,7 +323,7 @@ const ScorecardInput = () => {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-        <p className="mt-3 text-sm text-muted-foreground">Loading scorecard...</p>
+        <p className="mt-3 text-sm text-muted-foreground">Memuat scorecard...</p>
       </div>
     );
   }

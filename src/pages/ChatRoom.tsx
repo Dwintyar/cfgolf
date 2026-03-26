@@ -116,7 +116,7 @@ const ChatRoom = () => {
     setSending(false);
     if (error) {
       console.error("Send failed:", error);
-      toast.error("Failed to send message");
+      toast.error("Gagal mengirim pesan");
       setMessage(text);
     }
   };
@@ -197,7 +197,7 @@ const ChatRoom = () => {
       {/* Input */}
       <div className="border-t border-border/50 p-3 flex gap-2 bg-card">
         <Input
-          placeholder="Type a message..."
+          placeholder="Tulis pesan..."
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}

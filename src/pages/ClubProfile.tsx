@@ -373,7 +373,7 @@ const ClubProfile = () => {
             <div className="relative mb-4">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Type a name"
+                placeholder="Ketik nama..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="h-10 rounded-xl border-border/50 bg-card/80 pl-10 pr-10"
@@ -398,7 +398,7 @@ const ClubProfile = () => {
                   <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
                     <Users className="h-8 w-8 text-primary/60" />
                   </div>
-                  <p className="text-lg font-semibold text-foreground">No members yet</p>
+                  <p className="text-lg font-semibold text-foreground">Belum ada member</p>
                   <p className="text-sm text-muted-foreground mt-1">
                     {search ? "No matching members found." : "Share your club link to invite golfers to join."}
                   </p>

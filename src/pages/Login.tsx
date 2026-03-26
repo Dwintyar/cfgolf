@@ -225,7 +225,7 @@ const Login = () => {
           {isSignUp && !isForgot && (
             <Input
               type="text"
-              placeholder="Full Name"
+              placeholder="Nama Lengkap"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               className="h-12 rounded-xl border-border/50 bg-card/80 backdrop-blur"

@@ -85,8 +85,8 @@ const EventPairings = () => {
         {(!pairings || pairings.length === 0) && (
           <div className="golf-card p-8 text-center">
             <Shuffle className="mx-auto h-10 w-10 text-muted-foreground/40" />
-            <p className="mt-3 text-sm text-muted-foreground">No pairings generated yet</p>
-            <p className="mt-1 text-xs text-muted-foreground">Go back to the event page to generate pairings</p>
+            <p className="mt-3 text-sm text-muted-foreground">Pairing belum dibuat</p>
+            <p className="mt-1 text-xs text-muted-foreground">Kembali ke halaman event untuk membuat pairing</p>
           </div>
         )}
 

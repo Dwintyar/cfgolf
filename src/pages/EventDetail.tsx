@@ -780,7 +780,7 @@ const EventDetail = () => {
       contestant_id: selectedContestantForCart,
       cart_number: parseInt(cartNumber),
     });
-    toast.success("Cart assigned!");
+    toast.success("Cart berhasil di-assign!");
     refetchCarts();
     setShowCartDialog(false);
     setCartNumber("");
@@ -1211,7 +1211,7 @@ const EventDetail = () => {
                             );
                           })}
                          {players.length === 0 && (
-                           <p className="col-span-2 text-xs text-muted-foreground text-center py-4">No players assigned</p>
+                           <p className="col-span-2 text-xs text-muted-foreground text-center py-4">Belum ada pemain di-assign</p>
                          )}
                       </div>
                     </div>
@@ -1251,7 +1251,7 @@ const EventDetail = () => {
         {(!scoreboardData || scoreboardData.length === 0) ? (
           <div className="golf-card p-6 text-center">
             <Trophy className="mx-auto h-8 w-8 text-muted-foreground/40" />
-            <p className="mt-2 text-sm text-muted-foreground">No scores yet</p>
+            <p className="mt-2 text-sm text-muted-foreground">Belum ada skor</p>
           </div>
         ) : (() => {
           // Group by flight
@@ -1470,7 +1470,7 @@ const EventDetail = () => {
                   </thead>
                   <tbody>
                     {hcpRows.length === 0 ? (
-                      <tr><td colSpan={7} className="text-center py-6 text-muted-foreground">No HCP corrections for this event</td></tr>
+                      <tr><td colSpan={7} className="text-center py-6 text-muted-foreground">Tidak ada koreksi HCP untuk event ini</td></tr>
                     ) : hcpRows.map((row: any) => (
                       <tr key={row.player_id} className="border-b border-border/30 hover:bg-muted/20 transition-colors">
                         <td className="text-center py-1.5 px-2 tabular-nums text-muted-foreground">{row.no}</td>
@@ -1525,9 +1525,9 @@ const EventDetail = () => {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCheckinDialog(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setShowCheckinDialog(false)}>Batal</Button>
             <Button onClick={handleSelfCheckin} disabled={checkingIn}>
-              {checkingIn ? "Checking in…" : "Confirm Check-in"}
+              {checkingIn ? "Checking in…" : "Konfirmasi Check-in"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1540,7 +1540,7 @@ const EventDetail = () => {
             <div>
               <Label className="text-xs">Contestant</Label>
               <Select value={selectedContestantForCart} onValueChange={setSelectedContestantForCart}>
-                <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Select player" /></SelectTrigger>
+                <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Pilih pemain" /></SelectTrigger>
                 <SelectContent>
                   {contestants?.map(c => (
                     <SelectItem key={c.id} value={c.id}>{(c.profiles as any)?.full_name ?? "Unknown"}</SelectItem>
@@ -1554,7 +1554,7 @@ const EventDetail = () => {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCartDialog(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setShowCartDialog(false)}>Batal</Button>
             <Button onClick={handleAssignCart} disabled={!selectedContestantForCart || !cartNumber}>Assign</Button>
           </DialogFooter>
         </DialogContent>
