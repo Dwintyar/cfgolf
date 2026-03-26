@@ -503,6 +503,5 @@ const NewsFeed = () => {
     </div>
   );
 };
-};
 
 export default NewsFeed;
