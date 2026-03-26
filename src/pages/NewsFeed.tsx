@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Heart, MessageCircle, Share2, Plus, Image, MapPin, Tag, X, MessageSquare } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Heart, MessageCircle, Share2, Plus, Image, MapPin, Tag, X, MessageSquare, Loader2 } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
 import heroImg from "@/assets/golf-hero.jpg";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -25,6 +25,12 @@ const NewsFeed = () => {
   const [content, setContent] = useState("");
   const [category, setCategory] = useState("general");
   const [posting, setPosting] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [taggedCourseId, setTaggedCourseId] = useState<string | null>(null);
+  const [taggedCourseName, setTaggedCourseName] = useState<string | null>(null);
+  const [showCourseSheet, setShowCourseSheet] = useState(false);
+  const photoInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -46,6 +52,31 @@ const NewsFeed = () => {
     },
   });
 
+  const { data: courses } = useQuery({
+    queryKey: ["courses-for-tag"],
+    queryFn: async () => {
+      const { data } = await supabase.from("courses").select("id, name, location").order("name").limit(100);
+      return data ?? [];
+    },
+  });
+
+  const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !userId) return;
+    setUploadingPhoto(true);
+    try {
+      const ext = file.name.split(".").pop();
+      const path = `${userId}/posts/${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
+      if (upErr) throw upErr;
+      const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(path);
+      setPhotoUrl(publicUrl);
+    } catch {
+      toast.error("Gagal upload foto");
+    }
+    setUploadingPhoto(false);
+  };
+
   const handlePost = async () => {
     if (!content.trim() || !userId) return;
     setPosting(true);
@@ -53,12 +84,17 @@ const NewsFeed = () => {
       author_id: userId,
       content: content.trim(),
       category,
+      image_url: photoUrl || null,
+      course_id: taggedCourseId || null,
     });
     setPosting(false);
     if (error) { toast.error(error.message); return; }
     toast.success("Post published!");
     setContent("");
     setCategory("general");
+    setPhotoUrl(null);
+    setTaggedCourseId(null);
+    setTaggedCourseName(null);
     setShowCreate(false);
     queryClient.invalidateQueries({ queryKey: ["feed-posts"] });
   };
@@ -262,16 +298,68 @@ const NewsFeed = () => {
               </Select>
             </div>
             <div className="flex gap-2">
-              <Button size="sm" variant="outline" className="gap-1 text-xs" disabled>
-                <Image className="h-3.5 w-3.5" /> Photo
+              <input
+                ref={photoInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handlePhotoSelect}
+              />
+              <Button
+                size="sm" variant="outline"
+                className={`gap-1 text-xs ${photoUrl ? "border-primary text-primary" : ""}`}
+                disabled={uploadingPhoto}
+                onClick={() => photoInputRef.current?.click()}
+              >
+                {uploadingPhoto ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Image className="h-3.5 w-3.5" />}
+                {photoUrl ? "Ganti Foto" : "Foto"}
               </Button>
-              <Button size="sm" variant="outline" className="gap-1 text-xs" disabled>
-                <MapPin className="h-3.5 w-3.5" /> Course
-              </Button>
-              <Button size="sm" variant="outline" className="gap-1 text-xs" disabled>
-                <Tag className="h-3.5 w-3.5" /> Buddy
+              <Button
+                size="sm" variant="outline"
+                className={`gap-1 text-xs ${taggedCourseId ? "border-primary text-primary" : ""}`}
+                onClick={() => setShowCourseSheet(true)}
+              >
+                <MapPin className="h-3.5 w-3.5" />
+                {taggedCourseName ? taggedCourseName.substring(0, 12) + (taggedCourseName.length > 12 ? "…" : "") : "Course"}
               </Button>
             </div>
+
+            {/* Photo preview */}
+            {photoUrl && (
+              <div className="relative mt-1">
+                <img src={photoUrl} alt="preview" className="w-full max-h-40 object-cover rounded-lg" />
+                <button
+                  onClick={() => setPhotoUrl(null)}
+                  className="absolute top-1 right-1 bg-black/60 rounded-full p-0.5"
+                >
+                  <X className="h-3.5 w-3.5 text-white" />
+                </button>
+              </div>
+            )}
+
+            {/* Course picker */}
+            {showCourseSheet && (
+              <div className="rounded-lg border border-border bg-card p-2 max-h-40 overflow-y-auto space-y-1">
+                {taggedCourseId && (
+                  <button
+                    className="w-full text-left text-xs text-red-400 px-2 py-1 hover:bg-muted rounded"
+                    onClick={() => { setTaggedCourseId(null); setTaggedCourseName(null); setShowCourseSheet(false); }}
+                  >
+                    ✕ Hapus tag course
+                  </button>
+                )}
+                {courses?.map((c: any) => (
+                  <button
+                    key={c.id}
+                    className="w-full text-left text-xs px-2 py-1.5 hover:bg-muted rounded truncate"
+                    onClick={() => { setTaggedCourseId(c.id); setTaggedCourseName(c.name); setShowCourseSheet(false); }}
+                  >
+                    📍 {c.name}
+                    {c.location && <span className="text-muted-foreground ml-1">· {c.location}</span>}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
