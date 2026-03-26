@@ -3,8 +3,8 @@
   "name": "CFGolf - Platform Golf Komunitas Indonesia",
   "short_name": "CFGolf",
   "description": "CFGolf — Platform Golf Komunitas Indonesia. Kelola klub, tournament, handicap, dan terhubung dengan sesama golfer.",
-  "start_url": "/",
-  "scope": "/",
+  "start_url": "https://golfbuana.com/",
+  "scope": "https://golfbuana.com/",
   "display": "standalone",
   "background_color": "#0a1a12",
   "theme_color": "#1D9E75",
@@ -33,7 +33,7 @@
   ],
   "screenshots": [
     {
-      "src": "/favicon.png",
+      "src": "/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "form_factor": "narrow",
