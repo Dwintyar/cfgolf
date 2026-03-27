@@ -975,6 +975,46 @@ const TourDetail = () => {
       <ManageCategoriesDialog tourId={tour.id} open={showCategories} onOpenChange={setShowCategories} />
       <CreateEventDialog tourId={tour.id} open={showCreateEvent} onOpenChange={setShowCreateEvent} onDone={() => { setShowCreateEvent(false); refetchEvents(); }} />
 
+      {/* Edit Event Dialog */}
+      <Dialog open={!!editingEvent} onOpenChange={(v) => { if (!v) setEditingEvent(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>Edit Event</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label className="text-xs">Event Name</Label>
+              <Input value={editEventName} onChange={e => setEditEventName(e.target.value)} />
+            </div>
+            <div>
+              <Label className="text-xs">Date</Label>
+              <Input type="date" value={editEventDate} onChange={e => setEditEventDate(e.target.value)} />
+            </div>
+            <div>
+              <Label className="text-xs">Status</Label>
+              <Select value={editEventStatus} onValueChange={setEditEventStatus}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="draft">Draft</SelectItem>
+                  <SelectItem value="registration">Registration Open</SelectItem>
+                  <SelectItem value="checkin">Check-in</SelectItem>
+                  <SelectItem value="ongoing">Ongoing</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs">Total Tickets</Label>
+              <Input type="number" value={editEventTickets} onChange={e => setEditEventTickets(e.target.value)} />
+            </div>
+          </div>
+          <DialogFooter className="mt-2">
+            <Button variant="outline" onClick={() => setEditingEvent(null)}>Cancel</Button>
+            <Button onClick={handleEditEvent} disabled={savingEdit}>
+              {savingEdit ? "Saving…" : "Save Changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Add Player from Club Dialog */}
       <Dialog open={showAddPlayerDialog} onOpenChange={(open) => { setShowAddPlayerDialog(open); if (!open) setSearchAddPlayer(""); }}>
         <DialogContent className="max-w-md">
