@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { Trophy, Plus, Calendar } from "lucide-react";
+import { Trophy, Plus, Calendar, Clock, MapPin, X } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
 import DesktopLayout from "@/components/DesktopLayout";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,6 +24,25 @@ const TourList = () => {
       if (user) setUserId(user.id);
     });
   }, []);
+
+  // My upcoming tee time bookings
+  const { data: myBookings, refetch: refetchBookings } = useQuery({
+    queryKey: ["my-tee-bookings", userId],
+    queryFn: async () => {
+      if (!userId) return [];
+      const today = new Date().toISOString().split("T")[0];
+      const { data } = await supabase
+        .from("tee_time_bookings")
+        .select("*, courses(name, location)")
+        .eq("user_id", userId)
+        .gte("booking_date", today)
+        .in("status", ["confirmed", "pending"])
+        .order("booking_date", { ascending: true })
+        .order("tee_time", { ascending: true });
+      return data ?? [];
+    },
+    enabled: !!userId,
+  });
 
   const { data: tours, isLoading, refetch } = useQuery({
     queryKey: ["tours", userId],
@@ -240,6 +259,17 @@ const TourList = () => {
     enabled: !!userId,
   });
 
+  const handleCancelBooking = async (bookingId: string) => {
+    if (!confirm("Batalkan booking ini?")) return;
+    const { error } = await supabase
+      .from("tee_time_bookings")
+      .update({ status: "cancelled" })
+      .eq("id", bookingId)
+      .eq("user_id", userId!);
+    if (error) { return; }
+    refetchBookings();
+  };
+
   const upcomingEvents = events?.filter(e =>
     e.status !== "completed" && e.status !== "cancelled"
   ) ?? [];
@@ -337,6 +367,61 @@ const TourList = () => {
           ))}
         </div>
       </div>
+
+      {/* ═══ MY TEE TIMES ═══ */}
+      {userId && (myBookings?.length ?? 0) > 0 && (
+        <div className="mt-4 px-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Clock className="h-4 w-4 text-primary" />
+            <h2 className="text-sm font-semibold">My Tee Times</h2>
+            <span className="text-[10px] text-muted-foreground bg-secondary px-1.5 py-0.5 rounded-full">
+              {myBookings?.length} upcoming
+            </span>
+          </div>
+          <div className="space-y-2">
+            {myBookings?.map((b: any) => (
+              <div key={b.id} className="golf-card p-3 flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                  <Calendar className="h-5 w-5 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold truncate">
+                    {(b.courses as any)?.name ?? "Golf Course"}
+                  </p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                      <Calendar className="h-3 w-3" /> {b.booking_date}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                      <Clock className="h-3 w-3" /> {b.tee_time?.slice(0, 5)}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground">
+                      {b.players_count} player{b.players_count > 1 ? "s" : ""}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <Badge
+                    variant="outline"
+                    className={`text-[9px] ${b.status === "confirmed"
+                      ? "text-green-500 border-green-500/30 bg-green-500/5"
+                      : "text-amber-500 border-amber-500/30"}`}
+                  >
+                    {b.status}
+                  </Badge>
+                  <button
+                    onClick={() => handleCancelBooking(b.id)}
+                    className="p-1 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                    title="Cancel booking"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ═══ SECTION 2: TOURNAMENTS ═══ */}
       <div className="mt-6 px-4">
