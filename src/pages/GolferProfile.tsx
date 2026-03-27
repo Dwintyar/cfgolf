@@ -222,12 +222,13 @@ const GolferProfile = () => {
   const { data: hcpHistory } = useQuery({
     queryKey: ["hcp-history", targetId],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("handicap_history")
-        .select("new_hcp, old_hcp, created_at, tour_id, events(name), tours(name, tournament_type)")
+        .select("new_hcp, old_hcp, created_at, tour_id, event_id")
         .eq("player_id", targetId!)
         .order("created_at", { ascending: true })
         .limit(50);
+      if (error) console.error("hcpHistory error:", error);
       return data ?? [];
     },
     enabled: !!targetId,
