@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, LayoutDashboard, Grid3X3, Clock, Settings, Save, Plus, AlertTriangle, Layers, Pencil, Trash2, Search, UserCog, Users } from "lucide-react";
+import { ArrowLeft, LayoutDashboard, Grid3X3, Clock, Settings, Save, Plus, AlertTriangle, Layers, Pencil, Trash2, Search, UserCog, Users, GitMerge, CheckCircle2, Car } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,6 +19,7 @@ const TABS = [
   { id: "teebox", label: "Tee Box", icon: Layers },
   { id: "teetimes", label: "Tee Times", icon: Clock },
   { id: "caddies", label: "Caddies", icon: Users },
+  { id: "pairings", label: "Pairings", icon: GitMerge },
   { id: "settings", label: "Settings", icon: Settings },
 ] as const;
 
@@ -49,6 +50,7 @@ const CourseAdminDashboard = () => {
   const [assigningAdmin, setAssigningAdmin] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [savingPairing, setSavingPairing] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -162,6 +164,48 @@ const CourseAdminDashboard = () => {
   });
 
   // ═══ TEE TIME FORM STATE ═══
+  // Open pairing events for this course
+  const { data: openPairingEvents, refetch: refetchOpenPairings } = useQuery({
+    queryKey: ["open-pairing-events", courseId],
+    queryFn: async () => {
+      if (!courseId) return [];
+      const { data } = await supabase
+        .from("events")
+        .select(`
+          id, name, event_date, status, pairing_mode,
+          contestants(
+            id, player_id, hcp, status,
+            profiles:player_id(full_name, handicap)
+          )
+        `)
+        .eq("course_id", courseId)
+        .in("pairing_mode", ["open", "course_arranged"])
+        .in("status", ["registration", "checkin", "ongoing"])
+        .order("event_date");
+      return data ?? [];
+    },
+    enabled: !!courseId,
+  });
+
+  const handleSavePairingDetails = async (
+    pairingId: string,
+    contestantId: string,
+    cartNumber: string,
+    caddyName: string
+  ) => {
+    setSavingPairing(contestantId);
+    await supabase
+      .from("pairing_players")
+      .update({
+        cart_number: cartNumber ? parseInt(cartNumber) : null,
+        caddy_name: caddyName || null,
+      })
+      .eq("pairing_id", pairingId)
+      .eq("contestant_id", contestantId);
+    setSavingPairing(null);
+    refetchOpenPairings();
+  };
+
   const [startTime, setStartTime] = useState("06:00");
   const [endTime, setEndTime] = useState("15:00");
   const [slotInterval, setSlotInterval] = useState(30);
@@ -985,6 +1029,131 @@ const CourseAdminDashboard = () => {
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ═══ OPEN PAIRINGS ═══ */}
+        {tab === "pairings" && !isNew && (
+          <div className="space-y-4">
+            <div>
+              <h3 className="font-semibold">Open Pairing Requests</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Event yang meminta golf course untuk mengatur pairing, cart, dan caddy
+              </p>
+            </div>
+
+            {!openPairingEvents || openPairingEvents.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <GitMerge className="h-10 w-10 text-muted-foreground/30 mb-3" />
+                <p className="text-sm font-semibold">Tidak ada open pairing request</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Player yang memilih "Open" atau "Course Arranged" akan muncul di sini
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {openPairingEvents.map((ev: any) => (
+                  <div key={ev.id} className="golf-card p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <p className="text-sm font-bold truncate">{ev.name}</p>
+                        <p className="text-xs text-muted-foreground">{ev.event_date}</p>
+                      </div>
+                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
+                        ev.pairing_mode === "open"
+                          ? "text-primary bg-primary/10 border-primary/20"
+                          : "text-amber-500 bg-amber-500/10 border-amber-500/30"
+                      }`}>
+                        {ev.pairing_mode === "open" ? "🌐 Open" : "🏌️ Course Arranged"}
+                      </span>
+                    </div>
+
+                    {/* Players list with cart + caddy assignment */}
+                    <div className="space-y-2">
+                      {(ev.contestants ?? [])
+                        .filter((c: any) => c.status === "confirmed" || c.status === "competitor")
+                        .map((c: any) => {
+                          const profile = c.profiles as any;
+                          return (
+                            <div key={c.id} className="border border-border/50 rounded-xl p-3">
+                              <div className="flex items-center gap-2 mb-2">
+                                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0 text-xs font-bold text-primary">
+                                  {(profile?.full_name ?? "?").charAt(0)}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium truncate">{profile?.full_name ?? "Unknown"}</p>
+                                  <p className="text-[10px] text-muted-foreground">HCP {c.hcp ?? profile?.handicap ?? "N/A"}</p>
+                                </div>
+                              </div>
+                              <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                  <Label className="text-[10px] text-muted-foreground flex items-center gap-1 mb-1">
+                                    <Car className="h-3 w-3" /> Cart No.
+                                  </Label>
+                                  <Input
+                                    type="number"
+                                    placeholder="e.g. 12"
+                                    className="h-7 text-xs"
+                                    defaultValue=""
+                                    onBlur={(e) => {
+                                      const cartNum = e.target.value;
+                                      const caddyInput = e.target.closest(".border")?.querySelector("input[placeholder*=caddy]") as HTMLInputElement;
+                                      const caddyVal = caddyInput?.value ?? "";
+                                      // Find pairing_id for this contestant
+                                      // Will save when caddy field also blurs
+                                    }}
+                                    id={`cart-${c.id}`}
+                                  />
+                                </div>
+                                <div>
+                                  <Label className="text-[10px] text-muted-foreground flex items-center gap-1 mb-1">
+                                    <Users className="h-3 w-3" /> Caddy
+                                  </Label>
+                                  <Input
+                                    placeholder="nama caddy"
+                                    className="h-7 text-xs"
+                                    id={`caddy-${c.id}`}
+                                  />
+                                </div>
+                              </div>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="w-full mt-2 h-7 text-xs gap-1"
+                                disabled={savingPairing === c.id}
+                                onClick={async () => {
+                                  const cartInput = document.getElementById(`cart-${c.id}`) as HTMLInputElement;
+                                  const caddyInput = document.getElementById(`caddy-${c.id}`) as HTMLInputElement;
+                                  // First ensure contestant is in a pairing
+                                  const { data: pp } = await supabase
+                                    .from("pairing_players")
+                                    .select("pairing_id")
+                                    .eq("contestant_id", c.id)
+                                    .maybeSingle();
+                                  if (pp?.pairing_id) {
+                                    await handleSavePairingDetails(
+                                      pp.pairing_id, c.id,
+                                      cartInput?.value ?? "",
+                                      caddyInput?.value ?? ""
+                                    );
+                                    toast({ title: "Saved!", description: `Cart & caddy untuk ${profile?.full_name} tersimpan` });
+                                  } else {
+                                    toast({ title: "Belum ada pairing", description: "Generate pairing dulu dari halaman event", variant: "destructive" });
+                                  }
+                                }}
+                              >
+                                {savingPairing === c.id
+                                  ? "Saving..."
+                                  : <><CheckCircle2 className="h-3 w-3" /> Simpan</>}
+                              </Button>
+                            </div>
+                          );
+                        })}
                     </div>
                   </div>
                 ))}
