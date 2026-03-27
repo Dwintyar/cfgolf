@@ -52,16 +52,28 @@ const TourList = () => {
       const playerTourIds = (playerTours ?? []).map(t => t.tour_id);
 
       // Fetch private tours accessible to this user
-      const accessIds = [...new Set([...clubIds, ...playerTourIds])];
       let privateTours: any[] = [];
-      if (accessIds.length > 0 || clubIds.length > 0) {
-        const { data } = await supabase
+
+      // Private tours where user is member of organizer club
+      if (clubIds.length > 0) {
+        const { data: orgTours } = await supabase
           .from("tours")
           .select("*, clubs!tours_organizer_club_id_fkey(name, logo_url)")
           .eq("is_public", false)
-          .or(`organizer_club_id.in.(${clubIds.length ? clubIds.join(",") : "00000000-0000-0000-0000-000000000000"}),id.in.(${playerTourIds.length ? playerTourIds.join(",") : "00000000-0000-0000-0000-000000000000"})`)
+          .in("organizer_club_id", clubIds)
           .order("year", { ascending: false });
-        privateTours = data ?? [];
+        privateTours = [...privateTours, ...(orgTours ?? [])];
+      }
+
+      // Private tours where user is a registered player
+      if (playerTourIds.length > 0) {
+        const { data: playerPrivateTours } = await supabase
+          .from("tours")
+          .select("*, clubs!tours_organizer_club_id_fkey(name, logo_url)")
+          .eq("is_public", false)
+          .in("id", playerTourIds)
+          .order("year", { ascending: false });
+        privateTours = [...privateTours, ...(playerPrivateTours ?? [])];
       }
 
       // Merge — deduplicate by id

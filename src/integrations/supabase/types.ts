@@ -2565,6 +2565,7 @@ export type Database = {
           created_by: string | null
           description: string | null
           id: string
+          is_public: boolean
           name: string
           organizer_club_id: string
           status: string
@@ -2576,6 +2577,7 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           id?: string
+          is_public?: boolean
           name: string
           organizer_club_id: string
           status?: string
@@ -2587,6 +2589,7 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           id?: string
+          is_public?: boolean
           name?: string
           organizer_club_id?: string
           status?: string
