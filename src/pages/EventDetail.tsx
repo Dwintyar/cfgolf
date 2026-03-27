@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Calendar, MapPin, Users, Ticket, Trophy, Award, Shuffle, TrendingDown,
-  ClipboardCheck, Package, Lock, Car, UserCheck, ChevronRight, Pencil, Plus, RefreshCw, Clock, Download, Flag, Backpack, User
+  ClipboardCheck, Package, Lock, Car, UserCheck, ChevronRight, Pencil, Plus, RefreshCw, Clock, Download, Flag, Backpack, User, Monitor
 } from "lucide-react";
 import html2canvas from "html2canvas";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -995,6 +995,14 @@ const EventDetail = () => {
       )}
       <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowWinners(true)}>
         <Trophy className="h-3 w-3" /> Results
+      </Button>
+      <Button
+        size="sm"
+        variant="outline"
+        className="h-7 shrink-0 gap-1 text-[11px] border-primary/40 text-primary hover:bg-primary/10"
+        onClick={() => window.open(`/live/${id}`, "_blank")}
+      >
+        <Monitor className="h-3 w-3" /> Live Display
       </Button>
       {event?.status === "completed" && (
         <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={handleExportPDF} disabled={exporting}>
