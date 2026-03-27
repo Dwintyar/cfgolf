@@ -63,7 +63,6 @@ const Onboarding = () => {
         .from("clubs")
         .select("id, name, description, logo_url, members(count)")
         .eq("facility_type", "golf_club")
-        .eq("is_personal", false)
         .order("name")
         .limit(6);
       return data ?? [];

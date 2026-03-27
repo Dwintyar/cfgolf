@@ -41,7 +41,6 @@ const Clubs = () => {
       const { data: clubsData, error } = await supabase
         .from("clubs")
         .select("*, members(count)")
-        .eq("is_personal", false)
         .order("created_at", { ascending: false });
 
       if (error) throw error;

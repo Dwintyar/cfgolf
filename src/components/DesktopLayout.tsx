@@ -688,7 +688,6 @@ const SuggestedClubsWidget = ({ navigate }: { navigate: (path: string) => void }
       const { data } = await supabase
         .from("clubs")
         .select("id, name, logo_url, members(count)")
-        .eq("is_personal", false)
         .order("created_at", { ascending: false })
         .limit(4);
       return data ?? [];

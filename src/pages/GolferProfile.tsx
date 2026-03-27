@@ -76,7 +76,6 @@ const GolferProfile = () => {
     if (personalClub && !memberClubs.find((c) => c.id === personalClub.id)) {
       memberClubs.unshift(personalClub);
     }
-    memberClubs.sort((a, b) => (a.is_personal ? -1 : 0) - (b.is_personal ? -1 : 0));
     setClubs(memberClubs);
   };
 
@@ -1217,9 +1216,7 @@ const GolferProfile = () => {
                     <div key={c.id} onClick={() => navigate(`/clubs/${c.id}`)} className="golf-card overflow-hidden animate-fade-in cursor-pointer" style={{ animationDelay: `${i * 60}ms` }}>
                       <div className="relative h-28 bg-secondary flex items-center justify-center">
                         {c.logo_url ? <img src={c.logo_url} alt={c.name} className="h-full w-full object-cover" /> : <span className="text-3xl font-bold text-primary/30">{c.name.charAt(0)}</span>}
-                        {c.is_personal && (
-                          <span className="absolute top-2 right-2 flex items-center gap-1 rounded-full bg-primary/90 px-2 py-0.5 text-[9px] font-bold text-primary-foreground uppercase tracking-wider"><Crown className="h-3 w-3" /> Personal</span>
-                        )}
+
                       </div>
                       <p className="p-2.5 text-xs font-medium truncate">{c.name}</p>
                     </div>

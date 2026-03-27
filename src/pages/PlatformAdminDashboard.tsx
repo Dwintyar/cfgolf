@@ -50,7 +50,7 @@ const PlatformAdminDashboard = () => {
     queryFn: async () => {
       const [users, clubs, events, venues, tours] = await Promise.all([
         supabase.from("profiles").select("id", { count: "exact", head: true }),
-        supabase.from("clubs").select("id", { count: "exact", head: true }).eq("is_personal", false),
+        supabase.from("clubs").select("id", { count: "exact", head: true }),
         supabase.from("events").select("id", { count: "exact", head: true }),
         supabase.from("courses").select("id", { count: "exact", head: true }),
         supabase.from("tours").select("id", { count: "exact", head: true }),
@@ -136,7 +136,7 @@ const PlatformAdminDashboard = () => {
       const { data } = await supabase
         .from("clubs")
         .select("*, members(id)")
-        .eq("is_personal", false)
+        
         .order("name");
       return data ?? [];
     },

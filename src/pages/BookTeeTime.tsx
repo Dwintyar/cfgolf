@@ -117,6 +117,7 @@ const BookTeeTime = () => {
     if (!userId || !courseId || !selectedTime) return;
     setBooking(true);
 
+    // Save tee time booking
     const { error } = await supabase.from("tee_time_bookings").insert({
       course_id: courseId,
       user_id: userId,
@@ -127,11 +128,91 @@ const BookTeeTime = () => {
       notes: notes || null,
     });
 
-    setBooking(false);
     if (error) {
+      setBooking(false);
       toast.error(error.message);
       return;
     }
+
+    // Phase 2: Auto-create event in user's personal club
+    try {
+      // Find user's personal club
+      const { data: personalClub } = await supabase
+        .from("clubs")
+        .select("id, name")
+        .eq("created_by", userId)
+        .eq("is_personal", true)
+        .maybeSingle();
+
+      if (personalClub) {
+        // Find or create a personal tournament for this year
+        const year = new Date(selectedDate).getFullYear();
+        let tourId: string | null = null;
+
+        const { data: existingTour } = await supabase
+          .from("tours")
+          .select("id")
+          .eq("organizer_club_id", personalClub.id)
+          .eq("year", year)
+          .maybeSingle();
+
+        if (existingTour) {
+          tourId = existingTour.id;
+        } else {
+          const { data: newTour } = await supabase
+            .from("tours")
+            .insert({
+              name: `${personalClub.name} Rounds ${year}`,
+              tournament_type: "internal",
+              organizer_club_id: personalClub.id,
+              year,
+              is_public: false,
+              status: "active",
+            })
+            .select("id")
+            .single();
+          if (newTour) tourId = newTour.id;
+        }
+
+        if (tourId) {
+          // Create event for this booking
+          const eventName = `${course?.name ?? "Golf"} — ${selectedDate}`;
+          const { data: newEvent } = await supabase
+            .from("events")
+            .insert({
+              tour_id: tourId,
+              course_id: courseId,
+              name: eventName,
+              event_date: selectedDate,
+              ticket_total: players,
+              status: "registration",
+            })
+            .select("id")
+            .single();
+
+          if (newEvent) {
+            // Register user as contestant
+            await supabase.from("tour_players").upsert({
+              tour_id: tourId,
+              player_id: userId,
+              club_id: personalClub.id,
+              status: "active",
+            }, { onConflict: "tour_id,player_id" });
+
+            await supabase.from("contestants").upsert({
+              event_id: newEvent.id,
+              player_id: userId,
+              status: "confirmed",
+            }, { onConflict: "event_id,player_id" });
+          }
+        }
+      }
+    } catch (e) {
+      // Phase 2 failure is non-blocking — booking still confirmed
+      console.warn("Auto-event creation failed:", e);
+    }
+
+    setBooking(false);
     setConfirmed(true);
     toast.success("Booking confirmed!");
   };

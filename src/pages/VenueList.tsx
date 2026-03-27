@@ -43,7 +43,6 @@ const VenueList = () => {
         .from("clubs")
         .select("id, name, description, logo_url, contact_phone, contact_email")
         .eq("facility_type", "driving_range")
-        .eq("is_personal", false)
         .order("name");
       return data ?? [];
     },
