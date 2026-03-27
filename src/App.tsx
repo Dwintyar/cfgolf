@@ -43,6 +43,7 @@ import CourseAdminDashboard from "./pages/CourseAdminDashboard";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import PublicProfile from "./pages/PublicProfile";
 import RecordRound from "./pages/RecordRound";
+import LiveDisplay from "./pages/LiveDisplay";
 import CasualScorecardInput from "./pages/CasualScorecardInput";
 import AdminApprovals from "./pages/AdminApprovals";
 
@@ -107,6 +108,7 @@ const AppInner = () => {
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route path="/p/:username" element={<PublicProfile />} />
+            <Route path="/live/:eventId" element={<LiveDisplay />} />
 
             {/* Protected routes — require approved session */}
             <Route path="/admin" element={<ProtectedRoute><AdminRoute requirePlatformAdmin><PlatformAdminDashboard /></AdminRoute></ProtectedRoute>} />
