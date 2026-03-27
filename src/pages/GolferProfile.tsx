@@ -1,11 +1,11 @@
-import { ArrowLeft, Globe, Mail, Camera, UserPlus, UserCheck, MessageCircle, Crown, Check, X, BarChart3, TrendingDown, Trophy, MapPin, Settings, Clock, Share2, Shield, CalendarDays, Loader2 } from "lucide-react";
+import { ArrowLeft, Globe, Mail, Camera, UserPlus, UserCheck, MessageCircle, Crown, Check, X, BarChart3, TrendingDown, Trophy, MapPin, Settings, Clock, Share2, Shield, CalendarDays, Loader2, ClipboardList } from "lucide-react";
 import CommitteeRoleBadges from "@/components/CommitteeRoleBadges";
 import { useNavigate, useParams } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
@@ -35,6 +35,7 @@ const GolferProfile = () => {
   const navigate = useNavigate();
   const { id: paramId } = useParams<{ id: string }>();
   const [tab, setTab] = useState<Tab>("about");
+  const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [desktopTab, setDesktopTab] = useState<DesktopTab>("overview");
   const [profile, setProfile] = useState<Profile | null>(null);
   const [clubs, setClubs] = useState<Club[]>([]);
@@ -424,6 +425,10 @@ const GolferProfile = () => {
               const out = holes?.filter(h => h.hole_number <= 9).reduce((s, h) => s + (h.strokes ?? 0), 0) ?? null;
               const inn = holes?.filter(h => h.hole_number >= 10).reduce((s, h) => s + (h.strokes ?? 0), 0) ?? null;
 
+              // Store hole scores map for on-demand display
+              const holeMap: Record<number, number> = {};
+              (holes ?? []).forEach((h: any) => { holeMap[h.hole_number] = h.strokes ?? 0; });
+
               return {
                 event: ev,
                 hcp: c.hcp,
@@ -431,6 +436,7 @@ const GolferProfile = () => {
                 in: inn && inn > 0 ? inn : null,
                 gross: sc.gross_score,
                 net: sc.net_score,
+                holeScores: holeMap,
               };
             })
           );
@@ -525,10 +531,18 @@ const GolferProfile = () => {
                 {t.events.length > 0 ? (
                   <div className="divide-y divide-border/30">
                     {t.events.map((e: any, j: number) => (
-                      <div key={j} className="px-3 py-2">
+                      <div
+                        key={j}
+                        className="px-3 py-2 cursor-pointer hover:bg-primary/5 transition-colors group"
+                        onClick={() => setSelectedEvent(e)}
+                        title="Click to view scorecard"
+                      >
                         <div className="flex items-start justify-between mb-1.5">
                           <div className="min-w-0 flex-1">
-                            <p className="text-xs font-medium truncate">{e.event?.name}</p>
+                            <div className="flex items-center gap-1.5">
+                              <p className="text-xs font-medium truncate">{e.event?.name}</p>
+                              <ClipboardList className="h-3 w-3 text-muted-foreground/40 group-hover:text-primary shrink-0 transition-colors" />
+                            </div>
                             <p className="text-[10px] text-muted-foreground">
                               {e.event?.event_date} · {(e.event?.courses as any)?.name}
                             </p>
@@ -1286,6 +1300,84 @@ const GolferProfile = () => {
       </div>
 
       <CreateClubDialog open={showCreateClub} onOpenChange={setShowCreateClub} onCreated={async () => { setShowCreateClub(false); if (targetId) await fetchClubs(targetId); }} />
+
+      {selectedEvent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setSelectedEvent(null)}>
+          <div className="bg-card border border-border rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-start gap-3 px-5 py-4 border-b border-border/50">
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-foreground truncate">{selectedEvent.event?.name ?? "Event"}</p>
+                <p className="text-xs text-muted-foreground">{selectedEvent.event?.event_date} · {(selectedEvent.event?.courses as any)?.name}</p>
+              </div>
+              <div className="flex items-center gap-4 shrink-0">
+                <div className="text-center">
+                  <p className="text-[10px] text-muted-foreground uppercase">Gross</p>
+                  <p className="text-xl font-bold tabular-nums">{selectedEvent.gross ?? "—"}</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-[10px] text-primary/70 uppercase">Nett</p>
+                  <p className="text-2xl font-extrabold text-primary tabular-nums">{selectedEvent.net ?? "—"}</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-[10px] text-muted-foreground uppercase">HCP</p>
+                  <p className="text-xl font-bold tabular-nums">{selectedEvent.hcp ?? "—"}</p>
+                </div>
+                <button onClick={() => setSelectedEvent(null)} className="text-muted-foreground hover:text-foreground text-xl leading-none ml-1">✕</button>
+              </div>
+            </div>
+            <div className="px-5 py-4">
+              {selectedEvent.holeScores && Object.keys(selectedEvent.holeScores).length > 0 ? (
+                <div className="space-y-3">
+                  {[{ holes: [1,2,3,4,5,6,7,8,9], label: "OUT" }, { holes: [10,11,12,13,14,15,16,17,18], label: "IN" }].map(({ holes, label }) => (
+                    <div key={label} className="overflow-x-auto">
+                      <table className="w-full text-xs border-collapse font-mono">
+                        <thead>
+                          <tr className="bg-muted/50">
+                            <th className="text-left py-1.5 px-2 text-muted-foreground font-semibold">Hole</th>
+                            {holes.map(h => <th key={h} className="text-center py-1.5 px-1 text-muted-foreground w-8">{h}</th>)}
+                            <th className="text-center py-1.5 px-1 font-bold w-10">{label}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr className="border-t border-border/50">
+                            <td className="py-1.5 px-2 text-muted-foreground">Score</td>
+                            {holes.map(h => (
+                              <td key={h} className="text-center py-1.5 px-1 tabular-nums">
+                                {selectedEvent.holeScores[h] ?? <span className="text-muted-foreground/30">—</span>}
+                              </td>
+                            ))}
+                            <td className="text-center py-1.5 px-1 font-bold tabular-nums">
+                              {holes.reduce((s: number, h: number) => s + (selectedEvent.holeScores[h] ?? 0), 0) || "—"}
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  ))}
+                  <div className="grid grid-cols-3 gap-2 pt-1 border-t border-border/50">
+                    {([
+                      { label: "OUT", val: [1,2,3,4,5,6,7,8,9].reduce((s: number, h: number) => s+(selectedEvent.holeScores[h]??0), 0), highlight: false },
+                      { label: "IN",  val: [10,11,12,13,14,15,16,17,18].reduce((s: number, h: number) => s+(selectedEvent.holeScores[h]??0), 0), highlight: false },
+                      { label: "GROSS", val: selectedEvent.gross, highlight: true },
+                    ] as { label: string; val: any; highlight: boolean }[]).map(({ label, val, highlight }) => (
+                      <div key={label} className={`text-center rounded-xl py-2 ${highlight ? "bg-primary/10 border border-primary/20" : "bg-muted/50"}`}>
+                        <p className={`text-[10px] uppercase font-semibold ${highlight ? "text-primary/70" : "text-muted-foreground"}`}>{label}</p>
+                        <p className={`text-lg font-bold tabular-nums ${highlight ? "text-primary" : ""}`}>{val || "—"}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <ClipboardList className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                  <p className="text-sm">No hole-by-hole data available</p>
+                  <p className="text-xs mt-1 text-muted-foreground/50">Gross: {selectedEvent.gross ?? "—"} · Nett: {selectedEvent.net ?? "—"}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
