@@ -229,7 +229,7 @@ const DesktopLayout = ({ children, sidebarRightHidden = false }: { children: Rea
             onClick={() => navigate("/news")}
             className="flex items-center gap-2 hover:opacity-80 transition-opacity"
           >
-            <img src={logo} alt="GolfBuana" className="h-8 w-8 rounded-lg object-contain" />
+            <img src={logo} alt="GolfBuana" className="h-9 w-9 object-contain" />
           </button>
 
           {/* Search bar di samping logo */}

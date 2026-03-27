@@ -425,7 +425,7 @@ const LiveDisplay = () => {
         <img
           src={logo}
           alt="GolfBuana"
-          className="h-10 w-10 rounded-xl object-contain shrink-0"
+          className="h-10 w-10 object-contain shrink-0"
         />
 
         <div className="flex-1 min-w-0">

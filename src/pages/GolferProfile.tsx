@@ -1368,10 +1368,33 @@ const GolferProfile = () => {
                   </div>
                 </div>
               ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  <ClipboardList className="h-8 w-8 mx-auto mb-2 opacity-30" />
-                  <p className="text-sm">No hole-by-hole data available</p>
-                  <p className="text-xs mt-1 text-muted-foreground/50">Gross: {selectedEvent.gross ?? "—"} · Nett: {selectedEvent.net ?? "—"}</p>
+                <div className="space-y-3">
+                  {/* Show aggregated scores even without per-hole data */}
+                  <div className="grid grid-cols-2 gap-3">
+                    {[
+                      { label: "OUT", val: selectedEvent.out },
+                      { label: "IN",  val: selectedEvent.in },
+                    ].map(({ label, val }) => (
+                      <div key={label} className="bg-muted/50 rounded-xl py-3 text-center">
+                        <p className="text-[10px] uppercase font-semibold text-muted-foreground mb-1">{label}</p>
+                        <p className="text-2xl font-bold tabular-nums">{val ?? "—"}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    {[
+                      { label: "GROSS", val: selectedEvent.gross, highlight: false },
+                      { label: "NETT",  val: selectedEvent.net,   highlight: true  },
+                    ].map(({ label, val, highlight }) => (
+                      <div key={label} className={`rounded-xl py-3 text-center border ${highlight ? "bg-primary/10 border-primary/30" : "bg-muted/50 border-transparent"}`}>
+                        <p className={`text-[10px] uppercase font-semibold mb-1 ${highlight ? "text-primary/70" : "text-muted-foreground"}`}>{label}</p>
+                        <p className={`text-2xl font-bold tabular-nums ${highlight ? "text-primary" : ""}`}>{val ?? "—"}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-center text-[10px] text-muted-foreground/40 pt-1">
+                    Per-hole data not available for this event
+                  </p>
                 </div>
               )}
             </div>
