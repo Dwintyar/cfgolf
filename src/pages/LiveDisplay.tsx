@@ -78,10 +78,12 @@ const FlightColumn = ({
   flight,
   players,
   onRowClick,
+  isLive = false,
 }: {
   flight: Flight;
   players: PlayerRow[];
   onRowClick: (p: PlayerRow) => void;
+  isLive?: boolean;
 }) => {
   const [flashing, setFlashing] = useState<Set<string>>(new Set());
   const prevRef = useRef<PlayerRow[]>([]);
@@ -155,7 +157,7 @@ const FlightColumn = ({
                     >
                       {p.full_name}
                     </p>
-                    <MoveBadge curr={p.rank} prev={p.prevRank} />
+                    {isLive && <MoveBadge curr={p.rank} prev={p.prevRank} />}
                   </div>
                   {p.club_name && (
                     <p className="text-[10px] text-white/30 truncate leading-tight">
@@ -485,7 +487,7 @@ const LiveDisplay = () => {
             style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}
           >
             {flightGroups.map(({ flight, players: fp }) => (
-              <FlightColumn key={flight.id} flight={flight} players={fp} onRowClick={(p) => { setSelectedPlayer(p); fetchHoleScores(p); }} />
+              <FlightColumn key={flight.id} flight={flight} players={fp} isLive={event?.status === "ongoing"} onRowClick={(p) => { setSelectedPlayer(p); fetchHoleScores(p); }} />
             ))}
           </div>
         ) : players.length > 0 ? (
@@ -500,6 +502,7 @@ const LiveDisplay = () => {
                 display_order: 0,
               }}
               players={players}
+              isLive={event?.status === "ongoing"}
               onRowClick={(p) => { setSelectedPlayer(p); fetchHoleScores(p); }}
             />
           </div>
