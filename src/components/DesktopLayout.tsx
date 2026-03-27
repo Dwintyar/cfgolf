@@ -8,7 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import {
   Newspaper, Users, Trophy, MapPin,
   Bell, MessageCircle, Settings,
-  Building2, Search, Flag, ShieldCheck
+  Building2, Search, Flag, ShieldCheck,
+  ChevronDown, LogOut, TrendingUp, User
 } from "lucide-react";
 import logo from "@/assets/logo.svg";
 
@@ -178,92 +179,134 @@ const DesktopLayout = ({ children, sidebarRightHidden = false }: { children: Rea
   return (
     <div className="flex min-h-screen bg-background">
       {/* TOP NAVBAR */}
-      <header className="fixed top-0 left-0 right-0 h-14 z-50 border-b border-border/50 bg-card/95 backdrop-blur-lg flex items-center justify-between px-4 gap-4">
-        {/* Kiri: Logo */}
-        <div className="flex items-center gap-2 w-56 shrink-0">
-          <img src={logo} alt="GolfBuana" className="h-8 w-8 rounded-lg object-contain" />
-          <span className="font-display text-lg font-bold text-foreground">GolfBuana</span>
-        </div>
+      <header className="fixed top-0 left-0 right-0 h-14 z-50 border-b border-border/50 bg-card/95 backdrop-blur-lg flex items-center px-4 gap-3">
 
-        {/* Tengah: Search bar */}
-        <div className="flex-1 max-w-xs relative" ref={searchRef}>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        {/* ── KIRI: Logo ── */}
+        <button
+          onClick={() => navigate("/news")}
+          className="flex items-center gap-2 shrink-0 hover:opacity-80 transition-opacity"
+        >
+          <img src={logo} alt="GolfBuana" className="h-8 w-8 rounded-lg object-contain" />
+          <span className="font-display text-base font-bold text-foreground hidden xl:block">GolfBuana</span>
+        </button>
+
+        {/* ── TENGAH: Nav items + Search ── */}
+        <div className="flex-1 flex items-center justify-center gap-1">
+          {/* Nav tabs */}
+          {navItems.map(({ path, label, icon: Icon }) => {
+            const active = location.pathname.startsWith(path);
+            return (
+              <button
+                key={path}
+                onClick={() => navigate(path)}
+                className={`relative flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-xl text-xs font-medium transition-colors ${ 
+                  active
+                    ? "text-primary"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                }`}
+              >
+                <Icon className="h-5 w-5" />
+                <span className="leading-none">{label}</span>
+                {active && (
+                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-5 h-0.5 rounded-full bg-primary" />
+                )}
+              </button>
+            );
+          })}
+
+          {/* Divider */}
+          <div className="w-px h-6 bg-border/50 mx-2" />
+
+          {/* Search bar */}
+          <div className="relative w-48 xl:w-64" ref={searchRef}>
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
             <input
               value={searchQuery}
-              placeholder="Search golfers, clubs, events..."
-              className="w-full pl-9 pr-4 py-1.5 text-sm rounded-full bg-secondary border-none outline-none focus:ring-2 focus:ring-primary/30 text-foreground placeholder:text-muted-foreground"
+              placeholder="Search..."
+              className="w-full pl-8 pr-3 py-1.5 text-sm rounded-full bg-secondary border-none outline-none focus:ring-2 focus:ring-primary/30 text-foreground placeholder:text-muted-foreground"
               onChange={(e) => handleSearch(e.target.value)}
               onFocus={() => { if (searchQuery.length >= 2) setSearchOpen(true); }}
             />
+            {/* Search dropdown */}
+            {searchOpen && searchQuery.length >= 2 && (
+              <div className="absolute top-full mt-2 left-0 right-0 bg-card border border-border rounded-xl shadow-xl z-50 overflow-hidden max-h-80 overflow-y-auto">
+                {searching && (
+                  <div className="p-3 text-xs text-muted-foreground text-center">Searching...</div>
+                )}
+                {!searching && !hasResults && (
+                  <div className="p-3 text-xs text-muted-foreground text-center">Tidak ada hasil untuk "{searchQuery}"</div>
+                )}
+                {!searching && searchResults.golfers.length > 0 && (
+                  <div>
+                    <div className="px-3 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider bg-secondary/50">Golfer</div>
+                    {searchResults.golfers.map((p: any) => (
+                      <button key={p.id} onClick={() => { navigate(`/profile/${p.id}`); setSearchOpen(false); setSearchQuery(""); }}
+                        className="w-full flex items-center gap-2 px-3 py-2 hover:bg-secondary/50 text-left transition-colors">
+                        <Avatar className="h-7 w-7 border border-border shrink-0">
+                          <AvatarImage src={p.avatar_url ?? ""} />
+                          <AvatarFallback className="text-[10px]">{p.full_name?.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <span className="text-sm flex-1 truncate">{p.full_name}</span>
+                        {p.handicap != null && <span className="text-[10px] text-muted-foreground">HCP {p.handicap}</span>}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {!searching && searchResults.clubs.length > 0 && (
+                  <div>
+                    <div className="px-3 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider bg-secondary/50">Klub</div>
+                    {searchResults.clubs.map((c: any) => (
+                      <button key={c.id} onClick={() => { navigate(`/clubs/${c.id}`); setSearchOpen(false); setSearchQuery(""); }}
+                        className="w-full flex items-center gap-2 px-3 py-2 hover:bg-secondary/50 text-left transition-colors">
+                        <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 text-xs font-bold text-primary">
+                          {c.name?.charAt(0)}
+                        </div>
+                        <span className="text-sm flex-1 truncate">{c.name}</span>
+                        <span className="text-[10px] text-muted-foreground">{c.facility_type}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {!searching && searchResults.events.length > 0 && (
+                  <div>
+                    <div className="px-3 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider bg-secondary/50">Event</div>
+                    {searchResults.events.map((e: any) => (
+                      <button key={e.id} onClick={() => { navigate(`/event/${e.id}`); setSearchOpen(false); setSearchQuery(""); }}
+                        className="w-full flex items-center gap-2 px-3 py-2 hover:bg-secondary/50 text-left transition-colors">
+                        <div className="h-7 w-7 rounded-lg bg-accent/10 flex items-center justify-center shrink-0 text-xs">🏆</div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm truncate">{e.name}</p>
+                          <p className="text-[10px] text-muted-foreground">{(e.tours as any)?.name} · {e.event_date}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-
-          {/* Search dropdown */}
-          {searchOpen && searchQuery.length >= 2 && (
-            <div className="absolute top-full mt-2 left-0 right-0 bg-card border border-border rounded-xl shadow-xl z-50 overflow-hidden max-h-80 overflow-y-auto">
-              {searching && (
-                <div className="p-3 text-xs text-muted-foreground text-center">Searching...</div>
-              )}
-              {!searching && !hasResults && (
-                <div className="p-3 text-xs text-muted-foreground text-center">Tidak ada hasil untuk "{searchQuery}"</div>
-              )}
-              {!searching && searchResults.golfers.length > 0 && (
-                <div>
-                  <div className="px-3 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider bg-secondary/50">Golfer</div>
-                  {searchResults.golfers.map((p: any) => (
-                    <button key={p.id} onClick={() => { navigate(`/profile/${p.id}`); setSearchOpen(false); setSearchQuery(""); }}
-                      className="w-full flex items-center gap-2 px-3 py-2 hover:bg-secondary/50 text-left transition-colors">
-                      <Avatar className="h-7 w-7 border border-border shrink-0">
-                        <AvatarImage src={p.avatar_url ?? ""} />
-                        <AvatarFallback className="text-[10px]">{p.full_name?.charAt(0)}</AvatarFallback>
-                      </Avatar>
-                      <span className="text-sm flex-1 truncate">{p.full_name}</span>
-                      {p.handicap != null && <span className="text-[10px] text-muted-foreground">HCP {p.handicap}</span>}
-                    </button>
-                  ))}
-                </div>
-              )}
-              {!searching && searchResults.clubs.length > 0 && (
-                <div>
-                  <div className="px-3 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider bg-secondary/50">Klub</div>
-                  {searchResults.clubs.map((c: any) => (
-                    <button key={c.id} onClick={() => { navigate(`/clubs/${c.id}`); setSearchOpen(false); setSearchQuery(""); }}
-                      className="w-full flex items-center gap-2 px-3 py-2 hover:bg-secondary/50 text-left transition-colors">
-                      <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 text-xs font-bold text-primary">
-                        {c.name?.charAt(0)}
-                      </div>
-                      <span className="text-sm flex-1 truncate">{c.name}</span>
-                      <span className="text-[10px] text-muted-foreground">{c.facility_type}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-              {!searching && searchResults.events.length > 0 && (
-                <div>
-                  <div className="px-3 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider bg-secondary/50">Event</div>
-                  {searchResults.events.map((e: any) => (
-                    <button key={e.id} onClick={() => { navigate(`/event/${e.id}`); setSearchOpen(false); setSearchQuery(""); }}
-                      className="w-full flex items-center gap-2 px-3 py-2 hover:bg-secondary/50 text-left transition-colors">
-                      <div className="h-7 w-7 rounded-lg bg-accent/10 flex items-center justify-center shrink-0 text-xs">🏆</div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm truncate">{e.name}</p>
-                        <p className="text-[10px] text-muted-foreground">{(e.tours as any)?.name} · {e.event_date}</p>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
         </div>
 
-        {/* Kanan: Actions */}
-        <div className="flex items-center gap-1 w-56 justify-end">
-          <button onClick={() => navigate("/notifications")} className="relative p-2 rounded-full hover:bg-secondary transition-colors">
+        {/* ── KANAN: Quick actions + Avatar dropdown ── */}
+        <div className="flex items-center gap-0.5 shrink-0">
+          {/* Notifications */}
+          <button
+            onClick={() => navigate("/notifications")}
+            className="relative p-2 rounded-full hover:bg-secondary transition-colors"
+          >
             <Bell className="h-5 w-5 text-foreground" />
-            <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-primary" />
+            {(pendingCount ?? 0) > 0 && isAdmin && (
+              <span className="absolute top-1 right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-bold text-destructive-foreground">
+                {(pendingCount ?? 0) > 9 ? "9+" : pendingCount}
+              </span>
+            )}
           </button>
-          <button onClick={() => navigate("/chat")} className="relative p-2 rounded-full hover:bg-secondary transition-colors">
+
+          {/* Messages */}
+          <button
+            onClick={() => navigate("/chat")}
+            className="relative p-2 rounded-full hover:bg-secondary transition-colors"
+          >
             <MessageCircle className="h-5 w-5 text-foreground" />
             {unreadCount > 0 && (
               <span className="absolute top-0.5 right-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-bold text-destructive-foreground">
@@ -271,90 +314,159 @@ const DesktopLayout = ({ children, sidebarRightHidden = false }: { children: Rea
               </span>
             )}
           </button>
-          <button onClick={() => navigate("/profile")} className="p-2 rounded-full hover:bg-secondary transition-colors">
-            <Avatar className="h-8 w-8 border-2 border-primary/20">
-              <AvatarImage src={profile?.avatar_url ?? ""} />
-              <AvatarFallback className="bg-primary/10 text-xs font-bold text-primary">
-                {getInitials(profile?.full_name ?? null)}
-              </AvatarFallback>
-            </Avatar>
-          </button>
-          <button onClick={() => navigate("/settings")} className="p-2 rounded-full hover:bg-secondary transition-colors">
-            <Settings className="h-5 w-5 text-foreground" />
-          </button>
+
+          {/* Avatar dropdown */}
+          <div className="relative" ref={searchRef}>
+            <button
+              onClick={() => setSearchOpen(v => !v)}
+              className="flex items-center gap-1.5 pl-1.5 pr-2 py-1 rounded-full hover:bg-secondary transition-colors ml-1"
+            >
+              <Avatar className="h-8 w-8 border-2 border-primary/20">
+                <AvatarImage src={profile?.avatar_url ?? ""} />
+                <AvatarFallback className="bg-primary/10 text-xs font-bold text-primary">
+                  {getInitials(profile?.full_name ?? null)}
+                </AvatarFallback>
+              </Avatar>
+              <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+            </button>
+
+            {/* Dropdown menu */}
+            {searchOpen && !searchQuery && (
+              <div className="absolute top-full right-0 mt-2 w-56 bg-card border border-border rounded-xl shadow-xl z-50 overflow-hidden py-1">
+                {/* User info */}
+                <div className="px-4 py-3 border-b border-border/50">
+                  <p className="text-sm font-semibold truncate">{profile?.full_name ?? "Golfer"}</p>
+                  <p className="text-xs text-muted-foreground">HCP {profile?.handicap ?? "N/A"}</p>
+                </div>
+                {/* Menu items */}
+                <button onClick={() => { navigate("/profile"); setSearchOpen(false); }}
+                  className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm hover:bg-secondary transition-colors text-left">
+                  <User className="h-4 w-4 text-muted-foreground" /> My Profile
+                </button>
+                <button onClick={() => { navigate("/settings"); setSearchOpen(false); }}
+                  className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm hover:bg-secondary transition-colors text-left">
+                  <Settings className="h-4 w-4 text-muted-foreground" /> Settings
+                </button>
+                {isAdmin && (
+                  <>
+                    <div className="border-t border-border/50 my-1" />
+                    <button onClick={() => { navigate("/admin/approvals"); setSearchOpen(false); }}
+                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm hover:bg-secondary transition-colors text-left">
+                      <ShieldCheck className="h-4 w-4 text-muted-foreground" />
+                      Approvals
+                      {(pendingCount ?? 0) > 0 && (
+                        <Badge variant="destructive" className="ml-auto text-[10px] px-1.5 py-0 h-5">
+                          {pendingCount}
+                        </Badge>
+                      )}
+                    </button>
+                    <button onClick={() => { navigate("/admin"); setSearchOpen(false); }}
+                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm hover:bg-secondary transition-colors text-left">
+                      <TrendingUp className="h-4 w-4 text-muted-foreground" /> Admin Dashboard
+                    </button>
+                  </>
+                )}
+                <div className="border-t border-border/50 my-1" />
+                <button
+                  onClick={async () => { await supabase.auth.signOut(); navigate("/login"); }}
+                  className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm hover:bg-secondary transition-colors text-left text-destructive"
+                >
+                  <LogOut className="h-4 w-4" /> Sign Out
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
-      {/* SIDEBAR KIRI */}
+      {/* SIDEBAR KIRI — Profile & personal stats */}
       <aside
         style={{ width: 256 }}
-        className="fixed left-0 top-14 h-[calc(100vh-3.5rem)] border-r border-border/50 bg-card z-40 p-4 flex flex-col overflow-y-auto"
+        className="fixed left-0 top-14 h-[calc(100vh-3.5rem)] border-r border-border/50 bg-card z-40 p-4 flex flex-col overflow-y-auto gap-3"
       >
-        {/* Profile Card */}
+        {/* Profile card */}
         <div
-          className="flex items-center gap-3 px-2 py-3 mb-2 rounded-xl hover:bg-secondary cursor-pointer transition-colors"
+          className="golf-card p-4 cursor-pointer hover:border-primary/30 transition-colors"
           onClick={() => navigate("/profile")}
         >
-          <Avatar className="h-10 w-10 border-2 border-primary/20">
-            <AvatarImage src={profile?.avatar_url ?? ""} />
-            <AvatarFallback className="bg-primary/10 text-sm font-bold text-primary">
-              {getInitials(profile?.full_name ?? null)}
-            </AvatarFallback>
-          </Avatar>
-          <div className="min-w-0">
-            <p className="text-sm font-semibold truncate text-foreground">
-              {profile?.full_name ?? "Golfer"}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              HCP {profile?.handicap ?? "N/A"}
-            </p>
+          <div className="flex items-center gap-3 mb-3">
+            <Avatar className="h-12 w-12 border-2 border-primary/20">
+              <AvatarImage src={profile?.avatar_url ?? ""} />
+              <AvatarFallback className="bg-primary/10 text-base font-bold text-primary">
+                {getInitials(profile?.full_name ?? null)}
+              </AvatarFallback>
+            </Avatar>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-bold truncate text-foreground">
+                {profile?.full_name ?? "Golfer"}
+              </p>
+              <p className="text-xs text-muted-foreground">View profile →</p>
+            </div>
+          </div>
+          {/* HCP badge */}
+          <div className="flex items-center justify-between bg-primary/10 rounded-lg px-3 py-2">
+            <span className="text-xs text-muted-foreground font-medium">Handicap Index</span>
+            <span className="text-lg font-extrabold text-primary tabular-nums">
+              {profile?.handicap ?? "N/A"}
+            </span>
           </div>
         </div>
-        <div className="border-t border-border/30 mb-2" />
 
-        {/* Navigation */}
-        <nav className="flex-1 space-y-1">
-          {navItems.map(({ path, label, icon: Icon }) => {
+        {/* Quick links */}
+        <div className="golf-card p-3 space-y-1">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-1 mb-2">Quick Links</p>
+          {[
+            { path: "/profile", label: "My Profile", icon: User },
+            { path: "/clubs", label: "My Clubs", icon: Building2 },
+            { path: "/tour", label: "Tournaments", icon: Trophy },
+            { path: "/venue", label: "Book Tee Time", icon: MapPin },
+          ].map(({ path, label, icon: Icon }) => {
             const active = location.pathname.startsWith(path);
             return (
               <button
                 key={path}
                 onClick={() => navigate(path)}
-                className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-colors text-left ${
+                className={`flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-sm transition-colors text-left ${
                   active
-                    ? "bg-primary text-primary-foreground"
+                    ? "bg-primary/10 text-primary font-medium"
                     : "text-muted-foreground hover:bg-secondary hover:text-foreground"
                 }`}
               >
-                <Icon className="h-[18px] w-[18px] shrink-0" />
+                <Icon className="h-4 w-4 shrink-0" />
                 {label}
               </button>
             );
           })}
+        </div>
 
-          {/* Admin Approvals */}
-          {isAdmin && (
-            <>
-              <div className="border-t border-border/30 my-2" />
-              <button
-                onClick={() => navigate("/admin/approvals")}
-                className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-sm font-medium transition-colors text-left ${
-                  location.pathname === "/admin/approvals"
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-                }`}
-              >
-                <ShieldCheck className="h-[18px] w-[18px] shrink-0" />
-                Approvals
-                {(pendingCount ?? 0) > 0 && (
-                  <Badge variant="destructive" className="ml-auto text-[10px] px-1.5 py-0 h-5 min-w-[20px] flex items-center justify-center">
-                    {pendingCount}
-                  </Badge>
-                )}
-              </button>
-            </>
-          )}
-        </nav>
+        {/* Admin section */}
+        {isAdmin && (
+          <div className="golf-card p-3 space-y-1">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-1 mb-2">Admin</p>
+            <button
+              onClick={() => navigate("/admin/approvals")}
+              className={`flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-sm transition-colors text-left ${
+                location.pathname === "/admin/approvals"
+                  ? "bg-primary/10 text-primary font-medium"
+                  : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+              }`}
+            >
+              <ShieldCheck className="h-4 w-4 shrink-0" />
+              Approvals
+              {(pendingCount ?? 0) > 0 && (
+                <Badge variant="destructive" className="ml-auto text-[10px] px-1.5 py-0 h-5 min-w-[20px] flex items-center justify-center">
+                  {pendingCount}
+                </Badge>
+              )}
+            </button>
+            <button
+              onClick={() => navigate("/admin")}
+              className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-sm text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors text-left"
+            >
+              <TrendingUp className="h-4 w-4 shrink-0" /> Dashboard
+            </button>
+          </div>
+        )}
       </aside>
 
       {/* MAIN CONTENT */}
