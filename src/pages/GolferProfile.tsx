@@ -649,29 +649,37 @@ const GolferProfile = () => {
     const minHcp = Math.max(0, Math.min(...hcpValues) - 2);
     const maxHcp = Math.max(...hcpValues) + 2;
     const range = maxHcp - minHcp || 1;
+    const W = 300; const H = 80; const PAD = 8;
+    const points = hcpValues.map((v: number, i: number) => {
+      const x = PAD + (i / Math.max(hcpValues.length - 1, 1)) * (W - PAD * 2);
+      const y = H - PAD - ((v - minHcp) / range) * (H - PAD * 2);
+      return { x, y, v };
+    });
+    const polyline = points.map((p: any) => `${p.x},${p.y}`).join(" ");
+    const areaPath = `M${points[0].x},${H - PAD} ` +
+      points.map((p: any) => `L${p.x},${p.y}`).join(" ") +
+      ` L${points[points.length-1].x},${H - PAD} Z`;
+
     return (
       <div className="golf-card p-4">
         <div className="flex items-center gap-2 mb-3">
           <TrendingDown className="h-4 w-4 text-primary" />
           <p className="text-sm font-semibold">Handicap History</p>
         </div>
-        <div className="flex items-end gap-1 h-24 pt-4">
-          {hcpHistory.map((h: any, i: number) => {
-            const hcp = h.new_hcp ?? 0;
-            const height = ((hcp - minHcp) / range) * 100;
-            const isImproved = i > 0 && hcp < (hcpHistory[i-1]?.new_hcp ?? hcp);
-            return (
-              <div key={i} className="flex-1 flex flex-col items-center gap-0.5 group relative">
-                <span className="text-[8px] text-muted-foreground font-medium">{hcp}</span>
-                <div
-                  className={`w-full rounded-t transition-all ${isImproved ? "bg-green-500/80" : "bg-primary/70"}`}
-                  style={{ height: `${Math.max(height, 8)}%` }}
-                />
-              </div>
-            );
-          })}
-        </div>
-        <p className="text-[10px] text-muted-foreground mt-2 text-center">
+        <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: 80 }}>
+          {/* Area fill */}
+          <path d={areaPath} fill="hsl(var(--primary))" opacity="0.1" />
+          {/* Line */}
+          <polyline points={polyline} fill="none" stroke="hsl(var(--primary))" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          {/* Dots + labels */}
+          {points.map((p: any, i: number) => (
+            <g key={i}>
+              <circle cx={p.x} cy={p.y} r="3" fill="hsl(var(--primary))" />
+              <text x={p.x} y={p.y - 6} textAnchor="middle" fontSize="8" fill="currentColor" opacity="0.6">{p.v}</text>
+            </g>
+          ))}
+        </svg>
+        <p className="text-[10px] text-muted-foreground mt-1 text-center">
           Current: HCP {profile?.handicap ?? "N/A"}
         </p>
       </div>
