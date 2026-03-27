@@ -86,22 +86,24 @@ const FlightColumn = ({
   isLive?: boolean;
 }) => {
   const [flashing, setFlashing] = useState<Set<string>>(new Set());
-  const prevRef = useRef<PlayerRow[]>([]);
+  // Track previous per-flight rank (not global rank)
+  const prevFlightRankRef = useRef<Record<string, number>>({});
 
   useEffect(() => {
-    const changed = players
-      .filter((p) => {
-        const prev = prevRef.current.find((pp) => pp.player_id === p.player_id);
-        return prev && prev.rank !== p.rank;
-      })
-      .map((p) => p.player_id);
+    const changed = players.filter((p) => {
+      const prevRank = prevFlightRankRef.current[p.player_id];
+      return prevRank !== undefined && prevRank !== p.rank;
+    }).map((p) => p.player_id);
 
     if (changed.length > 0) {
       setFlashing(new Set(changed));
       const t = setTimeout(() => setFlashing(new Set()), 1800);
       return () => clearTimeout(t);
     }
-    prevRef.current = players;
+    // Save current per-flight ranks
+    const newMap: Record<string, number> = {};
+    players.forEach((p) => { newMap[p.player_id] = p.rank; });
+    prevFlightRankRef.current = newMap;
   }, [players]);
 
   return (
@@ -157,7 +159,7 @@ const FlightColumn = ({
                     >
                       {p.full_name}
                     </p>
-                    {isLive && <MoveBadge curr={p.rank} prev={p.prevRank} />}
+                    {isLive && <MoveBadge curr={p.rank} prev={prevFlightRankRef.current[p.player_id]} />}
                   </div>
                   {p.club_name && (
                     <p className="text-[10px] text-white/30 truncate leading-tight">
