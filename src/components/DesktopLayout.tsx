@@ -181,55 +181,30 @@ const DesktopLayout = ({ children, sidebarRightHidden = false }: { children: Rea
       {/* TOP NAVBAR */}
       <header className="fixed top-0 left-0 right-0 h-14 z-50 border-b border-border/50 bg-card/95 backdrop-blur-lg flex items-center px-4 gap-3">
 
-        {/* ── KIRI: Logo ── */}
-        <button
-          onClick={() => navigate("/news")}
-          className="flex items-center gap-2 shrink-0 hover:opacity-80 transition-opacity"
-        >
-          <img src={logo} alt="GolfBuana" className="h-8 w-8 rounded-lg object-contain" />
-          <span className="font-display text-base font-bold text-foreground hidden xl:block">GolfBuana</span>
-        </button>
+        {/* ── KIRI: Logo + Search (seperti Facebook) ── */}
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={() => navigate("/news")}
+            className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+          >
+            <img src={logo} alt="GolfBuana" className="h-8 w-8 rounded-lg object-contain" />
+          </button>
 
-        {/* ── TENGAH: Nav items + Search ── */}
-        <div className="flex-1 flex items-center justify-center gap-1">
-          {/* Nav tabs */}
-          {navItems.map(({ path, label, icon: Icon }) => {
-            const active = location.pathname.startsWith(path);
-            return (
-              <button
-                key={path}
-                onClick={() => navigate(path)}
-                className={`relative flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-xl text-xs font-medium transition-colors ${ 
-                  active
-                    ? "text-primary"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-                }`}
-              >
-                <Icon className="h-5 w-5" />
-                <span className="leading-none">{label}</span>
-                {active && (
-                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-5 h-0.5 rounded-full bg-primary" />
-                )}
-              </button>
-            );
-          })}
-
-          {/* Divider */}
-          <div className="w-px h-6 bg-border/50 mx-2" />
-
-          {/* Search bar */}
-          <div className="relative w-48 xl:w-64" ref={searchRef}>
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-            <input
-              value={searchQuery}
-              placeholder="Search..."
-              className="w-full pl-8 pr-3 py-1.5 text-sm rounded-full bg-secondary border-none outline-none focus:ring-2 focus:ring-primary/30 text-foreground placeholder:text-muted-foreground"
-              onChange={(e) => handleSearch(e.target.value)}
-              onFocus={() => { if (searchQuery.length >= 2) setSearchOpen(true); }}
-            />
+          {/* Search bar di samping logo */}
+          <div className="relative" ref={searchRef}>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <input
+                value={searchQuery}
+                placeholder="Search GolfBuana..."
+                className="w-44 xl:w-56 pl-8 pr-3 py-1.5 text-sm rounded-full bg-secondary border-none outline-none focus:ring-2 focus:ring-primary/30 text-foreground placeholder:text-muted-foreground"
+                onChange={(e) => handleSearch(e.target.value)}
+                onFocus={() => { if (searchQuery.length >= 2) setSearchOpen(true); }}
+              />
+            </div>
             {/* Search dropdown */}
             {searchOpen && searchQuery.length >= 2 && (
-              <div className="absolute top-full mt-2 left-0 right-0 bg-card border border-border rounded-xl shadow-xl z-50 overflow-hidden max-h-80 overflow-y-auto">
+              <div className="absolute top-full mt-2 left-0 w-72 bg-card border border-border rounded-xl shadow-xl z-50 overflow-hidden max-h-80 overflow-y-auto">
                 {searching && (
                   <div className="p-3 text-xs text-muted-foreground text-center">Searching...</div>
                 )}
@@ -286,6 +261,30 @@ const DesktopLayout = ({ children, sidebarRightHidden = false }: { children: Rea
             )}
           </div>
         </div>
+
+        {/* ── TENGAH: Nav items merata (seperti Facebook) ── */}
+        <nav className="flex-1 flex items-stretch justify-center gap-1 h-full">
+          {navItems.map(({ path, label, icon: Icon }) => {
+            const active = location.pathname.startsWith(path);
+            return (
+              <button
+                key={path}
+                onClick={() => navigate(path)}
+                className={`relative flex flex-col items-center justify-center gap-0.5 px-6 xl:px-8 text-xs font-medium transition-colors h-full ${ 
+                  active
+                    ? "text-primary"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/60"
+                }`}
+              >
+                <Icon className="h-5 w-5" />
+                <span className="leading-none hidden xl:block">{label}</span>
+                {active && (
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-primary" />
+                )}
+              </button>
+            );
+          })}
+        </nav>
 
         {/* ── KANAN: Quick actions + Avatar dropdown ── */}
         <div className="flex items-center gap-0.5 shrink-0">
