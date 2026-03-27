@@ -16,11 +16,6 @@ const useWindowWidth = () => {
   const [width, setWidth] = useState(
     typeof window !== "undefined" ? window.innerWidth : 0
   );
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [searchResults, setSearchResults] = useState<{ golfers: any[], clubs: any[], events: any[] }>({ golfers: [], clubs: [], events: [] });
-  const [searching, setSearching] = useState(false);
-  const searchRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const handler = () => setWidth(window.innerWidth);
     window.addEventListener("resize", handler);
@@ -84,6 +79,11 @@ const DesktopLayout = ({ children, sidebarRightHidden = false }: { children: Rea
   const width = useWindowWidth();
   const isDesktop = width >= 1024;
   const isWide = width >= 1280;
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchResults, setSearchResults] = useState<{ golfers: any[], clubs: any[], events: any[] }>({ golfers: [], clubs: [], events: [] });
+  const [searching, setSearching] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
