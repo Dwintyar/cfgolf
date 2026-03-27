@@ -32,7 +32,6 @@ import GolferProfile from "./pages/GolferProfile";
 import Settings from "./pages/Settings";
 import ChatList from "./pages/ChatList";
 import ChatRoom from "./pages/ChatRoom";
-import BookTeeTime from "./pages/BookTeeTime";
 import NotFound from "./pages/NotFound";
 import PlatformAdminDashboard from "./pages/PlatformAdminDashboard";
 import ClubAdminDashboard from "./pages/ClubAdminDashboard";
@@ -42,9 +41,7 @@ import Notifications from "./pages/Notifications";
 import CourseAdminDashboard from "./pages/CourseAdminDashboard";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import PublicProfile from "./pages/PublicProfile";
-import RecordRound from "./pages/RecordRound";
 import LiveDisplay from "./pages/LiveDisplay";
-import CasualScorecardInput from "./pages/CasualScorecardInput";
 import AdminApprovals from "./pages/AdminApprovals";
 
 const queryClient = new QueryClient();
@@ -129,15 +126,12 @@ const AppInner = () => {
             <Route path="/venue" element={<ProtectedRoute><VenueList /></ProtectedRoute>} />
             <Route path="/venue/:id" element={<ProtectedRoute><Venue /></ProtectedRoute>} />
             <Route path="/play" element={<ProtectedRoute><Play /></ProtectedRoute>} />
-            <Route path="/record-round" element={<ProtectedRoute><RecordRound /></ProtectedRoute>} />
-            <Route path="/record-round/:courseId" element={<ProtectedRoute><CasualScorecardInput /></ProtectedRoute>} />
             <Route path="/play/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><GolferProfile /></ProtectedRoute>} />
             <Route path="/golfer/:id" element={<ProtectedRoute><GolferProfile /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             <Route path="/chat" element={<ProtectedRoute><ChatList /></ProtectedRoute>} />
             <Route path="/chat/:id" element={<ProtectedRoute><ChatRoom /></ProtectedRoute>} />
-            <Route path="/book/:courseId" element={<ProtectedRoute><BookTeeTime /></ProtectedRoute>} />
             <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
 
             <Route path="*" element={<NotFound />} />

@@ -259,13 +259,7 @@ const Venue = () => {
               ))}
             </div>
 
-            {/* Book CTA like reference */}
-            <Button
-              className="mt-6 h-14 w-full rounded-xl text-base font-bold uppercase tracking-wider golf-glow"
-              onClick={() => navigate(`/book/${id}`)}
-            >
-              Book This For {price ?? "Free"}
-            </Button>
+
           </>
         )}
       </div>
