@@ -48,7 +48,7 @@ const NewsFeed = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("posts")
-        .select("*, profiles:author_id(full_name, avatar_url)")
+        .select("*, profiles:author_id(full_name, avatar_url, handicap, members(clubs(name))))")
         .order("created_at", { ascending: false })
         .limit(50);
       if (error) throw error;
@@ -301,8 +301,30 @@ const NewsFeed = () => {
                       <AvatarFallback className="bg-secondary text-xs font-semibold">{getInitials(profile?.full_name)}</AvatarFallback>
                     </Avatar>
                     <div className="flex-1">
-                      <p className="text-xs font-semibold">{profile?.full_name ?? "User"}</p>
-                      <p className="text-[10px] text-muted-foreground">{timeAgo(post.created_at)}</p>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <p className="text-xs font-semibold">{profile?.full_name ?? "User"}</p>
+                        {/* Club badge */}
+                        {(profile?.members as any)?.[0]?.clubs?.name && (
+                          <span className="text-[10px] bg-primary/10 text-primary/80 px-1.5 py-0.5 rounded-full font-medium border border-primary/15">
+                            {(profile?.members as any)[0].clubs.name}
+                          </span>
+                        )}
+                        {/* HCP badge */}
+                        {profile?.handicap != null && (
+                          <span className="text-[10px] bg-secondary text-muted-foreground px-1.5 py-0.5 rounded-full font-mono">
+                            HCP {profile.handicap}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        {/* Category badge */}
+                        {post.category && post.category !== "general" && (
+                          <span className="text-[10px] uppercase tracking-wider font-semibold text-accent-foreground/70 bg-accent/20 px-1.5 py-0.5 rounded-full">
+                            {post.category.replace("_", " ")}
+                          </span>
+                        )}
+                        <p className="text-[10px] text-muted-foreground">{timeAgo(post.created_at)}</p>
+                      </div>
                     </div>
                     {post.author_id === userId && (
                       <button
@@ -319,7 +341,7 @@ const NewsFeed = () => {
                   <div className="flex items-center gap-1 mt-1.5">
                     <MapPin className="h-3 w-3 text-primary/70" />
                     <span className="text-xs text-primary/70 font-medium">
-                      {courses?.find((c: any) => c.id === post.course_id)?.name ?? "Golf Course"}
+                      ⛳ {courses?.find((c: any) => c.id === post.course_id)?.name ?? "Golf Course"}
                     </span>
                   </div>
                 )}

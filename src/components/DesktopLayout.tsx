@@ -133,6 +133,48 @@ const DesktopLayout = ({ children, sidebarRightHidden = false }: { children: Rea
     refetchInterval: 30000,
   });
 
+  // HCP trend — last 8 events
+  const { data: hcpHistory } = useQuery({
+    queryKey: ["sidebar-hcp-trend", userId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("handicap_history")
+        .select("new_hcp, old_hcp, created_at, events(name)")
+        .eq("player_id", userId!)
+        .order("created_at", { ascending: false })
+        .limit(8);
+      return (data ?? []).reverse();
+    },
+    enabled: !!userId,
+    staleTime: 1000 * 60 * 5,
+  });
+
+  // Live / upcoming tournament
+  const { data: liveEvent } = useQuery({
+    queryKey: ["sidebar-live-event"],
+    queryFn: async () => {
+      // Try ongoing first
+      const { data: ongoing } = await supabase
+        .from("events")
+        .select("id, name, event_date, status, courses(name), tours(name)")
+        .eq("status", "ongoing")
+        .order("event_date", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (ongoing) return { ...ongoing, isLive: true };
+      // Fallback: next upcoming
+      const { data: upcoming } = await supabase
+        .from("events")
+        .select("id, name, event_date, status, courses(name), tours(name)")
+        .eq("status", "registration")
+        .order("event_date", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      return upcoming ? { ...upcoming, isLive: false } : null;
+    },
+    refetchInterval: 30000,
+  });
+
   // Close search on click outside
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -403,12 +445,59 @@ const DesktopLayout = ({ children, sidebarRightHidden = false }: { children: Rea
             </div>
           </div>
           {/* HCP badge */}
-          <div className="flex items-center justify-between bg-primary/10 rounded-lg px-3 py-2">
+          <div className="flex items-center justify-between bg-primary/10 rounded-lg px-3 py-2 mb-2">
             <span className="text-xs text-muted-foreground font-medium">Handicap Index</span>
             <span className="text-lg font-extrabold text-primary tabular-nums">
               {profile?.handicap ?? "N/A"}
             </span>
           </div>
+
+          {/* Mini HCP Trend Chart */}
+          {hcpHistory && hcpHistory.length >= 2 && (() => {
+            const vals = hcpHistory.map((h: any) => h.new_hcp ?? h.old_hcp ?? 0);
+            const min = Math.min(...vals) - 1;
+            const max = Math.max(...vals) + 1;
+            const range = max - min || 1;
+            const w = 200; const h = 48;
+            const pts = vals.map((v: number, i: number) => {
+              const x = (i / (vals.length - 1)) * w;
+              const y = h - ((v - min) / range) * h;
+              return `${x},${y}`;
+            }).join(" ");
+            const first = vals[0]; const last = vals[vals.length - 1];
+            const improving = last < first;
+            return (
+              <div className="mt-1">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[10px] text-muted-foreground">HCP Trend</span>
+                  <span className={`text-[10px] font-semibold ${improving ? "text-green-500" : "text-red-400"}`}>
+                    {improving ? "▼" : "▲"} {Math.abs(last - first).toFixed(1)} ({hcpHistory.length} events)
+                  </span>
+                </div>
+                <svg viewBox={`0 0 ${w} ${h}`} className="w-full" style={{ height: 40 }}>
+                  <defs>
+                    <linearGradient id="hcpGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={improving ? "#22c55e" : "#ef4444"} stopOpacity="0.3" />
+                      <stop offset="100%" stopColor={improving ? "#22c55e" : "#ef4444"} stopOpacity="0" />
+                    </linearGradient>
+                  </defs>
+                  <polyline
+                    points={pts}
+                    fill="none"
+                    stroke={improving ? "#22c55e" : "#ef4444"}
+                    strokeWidth="2"
+                    strokeLinejoin="round"
+                    strokeLinecap="round"
+                  />
+                  {vals.map((v: number, i: number) => {
+                    const x = (i / (vals.length - 1)) * w;
+                    const y = h - ((v - min) / range) * h;
+                    return <circle key={i} cx={x} cy={y} r="2.5" fill={improving ? "#22c55e" : "#ef4444"} />;
+                  })}
+                </svg>
+              </div>
+            );
+          })()}
         </div>
 
         {/* Quick links */}
@@ -489,11 +578,63 @@ const DesktopLayout = ({ children, sidebarRightHidden = false }: { children: Rea
           style={{ width: 260 }}
           className="fixed right-0 top-14 h-[calc(100vh-3.5rem)] border-l border-border/50 bg-card/50 z-40 p-4 overflow-y-auto"
         >
+          <LiveTournamentWidget navigate={navigate} liveEvent={liveEvent} />
           <UpcomingEventsWidget navigate={navigate} />
-          <SuggestedClubsWidget navigate={navigate} />
           <ActiveGolfersWidget navigate={navigate} />
         </aside>
       )}
+    </div>
+  );
+};
+
+const LiveTournamentWidget = ({
+  navigate,
+  liveEvent,
+}: {
+  navigate: (path: string) => void;
+  liveEvent: any;
+}) => {
+  if (!liveEvent) return null;
+
+  return (
+    <div className="golf-card p-3 mb-3 border-primary/30">
+      <div className="flex items-center gap-2 mb-2">
+        {liveEvent.isLive ? (
+          <span className="flex items-center gap-1 text-[10px] font-bold text-green-400 bg-green-400/10 px-2 py-0.5 rounded-full border border-green-400/30">
+            <span className="h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse inline-block" />
+            LIVE NOW
+          </span>
+        ) : (
+          <span className="text-[10px] font-bold text-primary/70 bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
+            UPCOMING
+          </span>
+        )}
+        <span className="text-[10px] text-muted-foreground truncate">
+          {(liveEvent.tours as any)?.name}
+        </span>
+      </div>
+
+      <p className="text-sm font-bold text-foreground truncate mb-0.5">{liveEvent.name}</p>
+      <p className="text-xs text-muted-foreground mb-3">
+        {(liveEvent.courses as any)?.name} · {liveEvent.event_date}
+      </p>
+
+      <div className="flex gap-2">
+        <button
+          onClick={() => navigate(`/event/${liveEvent.id}`)}
+          className="flex-1 text-xs font-medium py-1.5 rounded-lg bg-secondary hover:bg-secondary/80 transition-colors text-foreground"
+        >
+          Details
+        </button>
+        {liveEvent.isLive && (
+          <button
+            onClick={() => window.open(`/live/${liveEvent.id}`, "_blank")}
+            className="flex-1 text-xs font-medium py-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+          >
+            🖥️ Live Display
+          </button>
+        )}
+      </div>
     </div>
   );
 };
