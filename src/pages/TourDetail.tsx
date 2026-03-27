@@ -309,7 +309,15 @@ const TourDetail = () => {
         .from("courses")
         .select("id, name, location")
         .order("name");
-      return data ?? [];
+      if (!data) return [];
+      // Deduplicate by normalized name (case-insensitive trim)
+      const seen = new Set<string>();
+      return data.filter((c: any) => {
+        const key = c.name.toLowerCase().trim();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
     },
   });
 

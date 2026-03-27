@@ -60,7 +60,14 @@ const NewsFeed = () => {
     queryKey: ["courses-for-tag"],
     queryFn: async () => {
       const { data } = await supabase.from("courses").select("id, name, location").order("name").limit(100);
-      return data ?? [];
+      if (!data) return [];
+      const seen = new Set<string>();
+      return data.filter((c: any) => {
+        const key = c.name.toLowerCase().trim();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
     },
   });
 
