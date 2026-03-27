@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/logo.svg";
@@ -9,11 +9,20 @@ interface EventInfo {
   name: string;
   event_date: string;
   status: string;
+  tour_id: string | null;
   courses: { name: string } | null;
   tours: { name: string } | null;
 }
 
-interface LeaderEntry {
+interface Flight {
+  id: string;
+  flight_name: string;
+  hcp_min: number;
+  hcp_max: number;
+  display_order: number;
+}
+
+interface PlayerRow {
   rank: number;
   player_id: string;
   full_name: string;
@@ -22,203 +31,308 @@ interface LeaderEntry {
   hcp: number | null;
   gross: number | null;
   nett: number | null;
-  out_score: number | null;
-  in_score: number | null;
-  remarks: string | null;
+  flight_id: string | null;
+  prevRank?: number;
 }
 
 /* ─── Helpers ────────────────────────────────────────────── */
-const fmt = (v: number | null) => (v == null ? "-" : String(v));
-const avatar = (url: string | null, name: string) => {
-  if (url) return <img src={url} alt={name} className="h-10 w-10 rounded-full object-cover border-2 border-white/20" />;
+const fmt = (v: number | null) => (v == null ? "—" : String(v));
+
+const RankBadge = ({ rank }: { rank: number }) => {
+  if (rank === 1) return <span className="text-xl leading-none">🥇</span>;
+  if (rank === 2) return <span className="text-xl leading-none">🥈</span>;
+  if (rank === 3) return <span className="text-xl leading-none">🥉</span>;
+  return <span className="text-sm font-bold text-white/40 tabular-nums">{rank}</span>;
+};
+
+const MoveBadge = ({ curr, prev }: { curr: number; prev?: number }) => {
+  if (!prev || prev === curr) return null;
+  const up = curr < prev;
+  const diff = Math.abs(curr - prev);
   return (
-    <div className="h-10 w-10 rounded-full bg-primary/30 flex items-center justify-center text-sm font-bold text-primary-foreground border-2 border-white/20">
+    <span className={`text-[10px] font-bold ${up ? "text-green-400" : "text-red-400"}`}>
+      {up ? `▲${diff}` : `▼${diff}`}
+    </span>
+  );
+};
+
+const AvatarCircle = ({ url, name }: { url: string | null; name: string }) => {
+  if (url) {
+    return (
+      <img
+        src={url}
+        alt={name}
+        className="h-7 w-7 rounded-full object-cover border border-white/20 shrink-0"
+      />
+    );
+  }
+  return (
+    <div className="h-7 w-7 rounded-full bg-primary/30 flex items-center justify-center text-[11px] font-bold text-white border border-white/20 shrink-0">
       {name.charAt(0).toUpperCase()}
     </div>
   );
 };
 
-const medalBg = (rank: number) => {
-  if (rank === 1) return "bg-yellow-500/20 border-yellow-400/40";
-  if (rank === 2) return "bg-slate-400/20 border-slate-300/40";
-  if (rank === 3) return "bg-amber-700/20 border-amber-600/40";
-  return "bg-white/5 border-white/10";
+/* ─── Flight Column ──────────────────────────────────────── */
+const FlightColumn = ({
+  flight,
+  players,
+}: {
+  flight: Flight;
+  players: PlayerRow[];
+}) => {
+  const [flashing, setFlashing] = useState<Set<string>>(new Set());
+  const prevRef = useRef<PlayerRow[]>([]);
+
+  useEffect(() => {
+    const changed = players
+      .filter((p) => {
+        const prev = prevRef.current.find((pp) => pp.player_id === p.player_id);
+        return prev && prev.rank !== p.rank;
+      })
+      .map((p) => p.player_id);
+
+    if (changed.length > 0) {
+      setFlashing(new Set(changed));
+      const t = setTimeout(() => setFlashing(new Set()), 1800);
+      return () => clearTimeout(t);
+    }
+    prevRef.current = players;
+  }, [players]);
+
+  return (
+    <div className="flex flex-col">
+      {/* Flight header */}
+      <div className="flex items-center justify-between px-3 py-2 mb-2 rounded-xl bg-primary/15 border border-primary/30">
+        <div>
+          <p className="text-sm font-extrabold tracking-wide text-primary uppercase">
+            {flight.flight_name || "Flight"}
+          </p>
+          <p className="text-[10px] text-white/35">
+            HCP {flight.hcp_min}–{flight.hcp_max}
+          </p>
+        </div>
+        <span className="text-xs text-white/25">{players.length}p</span>
+      </div>
+
+      {/* Rows */}
+      <div className="space-y-1">
+        {players.length === 0 ? (
+          <div className="text-center py-8 text-white/20 text-sm">No scores yet</div>
+        ) : (
+          players.map((p) => {
+            const flash = flashing.has(p.player_id);
+            const top3 = p.rank <= 3;
+            return (
+              <div
+                key={p.player_id}
+                className={`
+                  flex items-center gap-2 px-2.5 py-2 rounded-xl border
+                  transition-all duration-700
+                  ${flash ? "bg-yellow-400/20 border-yellow-400/50 scale-[1.015]" : ""}
+                  ${!flash && top3 ? "bg-white/[0.06] border-white/10" : ""}
+                  ${!flash && !top3 ? "bg-white/[0.02] border-white/[0.06]" : ""}
+                `}
+              >
+                {/* Rank */}
+                <div className="w-6 flex items-center justify-center shrink-0">
+                  <RankBadge rank={p.rank} />
+                </div>
+
+                {/* Avatar */}
+                <AvatarCircle url={p.avatar_url} name={p.full_name} />
+
+                {/* Name */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1 flex-wrap">
+                    <p
+                      className={`text-sm font-semibold truncate leading-tight ${
+                        top3 ? "text-white" : "text-white/75"
+                      }`}
+                    >
+                      {p.full_name}
+                    </p>
+                    <MoveBadge curr={p.rank} prev={p.prevRank} />
+                  </div>
+                  {p.club_name && (
+                    <p className="text-[10px] text-white/30 truncate leading-tight">
+                      {p.club_name}
+                    </p>
+                  )}
+                </div>
+
+                {/* HCP */}
+                <div className="text-right shrink-0">
+                  <p className="text-[9px] text-white/25 leading-none">HCP</p>
+                  <p className="text-xs font-mono text-white/45 tabular-nums">
+                    {fmt(p.hcp)}
+                  </p>
+                </div>
+
+                {/* Gross */}
+                <div className="text-right shrink-0 w-8">
+                  <p className="text-[9px] text-white/25 leading-none">Grs</p>
+                  <p className="text-xs font-mono tabular-nums">{fmt(p.gross)}</p>
+                </div>
+
+                {/* Nett — hero number */}
+                <div className="text-right shrink-0 w-9">
+                  <p className="text-[9px] text-white/25 leading-none">Nett</p>
+                  <p
+                    className={`text-base font-extrabold font-mono tabular-nums leading-tight ${
+                      p.nett != null
+                        ? top3
+                          ? "text-primary"
+                          : "text-white/80"
+                        : "text-white/20"
+                    }`}
+                  >
+                    {fmt(p.nett)}
+                  </p>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
 };
 
-const medalText = (rank: number) => {
-  if (rank === 1) return "text-yellow-300 font-extrabold";
-  if (rank === 2) return "text-slate-300 font-bold";
-  if (rank === 3) return "text-amber-500 font-bold";
-  return "text-white/60";
-};
-
-/* ─── Live Display Page ──────────────────────────────────── */
+/* ─── Main Page ──────────────────────────────────────────── */
 const LiveDisplay = () => {
   const { eventId } = useParams<{ eventId: string }>();
   const [event, setEvent] = useState<EventInfo | null>(null);
-  const [board, setBoard] = useState<LeaderEntry[]>([]);
+  const [flights, setFlights] = useState<Flight[]>([]);
+  const [players, setPlayers] = useState<PlayerRow[]>([]);
   const [lastRefresh, setLastRefresh] = useState(new Date());
-  const [tick, setTick] = useState(0);
+  const [countdown, setCountdown] = useState(30);
   const [loading, setLoading] = useState(true);
-  const REFRESH_SECONDS = 60;
+  const prevPlayersRef = useRef<PlayerRow[]>([]);
+  const REFRESH_SEC = 30;
 
   const fetchData = useCallback(async () => {
     if (!eventId) return;
 
-    /* 1. Event info */
+    /* 1. Event */
     const { data: ev } = await supabase
       .from("events")
-      .select("id, name, event_date, status, courses(name), tours(name)")
+      .select("id, name, event_date, status, tour_id, courses(name), tours(name)")
       .eq("id", eventId)
       .single();
     if (ev) setEvent(ev as EventInfo);
 
-    /* 2. Try event_leaderboard view first (most reliable) */
+    /* 2. Flights */
+    if (ev?.tour_id) {
+      const { data: flightRows } = await supabase
+        .from("tournament_flights")
+        .select("id, flight_name, hcp_min, hcp_max, display_order")
+        .eq("tour_id", ev.tour_id)
+        .order("display_order");
+      if (flightRows?.length) setFlights(flightRows as Flight[]);
+    }
+
+    /* 3. Leaderboard view */
     const { data: lbRows } = await supabase
       .from("event_leaderboard")
-      .select("*, profiles:player_id(full_name, avatar_url)")
+      .select("player_id, flight_id, hcp, rank_net, total_gross, total_net")
       .eq("event_id", eventId)
       .order("rank_net", { ascending: true });
 
-    if (lbRows && lbRows.length > 0) {
-      const entries: LeaderEntry[] = lbRows.map((row: any, i: number) => ({
-        rank: row.rank_net ?? i + 1,
-        player_id: row.player_id,
-        full_name: row.profiles?.full_name ?? row.full_name ?? "Unknown",
-        avatar_url: row.profiles?.avatar_url ?? null,
-        club_name: row.club_name ?? null,
-        hcp: row.hcp ?? null,
-        gross: row.total_gross ?? null,
-        nett: row.total_nett ?? null,
-        out_score: row.out_score ?? null,
-        in_score: row.in_score ?? null,
-        remarks: row.remarks ?? null,
-      }));
-      setBoard(entries);
-      setLastRefresh(new Date());
+    if (!lbRows?.length) {
       setLoading(false);
       return;
     }
 
-    /* 3. Fallback: scorecards via event_rounds → rounds → scorecards */
-    const { data: eventInfo } = await supabase
-      .from("events")
-      .select("course_id, event_date")
-      .eq("id", eventId)
-      .single();
+    /* 4. Profiles */
+    const pids = lbRows.map((r) => r.player_id).filter(Boolean) as string[];
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, full_name, avatar_url")
+      .in("id", pids);
 
-    const { data: contestants } = await supabase
-      .from("contestants")
-      .select("player_id, hcp, profiles:player_id(full_name, avatar_url)")
-      .eq("event_id", eventId);
+    const profMap: Record<string, { full_name: string; avatar_url: string | null }> = {};
+    (profiles ?? []).forEach((p: any) => {
+      profMap[p.id] = p;
+    });
 
-    if (!contestants?.length) { setLoading(false); return; }
+    /* 5. Club names */
+    const { data: memberRows } = await supabase
+      .from("members")
+      .select("user_id, clubs(name)")
+      .in("user_id", pids);
 
-    /* Try event_rounds first, fallback to date match */
-    const { data: eventRounds } = await supabase
-      .from("event_rounds")
-      .select("round_id")
-      .eq("event_id", eventId);
+    const clubMap: Record<string, string> = {};
+    (memberRows ?? []).forEach((m: any) => {
+      if (m.clubs?.name && !clubMap[m.user_id]) clubMap[m.user_id] = m.clubs.name;
+    });
 
-    let roundIds: string[] = (eventRounds ?? []).map((r: any) => r.round_id);
-    if (roundIds.length === 0 && eventInfo?.course_id) {
-      const eventDate = eventInfo.event_date?.slice(0, 10);
-      const { data: roundRows } = await supabase
-        .from("rounds")
-        .select("id, created_at")
-        .eq("course_id", eventInfo.course_id)
-        .order("created_at", { ascending: false });
-      const matched = roundRows?.find((r: any) => r.created_at?.slice(0, 10) === eventDate) ?? roundRows?.[0];
-      if (matched) roundIds = [matched.id];
-    }
-
-    let scorecardMap: Record<string, { gross: number | null; nett: number | null; out: number | null; inn: number | null }> = {};
-    if (roundIds.length > 0) {
-      const playerIds = contestants.map((c: any) => c.player_id);
-      const { data: scorecards } = await supabase
-        .from("scorecards")
-        .select("player_id, gross_score, net_score")
-        .in("round_id", roundIds)
-        .in("player_id", playerIds);
-
-      /* Try hole_scores for out/in */
-      const { data: holeScores } = await supabase
-        .from("hole_scores")
-        .select("player_id, hole_number, gross_score")
-        .in("round_id", roundIds)
-        .in("player_id", playerIds);
-
-      const holeMap: Record<string, number[]> = {};
-      (holeScores ?? []).forEach((h: any) => {
-        if (!holeMap[h.player_id]) holeMap[h.player_id] = [];
-        holeMap[h.player_id][h.hole_number - 1] = h.gross_score;
-      });
-
-      (scorecards ?? []).forEach((s: any) => {
-        const holes = holeMap[s.player_id] ?? [];
-        const out = holes.slice(0, 9).reduce((a: number, b: number) => a + (b ?? 0), 0) || null;
-        const inn = holes.slice(9, 18).reduce((a: number, b: number) => a + (b ?? 0), 0) || null;
-        scorecardMap[s.player_id] = {
-          gross: s.gross_score,
-          nett: s.net_score,
-          out: holes.length >= 9 ? out : null,
-          inn: holes.length >= 18 ? inn : null,
-        };
-      });
-    }
-
-    const entries: LeaderEntry[] = contestants.map((c: any) => {
-      const sc = scorecardMap[c.player_id];
+    /* 6. Build rows */
+    const newPlayers: PlayerRow[] = lbRows.map((row) => {
+      const prev = prevPlayersRef.current.find(
+        (p) => p.player_id === row.player_id
+      );
       return {
-        rank: 0,
-        player_id: c.player_id,
-        full_name: (c.profiles as any)?.full_name ?? "Unknown",
-        avatar_url: (c.profiles as any)?.avatar_url ?? null,
-        club_name: null,
-        hcp: c.hcp ?? null,
-        gross: sc?.gross ?? null,
-        nett: sc?.nett ?? null,
-        out_score: sc?.out ?? null,
-        in_score: sc?.inn ?? null,
-        remarks: null,
+        rank: row.rank_net ?? 999,
+        player_id: row.player_id!,
+        full_name: profMap[row.player_id!]?.full_name ?? "Unknown",
+        avatar_url: profMap[row.player_id!]?.avatar_url ?? null,
+        club_name: clubMap[row.player_id!] ?? null,
+        hcp: row.hcp ?? null,
+        gross: row.total_gross ?? null,
+        nett: row.total_net ?? null,
+        flight_id: row.flight_id ?? null,
+        prevRank: prev?.rank,
       };
     });
 
-    entries.sort((a, b) => {
-      if (a.nett == null && b.nett == null) return 0;
-      if (a.nett == null) return 1;
-      if (b.nett == null) return -1;
-      if (a.nett !== b.nett) return a.nett - b.nett;
-      return (a.gross ?? 999) - (b.gross ?? 999);
-    });
-    entries.forEach((e, i) => { e.rank = i + 1; });
-
-    setBoard(entries);
+    prevPlayersRef.current = newPlayers;
+    setPlayers(newPlayers);
     setLastRefresh(new Date());
     setLoading(false);
   }, [eventId]);
 
-  /* Initial + interval fetch */
+  /* Fetch + interval */
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData, REFRESH_SECONDS * 1000);
-    return () => clearInterval(interval);
+    const iv = setInterval(fetchData, REFRESH_SEC * 1000);
+    return () => clearInterval(iv);
   }, [fetchData]);
 
-  /* Countdown tick */
+  /* Countdown */
   useEffect(() => {
-    const t = setInterval(() => setTick(p => p + 1), 1000);
+    setCountdown(REFRESH_SEC);
+    const t = setInterval(
+      () => setCountdown((c) => (c <= 1 ? REFRESH_SEC : c - 1)),
+      1000
+    );
     return () => clearInterval(t);
   }, [lastRefresh]);
 
-  const secondsLeft = REFRESH_SECONDS - (Math.floor((Date.now() - lastRefresh.getTime()) / 1000) % REFRESH_SECONDS);
+  /* Group players by flight, rank within flight */
+  const grouped = useCallback(() => {
+    if (!flights.length) return [];
+    return flights.map((f) => {
+      const fp = players
+        .filter((p) => p.flight_id === f.id)
+        .sort((a, b) => {
+          if (a.nett == null && b.nett == null) return 0;
+          if (a.nett == null) return 1;
+          if (b.nett == null) return -1;
+          return a.nett - b.nett;
+        })
+        .map((p, i) => ({ ...p, rank: i + 1 }));
+      return { flight: f, players: fp };
+    });
+  }, [flights, players]);
 
+  /* ── Loading ── */
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0a1628] flex items-center justify-center">
+      <div className="min-h-screen bg-[#080f1e] flex items-center justify-center">
         <div className="text-center">
-          <div className="h-16 w-16 rounded-full border-4 border-primary border-t-transparent animate-spin mx-auto mb-4" />
-          <p className="text-white/60 text-lg">Loading leaderboard…</p>
+          <div className="h-12 w-12 rounded-full border-4 border-primary border-t-transparent animate-spin mx-auto mb-3" />
+          <p className="text-white/40">Loading leaderboard…</p>
         </div>
       </div>
     );
@@ -226,160 +340,127 @@ const LiveDisplay = () => {
 
   if (!event) {
     return (
-      <div className="min-h-screen bg-[#0a1628] flex items-center justify-center text-white/60 text-xl">
+      <div className="min-h-screen bg-[#080f1e] flex items-center justify-center text-white/30 text-lg">
         Event not found.
       </div>
     );
   }
 
-  return (
-    <div className="min-h-screen bg-[#0a1628] text-white font-sans overflow-hidden">
-      {/* ── Header ── */}
-      <header className="relative bg-gradient-to-r from-[#0d2137] via-[#0f3050] to-[#0d2137] border-b border-white/10 px-8 py-5 flex items-center gap-6">
-        {/* Logo */}
-        <img src={logo} alt="GolfBuana" className="h-12 w-12 rounded-xl object-contain shrink-0" />
+  const flightGroups = grouped();
+  const cols = Math.min(Math.max(flightGroups.length, 1), 4);
 
-        {/* Event info */}
+  return (
+    <div className="min-h-screen bg-[#080f1e] text-white flex flex-col">
+      {/* ── HEADER ── */}
+      <header className="shrink-0 bg-gradient-to-r from-[#0b1e35] via-[#0d2a45] to-[#0b1e35] border-b border-white/10 px-6 py-3 flex items-center gap-4">
+        <img
+          src={logo}
+          alt="GolfBuana"
+          className="h-10 w-10 rounded-xl object-contain shrink-0"
+        />
+
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-3 mb-0.5">
+          <div className="flex items-center gap-2 mb-0.5 flex-wrap">
             {(event.tours as any)?.name && (
-              <span className="text-xs font-semibold uppercase tracking-widest text-primary/80 bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
+              <span className="text-[11px] font-bold uppercase tracking-widest text-primary/80 bg-primary/10 px-2 py-0.5 rounded-full border border-primary/20">
                 {(event.tours as any).name}
               </span>
             )}
-            <span className={`text-xs font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
-              event.status === "ongoing"
-                ? "text-green-400 bg-green-400/10 border-green-400/30"
-                : "text-white/40 bg-white/5 border-white/10"
-            }`}>
+            <span
+              className={`text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
+                event.status === "ongoing"
+                  ? "text-green-400 bg-green-400/10 border-green-400/30 animate-pulse"
+                  : "text-white/30 bg-white/5 border-white/10"
+              }`}
+            >
               {event.status === "ongoing" ? "🔴 LIVE" : event.status}
             </span>
           </div>
-          <h1 className="text-2xl font-extrabold tracking-tight leading-tight truncate">{event.name}</h1>
-          <p className="text-sm text-white/50 mt-0.5">
-            {(event.courses as any)?.name} &nbsp;·&nbsp; {event.event_date}
+          <h1 className="text-xl font-extrabold tracking-tight truncate leading-tight">
+            {event.name}
+          </h1>
+          <p className="text-xs text-white/35">
+            {(event.courses as any)?.name} · {event.event_date}
           </p>
         </div>
 
-        {/* Refresh indicator */}
         <div className="shrink-0 text-right">
-          <p className="text-xs text-white/30 uppercase tracking-widest mb-1">Auto-refresh</p>
-          <div className="flex items-center gap-2 justify-end">
-            <div className="h-2 w-2 rounded-full bg-green-400 animate-pulse" />
-            <span className="text-sm text-white/60 tabular-nums">{secondsLeft}s</span>
+          <div className="flex items-center gap-1.5 justify-end mb-0.5">
+            <div className="h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse" />
+            <span className="text-xs text-white/45">
+              Refresh{" "}
+              <span className="text-white font-bold tabular-nums">{countdown}s</span>
+            </span>
           </div>
-          <p className="text-[10px] text-white/20 mt-1">
-            Last: {lastRefresh.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+          <p className="text-[10px] text-white/20">
+            {lastRefresh.toLocaleTimeString("id-ID", {
+              hour: "2-digit",
+              minute: "2-digit",
+              second: "2-digit",
+            })}
           </p>
         </div>
 
-        {/* GolfBuana watermark */}
-        <div className="shrink-0 text-right hidden xl:block">
-          <p className="text-xs font-bold text-white/20 uppercase tracking-widest">GolfBuana</p>
+        <div className="shrink-0 hidden xl:block text-right border-l border-white/10 pl-4">
+          <p className="text-xs font-bold text-white/15 uppercase tracking-widest">
+            GolfBuana
+          </p>
           <p className="text-[10px] text-white/10">golfbuana.com</p>
         </div>
       </header>
 
-      {/* ── Leaderboard Table ── */}
-      <main className="px-6 py-4 overflow-auto" style={{ maxHeight: "calc(100vh - 120px)" }}>
-        {board.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-32 text-white/30">
-            <div className="text-6xl mb-4">⛳</div>
-            <p className="text-xl font-semibold">Scores not yet submitted</p>
-            <p className="text-sm mt-2">Leaderboard will update automatically as scores come in.</p>
+      {/* ── FLIGHT COLUMNS ── */}
+      <main
+        className="flex-1 overflow-auto px-4 py-4"
+        style={{ minHeight: 0 }}
+      >
+        {flightGroups.length > 0 ? (
+          <div
+            className="grid gap-4"
+            style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}
+          >
+            {flightGroups.map(({ flight, players: fp }) => (
+              <FlightColumn key={flight.id} flight={flight} players={fp} />
+            ))}
+          </div>
+        ) : players.length > 0 ? (
+          /* No flights defined — single column */
+          <div className="max-w-2xl mx-auto">
+            <FlightColumn
+              flight={{
+                id: "all",
+                flight_name: "Leaderboard",
+                hcp_min: 0,
+                hcp_max: 54,
+                display_order: 0,
+              }}
+              players={players}
+            />
           </div>
         ) : (
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="text-[11px] uppercase tracking-widest text-white/30 border-b border-white/10">
-                <th className="py-3 pl-4 text-left w-12">Pos</th>
-                <th className="py-3 text-left">Player</th>
-                <th className="py-3 text-left hidden lg:table-cell">Club</th>
-                <th className="py-3 text-center w-14">HCP</th>
-                <th className="py-3 text-center w-14 hidden xl:table-cell">OUT</th>
-                <th className="py-3 text-center w-14 hidden xl:table-cell">IN</th>
-                <th className="py-3 text-center w-16">Gross</th>
-                <th className="py-3 text-center w-16">Nett</th>
-                <th className="py-3 text-center w-24 hidden lg:table-cell">Remarks</th>
-              </tr>
-            </thead>
-            <tbody>
-              {board.map((entry, idx) => (
-                <tr
-                  key={entry.player_id}
-                  className={`border border-white/5 rounded-xl transition-all ${medalBg(entry.rank)} ${
-                    idx % 2 === 0 ? "" : "bg-white/[0.02]"
-                  }`}
-                  style={{ marginBottom: "6px" }}
-                >
-                  {/* Rank */}
-                  <td className="py-4 pl-4">
-                    <span className={`text-2xl tabular-nums ${medalText(entry.rank)}`}>
-                      {entry.rank <= 3
-                        ? ["🥇", "🥈", "🥉"][entry.rank - 1]
-                        : entry.rank}
-                    </span>
-                  </td>
-
-                  {/* Player */}
-                  <td className="py-4 pr-4">
-                    <div className="flex items-center gap-3">
-                      {avatar(entry.avatar_url, entry.full_name)}
-                      <span className="font-semibold text-base leading-tight">{entry.full_name}</span>
-                    </div>
-                  </td>
-
-                  {/* Club */}
-                  <td className="py-4 pr-4 hidden lg:table-cell">
-                    <span className="text-sm text-white/50">{entry.club_name ?? "—"}</span>
-                  </td>
-
-                  {/* HCP */}
-                  <td className="py-4 text-center">
-                    <span className="text-sm font-mono text-white/70">{fmt(entry.hcp)}</span>
-                  </td>
-
-                  {/* OUT */}
-                  <td className="py-4 text-center hidden xl:table-cell">
-                    <span className="text-sm font-mono">{fmt(entry.out_score)}</span>
-                  </td>
-
-                  {/* IN */}
-                  <td className="py-4 text-center hidden xl:table-cell">
-                    <span className="text-sm font-mono">{fmt(entry.in_score)}</span>
-                  </td>
-
-                  {/* Gross */}
-                  <td className="py-4 text-center">
-                    <span className="text-lg font-bold font-mono">{fmt(entry.gross)}</span>
-                  </td>
-
-                  {/* Nett — highlighted */}
-                  <td className="py-4 text-center">
-                    <span className={`text-xl font-extrabold font-mono tabular-nums ${
-                      entry.nett != null ? "text-primary" : "text-white/30"
-                    }`}>
-                      {fmt(entry.nett)}
-                    </span>
-                  </td>
-
-                  {/* Remarks */}
-                  <td className="py-4 text-center hidden lg:table-cell">
-                    <span className="text-xs text-white/40">{entry.remarks ?? ""}</span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          /* Empty */
+          <div className="flex flex-col items-center justify-center h-full min-h-[60vh] text-white/20">
+            <div className="text-7xl mb-4">⛳</div>
+            <p className="text-xl font-semibold">Scores not yet submitted</p>
+            <p className="text-sm mt-2 text-white/15">
+              Leaderboard updates every {REFRESH_SEC}s
+            </p>
+          </div>
         )}
       </main>
 
-      {/* ── Footer ── */}
-      <footer className="fixed bottom-0 left-0 right-0 bg-[#0a1628]/90 backdrop-blur border-t border-white/5 px-8 py-2 flex items-center justify-between">
-        <p className="text-[10px] text-white/20 uppercase tracking-widest">
-          {board.length} Players · Sorted by Nett Score
+      {/* ── FOOTER ── */}
+      <footer className="shrink-0 border-t border-white/5 px-6 py-2 flex items-center justify-between">
+        <p className="text-[10px] text-white/20">
+          {players.length} Players ·{" "}
+          {flightGroups.length > 0
+            ? `${flightGroups.length} Flights`
+            : "Open Flight"}{" "}
+          · Sorted by Nett Score
         </p>
-        <p className="text-[10px] text-white/20">Powered by GolfBuana · golfbuana.com</p>
+        <p className="text-[10px] text-white/15">
+          Powered by GolfBuana · golfbuana.com
+        </p>
       </footer>
     </div>
   );
