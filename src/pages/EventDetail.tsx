@@ -367,13 +367,31 @@ const EventDetail = () => {
         }));
       }
 
-      // Fetch scorecards for this round filtered to event contestants only
-      const { data: scorecards } = await supabase
+      // Fetch scorecards by player_id — pick best match per player by date proximity
+      // (do not filter by round_id — scorecards may be seeded to different rounds)
+      const { data: allPlayerScorecards } = await supabase
         .from("scorecards")
-        .select("id, player_id, gross_score, net_score")
-        .eq("round_id", roundId)
+        .select("id, player_id, gross_score, net_score, rounds(id, created_at, course_id)")
         .in("player_id", playerIds)
-        .limit(300);
+        .not("gross_score", "is", null)
+        .limit(2000);
+
+      const eventDateMs = new Date(eventDate ?? "").getTime();
+      const bestScorecard: Record<string, any> = {};
+      (allPlayerScorecards ?? []).forEach((sc: any) => {
+        const roundDate = sc.rounds?.created_at?.slice(0, 10);
+        const roundCourse = sc.rounds?.course_id;
+        const roundMs = new Date(roundDate ?? "").getTime();
+        const diff = Math.abs(roundMs - eventDateMs);
+        const sameCourse = roundCourse === eventInfo.course_id;
+        const prev = bestScorecard[sc.player_id];
+        if (!prev) { bestScorecard[sc.player_id] = { ...sc, _diff: diff, _sameCourse: sameCourse }; return; }
+        const prevSame = prev._sameCourse;
+        if (sameCourse && !prevSame) { bestScorecard[sc.player_id] = { ...sc, _diff: diff, _sameCourse: sameCourse }; return; }
+        if (!sameCourse && prevSame) return;
+        if (diff < prev._diff) bestScorecard[sc.player_id] = { ...sc, _diff: diff, _sameCourse: sameCourse };
+      });
+      const scorecards = Object.values(bestScorecard);
 
 
       // Fetch hole_scores in chunks of scorecard IDs to avoid large .in() issues
