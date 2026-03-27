@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, UserPlus, Users, MessageCircle, X, Check, Plus, Flag, ChevronRight } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
+import DesktopLayout from "@/components/DesktopLayout";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -283,6 +284,7 @@ const Play = () => {
   ];
 
   return (
+    <DesktopLayout>
     <div className="bottom-nav-safe">
       <AppHeader title="Buddies" />
 
@@ -545,6 +547,7 @@ const Play = () => {
         <Plus className="h-6 w-6" />
       </button>
     </div>
+    </DesktopLayout>
   );
 };
 

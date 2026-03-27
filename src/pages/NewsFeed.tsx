@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Heart, MessageCircle, Share2, Plus, Image, MapPin, Tag, X, MessageSquare, Loader2, Trash2, MoreHorizontal } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
+import DesktopLayout from "@/components/DesktopLayout";
 import heroImg from "@/assets/golf-hero.jpg";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -201,6 +202,7 @@ const NewsFeed = () => {
     : "?";
 
   return (
+    <DesktopLayout>
     <div className="bottom-nav-safe">
       <AppHeader title="Feeds" />
 
@@ -501,6 +503,7 @@ const NewsFeed = () => {
       </Dialog>
 
     </div>
+    </DesktopLayout>
   );
 };
 

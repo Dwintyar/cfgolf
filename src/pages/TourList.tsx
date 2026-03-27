@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { Trophy, Plus, Calendar } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
+import DesktopLayout from "@/components/DesktopLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -158,6 +159,7 @@ const TourList = () => {
   ];
 
   return (
+    <DesktopLayout>
     <div className="bottom-nav-safe">
       <AppHeader
         title="Play"
@@ -427,6 +429,7 @@ const TourList = () => {
 
       <CreateTourDialog open={showCreate} onOpenChange={setShowCreate} onCreated={() => { setShowCreate(false); refetch(); }} />
     </div>
+    </DesktopLayout>
   );
 };
 

@@ -1,3 +1,4 @@
+import DesktopLayout from "@/components/DesktopLayout";
 import { Search, ArrowLeft, Mic, Plus } from "lucide-react";
 import CreateClubDialog from "@/components/CreateClubDialog";
 import { Input } from "@/components/ui/input";
@@ -233,6 +234,7 @@ const Clubs = () => {
   );
 
   return (
+    <DesktopLayout>
     <div className="bottom-nav-safe">
       <div className="flex items-center gap-2 p-4">
         <button onClick={() => navigate(-1)} className="rounded-full p-1.5 hover:bg-muted transition-colors">
@@ -279,6 +281,7 @@ const Clubs = () => {
         }}
       />
     </div>
+    </DesktopLayout>
   );
 };
 

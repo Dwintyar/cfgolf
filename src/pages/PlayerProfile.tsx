@@ -1,3 +1,4 @@
+import DesktopLayout from "@/components/DesktopLayout";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -57,15 +58,19 @@ const PlayerProfile = () => {
   const isLoading = loadingProfile || loadingHistory;
 
   if (isLoading) return (
+    <DesktopLayout>
     <div className="bottom-nav-safe space-y-4 p-4">
       <Skeleton className="h-20 w-full rounded-xl" />
       <Skeleton className="h-48 w-full rounded-xl" />
       <Skeleton className="h-32 w-full rounded-xl" />
     </div>
+    </DesktopLayout>
   );
 
   if (!profile) return (
+    <DesktopLayout>
     <div className="bottom-nav-safe p-4 text-center text-muted-foreground">Player not found</div>
+    </DesktopLayout>
   );
 
   // Chart data
@@ -80,6 +85,7 @@ const PlayerProfile = () => {
     : 0;
 
   return (
+    <DesktopLayout>
     <div className="bottom-nav-safe">
       {/* Header */}
       <div className="p-4">
@@ -205,6 +211,7 @@ const PlayerProfile = () => {
         </div>
       </div>
     </div>
+    </DesktopLayout>
   );
 };
 

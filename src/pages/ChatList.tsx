@@ -1,3 +1,4 @@
+import DesktopLayout from "@/components/DesktopLayout";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -144,6 +145,7 @@ const ChatList = () => {
   };
 
   return (
+    <DesktopLayout>
     <div className="bottom-nav-safe">
       {/* Header */}
       <div className="flex items-center justify-between p-4">
@@ -290,6 +292,7 @@ const ChatList = () => {
         />
       )}
     </div>
+    </DesktopLayout>
   );
 };
 

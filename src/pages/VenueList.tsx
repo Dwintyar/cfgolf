@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { MapPin, Flag, Search, Plus } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
+import DesktopLayout from "@/components/DesktopLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -118,6 +119,7 @@ const VenueList = () => {
   ) ?? [];
 
   return (
+    <DesktopLayout>
     <div className="bottom-nav-safe">
       <AppHeader title="Venues" icon={<MapPin className="h-5 w-5 text-primary" />} />
 
@@ -324,6 +326,7 @@ const VenueList = () => {
         </div>
       )}
     </div>
+    </DesktopLayout>
   );
 };
 

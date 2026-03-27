@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import AppHeader from "@/components/AppHeader";
+import DesktopLayout from "@/components/DesktopLayout";
 
 interface NotificationItem {
   id: string;
@@ -381,6 +382,7 @@ const Notifications = () => {
   };
 
   return (
+    <DesktopLayout>
     <div className="bottom-nav-safe">
       <AppHeader title="Notifications" icon={<Bell className="h-5 w-5 text-primary" />} />
 
@@ -496,6 +498,7 @@ const Notifications = () => {
         })}
       </div>
     </div>
+    </DesktopLayout>
   );
 };
 
