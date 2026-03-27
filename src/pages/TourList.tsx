@@ -268,7 +268,7 @@ const TourList = () => {
 
   const tourTabs = [
     { id: "invited" as const, label: "Invited", count: invitedTours?.length },
-    { id: "mine" as const, label: isOrganizer ? "My Tours" : "My Events", count: isOrganizer ? myTours?.filter((t: any) => t.playerRole === "organizer").length : myEvents?.length },
+    { id: "mine" as const, label: "My Tours", count: myTours?.length ?? 0 },
     { id: "all" as const, label: "All" },
   ];
 
@@ -417,17 +417,20 @@ const TourList = () => {
                 })
           )}
 
-          {/* Tab: My Tours / My Events */}
+          {/* Tab: My Tours */}
           {tourTab === "mine" && (
-            isOrganizer ? (
-              myTours?.filter(t => t.playerRole === "organizer").length === 0
+            true ? (
+              !myTours || myTours.length === 0
                 ? <div className="flex flex-col items-center justify-center py-12 text-center">
                     <Trophy className="h-10 w-10 text-muted-foreground/40 mb-3" />
-                    <p className="text-sm font-semibold">No tournaments yet</p>
-                    <p className="text-xs text-muted-foreground mt-1">Buat tournament baru untuk memulai</p>
-                    <Button size="sm" className="mt-3" onClick={() => setShowCreate(true)}>Buat Tournament</Button>
+                    <p className="text-sm font-semibold">Belum ada tournament</p>
+                    <p className="text-xs text-muted-foreground mt-1">Buat tournament baru atau daftar ke tournament yang ada</p>
+                    <div className="flex gap-2 mt-3">
+                      <Button size="sm" className="gap-1" onClick={() => setShowCreate(true)}>+ Buat Tournament</Button>
+                      <Button size="sm" variant="outline" onClick={() => setTourTab("all")}>Browse All</Button>
+                    </div>
                   </div>
-                : myTours?.filter(t => t.playerRole === "organizer").map((tour: any, i: number) => (
+                : myTours.map((tour: any, i: number) => (
                     <button key={tour.id}
                       onClick={() => navigate(`/tour/${tour.id}`)}
                       className="flex w-full items-center gap-3 rounded-xl py-3 text-left hover:opacity-80 transition-opacity animate-fade-in"
@@ -444,8 +447,12 @@ const TourList = () => {
                           {tour.year} · {tour.clubs?.name ?? "—"}
                         </p>
                       </div>
-                      <Badge variant="outline" className="text-[9px] text-primary border-primary/30">
-                        Organizer →
+                      <Badge variant="outline" className={`text-[9px] ${
+                        tour.playerRole === "organizer"
+                          ? "text-primary border-primary/30"
+                          : "text-muted-foreground border-muted-foreground/30"
+                      }`}>
+                        {tour.playerRole === "organizer" ? "Organizer →" : `Player · ${tour.myStatus ?? ""}`}
                       </Badge>
                     </button>
                   ))
