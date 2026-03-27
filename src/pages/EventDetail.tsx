@@ -192,7 +192,7 @@ const EventDetail = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("events")
-        .select("*, courses(name, location, par, id), tours(name, id, organizer_club_id)")
+        .select("*, courses(name, location, par, id), tours(name, id, organizer_club_id, clubs!tours_organizer_club_id_fkey(is_personal))")
         .eq("id", id!)
         .single();
       if (error) throw error;
@@ -932,6 +932,7 @@ const EventDetail = () => {
   const myGroupBlock = myContestant && isCheckedIn && myPairing ? (
     <div className="mx-4 mb-3">
       <div className="golf-card p-4 border-primary/30 bg-primary/5">
+        {/* Pairing info header */}
         <div className="flex items-center justify-between mb-3">
           <p className="text-sm font-bold text-primary flex items-center gap-1.5">
             <Flag className="h-4 w-4" /> Grup Saya
@@ -943,9 +944,43 @@ const EventDetail = () => {
               </span>
             )}
             <span>Hole {myPairing.start_hole ?? 1}</span>
-            <span className="font-semibold text-foreground">{myPairing.pairing_label}</span>
+            {myPairing.pairing_label && <span className="font-semibold text-foreground">{myPairing.pairing_label}</span>}
           </div>
         </div>
+
+        {/* Cart & Caddy info — shown when course_arranged or open pairing */}
+        {(() => {
+          const pairingMode = (event as any)?.pairing_mode;
+          const myPlayerInfo = (playersByPairing[myPairing.id] ?? []).find((pl: any) => pl.player_id === userId);
+          const cartNo = myPlayerInfo?.cart_number;
+          const caddyName = myPlayerInfo?.caddy_name;
+          if (!cartNo && !caddyName && pairingMode === "self") return null;
+          return (
+            <div className="grid grid-cols-2 gap-2 mb-3">
+              <div className="bg-card rounded-xl p-2.5 text-center border border-border/50">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Golf Cart</p>
+                <p className="text-base font-bold">{cartNo ? `#${cartNo}` : "—"}</p>
+              </div>
+              <div className="bg-card rounded-xl p-2.5 text-center border border-border/50">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Caddy</p>
+                <p className="text-base font-bold truncate">{caddyName ?? "—"}</p>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* Pairing mode badge */}
+        {(event as any)?.pairing_mode && (event as any).pairing_mode !== "self" && (
+          <div className="mb-3 flex items-center gap-1.5">
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-secondary text-muted-foreground">
+              {(event as any).pairing_mode === "open" ? "🌐 Open Pairing" : "🏌️ Course Arranged"}
+            </span>
+            {!(myGroupPlayers.length > 1) && (
+              <span className="text-[10px] text-amber-500">⏳ Menunggu penentuan pasangan...</span>
+            )}
+          </div>
+        )}
+
         <div className="space-y-2">
           {myGroupPlayers.map((pl: any) => {
             const isMe = pl.player_id === userId;

@@ -1314,6 +1314,7 @@ export type Database = {
           id: string
           name: string
           pairing_approval_required: boolean
+          pairing_mode: string | null
           status: string
           ticket_total: number
           tour_id: string
@@ -1326,6 +1327,7 @@ export type Database = {
           id?: string
           name: string
           pairing_approval_required?: boolean
+          pairing_mode?: string | null
           status?: string
           ticket_total?: number
           tour_id: string
@@ -1338,6 +1340,7 @@ export type Database = {
           id?: string
           name?: string
           pairing_approval_required?: boolean
+          pairing_mode?: string | null
           status?: string
           ticket_total?: number
           tour_id?: string
@@ -1588,14 +1591,17 @@ export type Database = {
       }
       pairing_players: {
         Row: {
+          caddy_name: string | null
           cart_number: number | null
           contestant_id: string | null
           created_at: string | null
           id: string
           pairing_id: string | null
           position: number | null
+          tee_time: string | null
         }
         Insert: {
+          caddy_name?: string | null
           cart_number?: number | null
           contestant_id?: string | null
           created_at?: string | null

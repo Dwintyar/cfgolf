@@ -22,6 +22,7 @@ const CreateEventDialog = ({ tourId, open, onOpenChange, onDone }: Props) => {
   const [date, setDate] = useState("");
   const [ticketTotal, setTicketTotal] = useState("0");
   const [pairingApproval, setPairingApproval] = useState(false);
+  const [pairingMode, setPairingMode] = useState("self");
   const [loading, setLoading] = useState(false);
 
   const { data: courses } = useQuery({
@@ -50,6 +51,7 @@ const CreateEventDialog = ({ tourId, open, onOpenChange, onDone }: Props) => {
       ticket_total: parseInt(ticketTotal) || 0,
       status: "draft",
       pairing_approval_required: pairingApproval,
+      pairing_mode: pairingMode,
     }).select("id").single();
     if (error || !newEvent) { setLoading(false); toast.error(error?.message ?? "Failed"); return; }
 
@@ -74,7 +76,7 @@ const CreateEventDialog = ({ tourId, open, onOpenChange, onDone }: Props) => {
 
     setLoading(false);
     toast.success("Event created");
-    setName(""); setDate(""); setPairingApproval(false);
+    setName(""); setDate(""); setPairingApproval(false); setPairingMode("self");
     onDone();
   };
 
@@ -104,18 +106,37 @@ const CreateEventDialog = ({ tourId, open, onOpenChange, onDone }: Props) => {
             <Label className="text-xs">Total Tickets</Label>
             <Input type="number" value={ticketTotal} onChange={e => setTicketTotal(e.target.value)} />
           </div>
-          <div className="golf-card p-3 flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium">Pairing Approval</p>
-              <p className="text-xs text-muted-foreground">
-                Pairing perlu di-review sebelum dipublikasikan ke pemain
-              </p>
-            </div>
-            <Switch
-              checked={pairingApproval}
-              onCheckedChange={setPairingApproval}
-            />
+          <div>
+            <Label className="text-xs">Pairing Mode</Label>
+            <Select value={pairingMode} onValueChange={setPairingMode}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="self">
+                  👤 Self — Tentukan sendiri group & pasangan
+                </SelectItem>
+                <SelectItem value="open">
+                  🌐 Open — Minta golf course untuk memasangkan
+                </SelectItem>
+                <SelectItem value="course_arranged">
+                  🏌️ Course Arranged — Sepenuhnya diatur golf course
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-[10px] text-muted-foreground mt-1">
+              {pairingMode === "self" && "Kamu atur sendiri siapa yang main bersama"}
+              {pairingMode === "open" && "Golf course akan mencarikan pasangan bermain untukmu"}
+              {pairingMode === "course_arranged" && "Golf course mengatur sepenuhnya: cart, caddy, tee time, start hole"}
+            </p>
           </div>
+          {pairingMode === "self" && (
+            <div className="golf-card p-3 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium">Pairing Approval</p>
+                <p className="text-xs text-muted-foreground">Review pairing sebelum dipublikasi</p>
+              </div>
+              <Switch checked={pairingApproval} onCheckedChange={setPairingApproval} />
+            </div>
+          )}
           <Button className="w-full" onClick={handleSubmit} disabled={loading}>
             {loading ? "Creating…" : "Create Event"}
           </Button>
