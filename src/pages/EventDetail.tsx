@@ -417,14 +417,19 @@ const EventDetail = () => {
       });
 
       // Build scoreByPlayer (dedupe: keep first match per player)
-      const scoreByPlayer: Record<string, { out: number; in: number; tot: number | null; net: number | null }> = {};
+      const scoreByPlayer: Record<string, { out: number | null; in: number | null; tot: number | null; net: number | null }> = {};
       (scorecards ?? []).forEach((sc: any) => {
         if (scoreByPlayer[sc.player_id]) return;
         const oi = outInMap[sc.id];
-        if (!oi) return; // skip scorecards with no hole scores
+        // If hole_scores exist: compute OUT/IN/TOT from them
+        // If no hole_scores but gross_score exists: show TOT & NET only
+        const hasHoles = !!oi;
+        const computedTot = hasHoles ? (oi.out + oi.in) : (sc.gross_score ?? null);
         scoreByPlayer[sc.player_id] = {
-          out: oi.out, in: oi.in,
-          tot: sc.gross_score, net: sc.net_score,
+          out: hasHoles ? oi.out : null,
+          in: hasHoles ? oi.in : null,
+          tot: computedTot,
+          net: sc.net_score ?? null,
         };
       });
 
@@ -1341,8 +1346,8 @@ const EventDetail = () => {
                               <td className="text-center py-1 px-1 border-r border-border/50 text-muted-foreground">{idx + 1}</td>
                               <td className="py-1 px-2 border-r border-border/50 font-medium text-foreground truncate max-w-[180px]">{row.full_name}</td>
                               <td className="py-1 px-2 border-r border-border/50 text-foreground truncate max-w-[120px] text-[10px]">{row.club_name}</td>
-                              <td className="text-center py-1 px-1 border-r border-border/50 tabular-nums text-foreground">{isNR ? <span className="text-destructive/60 text-[10px]">NR</span> : row.out_score}</td>
-                              <td className="text-center py-1 px-1 border-r border-border/50 tabular-nums text-foreground">{isNR ? <span className="text-destructive/60 text-[10px]">NR</span> : row.in_score}</td>
+                              <td className="text-center py-1 px-1 border-r border-border/50 tabular-nums text-foreground">{isNR ? <span className="text-destructive/60 text-[10px]">NR</span> : (row.out_score ?? <span className="text-muted-foreground">—</span>)}</td>
+                              <td className="text-center py-1 px-1 border-r border-border/50 tabular-nums text-foreground">{isNR ? <span className="text-destructive/60 text-[10px]">NR</span> : (row.in_score ?? <span className="text-muted-foreground">—</span>)}</td>
                               <td className="text-center py-1 px-1 border-r border-border/50 tabular-nums text-foreground">{isNR ? <span className="text-destructive/60 text-[10px]">NR</span> : row.tot}</td>
                               <td className="text-center py-1 px-1 border-r border-border/50 tabular-nums text-muted-foreground">{row.hcp ?? "—"}</td>
                               <td className="text-center py-1 px-1 border-r border-border/50 tabular-nums font-bold text-foreground">
