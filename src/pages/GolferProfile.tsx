@@ -371,22 +371,35 @@ const GolferProfile = () => {
             completedEvents.map(async (c: any) => {
               const ev = c.events as any;
               if (!ev) return { event: null, hcp: c.hcp, out: null, in: null, gross: null, net: null };
-              // Get round_id for this event's course
-              const { data: roundData } = await supabase
-                .from("rounds")
-                .select("id")
-                .eq("course_id", ev.course_id)
-                .order("created_at", { ascending: false })
+              // Get round_id via event_rounds (authoritative)
+              const { data: erData } = await supabase
+                .from("event_rounds")
+                .select("round_id")
+                .eq("event_id", ev.id)
+                .order("round_number", { ascending: true })
                 .limit(1)
                 .maybeSingle();
 
-              if (!roundData) return { event: ev, hcp: c.hcp, out: null, in: null, gross: null, net: null };
+              // Fallback: cari via course_id jika event_rounds belum ada
+              let roundId = erData?.round_id ?? null;
+              if (!roundId) {
+                const { data: roundData } = await supabase
+                  .from("rounds")
+                  .select("id")
+                  .eq("course_id", ev.course_id)
+                  .order("created_at", { ascending: false })
+                  .limit(1)
+                  .maybeSingle();
+                roundId = roundData?.id ?? null;
+              }
+
+              if (!roundId) return { event: ev, hcp: c.hcp, out: null, in: null, gross: null, net: null };
 
               // Get scorecard
               const { data: sc } = await supabase
                 .from("scorecards")
                 .select("id, gross_score, net_score")
-                .eq("round_id", roundData.id)
+                .eq("round_id", roundId)
                 .eq("player_id", targetId!)
                 .maybeSingle();
 

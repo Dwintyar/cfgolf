@@ -131,6 +131,7 @@ const AppInner = () => {
             <Route path="/record-round/:courseId" element={<ProtectedRoute><CasualScorecardInput /></ProtectedRoute>} />
             <Route path="/play/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><GolferProfile /></ProtectedRoute>} />
+            <Route path="/golfer/:id" element={<ProtectedRoute><GolferProfile /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             <Route path="/chat" element={<ProtectedRoute><ChatList /></ProtectedRoute>} />
             <Route path="/chat/:id" element={<ProtectedRoute><ChatRoom /></ProtectedRoute>} />
