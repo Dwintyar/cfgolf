@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Calendar, MapPin, Users, Ticket, Trophy, Award, Shuffle, TrendingDown,
-  ClipboardCheck, Package, Lock, Car, UserCheck, ChevronRight, Pencil, Plus, RefreshCw, Clock, Download, Flag, Backpack, User, Monitor
+  ClipboardCheck, Package, Lock, Car, UserCheck, ChevronRight, Pencil, Plus, RefreshCw, Clock, Download, Flag, Backpack, User, Monitor, Share2, MessageCircle
 } from "lucide-react";
 import html2canvas from "html2canvas";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -1003,6 +1003,35 @@ const EventDetail = () => {
         onClick={() => window.open(`/live/${id}`, "_blank")}
       >
         <Monitor className="h-3 w-3" /> Live Display
+      </Button>
+      <Button
+        size="sm"
+        variant="outline"
+        className="h-7 shrink-0 gap-1 text-[11px]"
+        onClick={() => {
+          const liveUrl = `${window.location.origin}/live/${id}`;
+          if (navigator.share) {
+            navigator.share({ title: event?.name ?? "Live Leaderboard", url: liveUrl });
+          } else {
+            navigator.clipboard.writeText(liveUrl).then(() => toast.success("Link live display ter-copy! 📋"));
+          }
+        }}
+      >
+        <Share2 className="h-3 w-3" /> Share
+      </Button>
+      <Button
+        size="sm"
+        variant="outline"
+        className="h-7 shrink-0 gap-1 text-[11px] bg-green-600/10 border-green-500/40 text-green-500 hover:bg-green-600/20"
+        onClick={() => {
+          const liveUrl = `${window.location.origin}/live/${id}`;
+          const text = `🏌️ *${event?.name}*
+Lihat leaderboard live turnamen ini di:
+${liveUrl}`;
+          window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
+        }}
+      >
+        <MessageCircle className="h-3 w-3" /> WA
       </Button>
       {event?.status === "completed" && (
         <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={handleExportPDF} disabled={exporting}>
