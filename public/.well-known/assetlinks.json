@@ -3,6 +3,6 @@
   "target": {
     "namespace": "android_app",
     "package_name": "com.golfbuana.app",
-    "sha256_cert_fingerprints": ["FINGERPRINT_PLACEHOLDER"]
+    "sha256_cert_fingerprints": ["AC:A2:A0:50:89:CA:DD:F6:56:E9:D1:2B:5A:D6:53:84:4B:93:22:A0:3E:3C:85:9A:C1:A1:87:87:AA:1A:3F:F7"]
   }
 }]
