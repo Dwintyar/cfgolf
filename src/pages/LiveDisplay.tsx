@@ -77,9 +77,11 @@ const AvatarCircle = ({ url, name }: { url: string | null; name: string }) => {
 const FlightColumn = ({
   flight,
   players,
+  onRowClick,
 }: {
   flight: Flight;
   players: PlayerRow[];
+  onRowClick: (p: PlayerRow) => void;
 }) => {
   const [flashing, setFlashing] = useState<Set<string>>(new Set());
   const prevRef = useRef<PlayerRow[]>([]);
@@ -126,9 +128,10 @@ const FlightColumn = ({
             return (
               <div
                 key={p.player_id}
+                onClick={() => onRowClick(p)}
                 className={`
-                  flex items-center gap-2 px-2.5 py-2 rounded-xl border
-                  transition-all duration-700
+                  flex items-center gap-2 px-2.5 py-2 rounded-xl border cursor-pointer
+                  transition-all duration-700 hover:border-primary/40 hover:bg-primary/10
                   ${flash ? "bg-yellow-400/20 border-yellow-400/50 scale-[1.015]" : ""}
                   ${!flash && top3 ? "bg-white/[0.06] border-white/10" : ""}
                   ${!flash && !top3 ? "bg-white/[0.02] border-white/[0.06]" : ""}
@@ -208,6 +211,9 @@ const LiveDisplay = () => {
   const [lastRefresh, setLastRefresh] = useState(new Date());
   const [countdown, setCountdown] = useState(30);
   const [loading, setLoading] = useState(true);
+  const [selectedPlayer, setSelectedPlayer] = useState<PlayerRow | null>(null);
+  const [holeScores, setHoleScores] = useState<Record<number, number>>({});
+  const [holeLoading, setHoleLoading] = useState(false);
   const prevPlayersRef = useRef<PlayerRow[]>([]);
   const REFRESH_SEC = 30;
 
@@ -290,6 +296,65 @@ const LiveDisplay = () => {
     setPlayers(newPlayers);
     setLastRefresh(new Date());
     setLoading(false);
+  }, [eventId]);
+
+  /* Fetch hole scores for selected player */
+  const fetchHoleScores = useCallback(async (player: PlayerRow) => {
+    setHoleLoading(true);
+    setHoleScores({});
+    try {
+      // Get event course + date
+      const { data: evInfo } = await supabase
+        .from("events")
+        .select("course_id, event_date")
+        .eq("id", eventId!)
+        .single();
+      if (!evInfo) return;
+
+      // Find round via event_rounds first, fallback to date match
+      const { data: eventRounds } = await supabase
+        .from("event_rounds")
+        .select("round_id")
+        .eq("event_id", eventId!);
+
+      let roundId: string | null = null;
+      if (eventRounds?.length) {
+        roundId = eventRounds[0].round_id;
+      } else {
+        const eventDate = evInfo.event_date?.slice(0, 10);
+        const { data: roundRows } = await supabase
+          .from("rounds")
+          .select("id, created_at")
+          .eq("course_id", evInfo.course_id)
+          .order("created_at", { ascending: false });
+        const matched = roundRows?.find((r: any) => r.created_at?.slice(0, 10) === eventDate) ?? roundRows?.[0];
+        if (matched) roundId = matched.id;
+      }
+
+      if (!roundId) return;
+
+      // Get scorecard
+      const { data: sc } = await supabase
+        .from("scorecards")
+        .select("id")
+        .eq("round_id", roundId)
+        .eq("player_id", player.player_id)
+        .maybeSingle();
+      if (!sc) return;
+
+      // Get hole scores
+      const { data: holes } = await supabase
+        .from("hole_scores")
+        .select("hole_number, strokes")
+        .eq("scorecard_id", sc.id)
+        .order("hole_number");
+
+      const map: Record<number, number> = {};
+      (holes ?? []).forEach((h: any) => { map[h.hole_number] = h.strokes; });
+      setHoleScores(map);
+    } finally {
+      setHoleLoading(false);
+    }
   }, [eventId]);
 
   /* Fetch + interval */
@@ -420,7 +485,7 @@ const LiveDisplay = () => {
             style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}
           >
             {flightGroups.map(({ flight, players: fp }) => (
-              <FlightColumn key={flight.id} flight={flight} players={fp} />
+              <FlightColumn key={flight.id} flight={flight} players={fp} onRowClick={(p) => { setSelectedPlayer(p); fetchHoleScores(p); }} />
             ))}
           </div>
         ) : players.length > 0 ? (
@@ -435,6 +500,7 @@ const LiveDisplay = () => {
                 display_order: 0,
               }}
               players={players}
+              onRowClick={(p) => { setSelectedPlayer(p); fetchHoleScores(p); }}
             />
           </div>
         ) : (
@@ -448,6 +514,138 @@ const LiveDisplay = () => {
           </div>
         )}
       </main>
+
+      {/* ── SCORECARD MODAL ── */}
+      {selectedPlayer && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+          onClick={() => setSelectedPlayer(null)}
+        >
+          <div
+            className="bg-[#0d1f35] border border-white/15 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal header */}
+            <div className="flex items-center gap-3 px-5 py-4 border-b border-white/10">
+              <AvatarCircle url={selectedPlayer.avatar_url} name={selectedPlayer.full_name} />
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-white truncate">{selectedPlayer.full_name}</p>
+                <p className="text-xs text-white/40">
+                  {selectedPlayer.club_name ?? "—"} · HCP {fmt(selectedPlayer.hcp)}
+                </p>
+              </div>
+              <div className="flex items-center gap-4 shrink-0">
+                <div className="text-center">
+                  <p className="text-[10px] text-white/30 uppercase">Gross</p>
+                  <p className="text-lg font-bold tabular-nums">{fmt(selectedPlayer.gross)}</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-[10px] text-primary/70 uppercase">Nett</p>
+                  <p className="text-2xl font-extrabold text-primary tabular-nums">{fmt(selectedPlayer.nett)}</p>
+                </div>
+                <button
+                  onClick={() => setSelectedPlayer(null)}
+                  className="text-white/30 hover:text-white transition-colors text-xl leading-none ml-2"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            {/* Scorecard body */}
+            <div className="px-5 py-4">
+              {holeLoading ? (
+                <div className="flex items-center justify-center py-8 gap-2 text-white/30">
+                  <div className="h-5 w-5 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+                  <span className="text-sm">Loading scorecard…</span>
+                </div>
+              ) : Object.keys(holeScores).length > 0 ? (
+                <div className="space-y-3">
+                  {/* OUT */}
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs border-collapse font-mono">
+                      <thead>
+                        <tr className="bg-white/5">
+                          <th className="text-left py-1.5 px-2 text-white/40 font-semibold">Hole</th>
+                          {[1,2,3,4,5,6,7,8,9].map(h => (
+                            <th key={h} className="text-center py-1.5 px-1 text-white/40 w-8">{h}</th>
+                          ))}
+                          <th className="text-center py-1.5 px-1 text-white font-bold w-10">OUT</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr className="border-t border-white/5">
+                          <td className="py-1.5 px-2 text-white/50">Score</td>
+                          {[1,2,3,4,5,6,7,8,9].map(h => (
+                            <td key={h} className="text-center py-1.5 px-1 tabular-nums text-white">
+                              {holeScores[h] ?? <span className="text-white/20">—</span>}
+                            </td>
+                          ))}
+                          <td className="text-center py-1.5 px-1 font-bold text-white tabular-nums">
+                            {[1,2,3,4,5,6,7,8,9].reduce((s,h) => s + (holeScores[h] ?? 0), 0) || "—"}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  {/* IN */}
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs border-collapse font-mono">
+                      <thead>
+                        <tr className="bg-white/5">
+                          <th className="text-left py-1.5 px-2 text-white/40 font-semibold">Hole</th>
+                          {[10,11,12,13,14,15,16,17,18].map(h => (
+                            <th key={h} className="text-center py-1.5 px-1 text-white/40 w-8">{h}</th>
+                          ))}
+                          <th className="text-center py-1.5 px-1 text-white font-bold w-10">IN</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr className="border-t border-white/5">
+                          <td className="py-1.5 px-2 text-white/50">Score</td>
+                          {[10,11,12,13,14,15,16,17,18].map(h => (
+                            <td key={h} className="text-center py-1.5 px-1 tabular-nums text-white">
+                              {holeScores[h] ?? <span className="text-white/20">—</span>}
+                            </td>
+                          ))}
+                          <td className="text-center py-1.5 px-1 font-bold text-white tabular-nums">
+                            {[10,11,12,13,14,15,16,17,18].reduce((s,h) => s + (holeScores[h] ?? 0), 0) || "—"}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  {/* Summary */}
+                  <div className="grid grid-cols-3 gap-3 pt-2 border-t border-white/10">
+                    <div className="text-center bg-white/5 rounded-xl py-2">
+                      <p className="text-[10px] text-white/30 uppercase">OUT</p>
+                      <p className="text-lg font-bold tabular-nums">
+                        {[1,2,3,4,5,6,7,8,9].reduce((s,h) => s + (holeScores[h] ?? 0), 0) || "—"}
+                      </p>
+                    </div>
+                    <div className="text-center bg-white/5 rounded-xl py-2">
+                      <p className="text-[10px] text-white/30 uppercase">IN</p>
+                      <p className="text-lg font-bold tabular-nums">
+                        {[10,11,12,13,14,15,16,17,18].reduce((s,h) => s + (holeScores[h] ?? 0), 0) || "—"}
+                      </p>
+                    </div>
+                    <div className="text-center bg-primary/20 border border-primary/30 rounded-xl py-2">
+                      <p className="text-[10px] text-primary/70 uppercase">Gross</p>
+                      <p className="text-lg font-bold text-primary tabular-nums">{fmt(selectedPlayer.gross)}</p>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-white/25">
+                  <p className="text-2xl mb-2">📋</p>
+                  <p className="text-sm">No hole-by-hole data available</p>
+                  <p className="text-xs mt-1 text-white/15">Gross: {fmt(selectedPlayer.gross)} · Nett: {fmt(selectedPlayer.nett)}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── FOOTER ── */}
       <footer className="shrink-0 border-t border-white/5 px-6 py-2 flex items-center justify-between">
