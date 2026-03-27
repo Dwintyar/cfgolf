@@ -538,6 +538,11 @@ const LiveDisplay = () => {
                 <p className="text-xs text-white/40">
                   {selectedPlayer.club_name ?? "—"} · HCP {fmt(selectedPlayer.hcp)}
                 </p>
+                {(event?.courses as any)?.name && (
+                  <p className="text-[11px] text-primary/60 flex items-center gap-1 mt-0.5">
+                    <span>📍</span> {(event?.courses as any).name} · {event?.event_date}
+                  </p>
+                )}
               </div>
               <div className="flex items-center gap-4 shrink-0">
                 <div className="text-center">
