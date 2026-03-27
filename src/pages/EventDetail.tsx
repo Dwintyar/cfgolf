@@ -341,19 +341,27 @@ const EventDetail = () => {
 
       const playerIds = eventContestants.map(c => c.player_id);
 
-      // Find the round for this event's course + date
-      const eventDate = eventInfo.event_date?.slice(0, 10);
-      const { data: roundRows } = await supabase
-        .from("rounds")
-        .select("id, created_at")
-        .eq("course_id", eventInfo.course_id)
-        .order("created_at", { ascending: false });
+      // Lookup round via event_rounds (authoritative, supports multi-round tournaments)
+      const { data: eventRounds } = await supabase
+        .from("event_rounds")
+        .select("round_id, round_number")
+        .eq("event_id", id)
+        .order("round_number", { ascending: true });
 
-      const matchedRound = roundRows?.find(r => r.created_at?.slice(0, 10) === eventDate)
-        ?? roundRows?.[0];
-      const roundId = matchedRound?.id;
+      // Fallback: jika event_rounds belum ada, cari via course + date (legacy)
+      let roundIds: string[] = (eventRounds ?? []).map((er: any) => er.round_id);
+      if (roundIds.length === 0) {
+        const eventDate = eventInfo.event_date?.slice(0, 10);
+        const { data: roundRows } = await supabase
+          .from("rounds")
+          .select("id, created_at")
+          .eq("course_id", eventInfo.course_id)
+          .order("created_at", { ascending: false });
+        const matched = roundRows?.find(r => r.created_at?.slice(0, 10) === eventDate) ?? roundRows?.[0];
+        if (matched) roundIds = [matched.id];
+      }
 
-      if (!roundId) {
+      if (roundIds.length === 0) {
         return eventContestants.map(ct => ({
           player_id: ct.player_id,
           full_name: (ct.profiles as any)?.full_name ?? "Unknown",
@@ -367,47 +375,13 @@ const EventDetail = () => {
         }));
       }
 
-      // Fetch scorecards: prioritas round yang benar (same course + same date)
-      // Step 1: ambil semua scorecard dari round yang tepat
-      const { data: primaryScorecards } = await supabase
+      // Fetch scorecards dari semua round yang terdaftar di event_rounds
+      const { data: scorecards } = await supabase
         .from("scorecards")
         .select("id, player_id, gross_score, net_score")
-        .eq("round_id", roundId)
+        .in("round_id", roundIds)
         .in("player_id", playerIds)
-        .limit(500);
-
-      // Step 2: cari player yang belum ada scorecardnya di round utama
-      const coveredPlayers = new Set((primaryScorecards ?? []).map((sc: any) => sc.player_id));
-      const missingPlayers = playerIds.filter(pid => !coveredPlayers.has(pid));
-
-      // Step 3: fallback — cari scorecard terbaik untuk player yang missing
-      let fallbackScorecards: any[] = [];
-      if (missingPlayers.length > 0) {
-        const { data: fallback } = await supabase
-          .from("scorecards")
-          .select("id, player_id, gross_score, net_score, rounds(id, created_at, course_id)")
-          .in("player_id", missingPlayers)
-          .not("gross_score", "is", null)
-          .limit(1000);
-
-        const eventDateMs = new Date(eventDate ?? "").getTime();
-        const bestFallback: Record<string, any> = {};
-        (fallback ?? []).forEach((sc: any) => {
-          const roundDate = sc.rounds?.created_at?.slice(0, 10);
-          const roundCourse = sc.rounds?.course_id;
-          const roundMs = new Date(roundDate ?? "").getTime();
-          const diff = Math.abs(roundMs - eventDateMs);
-          const sameCourse = roundCourse === eventInfo.course_id;
-          const prev = bestFallback[sc.player_id];
-          if (!prev) { bestFallback[sc.player_id] = { ...sc, _diff: diff, _sameCourse: sameCourse }; return; }
-          if (sameCourse && !prev._sameCourse) { bestFallback[sc.player_id] = { ...sc, _diff: diff, _sameCourse: sameCourse }; return; }
-          if (!sameCourse && prev._sameCourse) return;
-          if (diff < prev._diff) bestFallback[sc.player_id] = { ...sc, _diff: diff, _sameCourse: sameCourse };
-        });
-        fallbackScorecards = Object.values(bestFallback);
-      }
-
-      const scorecards = [...(primaryScorecards ?? []), ...fallbackScorecards];
+        .limit(1000);
 
 
       // Fetch hole_scores in chunks of scorecard IDs to avoid large .in() issues
