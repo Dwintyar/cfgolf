@@ -210,7 +210,7 @@ const Login = () => {
         <div className="mb-8 text-center">
           <img src={logo} alt="GolfBuana" className="mx-auto h-20 w-20 mb-4 object-contain" />
           <h1 className="font-display text-3xl font-bold tracking-tight">
-            CF<span className="text-primary">Golf</span>
+            Golf<span className="text-primary">Buana</span>
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
             {isForgot
