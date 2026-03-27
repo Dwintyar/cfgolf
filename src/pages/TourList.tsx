@@ -95,11 +95,11 @@ const TourList = () => {
         privateTours = [...privateTours, ...(playerPrivateTours ?? [])];
       }
 
-      // Merge — deduplicate by id
-      const allTours = [...(publicTours ?? [])];
-      const publicIds = new Set(allTours.map(t => t.id));
-      privateTours.forEach(t => { if (!publicIds.has(t.id)) allTours.push(t); });
-      return allTours;
+      // Merge — deduplicate by id (use a Map to guarantee uniqueness)
+      const tourMap = new Map<string, any>();
+      (publicTours ?? []).forEach(t => tourMap.set(t.id, t));
+      privateTours.forEach(t => { if (!tourMap.has(t.id)) tourMap.set(t.id, t); });
+      return Array.from(tourMap.values());
     },
   });
 
@@ -229,8 +229,15 @@ const TourList = () => {
         .in("status", ["registered", "active", "pending"]);
 
       const organizedIds = new Set(organizedTours.map(t => t.id));
+      // Deduplicate tour_players by tour_id (a user can have multiple entries)
+      const seenTourIds = new Set<string>();
       const participatingTours = (myTourPlayers ?? [])
-        .filter(tp => !organizedIds.has(tp.tour_id))
+        .filter(tp => {
+          if (organizedIds.has(tp.tour_id)) return false;
+          if (seenTourIds.has(tp.tour_id)) return false;
+          seenTourIds.add(tp.tour_id);
+          return true;
+        })
         .map(tp => ({
           ...(tp.tours as any),
           playerRole: "participant",
@@ -238,7 +245,11 @@ const TourList = () => {
           myTourHcp: tp.hcp_tour,
         }));
 
-      return [...organizedTours, ...participatingTours];
+      // Final dedup using Map (in case organizedTours and participatingTours overlap)
+      const myTourMap = new Map<string, any>();
+      organizedTours.forEach(t => myTourMap.set(t.id, t));
+      participatingTours.forEach(t => { if (!myTourMap.has(t.id)) myTourMap.set(t.id, t); });
+      return Array.from(myTourMap.values());
     },
     enabled: !!userId,
   });
