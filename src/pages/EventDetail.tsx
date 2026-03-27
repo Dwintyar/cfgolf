@@ -1124,7 +1124,7 @@ const EventDetail = () => {
             if (hcp == null) return null;
             if (hcp <= 16) return { label: "A", cls: "bg-blue-500/10 text-blue-600 border-blue-500/30" };
             if (hcp <= 22) return { label: "B", cls: "bg-amber-500/10 text-amber-600 border-amber-500/30" };
-            return { label: "C", cls: "bg-muted text-muted-foreground border-border" };
+            return { label: "C", cls: "bg-yellow-500/10 text-yellow-700 border-yellow-500/30" };
           };
 
           return (
@@ -1282,6 +1282,7 @@ const EventDetail = () => {
             const n = name.toLowerCase();
             if (n.includes("a")) return "bg-blue-600/90 text-blue-50";
             if (n.includes("b")) return "bg-amber-600/90 text-amber-50";
+            if (n.includes("c")) return "bg-yellow-500/90 text-yellow-950";
             return "bg-muted text-muted-foreground";
           };
 
@@ -1484,13 +1485,13 @@ const EventDetail = () => {
                         <td className="text-center py-1.5 px-2">
                           {row.moved ? (
                             <span className="inline-flex items-center gap-0.5 text-[10px]">
-                              <Badge variant="outline" className={`text-[9px] px-1 py-0 ${row.old_flight === "A" ? "border-blue-500 text-blue-500" : row.old_flight === "B" ? "border-amber-500 text-amber-500" : "border-muted-foreground text-muted-foreground"}`}>{row.old_flight}</Badge>
+                              <Badge variant="outline" className={`text-[9px] px-1 py-0 ${row.old_flight === "A" ? "border-blue-500 text-blue-500" : row.old_flight === "B" ? "border-amber-500 text-amber-500" : row.old_flight === "C" ? "border-yellow-500 text-yellow-600" : "border-muted-foreground text-muted-foreground"}`}>{row.old_flight}</Badge>
                               <span className="text-muted-foreground">→</span>
-                              <Badge variant="outline" className={`text-[9px] px-1 py-0 ${row.new_flight === "A" ? "border-blue-500 text-blue-500" : row.new_flight === "B" ? "border-amber-500 text-amber-500" : "border-muted-foreground text-muted-foreground"}`}>{row.new_flight}</Badge>
+                              <Badge variant="outline" className={`text-[9px] px-1 py-0 ${row.new_flight === "A" ? "border-blue-500 text-blue-500" : row.new_flight === "B" ? "border-amber-500 text-amber-500" : row.new_flight === "C" ? "border-yellow-500 text-yellow-600" : "border-muted-foreground text-muted-foreground"}`}>{row.new_flight}</Badge>
                               <span className="text-green-500 font-bold">⬆</span>
                             </span>
                           ) : (
-                            <Badge variant="outline" className={`text-[9px] px-1.5 py-0 ${row.new_flight === "A" ? "border-blue-500 text-blue-500" : row.new_flight === "B" ? "border-amber-500 text-amber-500" : "border-muted-foreground text-muted-foreground"}`}>{row.new_flight}</Badge>
+                            <Badge variant="outline" className={`text-[9px] px-1.5 py-0 ${row.new_flight === "A" ? "border-blue-500 text-blue-500" : row.new_flight === "B" ? "border-amber-500 text-amber-500" : row.new_flight === "C" ? "border-yellow-500 text-yellow-600" : "border-muted-foreground text-muted-foreground"}`}>{row.new_flight}</Badge>
                           )}
                         </td>
                       </tr>
