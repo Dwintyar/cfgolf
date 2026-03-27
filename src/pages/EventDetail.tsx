@@ -464,15 +464,15 @@ const EventDetail = () => {
       // Fallback: cari club via tickets table untuk player yang club_id-nya null
       const { data: ticketClubs } = await supabase
         .from("tickets")
-        .select("player_id, clubs(name)")
+        .select("assigned_player_id, clubs(name)")
         .eq("event_id", id)
-        .in("player_id", playerIds);
+        .in("assigned_player_id", playerIds);
 
       const clubMap: Record<string, string> = {};
       // tickets sebagai base (authoritative per-event)
       (ticketClubs ?? []).forEach((t: any) => {
-        if (t.player_id && (t.clubs as any)?.name) {
-          clubMap[t.player_id] = (t.clubs as any).name;
+        if (t.assigned_player_id && (t.clubs as any)?.name) {
+          clubMap[t.assigned_player_id] = (t.clubs as any).name;
         }
       });
       // tour_players override jika ada
