@@ -3,7 +3,7 @@ import { useLocation } from "react-router-dom";
 import { Bell, X } from "lucide-react";
 import { usePushNotifications } from "@/hooks/use-push-notifications";
 
-const NO_BANNER_PATHS = ["/login", "/onboarding", "/reset-password", "/privacy-policy"];
+const NO_BANNER_PATHS = ["/login", "/onboarding", "/reset-password", "/privacy-policy", "/live/"];
 
 /**
  * Shown once to logged-in users who haven't granted push permission yet.
