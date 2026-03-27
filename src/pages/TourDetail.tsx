@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { useState, useEffect, useMemo } from "react";
 import { toast } from "sonner";
 import InviteClubDialog from "@/components/tour/InviteClubDialog";
@@ -299,6 +300,17 @@ const TourDetail = () => {
     }, {});
   }, [allContestants]);
 
+  // Toggle public/private visibility
+  const handleTogglePublic = async (newValue: boolean) => {
+    const { error } = await supabase
+      .from("tours")
+      .update({ is_public: newValue })
+      .eq("id", id!);
+    if (error) { toast.error(error.message); return; }
+    toast.success(newValue ? "Tournament sekarang Public 🌐" : "Tournament sekarang Private 🔒");
+    queryClient.invalidateQueries({ queryKey: ["tour", id] });
+  };
+
   // Edit event handler
   const handleEditEvent = async () => {
     if (!editingEvent) return;
@@ -445,9 +457,32 @@ const TourDetail = () => {
               <span className="flex items-center gap-1"><Building2 className="h-3 w-3" /> {tourClubs?.filter(tc => tc.status === "accepted").length ?? 0} clubs</span>
             </div>
           </div>
-          <Badge variant="outline" className="text-[10px] uppercase tracking-wider border-primary/30 text-primary">
-            {tour.tournament_type}
-          </Badge>
+          <div className="flex items-center gap-2">
+            {isOrganizer ? (
+              <button
+                onClick={() => handleTogglePublic(!(tour as any).is_public)}
+                className={`flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1 rounded-full border transition-all ${
+                  (tour as any).is_public === false
+                    ? "text-amber-500 bg-amber-500/10 border-amber-500/30 hover:bg-amber-500/20"
+                    : "text-primary/80 bg-primary/10 border-primary/20 hover:bg-primary/20"
+                }`}
+                title="Klik untuk ubah visibility"
+              >
+                {(tour as any).is_public === false ? "🔒 Private" : "🌐 Public"}
+              </button>
+            ) : (
+              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
+                (tour as any).is_public === false
+                  ? "text-amber-500 bg-amber-500/10 border-amber-500/30"
+                  : "text-primary/80 bg-primary/10 border-primary/20"
+              }`}>
+                {(tour as any).is_public === false ? "🔒 Private" : "🌐 Public"}
+              </span>
+            )}
+            <Badge variant="outline" className="text-[10px] uppercase tracking-wider border-primary/30 text-primary">
+              {tour.tournament_type}
+            </Badge>
+          </div>
         </div>
         {tour.description && <p className="mt-2 text-xs text-muted-foreground">{tour.description}</p>}
       </div>
