@@ -468,8 +468,20 @@ const EventDetail = () => {
         .eq("event_id", id)
         .in("assigned_player_id", playerIds);
 
+      // Fallback 2: cari club via members table
+      const { data: memberClubs } = await supabase
+        .from("members")
+        .select("user_id, clubs(name)")
+        .in("user_id", playerIds);
+
       const clubMap: Record<string, string> = {};
-      // tickets sebagai base (authoritative per-event)
+      // members sebagai base (paling umum)
+      (memberClubs ?? []).forEach((m: any) => {
+        if (m.user_id && (m.clubs as any)?.name) {
+          clubMap[m.user_id] = (m.clubs as any).name;
+        }
+      });
+      // tickets override members (lebih spesifik per event)
       (ticketClubs ?? []).forEach((t: any) => {
         if (t.assigned_player_id && (t.clubs as any)?.name) {
           clubMap[t.assigned_player_id] = (t.clubs as any).name;
