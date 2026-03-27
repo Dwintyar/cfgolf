@@ -760,11 +760,11 @@ const GolferProfile = () => {
                   <p className="text-xs text-muted-foreground mt-2 italic">{profile.bio}</p>
                 )}
 
-                {/* HCP + Rounds badges */}
+                {/* Reference HCP + Rounds */}
                 <div className="mt-3 flex items-center gap-2">
-                  <div className="golf-card px-4 py-2 text-center flex-1 border-primary/30">
+                  <div className="golf-card px-4 py-2 text-center flex-1 border-primary/30 bg-primary/5">
                     <p className="text-2xl font-bold text-primary">{profile?.handicap ?? "N/A"}</p>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Handicap</p>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Reference HCP</p>
                   </div>
                   <div className="golf-card px-4 py-2 text-center flex-1">
                     <p className="text-2xl font-bold">{playerStats?.rounds ?? 0}</p>
@@ -773,6 +773,27 @@ const GolferProfile = () => {
                 </div>
                 {formatHcpUpdated(lastHcpUpdate) && (
                   <p className="text-[10px] text-muted-foreground mt-1 text-center">{formatHcpUpdated(lastHcpUpdate)}</p>
+                )}
+
+                {/* 3-Source HCP Breakdown */}
+                {(profile?.personal_hcp != null || profile?.club_hcp != null || profile?.handicap != null) && (
+                  <div className="mt-2 grid grid-cols-3 gap-1.5">
+                    <div className="golf-card p-2 text-center">
+                      <p className="text-sm font-bold tabular-nums">{profile?.personal_hcp?.toFixed(1) ?? "—"}</p>
+                      <p className="text-[9px] text-muted-foreground uppercase tracking-wide">Personal</p>
+                      <p className="text-[9px] text-muted-foreground/60">15%</p>
+                    </div>
+                    <div className="golf-card p-2 text-center">
+                      <p className="text-sm font-bold tabular-nums">{profile?.club_hcp?.toFixed(1) ?? "—"}</p>
+                      <p className="text-[9px] text-muted-foreground uppercase tracking-wide">Club</p>
+                      <p className="text-[9px] text-muted-foreground/60">35%</p>
+                    </div>
+                    <div className="golf-card p-2 text-center border-primary/20">
+                      <p className="text-sm font-bold tabular-nums text-primary">{profile?.handicap?.toFixed(1) ?? "—"}</p>
+                      <p className="text-[9px] text-muted-foreground uppercase tracking-wide">Interclub</p>
+                      <p className="text-[9px] text-muted-foreground/60">50%</p>
+                    </div>
+                  </div>
                 )}
 
 
@@ -1108,7 +1129,7 @@ const GolferProfile = () => {
               )}
               <p className="text-xs uppercase tracking-widest text-muted-foreground">{profile?.location || "No location set"}</p>
               <div className="mt-4 flex gap-3 px-8 w-full">
-                <Badge variant="outline" className="flex-1 justify-center rounded-lg border-border px-4 py-2.5 text-sm font-bold">HCP {profile?.handicap ?? "N/A"}</Badge>
+                <Badge variant="outline" className="flex-1 justify-center rounded-lg border-primary/30 bg-primary/5 px-4 py-2.5 text-sm font-bold text-primary">Ref HCP {profile?.handicap?.toFixed(1) ?? "N/A"}</Badge>
                 <Badge variant="outline" className="flex-1 justify-center rounded-lg border-border px-4 py-2.5 text-sm font-bold">{clubs.length} CLUBS</Badge>
               </div>
               {formatHcpUpdated(lastHcpUpdate) && (

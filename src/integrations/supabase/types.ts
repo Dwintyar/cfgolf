@@ -1818,9 +1818,11 @@ export type Database = {
           avatar_url: string | null
           bio: string | null
           created_at: string
+          club_hcp: number | null
           full_name: string | null
           handicap: number | null
           id: string
+          personal_hcp: number | null
           is_approved: boolean | null
           location: string | null
           onboarding_completed: boolean | null
@@ -1833,9 +1835,11 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
+          club_hcp?: number | null
           full_name?: string | null
           handicap?: number | null
           id: string
+          personal_hcp?: number | null
           is_approved?: boolean | null
           location?: string | null
           onboarding_completed?: boolean | null
@@ -1848,9 +1852,11 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
+          club_hcp?: number | null
           full_name?: string | null
           handicap?: number | null
           id?: string
+          personal_hcp?: number | null
           is_approved?: boolean | null
           location?: string | null
           onboarding_completed?: boolean | null
