@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -22,6 +23,7 @@ const CreateTourDialog = ({ open, onOpenChange, onCreated, defaultOrganizerClubI
   const [clubId, setClubId] = useState(defaultOrganizerClubId ?? "");
   const [year, setYear] = useState(new Date().getFullYear().toString());
   const [description, setDescription] = useState("");
+  const [isPublic, setIsPublic] = useState(true);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -45,11 +47,12 @@ const CreateTourDialog = ({ open, onOpenChange, onCreated, defaultOrganizerClubI
       organizer_club_id: clubId,
       year: parseInt(year),
       description: description || null,
+      is_public: isPublic,
     });
     setLoading(false);
     if (error) { toast.error(error.message); return; }
     toast.success("Tour created");
-    setName(""); setDescription("");
+    setName(""); setDescription(""); setIsPublic(true);
     onCreated();
   };
 
@@ -88,6 +91,17 @@ const CreateTourDialog = ({ open, onOpenChange, onCreated, defaultOrganizerClubI
           <div>
             <Label className="text-xs">Description</Label>
             <Textarea value={description} onChange={e => setDescription(e.target.value)} rows={2} />
+          </div>
+          <div className="golf-card p-3 flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium">{isPublic ? "🌐 Public" : "🔒 Private"}</p>
+              <p className="text-xs text-muted-foreground">
+                {isPublic
+                  ? "Semua member dapat melihat tournament ini"
+                  : "Hanya member club atau player terdaftar yang dapat melihat"}
+              </p>
+            </div>
+            <Switch checked={isPublic} onCheckedChange={setIsPublic} />
           </div>
           <Button className="w-full" onClick={handleSubmit} disabled={loading}>
             {loading ? "Creating…" : "Create Tour"}

@@ -62,23 +62,49 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Authorization: caller must be owner/admin of the organizer club
+    // Authorization: club owner/admin OR event_roles tournament_director/coordinator
     const organizerClubId = (event.tours as any)?.organizer_club_id;
-    if (!organizerClubId) {
-      return new Response(JSON.stringify({ error: "Tour configuration error" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+
+    let authorized = false;
+
+    // Check 1: club member with owner/admin role
+    if (organizerClubId) {
+      const { data: membership } = await supabase
+        .from("members")
+        .select("role")
+        .eq("user_id", user.id)
+        .eq("club_id", organizerClubId)
+        .in("role", ["owner", "admin"])
+        .maybeSingle();
+      if (membership) authorized = true;
     }
-    const { data: membership } = await supabase
-      .from("members")
-      .select("role")
-      .eq("user_id", user.id)
-      .eq("club_id", organizerClubId)
-      .in("role", ["owner", "admin"])
-      .maybeSingle();
-    if (!membership) {
-      return new Response(JSON.stringify({ error: "Forbidden" }), {
+
+    // Check 2: event_roles (tournament_director or event_coordinator)
+    if (!authorized) {
+      const { data: eventRole } = await supabase
+        .from("event_roles")
+        .select("role")
+        .eq("event_id", eventId)
+        .eq("user_id", user.id)
+        .in("role", ["tournament_director", "event_coordinator"])
+        .maybeSingle();
+      if (eventRole) authorized = true;
+    }
+
+    // Check 3: any club membership with admin/owner role (fallback for tour admins)
+    if (!authorized) {
+      const { data: anyAdmin } = await supabase
+        .from("members")
+        .select("role")
+        .eq("user_id", user.id)
+        .in("role", ["owner", "admin"])
+        .limit(1)
+        .maybeSingle();
+      if (anyAdmin) authorized = true;
+    }
+
+    if (!authorized) {
+      return new Response(JSON.stringify({ error: "Forbidden: must be club admin or tournament director" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

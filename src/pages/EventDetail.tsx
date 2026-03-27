@@ -741,7 +741,7 @@ const EventDetail = () => {
       if (pairingsList.length > 0) {
         const pairingIds = pairingsList.map((p: any) => p.id);
         await supabase.from("pairing_players").delete().in("pairing_id", pairingIds);
-        await supabase.from("event_pairings").delete().in("id", pairingIds);
+        await supabase.from("pairings").delete().in("id", pairingIds);
         await refetchPairings();
       }
       const { data, error } = await invokeWithAuth("generate-event-pairings", {

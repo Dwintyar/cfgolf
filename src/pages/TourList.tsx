@@ -26,14 +26,49 @@ const TourList = () => {
   }, []);
 
   const { data: tours, isLoading, refetch } = useQuery({
-    queryKey: ["tours"],
+    queryKey: ["tours", userId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Always fetch public tours
+      const { data: publicTours, error } = await supabase
         .from("tours")
         .select("*, clubs!tours_organizer_club_id_fkey(name, logo_url)")
+        .eq("is_public", true)
         .order("year", { ascending: false });
       if (error) throw error;
-      return data;
+
+      if (!userId) return publicTours ?? [];
+
+      // Also fetch private tours where user is a member of organizer club or a registered player
+      const { data: memberClubs } = await supabase
+        .from("members")
+        .select("club_id")
+        .eq("user_id", userId);
+      const clubIds = (memberClubs ?? []).map(m => m.club_id);
+
+      const { data: playerTours } = await supabase
+        .from("tour_players")
+        .select("tour_id")
+        .eq("player_id", userId);
+      const playerTourIds = (playerTours ?? []).map(t => t.tour_id);
+
+      // Fetch private tours accessible to this user
+      const accessIds = [...new Set([...clubIds, ...playerTourIds])];
+      let privateTours: any[] = [];
+      if (accessIds.length > 0 || clubIds.length > 0) {
+        const { data } = await supabase
+          .from("tours")
+          .select("*, clubs!tours_organizer_club_id_fkey(name, logo_url)")
+          .eq("is_public", false)
+          .or(`organizer_club_id.in.(${clubIds.length ? clubIds.join(",") : "00000000-0000-0000-0000-000000000000"}),id.in.(${playerTourIds.length ? playerTourIds.join(",") : "00000000-0000-0000-0000-000000000000"})`)
+          .order("year", { ascending: false });
+        privateTours = data ?? [];
+      }
+
+      // Merge — deduplicate by id
+      const allTours = [...(publicTours ?? [])];
+      const publicIds = new Set(allTours.map(t => t.id));
+      privateTours.forEach(t => { if (!publicIds.has(t.id)) allTours.push(t); });
+      return allTours;
     },
   });
 
@@ -408,9 +443,18 @@ const TourList = () => {
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold truncate">{tour.name}</p>
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-sm font-semibold truncate">{tour.name}</p>
+                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border shrink-0 ${
+                        (tour as any).is_public === false
+                          ? "text-amber-500 bg-amber-500/10 border-amber-500/30"
+                          : "text-primary/70 bg-primary/10 border-primary/20"
+                      }`}>
+                        {(tour as any).is_public === false ? "🔒 Private" : "🌐 Public"}
+                      </span>
+                    </div>
                     <p className="text-[10px] text-muted-foreground">
-                      {tour.year} · {(tour.clubs as any)?.name ?? "—"}
+                      {tour.year} · {(tour.clubs as any)?.name ?? "—"} · {tour.tournament_type}
                     </p>
                   </div>
                   <Button
