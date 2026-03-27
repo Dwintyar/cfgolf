@@ -37,6 +37,7 @@ const TourDetail = () => {
   const [editEventStatus, setEditEventStatus] = useState("");
   const [editEventTickets, setEditEventTickets] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
+  const [editEventCourseId, setEditEventCourseId] = useState("");
   const [deletingEventId, setDeletingEventId] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [groupByClub, setGroupByClub] = useState(true);
@@ -300,6 +301,18 @@ const TourDetail = () => {
     }, {});
   }, [allContestants]);
 
+  // Courses list for edit event
+  const { data: allCourses } = useQuery({
+    queryKey: ["all-courses-for-edit"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("courses")
+        .select("id, name, location")
+        .order("name");
+      return data ?? [];
+    },
+  });
+
   // Toggle public/private visibility
   const handleTogglePublic = async (newValue: boolean) => {
     const { error } = await supabase
@@ -320,11 +333,35 @@ const TourDetail = () => {
       event_date: editEventDate,
       status: editEventStatus,
       ticket_total: parseInt(editEventTickets) || 0,
+      ...(editEventCourseId ? { course_id: editEventCourseId } : {}),
     }).eq("id", editingEvent.id);
     setSavingEdit(false);
     if (error) { toast.error(error.message); return; }
+
+    // If course changed, re-snapshot holes from new course
+    if (editEventCourseId && editEventCourseId !== editingEvent.course_id) {
+      await supabase.from("event_holes").delete().eq("event_id", editingEvent.id);
+      const { data: courseHoles } = await supabase
+        .from("course_holes")
+        .select("hole_number, par, distance_yards, handicap_index")
+        .eq("course_id", editEventCourseId)
+        .order("hole_number");
+      if (courseHoles?.length) {
+        await supabase.from("event_holes").insert(
+          courseHoles.map((h: any) => ({
+            event_id: editingEvent.id,
+            hole_number: h.hole_number,
+            par: h.par,
+            distance_yards: h.distance_yards,
+            stroke_index: h.handicap_index,
+          }))
+        );
+      }
+    }
+
     toast.success("Event updated");
     setEditingEvent(null);
+    setEditEventCourseId("");
     queryClient.invalidateQueries({ queryKey: ["tour-events"] });
   };
 
@@ -597,6 +634,7 @@ const TourDetail = () => {
                             setEditEventDate(event.event_date);
                             setEditEventStatus(event.status);
                             setEditEventTickets(String(event.ticket_total ?? 0));
+                            setEditEventCourseId(event.course_id ?? "");
                           }}
                           className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
                           title="Edit event"
@@ -987,6 +1025,24 @@ const TourDetail = () => {
             <div>
               <Label className="text-xs">Date</Label>
               <Input type="date" value={editEventDate} onChange={e => setEditEventDate(e.target.value)} />
+            </div>
+            <div>
+              <Label className="text-xs">Golf Course</Label>
+              <Select value={editEventCourseId} onValueChange={setEditEventCourseId}>
+                <SelectTrigger><SelectValue placeholder="Select course" /></SelectTrigger>
+                <SelectContent>
+                  {allCourses?.map((c: any) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name}{c.location ? ` — ${c.location}` : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {editingEvent && editEventCourseId && editEventCourseId !== editingEvent.course_id && (
+                <p className="text-[10px] text-amber-500 mt-1">
+                  ⚠️ Course diubah — event holes akan direset sesuai course baru
+                </p>
+              )}
             </div>
             <div>
               <Label className="text-xs">Status</Label>
