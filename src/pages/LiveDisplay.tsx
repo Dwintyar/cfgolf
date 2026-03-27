@@ -65,7 +65,7 @@ const LiveDisplay = () => {
   const fetchData = useCallback(async () => {
     if (!eventId) return;
 
-    /* Event info */
+    /* 1. Event info */
     const { data: ev } = await supabase
       .from("events")
       .select("id, name, event_date, status, courses(name), tours(name)")
@@ -73,69 +73,117 @@ const LiveDisplay = () => {
       .single();
     if (ev) setEvent(ev as EventInfo);
 
-    /* Contestants + profiles + clubs */
+    /* 2. Try event_leaderboard view first (most reliable) */
+    const { data: lbRows } = await supabase
+      .from("event_leaderboard")
+      .select("*, profiles:player_id(full_name, avatar_url)")
+      .eq("event_id", eventId)
+      .order("rank_net", { ascending: true });
+
+    if (lbRows && lbRows.length > 0) {
+      const entries: LeaderEntry[] = lbRows.map((row: any, i: number) => ({
+        rank: row.rank_net ?? i + 1,
+        player_id: row.player_id,
+        full_name: row.profiles?.full_name ?? row.full_name ?? "Unknown",
+        avatar_url: row.profiles?.avatar_url ?? null,
+        club_name: row.club_name ?? null,
+        hcp: row.hcp ?? null,
+        gross: row.total_gross ?? null,
+        nett: row.total_nett ?? null,
+        out_score: row.out_score ?? null,
+        in_score: row.in_score ?? null,
+        remarks: row.remarks ?? null,
+      }));
+      setBoard(entries);
+      setLastRefresh(new Date());
+      setLoading(false);
+      return;
+    }
+
+    /* 3. Fallback: scorecards via event_rounds → rounds → scorecards */
+    const { data: eventInfo } = await supabase
+      .from("events")
+      .select("course_id, event_date")
+      .eq("id", eventId)
+      .single();
+
     const { data: contestants } = await supabase
       .from("contestants")
-      .select(`
-        player_id, hcp, status,
-        profiles:player_id ( full_name, avatar_url ),
-        members!inner ( clubs ( name ) )
-      `)
-      .eq("event_id", eventId)
-      .eq("status", "confirmed");
-
-    /* Scorecards for this event via rounds */
-    const { data: rounds } = await supabase
-      .from("rounds")
-      .select("id")
+      .select("player_id, hcp, profiles:player_id(full_name, avatar_url)")
       .eq("event_id", eventId);
 
-    const roundIds = (rounds ?? []).map((r: any) => r.id);
+    if (!contestants?.length) { setLoading(false); return; }
 
-    let scorecardMap: Record<string, { gross: number | null; nett: number | null }> = {};
+    /* Try event_rounds first, fallback to date match */
+    const { data: eventRounds } = await supabase
+      .from("event_rounds")
+      .select("round_id")
+      .eq("event_id", eventId);
+
+    let roundIds: string[] = (eventRounds ?? []).map((r: any) => r.round_id);
+    if (roundIds.length === 0 && eventInfo?.course_id) {
+      const eventDate = eventInfo.event_date?.slice(0, 10);
+      const { data: roundRows } = await supabase
+        .from("rounds")
+        .select("id, created_at")
+        .eq("course_id", eventInfo.course_id)
+        .order("created_at", { ascending: false });
+      const matched = roundRows?.find((r: any) => r.created_at?.slice(0, 10) === eventDate) ?? roundRows?.[0];
+      if (matched) roundIds = [matched.id];
+    }
+
+    let scorecardMap: Record<string, { gross: number | null; nett: number | null; out: number | null; inn: number | null }> = {};
     if (roundIds.length > 0) {
+      const playerIds = contestants.map((c: any) => c.player_id);
       const { data: scorecards } = await supabase
         .from("scorecards")
         .select("player_id, gross_score, net_score")
-        .in("round_id", roundIds);
+        .in("round_id", roundIds)
+        .in("player_id", playerIds);
+
+      /* Try hole_scores for out/in */
+      const { data: holeScores } = await supabase
+        .from("hole_scores")
+        .select("player_id, hole_number, gross_score")
+        .in("round_id", roundIds)
+        .in("player_id", playerIds);
+
+      const holeMap: Record<string, number[]> = {};
+      (holeScores ?? []).forEach((h: any) => {
+        if (!holeMap[h.player_id]) holeMap[h.player_id] = [];
+        holeMap[h.player_id][h.hole_number - 1] = h.gross_score;
+      });
+
       (scorecards ?? []).forEach((s: any) => {
-        scorecardMap[s.player_id] = { gross: s.gross_score, nett: s.net_score };
+        const holes = holeMap[s.player_id] ?? [];
+        const out = holes.slice(0, 9).reduce((a: number, b: number) => a + (b ?? 0), 0) || null;
+        const inn = holes.slice(9, 18).reduce((a: number, b: number) => a + (b ?? 0), 0) || null;
+        scorecardMap[s.player_id] = {
+          gross: s.gross_score,
+          nett: s.net_score,
+          out: holes.length >= 9 ? out : null,
+          inn: holes.length >= 18 ? inn : null,
+        };
       });
     }
 
-    /* Also try contestants table for out/in/nett if stored there */
-    const { data: boardData } = await supabase
-      .from("contestants")
-      .select(`
-        player_id, hcp,
-        out_score, in_score, gross_score, nett_score, remarks,
-        profiles:player_id ( full_name, avatar_url )
-      `)
-      .eq("event_id", eventId)
-      .eq("status", "confirmed");
-
-    /* Build leaderboard entries */
-    const entries: LeaderEntry[] = (boardData ?? contestants ?? []).map((c: any) => {
+    const entries: LeaderEntry[] = contestants.map((c: any) => {
       const sc = scorecardMap[c.player_id];
-      const gross = c.gross_score ?? sc?.gross ?? null;
-      const nett = c.nett_score ?? sc?.nett ?? null;
-      const clubName = c.members?.[0]?.clubs?.name ?? null;
       return {
         rank: 0,
         player_id: c.player_id,
-        full_name: c.profiles?.full_name ?? "Unknown",
-        avatar_url: c.profiles?.avatar_url ?? null,
-        club_name: clubName,
+        full_name: (c.profiles as any)?.full_name ?? "Unknown",
+        avatar_url: (c.profiles as any)?.avatar_url ?? null,
+        club_name: null,
         hcp: c.hcp ?? null,
-        gross,
-        nett,
-        out_score: c.out_score ?? null,
-        in_score: c.in_score ?? null,
-        remarks: c.remarks ?? null,
+        gross: sc?.gross ?? null,
+        nett: sc?.nett ?? null,
+        out_score: sc?.out ?? null,
+        in_score: sc?.inn ?? null,
+        remarks: null,
       };
     });
 
-    /* Sort: nett asc (nulls last), then gross asc */
     entries.sort((a, b) => {
       if (a.nett == null && b.nett == null) return 0;
       if (a.nett == null) return 1;
@@ -143,8 +191,6 @@ const LiveDisplay = () => {
       if (a.nett !== b.nett) return a.nett - b.nett;
       return (a.gross ?? 999) - (b.gross ?? 999);
     });
-
-    /* Assign rank */
     entries.forEach((e, i) => { e.rank = i + 1; });
 
     setBoard(entries);

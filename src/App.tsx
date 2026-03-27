@@ -50,7 +50,7 @@ import AdminApprovals from "./pages/AdminApprovals";
 const queryClient = new QueryClient();
 
 const noLayoutPaths = [
-  "/login", "/onboarding", "/reset-password", "/privacy-policy", "/p/"
+  "/login", "/onboarding", "/reset-password", "/privacy-policy", "/p/", "/live/"
 ];
 
 const leftSidebarOnlyPaths = [
