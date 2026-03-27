@@ -229,7 +229,16 @@ const GolferProfile = () => {
         .order("created_at", { ascending: true })
         .limit(50);
       if (error) console.error("hcpHistory error:", error);
-      return data ?? [];
+      if (!data?.length) return [];
+      // Ambil nama event secara terpisah agar tidak gagal jika join bermasalah
+      const eventIds = [...new Set(data.map(h => h.event_id).filter(Boolean))];
+      const { data: eventsData } = await supabase
+        .from("events")
+        .select("id, name")
+        .in("id", eventIds);
+      const eventMap: Record<string, string> = {};
+      (eventsData ?? []).forEach((e: any) => { eventMap[e.id] = e.name; });
+      return data.map(h => ({ ...h, event_name: eventMap[h.event_id] ?? null }));
     },
     enabled: !!targetId,
   });
@@ -619,7 +628,7 @@ const GolferProfile = () => {
         <div className="space-y-2">
           {group.entries.map((h: any, i: number) => (
             <div key={i} className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground truncate flex-1">{(h.events as any)?.name ?? "Event"}</span>
+              <span className="text-muted-foreground truncate flex-1">{h.event_name ?? (h.events as any)?.name ?? "Event"}</span>
               <div className="flex items-center gap-2 shrink-0">
                 <span className="text-muted-foreground">{h.old_hcp ?? "?"}</span>
                 <span>→</span>
@@ -635,30 +644,39 @@ const GolferProfile = () => {
   // ═══════════════════════════════════════
   // SHARED: HCP Trend mini chart
   // ═══════════════════════════════════════
-  const hcpTrendChart = hcpHistory && hcpHistory.length > 0 && (
-    <div className="golf-card p-4">
-      <div className="flex items-center gap-2 mb-3">
-        <TrendingDown className="h-4 w-4 text-primary" />
-        <p className="text-sm font-semibold">Handicap History</p>
+  const hcpTrendChart = hcpHistory && hcpHistory.length > 0 && (() => {
+    const hcpValues = hcpHistory.map((h: any) => h.new_hcp ?? 0);
+    const minHcp = Math.max(0, Math.min(...hcpValues) - 2);
+    const maxHcp = Math.max(...hcpValues) + 2;
+    const range = maxHcp - minHcp || 1;
+    return (
+      <div className="golf-card p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <TrendingDown className="h-4 w-4 text-primary" />
+          <p className="text-sm font-semibold">Handicap History</p>
+        </div>
+        <div className="flex items-end gap-1 h-24 pt-4">
+          {hcpHistory.map((h: any, i: number) => {
+            const hcp = h.new_hcp ?? 0;
+            const height = ((hcp - minHcp) / range) * 100;
+            const isImproved = i > 0 && hcp < (hcpHistory[i-1]?.new_hcp ?? hcp);
+            return (
+              <div key={i} className="flex-1 flex flex-col items-center gap-0.5 group relative">
+                <span className="text-[8px] text-muted-foreground font-medium">{hcp}</span>
+                <div
+                  className={`w-full rounded-t transition-all ${isImproved ? "bg-green-500/80" : "bg-primary/70"}`}
+                  style={{ height: `${Math.max(height, 8)}%` }}
+                />
+              </div>
+            );
+          })}
+        </div>
+        <p className="text-[10px] text-muted-foreground mt-2 text-center">
+          Current: HCP {profile?.handicap ?? "N/A"}
+        </p>
       </div>
-      <div className="flex items-end gap-1 h-20">
-        {hcpHistory.map((h: any, i: number) => {
-          const hcp = h.new_hcp ?? 0;
-          const maxHcp = Math.max(...hcpHistory.map((x: any) => x.new_hcp ?? 0), 36);
-          const height = maxHcp > 0 ? (hcp / maxHcp) * 100 : 0;
-          return (
-            <div key={i} className="flex-1 flex flex-col items-center gap-1">
-              <span className="text-[8px] text-muted-foreground">{hcp}</span>
-              <div className="w-full bg-primary/60 rounded-t" style={{ height: `${Math.max(height, 5)}%` }} />
-            </div>
-          );
-        })}
-      </div>
-      <p className="text-[10px] text-muted-foreground mt-2 text-center">
-        Current: HCP {profile?.handicap ?? "N/A"}
-      </p>
-    </div>
-  );
+    );
+  })();
 
   // ═══════════════════════════════════════
   // DESKTOP LAYOUT
