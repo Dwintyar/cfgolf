@@ -730,16 +730,36 @@ const EventDetail = () => {
 
   const handleGeneratePairings = async () => {
     if (!id) return;
+    // Check contestants exist
+    if (!contestants?.length) {
+      toast.error("Tidak ada contestant — assign contestant dulu sebelum generate pairing.");
+      return;
+    }
     setGenerating(true);
     try {
+      // If regenerating: clear existing pairings first
+      if (pairingsList.length > 0) {
+        const pairingIds = pairingsList.map((p: any) => p.id);
+        await supabase.from("pairing_players").delete().in("pairing_id", pairingIds);
+        await supabase.from("event_pairings").delete().in("id", pairingIds);
+        await refetchPairings();
+      }
       const { data, error } = await invokeWithAuth("generate-event-pairings", {
         event_id: id, start_type: startType, first_tee_time: firstTee, interval_minutes: parseInt(interval) || 8,
       });
-      if (error) toast.error(error.message || "Failed");
-      else if (data?.error) toast.error(data.error);
-      else { toast.success(`Generated ${data.groups_created} groups`); refetchPairings(); }
-    } catch (err: any) { toast.error(err.message); }
-    finally { setGenerating(false); }
+      if (error) {
+        toast.error(`Edge Function error: ${error.message || "Unknown error"}. Pastikan event memiliki contestant yang cukup.`);
+      } else if (data?.error) {
+        toast.error(data.error);
+      } else {
+        toast.success(`${pairingsList.length > 0 ? "Regenerated" : "Generated"} ${data?.groups_created ?? "?"} groups`);
+        refetchPairings();
+      }
+    } catch (err: any) {
+      toast.error(`Error: ${err.message}. Cek apakah Edge Function aktif.`);
+    } finally {
+      setGenerating(false);
+    }
   };
 
   const handleFinalizeEvent = async () => {
@@ -1128,11 +1148,17 @@ ${liveUrl}`;
 
 
       <TabsContent value="pairings" className="space-y-3 pt-2">
-        {showAdminActions && pairingsList.length === 0 && (
+        {showAdminActions && (
           <div className="golf-card space-y-3 p-4">
             <h3 className="text-sm font-semibold flex items-center gap-2">
-              <Shuffle className="h-4 w-4 text-primary" /> Generate Pairings
+              <Shuffle className="h-4 w-4 text-primary" />
+              {pairingsList.length === 0 ? "Generate Pairings" : "Regenerate Pairings"}
             </h3>
+            {pairingsList.length > 0 && (
+              <div className="text-xs text-amber-500 bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-2">
+                ⚠️ Regenerate akan menghapus semua pairing yang ada dan membuat yang baru.
+              </div>
+            )}
             <div className="grid grid-cols-3 gap-2">
               <div>
                 <Label className="text-[10px]">Start Type</Label>

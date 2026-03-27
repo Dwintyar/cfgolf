@@ -58,11 +58,11 @@ const RegisterPlayerDialog = ({ tourId, tourType, organizerClubId, callerClubId,
   const { data: registeredPlayerIds } = useQuery({
     queryKey: ["tour-registered-players", tourId, clubId],
     queryFn: async () => {
+      // Exclude ALL players already registered in this tournament (any club)
       const { data } = await supabase
         .from("tour_players")
         .select("player_id")
-        .eq("tour_id", tourId)
-        .eq("club_id", clubId);
+        .eq("tour_id", tourId);
       return new Set(data?.map(p => p.player_id) ?? []);
     },
     enabled: !!tourId && !!clubId,

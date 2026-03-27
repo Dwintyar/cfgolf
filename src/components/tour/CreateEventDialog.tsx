@@ -20,7 +20,7 @@ const CreateEventDialog = ({ tourId, open, onOpenChange, onDone }: Props) => {
   const [name, setName] = useState("");
   const [courseId, setCourseId] = useState("");
   const [date, setDate] = useState("");
-  const [ticketTotal, setTicketTotal] = useState("60");
+  const [ticketTotal, setTicketTotal] = useState("0");
   const [pairingApproval, setPairingApproval] = useState(false);
   const [loading, setLoading] = useState(false);
 

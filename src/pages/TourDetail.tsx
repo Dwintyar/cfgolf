@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Trophy, Calendar, Users, MapPin, ChevronRight, Settings, UserPlus, Layers, Award, Check, X, Building2, Star, UserMinus, Search, FileText, Loader2, Download } from "lucide-react";
+import { Trophy, Calendar, Users, MapPin, ChevronRight, Settings, UserPlus, Layers, Award, Check, X, Building2, Star, UserMinus, Search, FileText, Loader2, Download, Pencil, Trash2, MoreHorizontal } from "lucide-react";
 import CommitteeRoleBadges from "@/components/CommitteeRoleBadges";
 import html2canvas from "html2canvas";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,9 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useState, useEffect, useMemo } from "react";
 import { toast } from "sonner";
@@ -28,6 +30,13 @@ const TourDetail = () => {
   const [showFlights, setShowFlights] = useState(false);
   const [showCategories, setShowCategories] = useState(false);
   const [showCreateEvent, setShowCreateEvent] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<any>(null);
+  const [editEventName, setEditEventName] = useState("");
+  const [editEventDate, setEditEventDate] = useState("");
+  const [editEventStatus, setEditEventStatus] = useState("");
+  const [editEventTickets, setEditEventTickets] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [deletingEventId, setDeletingEventId] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [groupByClub, setGroupByClub] = useState(true);
   const [selectedClubForAdd, setSelectedClubForAdd] = useState<string | null>(null);
@@ -290,6 +299,34 @@ const TourDetail = () => {
     }, {});
   }, [allContestants]);
 
+  // Edit event handler
+  const handleEditEvent = async () => {
+    if (!editingEvent) return;
+    setSavingEdit(true);
+    const { error } = await supabase.from("events").update({
+      name: editEventName,
+      event_date: editEventDate,
+      status: editEventStatus,
+      ticket_total: parseInt(editEventTickets) || 0,
+    }).eq("id", editingEvent.id);
+    setSavingEdit(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Event updated");
+    setEditingEvent(null);
+    queryClient.invalidateQueries({ queryKey: ["tour-events"] });
+  };
+
+  // Delete event handler
+  const handleDeleteEvent = async (eventId: string) => {
+    if (!confirm("Hapus event ini? Semua data contestant, pairing, dan scorecard akan ikut terhapus.")) return;
+    setDeletingEventId(eventId);
+    const { error } = await supabase.from("events").delete().eq("id", eventId);
+    setDeletingEventId(null);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Event deleted");
+    queryClient.invalidateQueries({ queryKey: ["tour-events"] });
+  };
+
   // Check if user can manage a specific player (organizer or same club admin)
   const canManagePlayer = (player: any) => {
     if (isOrganizer) return true;
@@ -498,28 +535,55 @@ const TourDetail = () => {
             const eventStatusClass = event.status === "completed" ? "border-primary/40 text-primary bg-primary/5" : event.status === "playing" || event.status === "checkin" ? "border-accent/40 text-accent bg-accent/5" : "border-muted-foreground/30 text-muted-foreground";
             const formattedDate = new Date(event.event_date).toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
             return (
-              <button
+              <div
                 key={event.id}
-                onClick={() => navigate(`/event/${event.id}`)}
                 className="golf-card w-full text-left p-4 animate-fade-in transition-all hover:border-primary/30"
                 style={{ animationDelay: `${i * 60}ms` }}
               >
                 <div className="flex items-start justify-between">
-                  <div className="min-w-0 flex-1">
+                  <button className="min-w-0 flex-1 text-left" onClick={() => navigate(`/event/${event.id}`)}>
                     <h3 className="font-display text-sm font-semibold truncate">{event.name}</h3>
                     <div className="mt-1 flex flex-wrap gap-x-3 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> {formattedDate}</span>
                       <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {(event.courses as any)?.name}</span>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2">
+                  </button>
+                  <div className="flex items-center gap-1.5 shrink-0 ml-2">
                     <Badge variant="outline" className={`text-[10px] ${eventStatusClass}`}>
                       {eventStatusLabel}
                     </Badge>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    {isOrganizer && (
+                      <>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingEvent(event);
+                            setEditEventName(event.name);
+                            setEditEventDate(event.event_date);
+                            setEditEventStatus(event.status);
+                            setEditEventTickets(String(event.ticket_total ?? 0));
+                          }}
+                          className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+                          title="Edit event"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleDeleteEvent(event.id); }}
+                          disabled={deletingEventId === event.id}
+                          className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                          title="Delete event"
+                        >
+                          {deletingEventId === event.id
+                            ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            : <Trash2 className="h-3.5 w-3.5" />}
+                        </button>
+                      </>
+                    )}
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" onClick={() => navigate(`/event/${event.id}`)} />
                   </div>
                 </div>
-              </button>
+              </div>
             );
           })}
         </TabsContent>

@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 
 interface Props {
   eventId: string;
@@ -22,6 +23,23 @@ const AssignContestantDialog = ({ eventId, tourId, open, onOpenChange, onDone }:
   const [hcp, setHcp] = useState("");
   const [flightId, setFlightId] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Ticket availability
+  const { data: ticketInfo, refetch: refetchTickets } = useQuery({
+    queryKey: ["event-ticket-info", eventId],
+    queryFn: async () => {
+      const { data: ev } = await supabase
+        .from("events").select("ticket_total").eq("id", eventId).single();
+      const { data: assigned } = await supabase
+        .from("contestants").select("id").eq("event_id", eventId);
+      const total = ev?.ticket_total ?? 0;
+      const used = assigned?.length ?? 0;
+      return { total, used, remaining: total - used };
+    },
+    enabled: open,
+  });
+
+  const ticketsFull = (ticketInfo?.remaining ?? 1) <= 0 && (ticketInfo?.total ?? 0) > 0;
 
   const { data: players } = useQuery({
     queryKey: ["tour-players-for-assign", tourId, eventId],
@@ -98,7 +116,15 @@ const AssignContestantDialog = ({ eventId, tourId, open, onOpenChange, onDone }:
                   const tournamentHcp = (p as any).hcp_tour
                     ?? (p as any).hcp_at_registration
                     ?? (p.profiles as any)?.handicap;
-                  if (tournamentHcp != null) setHcp(String(tournamentHcp));
+                  if (tournamentHcp != null) {
+                    setHcp(String(tournamentHcp));
+                    // Auto-assign flight by HCP
+                    const matchFlight = flights?.find(f =>
+                      tournamentHcp >= f.hcp_min && tournamentHcp <= f.hcp_max
+                    );
+                    if (matchFlight) setFlightId(matchFlight.id);
+                    else setFlightId("");
+                  }
                 }
               }}>
                 <SelectTrigger><SelectValue placeholder="Select player" /></SelectTrigger>
@@ -144,8 +170,18 @@ const AssignContestantDialog = ({ eventId, tourId, open, onOpenChange, onDone }:
               </SelectContent>
             </Select>
           </div>
-          <Button className="w-full" onClick={handleSubmit} disabled={loading}>
-            {loading ? "Adding…" : "Add Contestant"}
+          {/* Ticket info */}
+          {ticketInfo && ticketInfo.total > 0 && (
+            <div className={`golf-card p-2.5 flex items-center justify-between ${ticketsFull ? "border-destructive/40" : ""}`}>
+              <span className="text-xs text-muted-foreground">Tickets remaining</span>
+              <Badge variant={ticketsFull ? "destructive" : ticketInfo.remaining <= 5 ? "outline" : "secondary"}>
+                {ticketInfo.remaining} / {ticketInfo.total}
+              </Badge>
+            </div>
+          )}
+
+          <Button className="w-full" onClick={handleSubmit} disabled={loading || ticketsFull}>
+            {ticketsFull ? "Tickets Full" : loading ? "Adding…" : "Add Contestant"}
           </Button>
         </div>
       </DialogContent>
