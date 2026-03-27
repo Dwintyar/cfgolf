@@ -85,14 +85,70 @@ const TourList = () => {
   });
 
   const { data: events, isLoading: eventsLoading } = useQuery({
-    queryKey: ["all-events"],
+    queryKey: ["all-events", userId],
     queryFn: async () => {
+      // Only show events from public tours
+      // (private tour events handled separately via myEvents)
       const { data, error } = await supabase
         .from("events")
-        .select("*, courses(name, location)")
+        .select("*, courses(name, location), tours!inner(is_public)")
+        .eq("tours.is_public", true)
         .order("event_date", { ascending: false });
       if (error) throw error;
-      return data;
+
+      // If user is logged in, also include events from private tours they have access to
+      if (!userId) return data ?? [];
+
+      // Get private tour IDs the user can access
+      const { data: memberClubs } = await supabase
+        .from("members").select("club_id").eq("user_id", userId);
+      const clubIds = (memberClubs ?? []).map(m => m.club_id);
+
+      const { data: playerTours } = await supabase
+        .from("tour_players").select("tour_id").eq("player_id", userId);
+      const playerTourIds = (playerTours ?? []).map(t => t.tour_id);
+
+      let privateEvents: any[] = [];
+
+      if (clubIds.length > 0) {
+        const { data: orgPrivateTourIds } = await supabase
+          .from("tours")
+          .select("id")
+          .eq("is_public", false)
+          .in("organizer_club_id", clubIds);
+        const ids = (orgPrivateTourIds ?? []).map(t => t.id);
+        if (ids.length > 0) {
+          const { data: pe } = await supabase
+            .from("events")
+            .select("*, courses(name, location), tours(is_public)")
+            .in("tour_id", ids)
+            .order("event_date", { ascending: false });
+          privateEvents = [...privateEvents, ...(pe ?? [])];
+        }
+      }
+
+      if (playerTourIds.length > 0) {
+        const { data: playerPrivateTourIds } = await supabase
+          .from("tours")
+          .select("id")
+          .eq("is_public", false)
+          .in("id", playerTourIds);
+        const ids = (playerPrivateTourIds ?? []).map(t => t.id);
+        if (ids.length > 0) {
+          const { data: pe } = await supabase
+            .from("events")
+            .select("*, courses(name, location), tours(is_public)")
+            .in("tour_id", ids)
+            .order("event_date", { ascending: false });
+          privateEvents = [...privateEvents, ...(pe ?? [])];
+        }
+      }
+
+      // Merge & deduplicate
+      const allEvents = [...(data ?? [])];
+      const publicEventIds = new Set(allEvents.map(e => e.id));
+      privateEvents.forEach(e => { if (!publicEventIds.has(e.id)) allEvents.push(e); });
+      return allEvents;
     },
   });
 
