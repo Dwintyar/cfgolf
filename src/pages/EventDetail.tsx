@@ -462,19 +462,33 @@ const EventDetail = () => {
         resultsMap[er.contestant_id] = (er.tournament_winner_categories as any)?.category_name ?? "";
       });
 
-      // Get club names via tour_players (authoritative source for tournament context)
+      // Get club names via tour_players — left join agar player tanpa club_id tetap muncul
       const { data: tourPlayerClubs } = eventInfo.tour_id
         ? await supabase
             .from("tour_players")
-            .select("player_id, clubs!inner(name)")
+            .select("player_id, clubs(name)")
             .eq("tour_id", eventInfo.tour_id)
             .in("player_id", playerIds)
         : { data: [] as any[] };
 
+      // Fallback: cari club via tickets table untuk player yang club_id-nya null
+      const { data: ticketClubs } = await supabase
+        .from("tickets")
+        .select("player_id, clubs(name)")
+        .eq("event_id", id)
+        .in("player_id", playerIds);
+
       const clubMap: Record<string, string> = {};
+      // tickets sebagai base (authoritative per-event)
+      (ticketClubs ?? []).forEach((t: any) => {
+        if (t.player_id && (t.clubs as any)?.name) {
+          clubMap[t.player_id] = (t.clubs as any).name;
+        }
+      });
+      // tour_players override jika ada
       (tourPlayerClubs ?? []).forEach((tp: any) => {
-        if (tp.player_id) {
-          clubMap[tp.player_id] = (tp.clubs as any)?.name ?? "—";
+        if (tp.player_id && (tp.clubs as any)?.name) {
+          clubMap[tp.player_id] = (tp.clubs as any).name;
         }
       });
 
