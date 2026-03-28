@@ -608,12 +608,21 @@ const TourDetail = () => {
       )}
 
       <Tabs defaultValue="events" className="px-4">
-        <TabsList className="w-full flex-wrap h-auto gap-0.5 p-1">
-          <TabsTrigger value="events" className="flex-1 text-xs">Events</TabsTrigger>
-          <TabsTrigger value="leaderboard" className="flex-1 text-xs">Leaderboard</TabsTrigger>
-          <TabsTrigger value="players" className="flex-1 text-xs">Players</TabsTrigger>
-          <TabsTrigger value="clubs" className="flex-1 text-xs">Clubs</TabsTrigger>
-        </TabsList>
+        {(() => {
+          const isPersonalTour = (tour.clubs as any)?.is_personal;
+          return (
+            <TabsList className="w-full flex-wrap h-auto gap-0.5 p-1">
+              <TabsTrigger value="events" className="flex-1 text-xs">Events</TabsTrigger>
+              <TabsTrigger value="leaderboard" className="flex-1 text-xs">Leaderboard</TabsTrigger>
+              <TabsTrigger value="players" className="flex-1 text-xs">
+                {isPersonalTour ? "My Stats" : "Players"}
+              </TabsTrigger>
+              {!isPersonalTour && (
+                <TabsTrigger value="clubs" className="flex-1 text-xs">Clubs</TabsTrigger>
+              )}
+            </TabsList>
+          );
+        })()}
 
         <TabsContent value="events" className="space-y-3 pt-2">
           {events?.length === 0 && (
