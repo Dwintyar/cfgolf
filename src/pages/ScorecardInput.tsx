@@ -31,15 +31,45 @@ const ScorecardInput = () => {
     });
   }, [navigate]);
 
-  // Auto-set event to playing when scorecard is opened (personal tournaments)
+  // Auto-register as contestant + set event playing when scorecard opens
   useEffect(() => {
-    if (!event || !eventId) return;
+    if (!event || !eventId || !userId) return;
+
+    // Set event to playing if still scheduled/ready
     if (event.status === "scheduled" || event.status === "ready") {
-      supabase.from("events").update({ status: "playing" }).eq("id", eventId).then(() => {
-        // Silently update — user doesn't need to see this
-      });
+      supabase.from("events").update({ status: "playing" }).eq("id", eventId);
     }
-  }, [event, eventId]);
+
+    // Auto-register as contestant if not yet registered
+    const autoRegister = async () => {
+      const { data: existing } = await supabase
+        .from("contestants")
+        .select("id")
+        .eq("event_id", eventId)
+        .eq("player_id", userId)
+        .maybeSingle();
+
+      if (!existing) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("handicap")
+          .eq("id", userId)
+          .single();
+
+        await supabase.from("contestants").insert({
+          event_id: eventId,
+          player_id: userId,
+          hcp: profile?.handicap ?? 0,
+          status: "confirmed",
+        });
+
+        // Refresh contestant query
+        queryClient.invalidateQueries({ queryKey: ["my-contestant", eventId, userId] });
+      }
+    };
+
+    autoRegister();
+  }, [event, eventId, userId]);
 
   const { data: event } = useQuery({
     queryKey: ["event-scorecard", eventId],
@@ -190,7 +220,23 @@ const ScorecardInput = () => {
   };
 
   const handleSubmit = async () => {
-    if (!userId || !event || !contestant) return;
+    if (!userId || !event) return;
+    // Ensure contestant exists
+    let activeContestant = contestant;
+    if (!activeContestant) {
+      const { data: fresh } = await supabase
+        .from("contestants")
+        .select("*, profiles(full_name, handicap)")
+        .eq("event_id", eventId!)
+        .eq("player_id", userId)
+        .maybeSingle();
+      activeContestant = fresh;
+      if (!activeContestant) {
+        toast.error("Contestant not found. Please try again.");
+        setSubmitting(false);
+        return;
+      }
+    }
     setSubmitting(true);
     try {
       const courseId = (event.courses as any)?.id;
@@ -329,7 +375,7 @@ const ScorecardInput = () => {
 
   const isEventCompleted = event?.status === "done";
 
-  if (!event || !contestant || scores.length === 0) {
+  if (!event || scores.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
