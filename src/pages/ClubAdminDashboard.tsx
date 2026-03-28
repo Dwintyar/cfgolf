@@ -1320,7 +1320,6 @@ const ClubAdminDashboard = () => {
 
   return (
     <div className="bottom-nav-safe">
-      <AdminBadge level={isDrivingRange ? "course" : "club"} context={club?.name ?? ""} />
       {/* Header */}
       <div className="flex items-center gap-2 p-4">
         <button onClick={() => navigate(-1)} className="rounded-full p-1.5 hover:bg-muted">
@@ -1350,6 +1349,7 @@ const ClubAdminDashboard = () => {
         </div>
       )}
 
+      <AdminBadge level={isDrivingRange ? "course" : "club"} context={club?.name ?? ""} />
       {/* KPI Cards */}
       {renderKPIs()}
 
