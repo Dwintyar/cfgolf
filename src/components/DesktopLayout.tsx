@@ -71,6 +71,56 @@ const ActiveGolfersWidget = ({ navigate }: { navigate: (path: string) => void })
   );
 };
 
+const VenuesWidget = ({ navigate }: { navigate: (path: string) => void }) => {
+  const { data: venues } = useQuery({
+    queryKey: ["desktop-venues"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("courses")
+        .select("id, name, location, image_url")
+        .not("name", "is", null)
+        .order("name")
+        .limit(4);
+      return data ?? [];
+    },
+  });
+
+  if (!venues?.length) return null;
+
+  return (
+    <div className="golf-card p-3 mb-4">
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-xs font-semibold text-foreground">Venues</p>
+        <button onClick={() => navigate("/venue")} className="text-[10px] text-primary hover:underline">
+          See all
+        </button>
+      </div>
+      <div className="space-y-2">
+        {venues.map((v: any) => (
+          <button
+            key={v.id}
+            onClick={() => navigate(`/venue`)}
+            className="flex items-center gap-2 w-full text-left hover:opacity-70 transition-opacity"
+          >
+            <div className="h-9 w-9 rounded-lg overflow-hidden bg-secondary shrink-0">
+              {v.image_url
+                ? <img src={v.image_url} alt={v.name} className="h-full w-full object-cover" />
+                : <div className="h-full w-full flex items-center justify-center text-[10px] font-bold text-muted-foreground">
+                    {v.name?.charAt(0)}
+                  </div>
+              }
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-medium truncate text-foreground">{v.name}</p>
+              <p className="text-[10px] text-muted-foreground truncate">{v.location}</p>
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const DesktopLayout = ({ children, sidebarRightHidden = false }: { children: React.ReactNode; sidebarRightHidden?: boolean }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -527,6 +577,9 @@ const DesktopLayout = ({ children, sidebarRightHidden = false }: { children: Rea
           })}
         </div>
 
+        {/* Golfers — social section */}
+        <ActiveGolfersWidget navigate={navigate} />
+
         {/* Admin section */}
         {isAdmin && (
           <div className="golf-card p-3 space-y-1">
@@ -580,7 +633,7 @@ const DesktopLayout = ({ children, sidebarRightHidden = false }: { children: Rea
         >
           <LiveTournamentWidget navigate={navigate} liveEvent={liveEvent} />
           <UpcomingEventsWidget navigate={navigate} userId={userId} />
-          <ActiveGolfersWidget navigate={navigate} />
+          <VenuesWidget navigate={navigate} />
         </aside>
       )}
     </div>
