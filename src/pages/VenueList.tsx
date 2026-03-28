@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { MapPin, Flag, Search, Plus } from "lucide-react";
+import { MapPin, Flag, Search, Plus, ChevronRight, Star } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
 import DesktopLayout from "@/components/DesktopLayout";
 import { supabase } from "@/integrations/supabase/client";
@@ -52,14 +52,13 @@ const VenueList = () => {
     queryKey: ["my-admin-clubs", userId],
     queryFn: async () => {
       if (!userId) return [];
-      // Check members (owner/admin) AND club_staff (course_admin)
       const [{ data: memberData }, { data: staffData }] = await Promise.all([
         supabase.from("members").select("club_id").eq("user_id", userId).in("role", ["owner", "admin"]),
         supabase.from("club_staff").select("club_id").eq("user_id", userId).eq("staff_role", "course_admin"),
       ]);
       const clubIds = [
-        ...(memberData ?? []).map(m => m.club_id),
-        ...(staffData ?? []).map(s => s.club_id),
+        ...(memberData ?? []).map((m: any) => m.club_id),
+        ...(staffData ?? []).map((s: any) => s.club_id),
       ];
       return [...new Set(clubIds)];
     },
@@ -75,7 +74,7 @@ const VenueList = () => {
         .select("club_id, clubs(id, name, facility_type)")
         .eq("user_id", userId)
         .in("role", ["owner", "admin"]);
-      return (data ?? []).map(m => m.clubs).filter(Boolean) as { id: string; name: string; facility_type: string }[];
+      return (data ?? []).map((m: any) => m.clubs).filter(Boolean) as { id: string; name: string; facility_type: string }[];
     },
     enabled: !!userId,
   });
@@ -90,16 +89,13 @@ const VenueList = () => {
     (c) => (c.clubs as any)?.facility_type !== "driving_range"
   );
 
-  const filteredRanges = drivingRangeClubs?.filter(c =>
+  const filteredRanges = drivingRangeClubs?.filter((c: any) =>
     !search || c.name.toLowerCase().includes(search.toLowerCase())
   ) ?? [];
 
-  // For "All" tab: combine golf courses + driving ranges
   const allCount = searchFiltered.length + filteredRanges.length;
-
   const isMyCourse = (c: any) => myClubIds?.includes(c.club_id);
 
-  // Determine which courses to show based on tab
   const displayCourses = venueTab === "all" ? searchFiltered : golfCourses;
   const sortedDisplayCourses = [
     ...(displayCourses.filter(isMyCourse)),
@@ -119,212 +115,267 @@ const VenueList = () => {
 
   return (
     <DesktopLayout>
-    <div className="bottom-nav-safe">
-      <AppHeader title="Venues" icon={<MapPin className="h-5 w-5 text-primary" />} />
+      <div className="bottom-nav-safe">
+        <AppHeader title="Venues" icon={<MapPin className="h-5 w-5 text-primary" />} />
 
-      <div className="px-4 pb-2">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search venues..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-10 h-10 rounded-xl bg-secondary border-none"
-          />
-        </div>
-      </div>
-
-      <div className="flex mx-4 mb-3 rounded-xl overflow-hidden border border-border/50">
-        {[
-          { id: "all" as const, label: "All", count: allCount },
-          { id: "golf" as const, label: "Golf Course", count: golfCourses.length },
-          { id: "range" as const, label: "Driving Range", count: filteredRanges.length },
-        ].map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setVenueTab(t.id)}
-            className={`flex-1 py-2.5 text-xs font-bold uppercase tracking-wider transition-colors ${
-              venueTab === t.id
-                ? "bg-primary text-primary-foreground"
-                : "bg-card text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {t.label} ({t.count})
-          </button>
-        ))}
-      </div>
-
-      {/* Courses (shown in "all" and "golf" tabs) */}
-      {(venueTab === "all" || venueTab === "golf") && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 px-4">
-          {isLoading &&
-            Array.from({ length: 3 }).map((_, i) => (
-              <Skeleton key={i} className="h-32 w-full rounded-xl" />
-            ))}
-
-          {!isLoading && sortedDisplayCourses.length === 0 && venueTab === "golf" && (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="h-16 w-16 rounded-full bg-secondary flex items-center justify-center mb-4">
-                <Flag className="h-8 w-8 text-muted-foreground/40" />
-              </div>
-              <p className="text-base font-semibold">Belum ada golf course terdaftar</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                {search ? "Coba kata kunci lain" : "Golf course akan muncul setelah ditambahkan admin"}
-              </p>
-            </div>
-          )}
-
-          {sortedDisplayCourses.map((course, i) => {
-            const isOwned = isMyCourse(course);
-            return (
-              <div
-                key={course.id}
-                className={`golf-card flex items-center gap-4 p-4 animate-fade-in transition-all ${
-                  isOwned ? "border-primary/40 bg-primary/5" : ""
+        {/* Search + Filter */}
+        <div className="px-4 pb-3 space-y-3">
+          <div className="relative">
+            <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search golf courses, locations…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-10 h-10 rounded-xl bg-secondary border-none text-sm"
+            />
+          </div>
+          <div className="flex gap-2">
+            {[
+              { id: "all" as const, label: "All", count: allCount },
+              { id: "golf" as const, label: "Golf Course", count: golfCourses.length },
+              { id: "range" as const, label: "Driving Range", count: filteredRanges.length },
+            ].map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setVenueTab(t.id)}
+                className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                  venueTab === t.id
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "bg-secondary text-muted-foreground hover:text-foreground"
                 }`}
-                style={{ animationDelay: `${i * 60}ms` }}
               >
-                <div className="h-16 w-16 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden">
-                  <img src={course.image_url || venueImg} alt={course.name} className="h-full w-full rounded-xl object-cover" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-semibold truncate">{course.name}</p>
-                    {isOwned && (
-                      <Badge className="text-[9px] bg-primary/15 text-primary border-primary/30 shrink-0">My Course</Badge>
-                    )}
-                  </div>
-                  <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
-                    {course.location && (
-                      <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {course.location}</span>
-                    )}
-                    <span className="flex items-center gap-1">
-                      <Flag className="h-3 w-3" /> {course.holes_count} holes · Par {course.par ?? "—"}
-                    </span>
-                  </div>
-                  <div className="mt-0.5 flex items-center gap-1.5">
-                    <Badge variant="outline" className="text-[9px] capitalize">{course.course_type ?? "golf course"}</Badge>
-                    {course.green_fee_price && (
-                      <Badge variant="outline" className="text-[10px] border-primary/30 text-primary">{formatPrice(course.green_fee_price)}</Badge>
-                    )}
-                  </div>
-                  {(course.clubs as any)?.name && (
-                    <p className="mt-0.5 text-[10px] text-muted-foreground/70">{(course.clubs as any).name}</p>
-                  )}
-                </div>
-                {isOwned ? (
-                  <div className="flex flex-col gap-1.5 shrink-0">
-                    <Button size="sm" className="h-7 px-3 text-[10px] font-bold" onClick={() => navigate(`/admin/course/${course.id}`)}>Manage</Button>
-                    <Button size="sm" variant="outline" className="h-7 px-3 text-[10px]" onClick={() => navigate(`/venue/${course.id}`)}>View</Button>
-                  </div>
-                ) : (
-                  <Button size="sm" variant="outline" className="h-7 px-3 text-[10px] shrink-0" onClick={() => navigate(`/venue/${course.id}`)}>View</Button>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Driving Ranges (shown in "all" and "range" tabs) */}
-      {(venueTab === "all" || venueTab === "range") && filteredRanges.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 px-4">
-          {loadingRanges &&
-            Array.from({ length: 3 }).map((_, i) => (
-              <Skeleton key={i} className="h-20 w-full rounded-xl" />
+                {t.label}
+                <span className={`ml-1.5 text-[10px] ${venueTab === t.id ? "opacity-70" : "opacity-50"}`}>
+                  {t.count}
+                </span>
+              </button>
             ))}
-
-          {/* Owned driving ranges */}
-          {filteredRanges
-            .filter(c => myClubIds?.includes(c.id))
-            .map(club => (
-              <div key={club.id} className="golf-card flex items-center gap-4 p-4 border-primary/40 bg-primary/5">
-                <div className="h-16 w-16 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden">
-                  {club.logo_url
-                    ? <img src={club.logo_url} className="h-full w-full rounded-xl object-cover" alt={club.name} />
-                    : <span className="text-2xl font-bold text-primary">{club.name.charAt(0)}</span>
-                  }
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-semibold truncate">{club.name}</p>
-                    <Badge className="text-[9px] bg-primary/15 text-primary border-primary/30 shrink-0">My Range</Badge>
-                  </div>
-                  <p className="text-xs text-muted-foreground truncate">{club.description ?? "Driving Range"}</p>
-                </div>
-                <div className="flex flex-col gap-1.5 shrink-0">
-                  <Button size="sm" className="h-7 px-3 text-[10px] font-bold" onClick={() => navigate(`/admin/club/${club.id}`)}>Manage</Button>
-                </div>
-              </div>
-            ))
-          }
-
-          {/* Other driving ranges */}
-          {filteredRanges
-            .filter(c => !myClubIds?.includes(c.id))
-            .map((club, i) => (
-              <div key={club.id} className="golf-card flex items-center gap-4 p-4 animate-fade-in" style={{ animationDelay: `${i * 60}ms` }}>
-                <div className="h-16 w-16 rounded-xl bg-secondary flex items-center justify-center shrink-0 overflow-hidden">
-                  {club.logo_url
-                    ? <img src={club.logo_url} className="h-full w-full rounded-xl object-cover" alt={club.name} />
-                    : <span className="text-2xl font-bold text-muted-foreground">{club.name.charAt(0)}</span>
-                  }
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold truncate">{club.name}</p>
-                  <p className="text-xs text-muted-foreground truncate">{club.description ?? "Driving Range"}</p>
-                  {club.contact_phone && (
-                    <p className="text-[10px] text-muted-foreground/70">{club.contact_phone}</p>
-                  )}
-                </div>
-                <Button size="sm" variant="outline" className="h-7 px-3 text-[10px] shrink-0" onClick={() => navigate(`/clubs/${club.id}`)}>View</Button>
-              </div>
-            ))
-          }
-
-          {!loadingRanges && filteredRanges.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="h-16 w-16 rounded-full bg-secondary flex items-center justify-center mb-4">
-                <MapPin className="h-8 w-8 text-muted-foreground/40" />
-              </div>
-              <p className="text-base font-semibold">Belum ada driving range terdaftar</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                {search ? "Coba kata kunci lain" : "Driving range akan muncul setelah ditambahkan"}
-              </p>
-            </div>
-          )}
+          </div>
         </div>
-      )}
-      {/* FAB — hanya tampil jika user punya klub tanpa course */}
-      {eligibleClubs.length > 0 && (
-        <div className="fixed bottom-20 right-4 z-50">
-          {eligibleClubs.length === 1 ? (
-            <button
-              onClick={() => navigate(`/admin/course/new?clubId=${eligibleClubs[0].id}`)}
-              className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors"
-            >
-              <Plus className="h-5 w-5" />
-            </button>
-          ) : (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors">
-                  <Plus className="h-5 w-5" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="mb-2">
-                <p className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Add course for:</p>
-                {eligibleClubs.map(club => (
-                  <DropdownMenuItem key={club.id} onClick={() => navigate(`/admin/course/new?clubId=${club.id}`)}>
-                    {club.name}
-                  </DropdownMenuItem>
+
+        {/* Golf Courses */}
+        {(venueTab === "all" || venueTab === "golf") && (
+          <div className="px-4">
+            {isLoading && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <Skeleton key={i} className="h-52 w-full rounded-2xl" />
                 ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-        </div>
-      )}
-    </div>
+              </div>
+            )}
+
+            {!isLoading && sortedDisplayCourses.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-20 text-center">
+                <div className="h-16 w-16 rounded-full bg-secondary flex items-center justify-center mb-4">
+                  <Flag className="h-8 w-8 text-muted-foreground/40" />
+                </div>
+                <p className="text-base font-semibold">Belum ada golf course terdaftar</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {search ? "Coba kata kunci lain" : "Golf course akan muncul setelah ditambahkan admin"}
+                </p>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {sortedDisplayCourses.map((course, i) => {
+                const isOwned = isMyCourse(course);
+                const price = formatPrice(course.green_fee_price);
+                return (
+                  <div
+                    key={course.id}
+                    className={`group relative rounded-2xl overflow-hidden border transition-all duration-300 cursor-pointer
+                      hover:shadow-lg hover:shadow-primary/10 hover:-translate-y-0.5
+                      ${isOwned
+                        ? "border-primary/40 bg-gradient-to-br from-primary/5 to-transparent"
+                        : "border-border/60 bg-card hover:border-primary/30"
+                      }`}
+                    style={{ animationDelay: `${i * 40}ms` }}
+                    onClick={() => navigate(`/venue/${course.id}`)}
+                  >
+                    {/* Image area */}
+                    <div className="relative h-36 overflow-hidden bg-secondary">
+                      <img
+                        src={course.image_url || venueImg}
+                        alt={course.name}
+                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+
+                      {/* Top-left badges */}
+                      <div className="absolute top-2.5 left-2.5 flex gap-1.5">
+                        {isOwned && (
+                          <span className="flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground shadow">
+                            <Star className="h-2.5 w-2.5" /> My Course
+                          </span>
+                        )}
+                        <span className="rounded-full bg-black/50 backdrop-blur-sm px-2 py-0.5 text-[10px] font-medium text-white capitalize">
+                          {course.course_type ?? "Championship"}
+                        </span>
+                      </div>
+
+                      {/* Price top-right */}
+                      {price && (
+                        <span className="absolute top-2.5 right-2.5 rounded-full bg-primary/90 px-2.5 py-0.5 text-[10px] font-bold text-primary-foreground shadow">
+                          {price}
+                        </span>
+                      )}
+
+                      {/* Holes + Par */}
+                      <div className="absolute bottom-2.5 left-2.5 flex items-center gap-2">
+                        <span className="rounded-full bg-black/50 backdrop-blur-sm px-2 py-0.5 text-[10px] text-white font-medium">
+                          {course.holes_count ?? 18} Holes
+                        </span>
+                        <span className="rounded-full bg-black/50 backdrop-blur-sm px-2 py-0.5 text-[10px] text-white font-medium">
+                          Par {course.par ?? "—"}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Card body */}
+                    <div className="p-3.5">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="font-semibold text-sm leading-tight truncate">{course.name}</p>
+                          {course.location && (
+                            <p className="flex items-center gap-1 mt-1 text-[11px] text-muted-foreground truncate">
+                              <MapPin className="h-3 w-3 shrink-0" />
+                              {course.location}
+                            </p>
+                          )}
+                          {(course.clubs as any)?.name && (
+                            <p className="mt-0.5 text-[10px] text-muted-foreground/60 truncate">
+                              {(course.clubs as any).name}
+                            </p>
+                          )}
+                        </div>
+
+                        {isOwned ? (
+                          <div className="flex flex-col gap-1 shrink-0" onClick={e => e.stopPropagation()}>
+                            <Button size="sm" className="h-7 px-3 text-[10px] font-bold"
+                              onClick={() => navigate(`/admin/course/${course.id}`)}>
+                              Manage
+                            </Button>
+                            <Button size="sm" variant="outline" className="h-7 px-3 text-[10px]"
+                              onClick={() => navigate(`/venue/${course.id}`)}>
+                              View
+                            </Button>
+                          </div>
+                        ) : (
+                          <button
+                            className="shrink-0 flex items-center justify-center h-8 w-8 rounded-full bg-secondary hover:bg-primary hover:text-primary-foreground transition-colors"
+                            onClick={e => { e.stopPropagation(); navigate(`/venue/${course.id}`); }}
+                          >
+                            <ChevronRight className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Driving Ranges */}
+        {(venueTab === "all" || venueTab === "range") && (
+          <div className={`px-4 ${venueTab === "all" && sortedDisplayCourses.length > 0 ? "mt-6" : ""}`}>
+            {venueTab === "all" && filteredRanges.length > 0 && (
+              <div className="flex items-center gap-2 mb-3">
+                <div className="h-px flex-1 bg-border/50" />
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-2">Driving Ranges</p>
+                <div className="h-px flex-1 bg-border/50" />
+              </div>
+            )}
+
+            {!loadingRanges && filteredRanges.length === 0 && venueTab === "range" && (
+              <div className="flex flex-col items-center justify-center py-20 text-center">
+                <div className="h-16 w-16 rounded-full bg-secondary flex items-center justify-center mb-4">
+                  <MapPin className="h-8 w-8 text-muted-foreground/40" />
+                </div>
+                <p className="text-base font-semibold">Belum ada driving range terdaftar</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {search ? "Coba kata kunci lain" : "Driving range akan muncul setelah ditambahkan"}
+                </p>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {[
+                ...filteredRanges.filter((c: any) => myClubIds?.includes(c.id)),
+                ...filteredRanges.filter((c: any) => !myClubIds?.includes(c.id)),
+              ].map((club: any, i: number) => {
+                const isOwned = myClubIds?.includes(club.id);
+                return (
+                  <div
+                    key={club.id}
+                    className={`group flex items-center gap-4 rounded-2xl border p-4 transition-all duration-200 cursor-pointer
+                      hover:shadow-md hover:-translate-y-0.5
+                      ${isOwned
+                        ? "border-primary/40 bg-gradient-to-br from-primary/5 to-transparent"
+                        : "border-border/60 bg-card hover:border-primary/30"
+                      }`}
+                    style={{ animationDelay: `${i * 40}ms` }}
+                    onClick={() => navigate(isOwned ? `/admin/club/${club.id}` : `/clubs/${club.id}`)}
+                  >
+                    <div className="h-14 w-14 rounded-xl bg-secondary flex items-center justify-center shrink-0 overflow-hidden">
+                      {club.logo_url
+                        ? <img src={club.logo_url} className="h-full w-full object-cover" alt={club.name} />
+                        : <span className="text-xl font-bold text-primary/60">{club.name.charAt(0)}</span>
+                      }
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-semibold truncate">{club.name}</p>
+                        {isOwned && (
+                          <Badge className="text-[9px] bg-primary/15 text-primary border-primary/30 shrink-0">My Range</Badge>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground truncate mt-0.5">{club.description ?? "Driving Range"}</p>
+                      {club.contact_phone && (
+                        <p className="text-[10px] text-muted-foreground/60 mt-0.5">{club.contact_phone}</p>
+                      )}
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0 group-hover:text-primary transition-colors" />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        <div className="h-8" />
+
+        {/* FAB */}
+        {eligibleClubs.length > 0 && (
+          <div className="fixed bottom-20 right-4 z-50 lg:bottom-6 lg:right-6">
+            {eligibleClubs.length === 1 ? (
+              <button
+                onClick={() => navigate(`/admin/course/new?clubId=${eligibleClubs[0].id}`)}
+                className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors"
+              >
+                <Plus className="h-5 w-5" />
+              </button>
+            ) : (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors">
+                    <Plus className="h-5 w-5" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="mb-2">
+                  <p className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Add course for:</p>
+                  {eligibleClubs.map(club => (
+                    <DropdownMenuItem key={club.id} onClick={() => navigate(`/admin/course/new?clubId=${club.id}`)}>
+                      {club.name}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
+        )}
+      </div>
     </DesktopLayout>
   );
 };
