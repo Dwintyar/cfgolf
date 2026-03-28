@@ -1631,6 +1631,7 @@ ${liveUrl}`;
           );
         })()}
       </TabsContent>
+      )}
 
       {/* BOARD (EGC Scoreboard) */}
       <TabsContent value="leaderboard" className="space-y-3 pt-2">
