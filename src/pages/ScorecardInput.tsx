@@ -204,11 +204,33 @@ const ScorecardInput = () => {
       }
 
       if (allFilled) {
+        // Finish round
         await supabase.from("rounds").update({ status: "done", finished_at: new Date().toISOString() }).eq("id", round.id);
-      }
+        
+        // Finalize event — set to done + update HCP
+        await supabase.from("events").update({ status: "done" }).eq("id", eventId!);
 
-      queryClient.invalidateQueries({ queryKey: ["event-leaderboard"] });
-      toast.success("Scorecard saved!");
+        // Update HCP
+        const courseRating = (event?.courses as any)?.par ?? 72;
+        const oldHcp = profile?.handicap ?? 36;
+        const differential = totalStrokes - courseRating;
+        const rawNewHcp = Number(oldHcp) + (differential * 0.1);
+        const newHcp = Math.min(36, Math.max(0, Math.round(rawNewHcp * 10) / 10));
+        if (newHcp !== Number(oldHcp)) {
+          await supabase.from("profiles").update({ handicap: newHcp }).eq("id", userId!);
+          await supabase.from("handicap_history").insert({
+            player_id: userId!, old_hcp: oldHcp, new_hcp: newHcp,
+            gross_score: totalStrokes, net_score: netTotal, event_id: eventId!,
+          });
+        }
+
+        queryClient.invalidateQueries({ queryKey: ["event-leaderboard"] });
+        queryClient.invalidateQueries({ queryKey: ["event", eventId] });
+        toast.success(`Round complete! Gross: ${totalStrokes} · Net: ${netTotal} · HCP: ${oldHcp} → ${newHcp}`);
+      } else {
+        queryClient.invalidateQueries({ queryKey: ["event-leaderboard"] });
+        toast.success("Progress saved!");
+      }
       navigate(`/event/${eventId}`);
     } catch (err: any) {
       toast.error(err.message || "Failed to save");

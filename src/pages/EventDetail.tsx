@@ -1119,15 +1119,19 @@ const EventDetail = () => {
           )}
           {event?.status !== "done" ? (
             isPersonalTour ? (
-              <Button
-                size="sm"
-                className="h-7 shrink-0 gap-1 text-[11px] bg-primary"
-                onClick={handleSelesaiBermain}
-                disabled={finalizing || event?.status !== "playing"}
-              >
-                <CheckCircle className="h-3 w-3" />
-                {finalizing ? "Saving…" : "Finish Round"}
-              </Button>
+              /* Finish Round — backup only, normally triggered from scorecard Save & Finish */
+              event?.status === "playing" && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 shrink-0 gap-1 text-[11px] border-primary/40 text-primary"
+                  onClick={handleSelesaiBermain}
+                  disabled={finalizing}
+                >
+                  <CheckCircle className="h-3 w-3" />
+                  {finalizing ? "Saving…" : "Finish Round"}
+                </Button>
+              )
             ) : (
               <Button
                 size="sm"
