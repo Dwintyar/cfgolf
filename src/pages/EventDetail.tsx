@@ -717,6 +717,7 @@ const EventDetail = () => {
 
 
   const showAdminActions = !!isEventAdmin;
+  const isPersonalTour = !!(event?.tours as any)?.clubs?.is_personal;
 
   // --- Handlers ---
   const invokeWithAuth = async (fnName: string, body: any) => {
@@ -1028,9 +1029,11 @@ const EventDetail = () => {
       )}
       {showAdminActions && (
         <>
-          <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowAssign(true)}>
-            <Users className="h-3 w-3" /> Assign
-          </Button>
+          {!isPersonalTour && (
+            <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowAssign(true)}>
+              <Users className="h-3 w-3" /> Assign
+            </Button>
+          )}
           {event?.status !== "completed" ? (
             <Button
               size="sm"
@@ -1101,9 +1104,9 @@ ${liveUrl}`;
       <TabsList className="w-full overflow-x-auto flex">
         <TabsTrigger value="overview" className="flex-1 text-[11px]">Overview</TabsTrigger>
         <TabsTrigger value="checkin" className="flex-1 text-[11px]">Check-in</TabsTrigger>
-        <TabsTrigger value="pairings" className="flex-1 text-[11px]">Pairings</TabsTrigger>
+        {!isPersonalTour && <TabsTrigger value="pairings" className="flex-1 text-[11px]">Pairings</TabsTrigger>}
         <TabsTrigger value="leaderboard" className="flex-1 text-[11px]">Board</TabsTrigger>
-        <TabsTrigger value="hcpcorr" className="flex-1 text-[11px]">HCP Corr</TabsTrigger>
+        {!isPersonalTour && <TabsTrigger value="hcpcorr" className="flex-1 text-[11px]">HCP Corr</TabsTrigger>}
       </TabsList>
 
       {/* OVERVIEW */}
@@ -1132,7 +1135,7 @@ ${liveUrl}`;
           </div>
         )}
 
-        <Section title="Contestants" icon={Users} count={contestants?.length}>
+        <Section title={isPersonalTour ? "Player" : "Contestants"} icon={Users} count={contestants?.length}>
           {contestants?.length === 0 && <EmptyState text="No contestants" />}
           {contestants?.slice().sort((a: any, b: any) => ((a.profiles as any)?.full_name ?? "").localeCompare((b.profiles as any)?.full_name ?? "", "id")).slice(0, 10).map((c) => (
             <div key={c.id} className="golf-card flex items-center gap-3 p-3">
@@ -1149,7 +1152,7 @@ ${liveUrl}`;
           {(contestants?.length ?? 0) > 10 && <p className="text-xs text-muted-foreground text-center py-1">+{(contestants!.length) - 10} more</p>}
         </Section>
 
-        <Section title="Tickets" icon={Ticket} count={tickets?.length} sub={`${usedTickets} assigned`}>
+        {!isPersonalTour && (<Section title="Tickets" icon={Ticket} count={tickets?.length} sub={`${usedTickets} assigned`}>
           {tickets?.length === 0 && <EmptyState text="No tickets" />}
           {tickets?.slice(0, 6).map((t) => (
             <div key={t.id} className="golf-card flex items-center justify-between p-3">
@@ -1161,6 +1164,8 @@ ${liveUrl}`;
             </div>
           ))}
         </Section>
+
+        )}
 
         <Section title="Results" icon={Award} count={results?.length}>
           {results?.length === 0 && <EmptyState text="No results yet" />}
