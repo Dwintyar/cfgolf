@@ -56,84 +56,64 @@ const NewsFeed = () => {
     queryFn: async () => {
       if (!userId) return [];
 
-      // 1. My buddy IDs (accepted connections)
+      // Fetch all posts first
+      const { data: allPosts, error } = await supabase
+        .from("posts")
+        .select("*, profiles:author_id(full_name, avatar_url, handicap, members(clubs(name))))")
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      if (!allPosts?.length) return [];
+
+      // Get my buddy IDs
       const { data: buddyConns } = await supabase
         .from("buddy_connections")
         .select("requester_id, addressee_id")
         .eq("status", "accepted")
         .or(`requester_id.eq.${userId},addressee_id.eq.${userId}`);
-      const buddyIds = (buddyConns ?? []).map((b: any) =>
+      const buddyIds = new Set((buddyConns ?? []).map((b: any) =>
         b.requester_id === userId ? b.addressee_id : b.requester_id
-      );
+      ));
 
-      // 2. My club member IDs
+      // Get my club member IDs
       const { data: myMemberships } = await supabase
         .from("members").select("club_id").eq("user_id", userId);
       const myClubIds = (myMemberships ?? []).map((m: any) => m.club_id);
-      let clubMemberIds: string[] = [];
+      const clubMemberIds = new Set<string>();
       if (myClubIds.length > 0) {
-        const { data: clubMembers } = await supabase
+        const { data: cm } = await supabase
           .from("members").select("user_id").in("club_id", myClubIds);
-        clubMemberIds = (clubMembers ?? []).map((m: any) => m.user_id);
+        (cm ?? []).forEach((m: any) => clubMemberIds.add(m.user_id));
       }
 
-      // 3. My tournament contestant IDs
-      const { data: myContestants } = await supabase
+      // Get my tournament contestant IDs
+      const { data: myC } = await supabase
         .from("contestants").select("event_id").eq("player_id", userId);
-      const myEventIds = (myContestants ?? []).map((c: any) => c.event_id);
-      let tourMemberIds: string[] = [];
+      const myEventIds = (myC ?? []).map((c: any) => c.event_id);
+      const tourMemberIds = new Set<string>();
       if (myEventIds.length > 0) {
-        const { data: eventContestants } = await supabase
+        const { data: ec } = await supabase
           .from("contestants").select("player_id").in("event_id", myEventIds);
-        tourMemberIds = (eventContestants ?? []).map((c: any) => c.player_id);
+        (ec ?? []).forEach((c: any) => tourMemberIds.add(c.player_id));
       }
 
-      // Merge all allowed author IDs (include self)
-      const allowedIds = [...new Set([userId, ...buddyIds, ...clubMemberIds, ...tourMemberIds])];
+      // Filter posts client-side
+      const filtered = allPosts.filter((p: any) => {
+        if (p.is_announcement) return true;  // always show announcements
+        if (p.author_id === userId) return true;  // own posts
+        if (buddyIds.has(p.author_id)) return true;
+        if (clubMemberIds.has(p.author_id)) return true;
+        if (tourMemberIds.has(p.author_id)) return true;
+        return false;
+      });
 
-      // 4. Fetch posts — from allowed authors OR platform announcements
-      // If user is platform admin OR has many connections, just fetch all (fallback)
-      const { data: adminCheck } = await supabase.rpc("is_platform_admin", { check_user_id: userId });
-      const isAdmin = !!adminCheck;
-
-      let query = supabase
-        .from("posts")
-        .select("*, profiles:author_id(full_name, avatar_url, handicap, members(clubs(name))))")
-        .order("created_at", { ascending: false })
-        .limit(50);
-
-      if (!isAdmin) {
-        // Filter: only from allowed authors OR announcements
-        // Use two separate queries and merge to avoid PostgREST .in() syntax issues
-        const { data: myPosts } = await supabase
-          .from("posts")
-          .select("*, profiles:author_id(full_name, avatar_url, handicap, members(clubs(name))))")
-          .in("author_id", allowedIds)
-          .order("created_at", { ascending: false })
-          .limit(50);
-
-        const { data: announcements } = await supabase
-          .from("posts")
-          .select("*, profiles:author_id(full_name, avatar_url, handicap, members(clubs(name))))")
-          .eq("is_announcement", true)
-          .order("created_at", { ascending: false })
-          .limit(20);
-
-        // Merge & deduplicate
-        const all = [...(myPosts ?? []), ...(announcements ?? [])];
-        const seen = new Set<string>();
-        const merged = all.filter((p: any) => {
-          if (seen.has(p.id)) return false;
-          seen.add(p.id);
-          return true;
-        }).sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-        return merged.slice(0, 50);
+      // If no connections yet, show own posts + announcements only
+      // (don't return empty feed)
+      if (filtered.length === 0) {
+        return allPosts.filter((p: any) => p.author_id === userId || p.is_announcement);
       }
 
-      // Platform admin — see all posts
-      const { data, error } = await query;
-      if (error) throw error;
-      return data ?? [];
+      return filtered;
     },
     enabled: !!userId,
   });
