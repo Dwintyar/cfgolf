@@ -150,12 +150,13 @@ const ScorecardInput = () => {
   });
 
   const holes = useMemo(() => eventHolesData ?? [], [eventHolesData]);
-  const holesCount = (event?.courses as any)?.holes_count ?? 18;
+  const holesCount = Math.max(9, (event?.courses as any)?.holes_count ?? 18);
 
   useEffect(() => {
-    if (scores.length > 0) return;
+    if (!event) return; // wait for event only
+    const count = Math.max(9, (event?.courses as any)?.holes_count ?? 18);
     const initial: HoleScore[] = [];
-    for (let i = 1; i <= holesCount; i++) {
+    for (let i = 1; i <= count; i++) {
       initial.push({ hole_number: i, strokes: null, putts: null, fairway_hit: null, gir: null });
     }
     if (existingScorecard?.hole_scores) {
@@ -174,7 +175,7 @@ const ScorecardInput = () => {
       });
     }
     setScores(initial);
-  }, [holesCount, existingScorecard]);
+  }, [event?.id, existingScorecard]);
 
   const coursePar = (event?.courses as any)?.par ?? 72;
   const playerHcp = contestant?.hcp ?? (contestant?.profiles as any)?.handicap ?? 0;
@@ -375,7 +376,7 @@ const ScorecardInput = () => {
 
   const isEventCompleted = event?.status === "done";
 
-  if (!event || scores.length === 0) {
+  if (!event) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
