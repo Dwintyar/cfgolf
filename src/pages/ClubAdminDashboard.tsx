@@ -1349,6 +1349,7 @@ const ClubAdminDashboard = () => {
         </div>
       )}
 
+      <AdminBadge level={isDrivingRange ? "course" : "club"} context={club?.name ?? ""} />
       {/* KPI Cards */}
       {renderKPIs()}
 
