@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ChatNotifContext } from "@/App";
 import { Badge } from "@/components/ui/badge";
 import {
-  Newspaper, Users, Trophy, MapPin,
+  Home, Newspaper, Users, Trophy, MapPin,
   Bell, MessageSquare, Settings,
   Building2, Search, Flag, ShieldCheck,
   ChevronDown, LogOut, TrendingUp, User
