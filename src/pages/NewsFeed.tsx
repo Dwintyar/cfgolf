@@ -37,17 +37,9 @@ const NewsFeed = () => {
   const [submittingComments, setSubmittingComments] = useState<Set<string>>(new Set());
   const queryClient = useQueryClient();
 
-  const [isPlatformAdmin, setIsPlatformAdmin] = useState(false);
-  const [isAnnouncement, setIsAnnouncement] = useState(false);
-
   useEffect(() => {
-    supabase.auth.getUser().then(async ({ data: { user } }) => {
-      if (user) {
-        setUserId(user.id);
-        // Check platform admin
-        const { data } = await supabase.rpc("is_platform_admin", { check_user_id: user.id });
-        setIsPlatformAdmin(!!data);
-      }
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) setUserId(user.id);
     });
   }, []);
 
@@ -122,7 +114,6 @@ const NewsFeed = () => {
       category,
       image_url: photoUrl || null,
       course_id: taggedCourseId || null,
-      is_announcement: isPlatformAdmin && isAnnouncement,
     });
     setPosting(false);
     if (error) { toast.error(error.message); return; }
@@ -132,7 +123,6 @@ const NewsFeed = () => {
     setPhotoUrl(null);
     setTaggedCourseId(null);
     setTaggedCourseName(null);
-    setIsAnnouncement(false);
     setShowCreate(false);
     queryClient.invalidateQueries({ queryKey: ["feed-posts"] });
   };
@@ -539,20 +529,10 @@ const NewsFeed = () => {
               </div>
             )}
           </div>
-          {/* Platform Admin — announcement toggle */}
-          {isPlatformAdmin && (
-            <div className="flex items-center justify-between rounded-xl border border-amber-500/30 bg-amber-500/5 px-3 py-2.5">
-              <div>
-                <p className="text-xs font-semibold text-amber-500">📢 Platform Announcement</p>
-                <p className="text-[10px] text-muted-foreground">Visible to all users regardless of connections</p>
-              </div>
-              <Switch checked={isAnnouncement} onCheckedChange={setIsAnnouncement} />
-            </div>
-          )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
             <Button onClick={handlePost} disabled={posting || (!content.trim() && !photoUrl)}>
-              {posting ? "Posting…" : isAnnouncement ? "📢 Announce" : "Post"}
+              {posting ? "Posting…" : "Post"}
             </Button>
           </DialogFooter>
         </DialogContent>
