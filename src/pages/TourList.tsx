@@ -284,13 +284,14 @@ const TourList = () => {
       {(() => {
         const today = new Date().toISOString().split("T")[0];
         const activeEvents = upcomingEvents.filter(e =>
-          e.event_date === today || (e as any).status === "playing"
+          e.event_date === today || (e as any).status === "playing" || (e as any).status === "ready"
         );
         if (!activeEvents.length) return null;
         return (
           <div className="mx-4 mb-4 space-y-2">
             {activeEvents.map(e => {
               const isPlaying = (e as any).status === "playing";
+              const isReady = (e as any).status === "ready";
               return (
                 <div key={e.id} className={`relative overflow-hidden rounded-2xl border p-4 ${
                   isPlaying
@@ -302,6 +303,8 @@ const TourList = () => {
                       <div className="flex items-center gap-2 mb-1">
                         {isPlaying
                           ? <span className="text-[10px] font-bold uppercase tracking-wider text-green-400 bg-green-400/20 px-2 py-0.5 rounded-full">🟢 Sedang Berlangsung</span>
+                          : isReady
+                          ? <span className="text-[10px] font-bold uppercase tracking-wider text-accent bg-accent/20 px-2 py-0.5 rounded-full">✓ Ready · Hari Ini</span>
                           : <span className="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/20 px-2 py-0.5 rounded-full">🏌️ Hari Ini</span>
                         }
                       </div>

@@ -704,7 +704,7 @@ const UpcomingEventsWidget = ({ navigate, userId }: { navigate: (path: string) =
           const isToday = e.event_date === today;
           const isTomorrow = e.event_date === tomorrow;
           const isPlaying = (e as any).status === "playing";
-          const showPlay = isToday || isPlaying;
+          const showPlay = isToday || isPlaying || (isToday && (e as any).status === 'ready');
           return (
             <div key={e.id} className={`rounded-xl p-2 transition-colors ${showPlay ? "bg-primary/10 border border-primary/30" : "hover:bg-muted/50"}`}>
               <div className="flex items-start justify-between gap-2">

@@ -1093,7 +1093,7 @@ const EventDetail = () => {
             <Button size="sm" variant="outline"
               className="h-7 shrink-0 gap-1 text-[11px] border-green-500/40 text-green-400 hover:bg-green-500/10"
               onClick={handleSetPlaying}>
-              <Play className="h-3 w-3" /> Set Playing
+              <Play className="h-3 w-3" /> Mulai Bermain
             </Button>
           )}
           {event?.status !== "done" ? (
