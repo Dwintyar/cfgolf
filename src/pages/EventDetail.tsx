@@ -1147,43 +1147,49 @@ const EventDetail = () => {
       <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowWinners(true)}>
         <Trophy className="h-3 w-3" /> Results
       </Button>
-      <Button
-        size="sm"
-        variant="outline"
-        className="h-7 shrink-0 gap-1 text-[11px] border-primary/40 text-primary hover:bg-primary/10"
-        onClick={() => window.open(`/live/${id}`, "_blank")}
-      >
-        <Monitor className="h-3 w-3" /> Live Display
-      </Button>
-      <Button
-        size="sm"
-        variant="outline"
-        className="h-7 shrink-0 gap-1 text-[11px]"
-        onClick={() => {
-          const liveUrl = `${window.location.origin}/live/${id}`;
-          if (navigator.share) {
-            navigator.share({ title: event?.name ?? "Live Leaderboard", url: liveUrl });
-          } else {
-            navigator.clipboard.writeText(liveUrl).then(() => toast.success("Link live display ter-copy! 📋"));
-          }
-        }}
-      >
-        <Share2 className="h-3 w-3" /> Share
-      </Button>
-      <Button
-        size="sm"
-        variant="outline"
-        className="h-7 shrink-0 gap-1 text-[11px] bg-green-600/10 border-green-500/40 text-green-500 hover:bg-green-600/20"
-        onClick={() => {
-          const liveUrl = `${window.location.origin}/live/${id}`;
-          const text = `🏌️ *${event?.name}*
-Lihat leaderboard live turnamen ini di:
+      {!isPersonalTour && (
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-7 shrink-0 gap-1 text-[11px] border-primary/40 text-primary hover:bg-primary/10"
+          onClick={() => window.open(`/live/${id}`, "_blank")}
+        >
+          <Monitor className="h-3 w-3" /> Live Display
+        </Button>
+      )}
+      {!isPersonalTour && (
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-7 shrink-0 gap-1 text-[11px]"
+          onClick={() => {
+            const liveUrl = `${window.location.origin}/live/${id}`;
+            if (navigator.share) {
+              navigator.share({ title: event?.name ?? "Live Leaderboard", url: liveUrl });
+            } else {
+              navigator.clipboard.writeText(liveUrl).then(() => toast.success("Link copied! 📋"));
+            }
+          }}
+        >
+          <Share2 className="h-3 w-3" /> Share
+        </Button>
+      )}
+      {!isPersonalTour && (
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-7 shrink-0 gap-1 text-[11px] bg-green-600/10 border-green-500/40 text-green-500 hover:bg-green-600/20"
+          onClick={() => {
+            const liveUrl = `${window.location.origin}/live/${id}`;
+            const text = `🏌️ *${event?.name}*
+View live leaderboard at:
 ${liveUrl}`;
-          window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
-        }}
-      >
-        <MessageCircle className="h-3 w-3" /> WA
-      </Button>
+            window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
+          }}
+        >
+          <MessageCircle className="h-3 w-3" /> WA
+        </Button>
+      )}
       {event?.status === "done" && (
         <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={handleExportPDF} disabled={exporting}>
           <Download className="h-3 w-3" /> {exporting ? "..." : "Export"}
