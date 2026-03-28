@@ -351,30 +351,26 @@ const TourList = () => {
 
       {/* ═══ SECTION 2: TOURNAMENTS ═══ */}
       <div className="mt-6 px-4">
-        <div className="flex items-center mb-3">
-          {/* Tabs — centered */}
-          <div className="flex items-center gap-3 flex-1 justify-center">
-            {tourTabs.map((t) => (
-              <button
-                key={t.id}
-                onClick={() => setTourTab(t.id)}
-                className={`text-xs font-bold uppercase tracking-wider transition-colors ${
-                  tourTab === t.id
-                    ? "text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {t.label}
-                {t.count != null && t.count > 0 && (
-                  <span className="ml-1 text-primary">({t.count})</span>
-                )}
-              </button>
-            ))}
-          </div>
-          {/* + button — absolute right */}
+        <div className="flex items-center gap-3 mb-3">
+          {tourTabs.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => setTourTab(t.id)}
+              className={`text-xs font-bold uppercase tracking-wider transition-colors ${
+                tourTab === t.id
+                  ? "text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {t.label}
+              {t.count != null && t.count > 0 && (
+                <span className="ml-1 text-primary">({t.count})</span>
+              )}
+            </button>
+          ))}
           <button
             onClick={() => setShowCreate(true)}
-            className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground shrink-0"
+            className="ml-auto flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground"
           >
             <Plus className="h-4 w-4" />
           </button>
@@ -384,7 +380,7 @@ const TourList = () => {
           {/* Tab: Invited */}
           {tourTab === "invited" && (
             invitedTours?.length === 0
-              ? <p className="text-xs text-muted-foreground text-center py-4">
+              ? <p className="col-span-full text-xs text-muted-foreground text-center py-4">
                   No pending invitations
                 </p>
               : invitedTours?.map((tc: any) => {
@@ -425,7 +421,7 @@ const TourList = () => {
           {tourTab === "mine" && (
             true ? (
               !myTours || myTours.length === 0
-                ? <div className="flex flex-col items-center justify-center py-12 text-center">
+                ? <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
                     <Trophy className="h-10 w-10 text-muted-foreground/40 mb-3" />
                     <p className="text-sm font-semibold">Belum ada tournament</p>
                     <p className="text-xs text-muted-foreground mt-1">Buat tournament baru atau daftar ke tournament yang ada</p>
@@ -462,7 +458,7 @@ const TourList = () => {
                   ))
             ) : (
               myEvents?.length === 0
-                ? <div className="flex flex-col items-center justify-center py-12 text-center">
+                ? <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
                     <Trophy className="h-10 w-10 text-muted-foreground/40 mb-3" />
                     <p className="text-sm font-semibold">Belum mengikuti tournament</p>
                     <p className="text-xs text-muted-foreground mt-1">Daftar ke tournament atau buat tournament baru</p>
@@ -512,7 +508,7 @@ const TourList = () => {
               ))}
 
               {!isLoading && tours?.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
                   <Trophy className="h-10 w-10 text-muted-foreground/40 mb-3" />
                   <p className="text-sm font-semibold">No tournaments yet</p>
                   <p className="text-xs text-muted-foreground mt-1">Tournament akan muncul setelah dibuat</p>
