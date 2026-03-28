@@ -14,9 +14,10 @@ interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   onDone: () => void;
+  isPersonal?: boolean;
 }
 
-const CreateEventDialog = ({ tourId, open, onOpenChange, onDone }: Props) => {
+const CreateEventDialog = ({ tourId, open, onOpenChange, onDone, isPersonal = false }: Props) => {
   const [name, setName] = useState("");
   const [courseId, setCourseId] = useState("");
   const [date, setDate] = useState("");
@@ -48,10 +49,10 @@ const CreateEventDialog = ({ tourId, open, onOpenChange, onDone }: Props) => {
       course_id: courseId,
       name,
       event_date: date,
-      ticket_total: parseInt(ticketTotal) || 0,
+      ticket_total: isPersonal ? 1 : (parseInt(ticketTotal) || 0),
       status: "draft",
-      pairing_approval_required: pairingApproval,
-      pairing_mode: pairingMode,
+      pairing_approval_required: isPersonal ? false : pairingApproval,
+      pairing_mode: isPersonal ? "self" : pairingMode,
     }).select("id").single();
     if (error || !newEvent) { setLoading(false); toast.error(error?.message ?? "Failed"); return; }
 
@@ -102,33 +103,31 @@ const CreateEventDialog = ({ tourId, open, onOpenChange, onDone }: Props) => {
             <Label className="text-xs">Date</Label>
             <Input type="date" value={date} onChange={e => setDate(e.target.value)} />
           </div>
-          <div>
-            <Label className="text-xs">Total Tickets</Label>
-            <Input type="number" value={ticketTotal} onChange={e => setTicketTotal(e.target.value)} />
-          </div>
-          <div>
-            <Label className="text-xs">Pairing Mode</Label>
-            <Select value={pairingMode} onValueChange={setPairingMode}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="self">
-                  👤 Self — Tentukan sendiri group & pasangan
-                </SelectItem>
-                <SelectItem value="open">
-                  🌐 Open — Minta golf course untuk memasangkan
-                </SelectItem>
-                <SelectItem value="course_arranged">
-                  🏌️ Course Arranged — Sepenuhnya diatur golf course
-                </SelectItem>
-              </SelectContent>
-            </Select>
-            <p className="text-[10px] text-muted-foreground mt-1">
-              {pairingMode === "self" && "Kamu atur sendiri siapa yang main bersama"}
-              {pairingMode === "open" && "Golf course akan mencarikan pasangan bermain untukmu"}
-              {pairingMode === "course_arranged" && "Golf course mengatur sepenuhnya: cart, caddy, tee time, start hole"}
-            </p>
-          </div>
-          {pairingMode === "self" && (
+          {!isPersonal && (
+            <div>
+              <Label className="text-xs">Total Tickets</Label>
+              <Input type="number" value={ticketTotal} onChange={e => setTicketTotal(e.target.value)} />
+            </div>
+          )}
+          {!isPersonal && (
+            <div>
+              <Label className="text-xs">Pairing Mode</Label>
+              <Select value={pairingMode} onValueChange={setPairingMode}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="self">👤 Self — Tentukan sendiri group & pasangan</SelectItem>
+                  <SelectItem value="open">🌐 Open — Minta golf course untuk memasangkan</SelectItem>
+                  <SelectItem value="course_arranged">🏌️ Course Arranged — Sepenuhnya diatur golf course</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-[10px] text-muted-foreground mt-1">
+                {pairingMode === "self" && "Kamu atur sendiri siapa yang main bersama"}
+                {pairingMode === "open" && "Golf course akan mencarikan pasangan bermain untukmu"}
+                {pairingMode === "course_arranged" && "Golf course mengatur sepenuhnya: cart, caddy, tee time, start hole"}
+              </p>
+            </div>
+          )}
+          {!isPersonal && pairingMode === "self" && (
             <div className="golf-card p-3 flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium">Pairing Approval</p>
