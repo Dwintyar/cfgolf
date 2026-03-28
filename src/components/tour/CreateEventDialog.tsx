@@ -8,6 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { CalendarIcon } from "lucide-react";
+import { format, parseISO } from "date-fns";
+import { id as idLocale } from "date-fns/locale";
 
 interface Props {
   tourId: string;
@@ -100,8 +105,32 @@ const CreateEventDialog = ({ tourId, open, onOpenChange, onDone, isPersonal = fa
             </Select>
           </div>
           <div>
-            <Label className="text-xs">Date</Label>
-            <Input type="date" value={date} onChange={e => setDate(e.target.value)} />
+            <Label className="text-xs">Tanggal Event</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  className={`flex w-full items-center justify-between rounded-xl border px-3 py-2.5 text-sm transition-colors hover:border-primary/50 ${
+                    date ? "text-foreground" : "text-muted-foreground"
+                  } bg-background border-input`}
+                >
+                  <span>
+                    {date
+                      ? format(parseISO(date), "EEEE, d MMMM yyyy", { locale: idLocale })
+                      : "Pilih tanggal..."}
+                  </span>
+                  <CalendarIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={date ? parseISO(date) : undefined}
+                  onSelect={(d) => setDate(d ? format(d, "yyyy-MM-dd") : "")}
+                  initialFocus
+                  locale={idLocale}
+                />
+              </PopoverContent>
+            </Popover>
           </div>
           {!isPersonal && (
             <div>

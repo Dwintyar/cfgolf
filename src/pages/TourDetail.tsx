@@ -16,6 +16,11 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { useState, useEffect, useMemo } from "react";
 import { toast } from "sonner";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { CalendarIcon } from "lucide-react";
+import { format, parseISO } from "date-fns";
+import { id as idLocale } from "date-fns/locale";
 import InviteClubDialog from "@/components/tour/InviteClubDialog";
 import RegisterPlayerDialog from "@/components/tour/RegisterPlayerDialog";
 import ManageFlightsDialog from "@/components/tour/ManageFlightsDialog";
@@ -1049,8 +1054,32 @@ const TourDetail = () => {
               <Input value={editEventName} onChange={e => setEditEventName(e.target.value)} />
             </div>
             <div>
-              <Label className="text-xs">Date</Label>
-              <Input type="date" value={editEventDate} onChange={e => setEditEventDate(e.target.value)} />
+              <Label className="text-xs">Tanggal Event</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button
+                    className={`flex w-full items-center justify-between rounded-xl border px-3 py-2.5 text-sm transition-colors hover:border-primary/50 ${
+                      editEventDate ? "text-foreground" : "text-muted-foreground"
+                    } bg-background border-input`}
+                  >
+                    <span>
+                      {editEventDate
+                        ? format(parseISO(editEventDate), "EEEE, d MMMM yyyy", { locale: idLocale })
+                        : "Pilih tanggal..."}
+                    </span>
+                    <CalendarIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={editEventDate ? parseISO(editEventDate) : undefined}
+                    onSelect={(d) => setEditEventDate(d ? format(d, "yyyy-MM-dd") : "")}
+                    initialFocus
+                    locale={idLocale}
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
             <div>
               <Label className="text-xs">Golf Course</Label>
