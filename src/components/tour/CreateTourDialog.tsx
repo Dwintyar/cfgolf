@@ -111,7 +111,7 @@ const CreateTourDialog = ({ open, onOpenChange, onCreated, defaultOrganizerClubI
       .select("id")
       .single();
 
-    if (error) { toast.error("Gagal membuat personal club: " + error.message); return null; }
+    if (error) { toast.error("Failed to create personal club: " + error.message); return null; }
 
     // Add user as owner member
     await supabase.from("members").insert({
@@ -124,7 +124,7 @@ const CreateTourDialog = ({ open, onOpenChange, onCreated, defaultOrganizerClubI
   };
 
   const handleSubmit = async () => {
-    if (!name) { toast.error("Nama tournament harus diisi"); return; }
+    if (!name) { toast.error("Tournament name is required"); return; }
     setLoading(true);
 
     let resolvedClubId = clubId;
@@ -135,7 +135,7 @@ const CreateTourDialog = ({ open, onOpenChange, onCreated, defaultOrganizerClubI
       resolvedClubId = pcId;
     }
 
-    if (!resolvedClubId) { toast.error("Organizer club harus dipilih"); setLoading(false); return; }
+    if (!resolvedClubId) { toast.error("Organizer club is required"); setLoading(false); return; }
 
     const { error } = await supabase.from("tours").insert({
       name,
@@ -148,7 +148,7 @@ const CreateTourDialog = ({ open, onOpenChange, onCreated, defaultOrganizerClubI
 
     setLoading(false);
     if (error) { toast.error(error.message); return; }
-    toast.success("Tournament berhasil dibuat!");
+    toast.success("Tournament created successfully!");
     setName(""); setDescription(""); setIsPublic(false); setType("personal");
     onCreated();
   };
@@ -156,17 +156,17 @@ const CreateTourDialog = ({ open, onOpenChange, onCreated, defaultOrganizerClubI
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-sm">
-        <DialogHeader><DialogTitle>Buat Tournament</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>Create Tournament</DialogTitle></DialogHeader>
         <div className="space-y-3">
 
           {/* Type selector */}
           <div>
-            <Label className="text-xs">Tipe Tournament</Label>
+            <Label className="text-xs">Tournament Type</Label>
             <div className="grid grid-cols-3 gap-2 mt-1">
               {[
-                { value: "personal", label: "Personal", icon: "👤", desc: "Sesi main sendiri" },
-                { value: "internal", label: "Internal", icon: "🏌️", desc: "Tournament club" },
-                { value: "interclub", label: "Interclub", icon: "🏆", desc: "Antar club" },
+                { value: "personal", label: "Personal", icon: "👤", desc: "Solo rounds" },
+                { value: "internal", label: "Internal", icon: "🏌️", desc: "Club tournament" },
+                { value: "interclub", label: "Interclub", icon: "🏆", desc: "Inter-club" },
               ].map(t => (
                 <button
                   key={t.value}
@@ -191,12 +191,12 @@ const CreateTourDialog = ({ open, onOpenChange, onCreated, defaultOrganizerClubI
               <User className="h-4 w-4 text-primary shrink-0" />
               <div className="min-w-0">
                 <p className="text-xs font-medium text-primary">
-                  {personalClub ? personalClub.name : "Personal Club akan dibuat otomatis"}
+                  {personalClub ? personalClub.name : "Personal Club will be created automatically"}
                 </p>
                 <p className="text-[10px] text-muted-foreground">
                   {personalClub
-                    ? "Tournament ini akan diorganize oleh personal club kamu"
-                    : "Personal club akan dibuat saat tournament pertamamu disimpan"}
+                    ? "This tournament will be organized by your personal club"
+                    : "Personal club will be created when you save your first tournament"}
                 </p>
               </div>
             </div>
@@ -208,16 +208,16 @@ const CreateTourDialog = ({ open, onOpenChange, onCreated, defaultOrganizerClubI
               <Label className="text-xs">Organizer Club</Label>
               {myClubs && myClubs.length > 0 ? (
                 <Select value={clubId} onValueChange={setClubId}>
-                  <SelectTrigger><SelectValue placeholder="Pilih club" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Select club" /></SelectTrigger>
                   <SelectContent>
                     {myClubs.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               ) : (
                 <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 px-3 py-2.5">
-                  <p className="text-xs text-amber-500 font-medium">Belum ada club</p>
+                  <p className="text-xs text-amber-500 font-medium">No clubs yet</p>
                   <p className="text-[10px] text-muted-foreground mt-0.5">
-                    Buat atau bergabung ke club dulu untuk membuat tournament {type}.
+                    Create or join a club first to create a {type}.
                   </p>
                 </div>
               )}
@@ -225,18 +225,18 @@ const CreateTourDialog = ({ open, onOpenChange, onCreated, defaultOrganizerClubI
           )}
 
           <div>
-            <Label className="text-xs">Nama Tournament</Label>
+            <Label className="text-xs">Tournament Name</Label>
             <Input value={name} onChange={e => setName(e.target.value)}
               placeholder={isPersonalType ? "e.g. My Rounds 2026" : "e.g. Spring Championship"} />
           </div>
 
           <div>
-            <Label className="text-xs">Tahun</Label>
+            <Label className="text-xs">Year</Label>
             <Input type="number" value={year} onChange={e => setYear(e.target.value)} />
           </div>
 
           <div>
-            <Label className="text-xs">Deskripsi (opsional)</Label>
+            <Label className="text-xs">Description (optional)</Label>
             <Textarea value={description} onChange={e => setDescription(e.target.value)} rows={2} />
           </div>
 
@@ -245,8 +245,8 @@ const CreateTourDialog = ({ open, onOpenChange, onCreated, defaultOrganizerClubI
               <p className="text-sm font-medium">{isPublic ? "🌐 Public" : "🔒 Private"}</p>
               <p className="text-xs text-muted-foreground">
                 {isPublic
-                  ? "Semua member dapat melihat tournament ini"
-                  : "Hanya kamu dan yang terdaftar yang dapat melihat"}
+                  ? "All members can see this tournament"
+                  : "Only you and registered players can see this"}
               </p>
             </div>
             <Switch checked={isPublic} onCheckedChange={setIsPublic} />
@@ -254,7 +254,7 @@ const CreateTourDialog = ({ open, onOpenChange, onCreated, defaultOrganizerClubI
 
           <Button className="w-full" onClick={handleSubmit}
             disabled={loading || (!isPersonalType && !clubId)}>
-            {loading ? "Membuat…" : "Buat Tournament"}
+            {loading ? "Creating…" : "Create Tournament"}
           </Button>
         </div>
       </DialogContent>

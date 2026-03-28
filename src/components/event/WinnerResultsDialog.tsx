@@ -175,8 +175,8 @@ const WinnerResultsDialog = ({ eventId, eventName, eventStatus, isOrganizer, ope
                       body: { event_id: eventId },
                       headers: token ? { Authorization: `Bearer ${token}` } : undefined,
                     });
-                    if (error) { toast.error("Gagal: " + error.message); return; }
-                    if (data?.error) { toast.error("Gagal: " + data.error); return; }
+                    if (error) { toast.error("Error: " + error.message); return; }
+                    if (data?.error) { toast.error("Error: " + data.error); return; }
                     toast.success(`${data.winners_calculated} pemenang dihitung`);
                     queryClient.invalidateQueries({ queryKey: ["event-results-dialog", eventId] });
                     queryClient.invalidateQueries({ queryKey: ["event-results", eventId] });

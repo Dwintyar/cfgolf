@@ -774,7 +774,7 @@ const TourDetail = () => {
                             onClick={async () => {
                               const { error } = await supabase.from("tour_players").update({ status: "registered" }).eq("id", p.id);
                               if (error) {
-                                toast.error("Gagal: " + error.message);
+                                toast.error("Error: " + error.message);
                                 return;
                               }
                               toast.success(`${(p.profiles as any)?.full_name} registered!`);
@@ -790,7 +790,7 @@ const TourDetail = () => {
                             onClick={async () => {
                               const { error } = await supabase.from("tour_players").delete().eq("id", p.id);
                               if (error) {
-                                toast.error("Gagal: " + error.message);
+                                toast.error("Error: " + error.message);
                                 return;
                               }
                               toast.success("Player removed");
@@ -1061,13 +1061,13 @@ const TourDetail = () => {
               <Input value={editEventName} onChange={e => setEditEventName(e.target.value)} />
             </div>
             <div>
-              <Label className="text-xs">Tanggal Event</Label>
+              <Label className="text-xs">Event Date</Label>
               <div className="relative">
                 <div className={`flex w-full items-center justify-between rounded-xl border px-3 py-2.5 text-sm bg-background border-input ${editEventDate ? "text-foreground" : "text-muted-foreground"}`}>
                   <span>
                     {editEventDate
                       ? new Date(editEventDate + "T00:00:00").toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })
-                      : "Pilih tanggal..."}
+                      : "Select date..."}
                   </span>
                   <CalendarIcon className="h-4 w-4 shrink-0 text-muted-foreground pointer-events-none" />
                 </div>
@@ -1334,7 +1334,7 @@ const TourDetail = () => {
       setSelectedEventForInvitation(null);
     } catch (err: any) {
       console.error(err);
-      toast.error("Gagal generate: " + err.message);
+      toast.error("Failed to generate: " + err.message);
     }
     setGeneratingPDF(false);
   }

@@ -77,7 +77,7 @@ const CreateClubDialog = ({ open, onOpenChange, onCreated }: CreateClubDialogPro
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="club-desc">Deskripsi (opsional)</Label>
+            <Label htmlFor="club-desc">Description (optional)</Label>
             <Textarea
               id="club-desc"
               placeholder="Deskripsi singkat tentang klub"

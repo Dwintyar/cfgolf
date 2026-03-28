@@ -96,8 +96,8 @@ const Clubs = () => {
       role: "member",
     });
     setJoiningClubId(null);
-    if (error) { toast.error("Gagal bergabung"); return; }
-    toast.success(`Bergabung ke ${club.name}!`);
+    if (error) { toast.error("Failed to join"); return; }
+    toast.success(`Joined ${club.name}!`);
     queryClient.invalidateQueries({ queryKey: ["clubs"] });
     queryClient.invalidateQueries({ queryKey: ["my-memberships"] });
   };

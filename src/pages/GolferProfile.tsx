@@ -580,7 +580,7 @@ const GolferProfile = () => {
       {(!tournamentHistory || tournamentHistory.length === 0) && (
         <div className="golf-card p-6 text-center">
           <Trophy className="mx-auto h-8 w-8 text-muted-foreground/40" />
-          <p className="mt-2 text-sm text-muted-foreground">Belum mengikuti tournament</p>
+          <p className="mt-2 text-sm text-muted-foreground">Not joined any tournament</p>
         </div>
       )}
     </>

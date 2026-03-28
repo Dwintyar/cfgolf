@@ -339,9 +339,9 @@ const Onboarding = () => {
           {/* STEP 2 */}
           {step === 2 && (
             <div className="flex-1 flex flex-col p-6 animate-fade-in">
-              <h2 className="text-xl font-bold text-center mb-1">Bergabung ke Club</h2>
+              <h2 className="text-xl font-bold text-center mb-1">Joined Club</h2>
               <p className="text-sm text-muted-foreground text-center mb-6">
-                Pilih club untuk bergabung (opsional)
+                Select club untuk bergabung (opsional)
               </p>
 
               <div className="flex-1 space-y-3 overflow-y-auto">
@@ -391,7 +391,7 @@ const Onboarding = () => {
                 })}
                 {clubs?.length === 0 && (
                   <p className="text-sm text-muted-foreground text-center py-8">
-                    Belum ada club tersedia
+                    No clubs yet tersedia
                   </p>
                 )}
               </div>
@@ -451,7 +451,7 @@ const Onboarding = () => {
                 className="w-full mt-8 h-12 rounded-xl text-base font-semibold golf-glow"
                 onClick={handleFinish}
               >
-                Mulai Bermain
+                Start Round
               </Button>
             </div>
           )}

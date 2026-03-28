@@ -302,10 +302,10 @@ const TourList = () => {
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         {isPlaying
-                          ? <span className="text-[10px] font-bold uppercase tracking-wider text-green-400 bg-green-400/20 px-2 py-0.5 rounded-full">🟢 Sedang Berlangsung</span>
+                          ? <span className="text-[10px] font-bold uppercase tracking-wider text-green-400 bg-green-400/20 px-2 py-0.5 rounded-full">🟢 Live</span>
                           : isReady
-                          ? <span className="text-[10px] font-bold uppercase tracking-wider text-accent bg-accent/20 px-2 py-0.5 rounded-full">✓ Ready · Hari Ini</span>
-                          : <span className="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/20 px-2 py-0.5 rounded-full">🏌️ Hari Ini</span>
+                          ? <span className="text-[10px] font-bold uppercase tracking-wider text-accent bg-accent/20 px-2 py-0.5 rounded-full">✓ Ready · Today</span>
+                          : <span className="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/20 px-2 py-0.5 rounded-full">🏌️ Today</span>
                         }
                       </div>
                       <p className="text-sm font-bold text-foreground truncate">{e.name}</p>
@@ -490,10 +490,10 @@ const TourList = () => {
               !myTours || myTours.length === 0
                 ? <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
                     <Trophy className="h-10 w-10 text-muted-foreground/40 mb-3" />
-                    <p className="text-sm font-semibold">Belum ada tournament</p>
-                    <p className="text-xs text-muted-foreground mt-1">Buat tournament baru atau daftar ke tournament yang ada</p>
+                    <p className="text-sm font-semibold">No tournaments yet</p>
+                    <p className="text-xs text-muted-foreground mt-1">Create a new tournament or join an existing one</p>
                     <div className="flex gap-2 mt-3">
-                      <Button size="sm" className="gap-1" onClick={() => setShowCreate(true)}>+ Buat Tournament</Button>
+                      <Button size="sm" className="gap-1" onClick={() => setShowCreate(true)}>+ Create Tournament</Button>
                       <Button size="sm" variant="outline" onClick={() => setTourTab("all")}>Browse All</Button>
                     </div>
                   </div>
@@ -527,7 +527,7 @@ const TourList = () => {
               myEvents?.length === 0
                 ? <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
                     <Trophy className="h-10 w-10 text-muted-foreground/40 mb-3" />
-                    <p className="text-sm font-semibold">Belum mengikuti tournament</p>
+                    <p className="text-sm font-semibold">Not joined any tournament</p>
                     <p className="text-xs text-muted-foreground mt-1">Daftar ke tournament atau buat tournament baru</p>
                     <Button size="sm" variant="outline" className="mt-3" onClick={() => setTourTab("all")}>Browse All</Button>
                   </div>

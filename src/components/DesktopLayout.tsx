@@ -772,7 +772,7 @@ const UpcomingEventsWidget = ({ navigate, userId }: { navigate: (path: string) =
                 >
                   <div className="flex items-center gap-1.5">
                     {isPlaying && <span className="text-[9px] font-bold text-green-400 uppercase bg-green-400/20 px-1.5 py-0.5 rounded-full">🟢 Live</span>}
-                    {isToday && !isPlaying && <span className="text-[9px] font-bold text-primary uppercase bg-primary/20 px-1.5 py-0.5 rounded-full">Hari Ini</span>}
+                    {isToday && !isPlaying && <span className="text-[9px] font-bold text-primary uppercase bg-primary/20 px-1.5 py-0.5 rounded-full">Today</span>}
                     {isTomorrow && !showPlay && <span className="text-[9px] font-bold text-amber-400 uppercase bg-amber-400/20 px-1.5 py-0.5 rounded-full">Besok</span>}
                   </div>
                   <p className="text-xs font-medium truncate text-foreground mt-0.5">{e.name}</p>

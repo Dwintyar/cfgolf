@@ -734,7 +734,7 @@ const EventDetail = () => {
     if (!id) return;
     // Check contestants exist
     if (!contestants?.length) {
-      toast.error("Tidak ada contestant — assign contestant dulu sebelum generate pairing.");
+      toast.error("No contestants — please assign contestants before generating pairings.");
       return;
     }
     setGenerating(true);
@@ -772,11 +772,11 @@ const EventDetail = () => {
       await invokeWithAuth("update-player-handicap", { event_id: id });
       // Set status done
       await supabase.from("events").update({ status: "done" }).eq("id", id);
-      toast.success("Selesai bermain! HCP kamu telah diupdate.");
+      toast.success("Round finished! Your HCP has been updated.");
       queryClient.invalidateQueries({ queryKey: ["event", id] });
       refetchResults();
     } catch {
-      toast.error("Gagal menyimpan. Coba lagi.");
+      toast.error("Failed to save. Please try again.");
     }
     setFinalizing(false);
   };
@@ -789,8 +789,8 @@ const EventDetail = () => {
       .update({ status: "ready" })
       .eq("id", id);
     setSettingReady(false);
-    if (error) { toast.error("Gagal update status: " + error.message); return; }
-    toast.success("Event siap — pendaftaran ditutup!");
+    if (error) { toast.error("Failed to update status: " + error.message); return; }
+    toast.success("Event is ready — registration closed!");
     queryClient.invalidateQueries({ queryKey: ["event", id] });
   };
 
@@ -800,8 +800,8 @@ const EventDetail = () => {
       .from("events")
       .update({ status: "playing" })
       .eq("id", id);
-    if (error) { toast.error("Gagal update status"); return; }
-    toast.success("Event dimulai!");
+    if (error) { toast.error("Failed to update status"); return; }
+    toast.success("Round started!");
     queryClient.invalidateQueries({ queryKey: ["event", id] });
   };
 
@@ -819,7 +819,7 @@ const EventDetail = () => {
         );
         // Tetap lanjut ke step 3
       } else if (winnersData?.error) {
-        toast.error("Gagal menghitung pemenang: " + winnersData.error);
+        toast.error("Failed to calculate winners: " + winnersData.error);
         setFinalizing(false);
         return;
       }
@@ -841,12 +841,12 @@ const EventDetail = () => {
         .update({ status: "done" })
         .eq("id", id);
       if (statusErr) {
-        toast.error("Gagal update status: " + statusErr.message);
+        toast.error("Failed to update status: " + statusErr.message);
         setFinalizing(false);
         return;
       }
 
-      toast.success("Event berhasil di-finalize!");
+      toast.success("Event finalized successfully!");
       queryClient.invalidateQueries({ queryKey: ["event", id] });
       refetchResults();
     } catch (err: any) {
@@ -1115,7 +1115,7 @@ const EventDetail = () => {
             <Button size="sm" variant="outline"
               className="h-7 shrink-0 gap-1 text-[11px] border-green-500/40 text-green-400 hover:bg-green-500/10"
               onClick={handleSetPlaying}>
-              <Play className="h-3 w-3" /> Mulai Bermain
+              <Play className="h-3 w-3" /> Start Round
             </Button>
           )}
           {event?.status !== "done" ? (
@@ -1127,7 +1127,7 @@ const EventDetail = () => {
                 disabled={finalizing || event?.status !== "playing"}
               >
                 <CheckCircle className="h-3 w-3" />
-                {finalizing ? "Menyimpan…" : "Selesai Bermain"}
+                {finalizing ? "Saving…" : "Finish Round"}
               </Button>
             ) : (
               <Button
@@ -1212,7 +1212,7 @@ ${liveUrl}`;
             <div>
               <p className="text-xs font-medium">Pairing Approval</p>
               <p className="text-[9px] text-muted-foreground">
-                Review sebelum dipublikasikan ke pemain
+                Review before publishing to players
               </p>
             </div>
             <Switch
@@ -1224,8 +1224,8 @@ ${liveUrl}`;
                   .eq("id", id!);
                 queryClient.invalidateQueries({ queryKey: ["event", id] });
                 toast.success(val
-                  ? "Pairing approval aktif"
-                  : "Pairing langsung dipublikasikan");
+                  ? "Pairing approval enabled"
+                  : "Pairings published directly");
               }}
             />
           </div>
@@ -1449,7 +1449,7 @@ ${liveUrl}`;
                             );
                           })}
                          {players.length === 0 && (
-                           <p className="col-span-2 text-xs text-muted-foreground text-center py-4">Belum ada pemain di-assign</p>
+                           <p className="col-span-2 text-xs text-muted-foreground text-center py-4">No players assigned yet</p>
                          )}
                       </div>
                     </div>
@@ -1818,7 +1818,7 @@ ${liveUrl}`;
               <Label className="text-xs">Caddy</Label>
               {(!courseCaddies || courseCaddies.length === 0) ? (
                 <div className="mt-1 rounded-lg border border-dashed border-border p-3 text-center">
-                  <p className="text-xs text-muted-foreground">Belum ada caddy terdaftar untuk course ini.</p>
+                  <p className="text-xs text-muted-foreground">No caddies registered for this course.</p>
                   <p className="text-xs text-muted-foreground mt-0.5">Tambah caddy di Course Admin → tab Caddies.</p>
                 </div>
               ) : (

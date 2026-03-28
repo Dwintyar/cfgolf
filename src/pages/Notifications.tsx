@@ -326,7 +326,7 @@ const Notifications = () => {
         });
 
       if (memberError && memberError.code !== "23505") {
-        toast.error("Gagal: " + memberError.message);
+        toast.error("Error: " + memberError.message);
         setActionLoading(null);
         return;
       }

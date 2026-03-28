@@ -740,7 +740,7 @@ const ClubAdminDashboard = () => {
         <div className="golf-card p-4 text-center text-xs text-muted-foreground">Memuat tournament...</div>
       )}
       {clubTours?.length === 0 && (
-        <div className="golf-card p-6 text-center text-sm text-muted-foreground">Belum ada tournament. Buat tournament pertama.</div>
+        <div className="golf-card p-6 text-center text-sm text-muted-foreground">No tournaments yet. Buat tournament pertama.</div>
       )}
       {clubTours?.map((tour: any) => {
         const events = tour.events ?? [];

@@ -65,7 +65,7 @@ const ResetPassword = () => {
               className="h-12 rounded-xl border-border/50 bg-card/80 backdrop-blur"
             />
             <Button type="submit" className="h-12 w-full rounded-xl text-base font-semibold golf-glow" disabled={loading}>
-              {loading ? "Menyimpan…" : "Simpan Password Baru"}
+              {loading ? "Saving…" : "Simpan Password Baru"}
             </Button>
           </form>
         ) : (
