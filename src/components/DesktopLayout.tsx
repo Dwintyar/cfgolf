@@ -640,17 +640,54 @@ const LiveTournamentWidget = ({
 };
 
 const UpcomingEventsWidget = ({ navigate }: { navigate: (path: string) => void }) => {
+  const [userId, setUserId] = React.useState<string | null>(null);
+  React.useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => setUserId(user?.id ?? null));
+  }, []);
+
   const { data: events } = useQuery({
-    queryKey: ["desktop-upcoming-events"],
+    queryKey: ["desktop-upcoming-events", userId],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("events")
-        .select("id, name, event_date, courses(name)")
-        .in("status", ["registration", "draft", "playing"])
-        .order("event_date")
-        .limit(5);
-      return data ?? [];
+      if (!userId) return [];
+
+      // 1. Events user is registered as contestant
+      const { data: contestantEvents } = await supabase
+        .from("contestants")
+        .select("events!inner(id, name, event_date, status, courses(name))")
+        .eq("player_id", userId);
+
+      // 2. Events from clubs user is member of
+      const { data: memberClubs } = await supabase
+        .from("members")
+        .select("club_id")
+        .eq("user_id", userId);
+      const clubIds = (memberClubs ?? []).map((m: any) => m.club_id);
+
+      let clubEvents: any[] = [];
+      if (clubIds.length > 0) {
+        const { data: ce } = await supabase
+          .from("events")
+          .select("id, name, event_date, status, courses(name), tours!inner(organizer_club_id)")
+          .in("tours.organizer_club_id", clubIds)
+          .in("status", ["registration", "draft", "playing"])
+          .order("event_date")
+          .limit(10);
+        clubEvents = ce ?? [];
+      }
+
+      // Merge & deduplicate
+      const fromContestant = (contestantEvents ?? [])
+        .map((c: any) => c.events)
+        .filter((e: any) => e && ["registration", "draft", "playing"].includes(e.status));
+
+      const all = [...fromContestant, ...clubEvents];
+      const seen = new Set<string>();
+      return all
+        .filter((e: any) => { if (seen.has(e.id)) return false; seen.add(e.id); return true; })
+        .sort((a: any, b: any) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime())
+        .slice(0, 5);
     },
+    enabled: !!userId,
   });
 
   if (!events?.length) return null;
