@@ -52,7 +52,7 @@ const CreateEventDialog = ({ tourId, open, onOpenChange, onDone, isPersonal = fa
       name,
       event_date: date,
       ticket_total: isPersonal ? 1 : (parseInt(ticketTotal) || 0),
-      status: "draft",
+      status: "scheduled",
       pairing_approval_required: isPersonal ? false : pairingApproval,
       pairing_mode: isPersonal ? "self" : pairingMode,
     }).select("id").single();

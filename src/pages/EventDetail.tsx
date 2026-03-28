@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Calendar, MapPin, Users, Ticket, Trophy, Award, Shuffle, TrendingDown,
-  ClipboardCheck, Package, Lock, Car, UserCheck, ChevronRight, Pencil, Plus, RefreshCw, Clock, Download, Flag, Backpack, User, Monitor, Share2, MessageCircle
+  ClipboardCheck, Play, CheckCircle, Package, Lock, Car, UserCheck, ChevronRight, Pencil, Plus, RefreshCw, Clock, Download, Flag, Backpack, User, Monitor, Share2, MessageCircle
 } from "lucide-react";
 import html2canvas from "html2canvas";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -30,6 +30,7 @@ const EventDetail = () => {
   const [generating, setGenerating] = useState(false);
   const [finalizing, setFinalizing] = useState(false);
   const [showFinalizeConfirm, setShowFinalizeConfirm] = useState(false);
+  const [settingReady, setSettingReady] = useState(false);
   const [startType, setStartType] = useState("tee_time");
   const [firstTee, setFirstTee] = useState("07:00");
   const [interval, setInterval] = useState("8");
@@ -763,6 +764,30 @@ const EventDetail = () => {
     }
   };
 
+  const handleSetReady = async () => {
+    if (!id) return;
+    setSettingReady(true);
+    const { error } = await supabase
+      .from("events")
+      .update({ status: "ready" })
+      .eq("id", id);
+    setSettingReady(false);
+    if (error) { toast.error("Gagal update status: " + error.message); return; }
+    toast.success("Event siap — pendaftaran ditutup!");
+    queryClient.invalidateQueries({ queryKey: ["event", id] });
+  };
+
+  const handleSetPlaying = async () => {
+    if (!id) return;
+    const { error } = await supabase
+      .from("events")
+      .update({ status: "playing" })
+      .eq("id", id);
+    if (error) { toast.error("Gagal update status"); return; }
+    toast.success("Event dimulai!");
+    queryClient.invalidateQueries({ queryKey: ["event", id] });
+  };
+
   const handleFinalizeEvent = async () => {
     if (!id) return;
     setFinalizing(true);
@@ -1034,19 +1059,39 @@ const EventDetail = () => {
               <Users className="h-3 w-3" /> Assign
             </Button>
           )}
+          {/* Set Ready — internal/interclub only, when scheduled */}
+          {!isPersonalTour && event?.status === "scheduled" && (
+            <Button size="sm" variant="outline"
+              className="h-7 shrink-0 gap-1 text-[11px] border-accent/40 text-accent hover:bg-accent/10"
+              onClick={handleSetReady} disabled={settingReady}>
+              <CheckCircle className="h-3 w-3" />
+              {settingReady ? "Setting…" : "Set Ready"}
+            </Button>
+          )}
+          {/* Set Playing — personal: from scheduled, internal: from ready */}
+          {event?.status !== "playing" && event?.status !== "done" && (
+            (isPersonalTour && event?.status === "scheduled") ||
+            (!isPersonalTour && event?.status === "ready")
+          ) && (
+            <Button size="sm" variant="outline"
+              className="h-7 shrink-0 gap-1 text-[11px] border-green-500/40 text-green-400 hover:bg-green-500/10"
+              onClick={handleSetPlaying}>
+              <Play className="h-3 w-3" /> Set Playing
+            </Button>
+          )}
           {event?.status !== "done" ? (
             <Button
               size="sm"
               className="h-7 shrink-0 gap-1 text-[11px] bg-primary"
               onClick={() => setShowFinalizeConfirm(true)}
-              disabled={finalizing}
+              disabled={finalizing || event?.status !== "playing"}
             >
               <Trophy className="h-3 w-3" />
               {finalizing ? "Finalizing…" : "Finalize Event"}
             </Button>
           ) : (
             <Badge className="text-[10px] bg-primary/20 text-primary border-primary/30">
-              ✓ Completed
+              ✓ Done
             </Badge>
           )}
         </>
