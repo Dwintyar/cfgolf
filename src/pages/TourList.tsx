@@ -351,26 +351,30 @@ const TourList = () => {
 
       {/* ═══ SECTION 2: TOURNAMENTS ═══ */}
       <div className="mt-6 px-4">
-        <div className="flex items-center gap-3 mb-3">
-          {tourTabs.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => setTourTab(t.id)}
-              className={`text-xs font-bold uppercase tracking-wider transition-colors ${
-                tourTab === t.id
-                  ? "text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {t.label}
-              {t.count != null && t.count > 0 && (
-                <span className="ml-1 text-primary">({t.count})</span>
-              )}
-            </button>
-          ))}
+        <div className="flex items-center mb-3">
+          {/* Tabs — centered */}
+          <div className="flex items-center gap-3 flex-1 justify-center">
+            {tourTabs.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setTourTab(t.id)}
+                className={`text-xs font-bold uppercase tracking-wider transition-colors ${
+                  tourTab === t.id
+                    ? "text-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {t.label}
+                {t.count != null && t.count > 0 && (
+                  <span className="ml-1 text-primary">({t.count})</span>
+                )}
+              </button>
+            ))}
+          </div>
+          {/* + button — absolute right */}
           <button
             onClick={() => setShowCreate(true)}
-            className="ml-auto flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground"
+            className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground shrink-0"
           >
             <Plus className="h-4 w-4" />
           </button>
