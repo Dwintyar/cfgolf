@@ -1048,12 +1048,34 @@ const EventDetail = () => {
 
   const actionButtonsBlock = (
     <div className="flex gap-2 overflow-x-auto px-4 pb-3 scrollbar-none">
-      {myContestant && !isCheckedIn && (
+      {/* Personal: langsung ke scorecard tanpa perlu contestant/checkin */}
+      {isPersonalTour && showAdminActions && event?.status !== "done" && (
+        <Button
+          size="sm"
+          className="h-7 shrink-0 gap-1 text-[11px]"
+          onClick={async () => {
+            // Auto-register as contestant if not yet
+            if (!myContestant && userId) {
+              await supabase.from("contestants").insert({
+                event_id: id!,
+                player_id: userId,
+                hcp: (await supabase.from("profiles").select("handicap").eq("id", userId).single()).data?.handicap ?? 0,
+                status: "confirmed",
+              });
+            }
+            navigate(`/event/${id}/scorecard`);
+          }}
+        >
+          <Pencil className="h-3 w-3" /> Input Score
+        </Button>
+      )}
+      {/* Non-personal: existing flow with checkin */}
+      {!isPersonalTour && myContestant && !isCheckedIn && (
         <Button size="sm" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowCheckinDialog(true)}>
           <ClipboardCheck className="h-3 w-3" /> Check In
         </Button>
       )}
-      {myContestant && isCheckedIn && (
+      {!isPersonalTour && myContestant && isCheckedIn && (
         <Button
           size="sm"
           variant={event?.status === "done" ? "outline" : "default"}
