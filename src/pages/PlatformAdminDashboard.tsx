@@ -459,7 +459,7 @@ const PlatformAdminDashboard = () => {
                 </div>
                 <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium border ${
                   t.status === "active" ? "bg-green-500/10 text-green-500 border-green-500/30" :
-                  t.status === "completed" ? "bg-muted text-muted-foreground border-border" :
+                  t.status === "done" ? "bg-muted text-muted-foreground border-border" :
                   t.status === "cancelled" ? "bg-destructive/10 text-destructive border-destructive/30" :
                   "bg-accent/10 text-accent border-accent/30"
                 }`}>{t.status ?? "upcoming"}</span>
@@ -478,10 +478,10 @@ const PlatformAdminDashboard = () => {
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="draft">Draft</SelectItem>
-                <SelectItem value="registration">Registration</SelectItem>
+                <SelectItem value="ready">Registration</SelectItem>
                 <SelectItem value="checkin">Check-in</SelectItem>
                 <SelectItem value="playing">Playing</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
+                <SelectItem value="done">Completed</SelectItem>
               </SelectContent>
             </Select>
             {allEvents?.map((e: any) => (

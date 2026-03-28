@@ -166,7 +166,7 @@ const DesktopLayout = ({ children, sidebarRightHidden = false }: { children: Rea
       const { data: upcoming } = await supabase
         .from("events")
         .select("id, name, event_date, status, courses(name), tours(name)")
-        .eq("status", "registration")
+        .eq("status", "ready")
         .order("event_date", { ascending: true })
         .limit(1)
         .maybeSingle();
@@ -665,7 +665,7 @@ const UpcomingEventsWidget = ({ navigate, userId }: { navigate: (path: string) =
         const { data: orgEvents } = await supabase
           .from("events")
           .select("id, tours!inner(organizer_club_id)")
-          .in("status", ["registration", "draft", "playing"]);
+          .in("status", ["ready", "draft", "playing"]);
         tourOrganizerEventIds = (orgEvents ?? [])
           .filter((e: any) => clubIds.includes((e.tours as any)?.organizer_club_id))
           .map((e: any) => e.id);
@@ -678,7 +678,7 @@ const UpcomingEventsWidget = ({ navigate, userId }: { navigate: (path: string) =
         .from("events")
         .select("id, name, event_date, courses(name)")
         .in("id", allIds)
-        .in("status", ["registration", "draft", "playing"])
+        .in("status", ["ready", "draft", "playing"])
         .order("event_date")
         .limit(5);
       return data ?? [];

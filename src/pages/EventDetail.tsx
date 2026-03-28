@@ -796,7 +796,7 @@ const EventDetail = () => {
       // Step 3: Set event completed (selalu dijalankan)
       const { error: statusErr } = await supabase
         .from("events")
-        .update({ status: "completed" })
+        .update({ status: "done" })
         .eq("id", id);
       if (statusErr) {
         toast.error("Gagal update status: " + statusErr.message);
@@ -1014,17 +1014,17 @@ const EventDetail = () => {
       {myContestant && isCheckedIn && (
         <Button
           size="sm"
-          variant={event?.status === "completed" ? "outline" : "default"}
+          variant={event?.status === "done" ? "outline" : "default"}
           className={`h-7 shrink-0 gap-1 text-[11px] ${
-            event?.status === "completed"
+            event?.status === "done"
               ? "opacity-50 cursor-not-allowed border-muted-foreground/30 text-muted-foreground"
               : ""
           }`}
           onClick={() => navigate(`/event/${id}/scorecard`)}
-          disabled={event?.status === "completed"}
+          disabled={event?.status === "done"}
         >
           <Pencil className="h-3 w-3" />
-          {event?.status === "completed" ? "Score Locked" : "Input Score"}
+          {event?.status === "done" ? "Score Locked" : "Input Score"}
         </Button>
       )}
       {showAdminActions && (
@@ -1034,7 +1034,7 @@ const EventDetail = () => {
               <Users className="h-3 w-3" /> Assign
             </Button>
           )}
-          {event?.status !== "completed" ? (
+          {event?.status !== "done" ? (
             <Button
               size="sm"
               className="h-7 shrink-0 gap-1 text-[11px] bg-primary"
@@ -1091,7 +1091,7 @@ ${liveUrl}`;
       >
         <MessageCircle className="h-3 w-3" /> WA
       </Button>
-      {event?.status === "completed" && (
+      {event?.status === "done" && (
         <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={handleExportPDF} disabled={exporting}>
           <Download className="h-3 w-3" /> {exporting ? "..." : "Export"}
         </Button>
@@ -1111,7 +1111,7 @@ ${liveUrl}`;
 
       {/* OVERVIEW */}
       <TabsContent value="overview" className="space-y-4 pt-2">
-        {showAdminActions && event?.status !== "completed" && !isPersonalTour && (
+        {showAdminActions && event?.status !== "done" && !isPersonalTour && (
           <div className="golf-card p-3 flex items-center justify-between">
             <div>
               <p className="text-xs font-medium">Pairing Approval</p>
@@ -1521,7 +1521,7 @@ ${liveUrl}`;
           <Trophy className="h-3.5 w-3.5" /> Full Leaderboard
         </Button>
 
-        {event?.status === "completed" && (
+        {event?.status === "done" && (
           <Button
             size="sm"
             variant="outline"

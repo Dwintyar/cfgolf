@@ -106,7 +106,7 @@ const CourseAdminDashboard = () => {
         .from("events")
         .select("id, name, event_date, status")
         .eq("course_id", courseId!)
-        .in("status", ["registration", "checkin", "playing"])
+        .in("status", ["ready", "checkin", "playing"])
         .order("event_date");
       return data ?? [];
     },
@@ -180,7 +180,7 @@ const CourseAdminDashboard = () => {
         `)
         .eq("course_id", courseId)
         .in("pairing_mode", ["open", "course_arranged"])
-        .in("status", ["registration", "checkin", "ongoing"])
+        .in("status", ["ready", "checkin", "ongoing"])
         .order("event_date");
       return data ?? [];
     },

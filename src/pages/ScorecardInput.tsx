@@ -280,7 +280,7 @@ const ScorecardInput = () => {
       }
 
       if (allFilled) {
-        await supabase.from("rounds").update({ status: "completed", finished_at: new Date().toISOString() }).eq("id", roundId);
+        await supabase.from("rounds").update({ status: "done", finished_at: new Date().toISOString() }).eq("id", roundId);
       }
 
       // === HCP Update (Simple Formula) ===
@@ -317,7 +317,7 @@ const ScorecardInput = () => {
     }
   };
 
-  const isEventCompleted = event?.status === "completed";
+  const isEventCompleted = event?.status === "done";
 
   if (!event || !contestant || scores.length === 0) {
     return (

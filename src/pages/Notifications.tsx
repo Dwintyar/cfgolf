@@ -185,7 +185,7 @@ const Notifications = () => {
         const eventDate = new Date(ev.event_date);
         const now = new Date();
         const diffDays = (eventDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
-        if (diffDays > 0 && diffDays <= 7 && ev.status !== "completed") {
+        if (diffDays > 0 && diffDays <= 7 && ev.status !== "done") {
           items.push({
             id: `event-${ev.id}`,
             type: "upcoming_event",

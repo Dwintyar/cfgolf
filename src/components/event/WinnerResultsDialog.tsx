@@ -108,7 +108,7 @@ const WinnerResultsDialog = ({ eventId, eventName, eventStatus, isOrganizer, ope
     setFinalizing(true);
     const { error } = await supabase
       .from("events")
-      .update({ status: "completed" })
+      .update({ status: "done" })
       .eq("id", eventId);
     setFinalizing(false);
     if (error) { toast.error(error.message); return; }
@@ -234,7 +234,7 @@ const WinnerResultsDialog = ({ eventId, eventName, eventStatus, isOrganizer, ope
           </div>
         )}
 
-        {results && results.length > 0 && eventStatus !== "completed" && (
+        {results && results.length > 0 && eventStatus !== "done" && (
           <DialogFooter>
             <Button onClick={handleFinalize} disabled={finalizing} className="w-full gap-1">
               <Trophy className="h-3.5 w-3.5" />
@@ -243,7 +243,7 @@ const WinnerResultsDialog = ({ eventId, eventName, eventStatus, isOrganizer, ope
           </DialogFooter>
         )}
 
-        {eventStatus === "completed" && (
+        {eventStatus === "done" && (
           <p className="text-center text-xs text-primary font-semibold py-2">✅ Results Published</p>
         )}
       </DialogContent>

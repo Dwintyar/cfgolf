@@ -641,8 +641,8 @@ const TourDetail = () => {
             <div className="golf-card p-6 text-center text-sm text-muted-foreground">No events scheduled</div>
           )}
           {events?.map((event, i) => {
-            const eventStatusLabel = event.status === "completed" ? "Completed" : event.status === "playing" || event.status === "checkin" ? "Upcoming" : "Scheduled";
-            const eventStatusClass = event.status === "completed" ? "border-primary/40 text-primary bg-primary/5" : event.status === "playing" || event.status === "checkin" ? "border-accent/40 text-accent bg-accent/5" : "border-muted-foreground/30 text-muted-foreground";
+            const eventStatusLabel = event.status === "done" ? "Done" : event.status === "playing" || event.status === "checkin" ? "Upcoming" : "Scheduled";
+            const eventStatusClass = event.status === "done" ? "border-primary/40 text-primary bg-primary/5" : event.status === "playing" || event.status === "checkin" ? "border-accent/40 text-accent bg-accent/5" : "border-muted-foreground/30 text-muted-foreground";
             const formattedDate = new Date(event.event_date).toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
             return (
               <div
@@ -875,7 +875,7 @@ const TourDetail = () => {
                       {myEvents.map((ev: any) => (
                         <span key={ev.event_id}
                           className={`text-[9px] px-2 py-0.5 rounded-full ${
-                            ev.event_status === "completed"
+                            ev.event_status === "done"
                               ? "bg-primary/10 text-primary"
                               : "bg-secondary text-muted-foreground"
                           }`}>
@@ -1103,10 +1103,10 @@ const TourDetail = () => {
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="draft">Draft</SelectItem>
-                  <SelectItem value="registration">Registration Open</SelectItem>
+                  <SelectItem value="ready">Registration Open</SelectItem>
                   <SelectItem value="checkin">Check-in</SelectItem>
                   <SelectItem value="ongoing">Ongoing</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
+                  <SelectItem value="done">Completed</SelectItem>
                 </SelectContent>
               </Select>
             </div>

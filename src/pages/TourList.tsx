@@ -15,7 +15,7 @@ const TourList = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
-  const [tab, setTab] = useState<"upcoming" | "completed">("upcoming");
+  const [tab, setTab] = useState<"upcoming" | "done">("upcoming");
   const [tourTab, setTourTab] = useState<"invited" | "mine" | "all">("mine");
 
   const [userId, setUserId] = useState<string | null>(null);
@@ -252,18 +252,18 @@ const TourList = () => {
   });
 
   const upcomingEvents = (events?.filter(e =>
-    e.status !== "completed" && e.status !== "cancelled"
+    e.status !== "done" && e.status !== "cancelled"
   ) ?? []).sort((a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime());
 
   const completedEvents = events?.filter(e =>
-    e.status === "completed"
+    e.status === "done"
   ) ?? [];
 
   const displayEvents = tab === "upcoming" ? upcomingEvents : completedEvents;
 
   const eventTabs = [
     { id: "upcoming" as const, label: "Upcoming" },
-    { id: "completed" as const, label: "Completed" },
+    { id: "done" as const, label: "Done" },
   ];
 
   const tourTabs = [
@@ -379,7 +379,7 @@ const TourList = () => {
                 </p>
               </div>
               <Badge
-                variant={event.status === "completed" ? "secondary" : "outline"}
+                variant={event.status === "done" ? "secondary" : "outline"}
                 className="text-[9px] shrink-0"
               >
                 {event.status}
@@ -517,9 +517,10 @@ const TourList = () => {
                     if (!ev) return null;
                     const statusColors: Record<string, string> = {
                       draft: "text-muted-foreground border-muted-foreground/30",
-                      registration: "text-accent-foreground border-accent/30",
-                      playing: "text-primary border-primary/30",
-                      completed: "text-primary border-primary/60",
+                      scheduled: "text-blue-400 border-blue-400/30",
+                      ready: "text-accent-foreground border-accent/30",
+                      playing: "text-green-400 border-green-500/30",
+                      done: "text-primary border-primary/60",
                     };
                     return (
                       <button key={c.id}

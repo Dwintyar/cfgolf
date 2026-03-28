@@ -32,7 +32,7 @@ const TourLeaderboard = ({ tourId, tourName }: Props) => {
         .from("events")
         .select("id, course_id")
         .eq("tour_id", tourId)
-        .eq("status", "completed");
+        .eq("status", "done");
 
       const completedEvents = events ?? [];
       if (!completedEvents.length) return { rows: [], totalEvents: 0 };

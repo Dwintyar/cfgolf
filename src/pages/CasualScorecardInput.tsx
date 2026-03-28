@@ -128,7 +128,7 @@ const CasualScorecardInput = () => {
     try {
       const { data: newRound, error } = await supabase
         .from("rounds")
-        .insert({ course_id: courseId, created_by: userId, status: "completed", finished_at: new Date().toISOString() })
+        .insert({ course_id: courseId, created_by: userId, status: "done", finished_at: new Date().toISOString() })
         .select()
         .single();
       if (error) throw error;

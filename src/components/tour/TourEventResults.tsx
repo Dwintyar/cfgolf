@@ -145,7 +145,7 @@ const TourEventResults = ({ tourId }: Props) => {
           {events?.map(e => (
             <SelectItem key={e.id} value={e.id} className="text-xs">
               {e.name} — {new Date(e.event_date).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" })}
-              {e.status === "completed" ? " ✓" : ""}
+              {e.status === "done" ? " ✓" : ""}
             </SelectItem>
           ))}
         </SelectContent>

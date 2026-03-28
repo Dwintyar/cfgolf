@@ -355,7 +355,7 @@ const GolferProfile = () => {
             .select("id, name, event_date, status, course_id, courses(name)")
             .eq("tour_id", tp.tour_id);
           const completedEventIds = (tourEvents ?? [])
-            .filter(e => e.status === "completed")
+            .filter(e => e.status === "done")
             .map(e => e.id);
           if (!completedEventIds.length) {
             return {
@@ -1352,7 +1352,7 @@ const GolferProfile = () => {
                       : isPast
                       ? "text-muted-foreground bg-muted"
                       : "text-green-400 bg-green-400/10";
-                    const statusLabel = isCancelled ? "Cancelled" : isPast ? "Completed" : "Confirmed";
+                    const statusLabel = isCancelled ? "Cancelled" : isPast ? "Done" : "Confirmed";
 
                     return (
                       <div key={b.id} className="rounded-xl border border-border bg-card p-4 space-y-2">
