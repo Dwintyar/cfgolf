@@ -646,14 +646,17 @@ const UpcomingEventsWidget = ({ navigate }: { navigate: (path: string) => void }
       const { data } = await supabase
         .from("events")
         .select("id, name, event_date, courses(name)")
-        .in("status", ["registration", "draft"])
+        .in("status", ["registration", "draft", "playing"])
         .order("event_date")
-        .limit(4);
+        .limit(5);
       return data ?? [];
     },
   });
 
   if (!events?.length) return null;
+
+  const today = new Date().toISOString().split("T")[0];
+  const tomorrow = new Date(Date.now() + 86400000).toISOString().split("T")[0];
 
   return (
     <div className="golf-card p-3 mb-4">
@@ -664,18 +667,37 @@ const UpcomingEventsWidget = ({ navigate }: { navigate: (path: string) => void }
         </button>
       </div>
       <div className="space-y-2">
-        {events.map((e: any) => (
-          <button
-            key={e.id}
-            onClick={() => navigate(`/event/${e.id}`)}
-            className="w-full text-left hover:opacity-70 transition-opacity"
-          >
-            <p className="text-xs font-medium truncate text-foreground">{e.name}</p>
-            <p className="text-[10px] text-muted-foreground">
-              {e.event_date} · {(e.courses as any)?.name}
-            </p>
-          </button>
-        ))}
+        {events.map((e: any) => {
+          const isToday = e.event_date === today;
+          const isTomorrow = e.event_date === tomorrow;
+          return (
+            <div key={e.id} className={`rounded-xl p-2 transition-colors ${isToday ? "bg-primary/10 border border-primary/30" : "hover:bg-muted/50"}`}>
+              <div className="flex items-start justify-between gap-2">
+                <button
+                  onClick={() => navigate(`/event/${e.id}`)}
+                  className="flex-1 text-left min-w-0"
+                >
+                  <div className="flex items-center gap-1.5">
+                    {isToday && <span className="text-[9px] font-bold text-primary uppercase bg-primary/20 px-1.5 py-0.5 rounded-full">Hari Ini</span>}
+                    {isTomorrow && <span className="text-[9px] font-bold text-amber-400 uppercase bg-amber-400/20 px-1.5 py-0.5 rounded-full">Besok</span>}
+                  </div>
+                  <p className="text-xs font-medium truncate text-foreground mt-0.5">{e.name}</p>
+                  <p className="text-[10px] text-muted-foreground">
+                    {e.event_date} · {(e.courses as any)?.name}
+                  </p>
+                </button>
+                {isToday && (
+                  <button
+                    onClick={() => navigate(`/event/${e.id}`)}
+                    className="shrink-0 flex items-center gap-1 bg-primary text-primary-foreground text-[10px] font-bold px-2.5 py-1.5 rounded-lg hover:bg-primary/90 transition-colors"
+                  >
+                    ▶ Play
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
