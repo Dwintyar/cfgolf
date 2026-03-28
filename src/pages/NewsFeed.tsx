@@ -215,23 +215,25 @@ const NewsFeed = () => {
 
       <div className="space-y-4 px-4 pb-20">
         {/* Create Post Box */}
-        <div className="golf-card p-4 flex items-center gap-3">
-          <Avatar className="h-10 w-10">
-            <AvatarImage src={myProfile?.avatar_url ?? ""} />
-            <AvatarFallback className="bg-primary/10 text-sm font-bold text-primary">{myInitials}</AvatarFallback>
-          </Avatar>
-          <button
-            onClick={() => setShowCreate(true)}
-            className="flex-1 text-left px-4 py-2.5 rounded-full bg-secondary text-sm text-muted-foreground hover:bg-secondary/80 transition-colors"
-          >
-            Apa yang ingin Anda bagikan hari ini?
-          </button>
-          <div className="flex gap-1">
-            <Button size="sm" variant="ghost" className="gap-1.5 text-xs" onClick={() => setShowCreate(true)}>
-              📸 Foto
+        <div className="golf-card p-3">
+          <div className="flex items-center gap-2">
+            <Avatar className="h-9 w-9 shrink-0">
+              <AvatarImage src={myProfile?.avatar_url ?? ""} />
+              <AvatarFallback className="bg-primary/10 text-sm font-bold text-primary">{myInitials}</AvatarFallback>
+            </Avatar>
+            <button
+              onClick={() => setShowCreate(true)}
+              className="flex-1 min-w-0 text-left px-3 py-2 rounded-full bg-secondary text-sm text-muted-foreground hover:bg-secondary/80 transition-colors truncate"
+            >
+              What's on your mind?
+            </button>
+          </div>
+          <div className="flex gap-1 mt-2 pl-11">
+            <Button size="sm" variant="ghost" className="gap-1.5 text-xs h-7" onClick={() => setShowCreate(true)}>
+              📸 Photo
             </Button>
-            <Button size="sm" variant="ghost" className="gap-1.5 text-xs" onClick={() => setShowCreate(true)}>
-              🏌️ Skor
+            <Button size="sm" variant="ghost" className="gap-1.5 text-xs h-7" onClick={() => setShowCreate(true)}>
+              🏌️ Score
             </Button>
           </div>
         </div>
