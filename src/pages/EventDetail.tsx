@@ -1204,8 +1204,10 @@ ${liveUrl}`;
     <Tabs value={activeTab} onValueChange={setActiveTab} className={isDesktop ? "" : "px-4"}>
       <TabsList className="w-full overflow-x-auto flex">
         <TabsTrigger value="overview" className="flex-1 text-[11px]">Overview</TabsTrigger>
-        {/* Check-in — only for internal/interclub */}
-        {!isPersonalTour && <TabsTrigger value="checkin" className="flex-1 text-[11px]">Check-in</TabsTrigger>}
+        {/* Check-in — internal/interclub OR personal with Open/Arranged pairing */}
+        {(!isPersonalTour || isPersonalWithPairing) && (
+          <TabsTrigger value="checkin" className="flex-1 text-[11px]">Check-in</TabsTrigger>
+        )}
         {/* Pairings — internal/interclub OR personal with open/arranged pairing */}
         {(!isPersonalTour || isPersonalWithPairing) && (
           <TabsTrigger value="pairings" className="flex-1 text-[11px]">Pairings</TabsTrigger>
@@ -1329,7 +1331,73 @@ ${liveUrl}`;
 
       {/* CHECK-IN */}
       <TabsContent value="checkin" className="pt-0">
-        <EventCheckin eventId={id!} isAdmin={showAdminActions} userId={userId} event={event} tourId={(event?.tours as any)?.id} />
+        {isPersonalWithPairing ? (
+          /* Personal check-in — simple one-tap for player */
+          <div className="p-4 space-y-4">
+            {!myCheckin ? (
+              <div className="golf-card p-5 text-center space-y-4">
+                <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+                  <ClipboardCheck className="h-8 w-8 text-primary" />
+                </div>
+                <div>
+                  <p className="text-base font-bold">Check In</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Tap to confirm your arrival at the golf course.
+                    {pairingModeVal === "open" && " The course will then assign your group."}
+                    {pairingModeVal === "course_arranged" && " The course will then confirm your full arrangement."}
+                  </p>
+                </div>
+                <Button
+                  className="w-full"
+                  onClick={async () => {
+                    if (!userId || !id) return;
+                    // Auto-register contestant if needed
+                    let cid = myContestant?.id;
+                    if (!cid) {
+                      const { data: profile } = await supabase.from("profiles").select("handicap").eq("id", userId).single();
+                      const { data: nc } = await supabase.from("contestants")
+                        .insert({ event_id: id, player_id: userId, hcp: profile?.handicap ?? 0, status: "confirmed" })
+                        .select("id").single();
+                      cid = nc?.id;
+                      queryClient.invalidateQueries({ queryKey: ["contestants", id] });
+                    }
+                    if (!cid) return;
+                    await supabase.from("event_checkins").insert({
+                      event_id: id,
+                      contestant_id: cid,
+                      bag_drop_number: 1,
+                      locker_number: 1,
+                    });
+                    queryClient.invalidateQueries({ queryKey: ["event-checkins", id] });
+                    toast.success("Checked in! The course has been notified.");
+                  }}
+                >
+                  <ClipboardCheck className="h-4 w-4 mr-2" /> Check In Now
+                </Button>
+              </div>
+            ) : (
+              <div className="golf-card p-5 text-center space-y-3">
+                <div className="h-16 w-16 rounded-full bg-green-500/10 flex items-center justify-center mx-auto">
+                  <CheckCircle className="h-8 w-8 text-green-500" />
+                </div>
+                <div>
+                  <p className="text-base font-bold text-green-500">You're Checked In</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {pairingModeVal === "open"
+                      ? "Waiting for the course to assign your group. Check the Pairings tab."
+                      : "Your arrangement is being confirmed. Check the Pairings tab for details."}
+                  </p>
+                </div>
+                <Button variant="outline" size="sm" onClick={() => setActiveTab("pairings")}>
+                  View Pairings →
+                </Button>
+              </div>
+            )}
+          </div>
+        ) : (
+          /* Internal/Interclub — full check-in component */
+          <EventCheckin eventId={id!} isAdmin={showAdminActions} userId={userId} event={event} tourId={(event?.tours as any)?.id} />
+        )}
       </TabsContent>
 
 
