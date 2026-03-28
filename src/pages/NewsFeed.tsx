@@ -92,12 +92,46 @@ const NewsFeed = () => {
       const allowedIds = [...new Set([userId, ...buddyIds, ...clubMemberIds, ...tourMemberIds])];
 
       // 4. Fetch posts — from allowed authors OR platform announcements
-      const { data, error } = await supabase
+      // If user is platform admin OR has many connections, just fetch all (fallback)
+      const { data: adminCheck } = await supabase.rpc("is_platform_admin", { check_user_id: userId });
+      const isAdmin = !!adminCheck;
+
+      let query = supabase
         .from("posts")
         .select("*, profiles:author_id(full_name, avatar_url, handicap, members(clubs(name))))")
-        .or(`author_id.in.(${allowedIds.join(",")}),is_announcement.eq.true`)
         .order("created_at", { ascending: false })
         .limit(50);
+
+      if (!isAdmin) {
+        // Filter: only from allowed authors OR announcements
+        // Use two separate queries and merge to avoid PostgREST .in() syntax issues
+        const { data: myPosts } = await supabase
+          .from("posts")
+          .select("*, profiles:author_id(full_name, avatar_url, handicap, members(clubs(name))))")
+          .in("author_id", allowedIds)
+          .order("created_at", { ascending: false })
+          .limit(50);
+
+        const { data: announcements } = await supabase
+          .from("posts")
+          .select("*, profiles:author_id(full_name, avatar_url, handicap, members(clubs(name))))")
+          .eq("is_announcement", true)
+          .order("created_at", { ascending: false })
+          .limit(20);
+
+        // Merge & deduplicate
+        const all = [...(myPosts ?? []), ...(announcements ?? [])];
+        const seen = new Set<string>();
+        const merged = all.filter((p: any) => {
+          if (seen.has(p.id)) return false;
+          seen.add(p.id);
+          return true;
+        }).sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        return merged.slice(0, 50);
+      }
+
+      // Platform admin — see all posts
+      const { data, error } = await query;
       if (error) throw error;
       return data ?? [];
     },
