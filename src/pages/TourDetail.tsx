@@ -60,7 +60,7 @@ const TourDetail = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("tours")
-        .select("*, clubs!tours_organizer_club_id_fkey(name, logo_url)")
+        .select("*, clubs!tours_organizer_club_id_fkey(name, logo_url, is_personal)")
         .eq("id", id!)
         .single();
       if (error) throw error;
@@ -535,26 +535,35 @@ const TourDetail = () => {
       {/* Organizer Actions */}
       {isOrganizer && (
         <div className="flex gap-2 overflow-x-auto px-4 pb-3 scrollbar-none">
-          {tour.tournament_type === "interclub" && (
-            <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowInvite(true)}>
-              <UserPlus className="h-3 w-3" /> Invite Club
+          {/* Personal tournament — only New Event */}
+          {(tour.clubs as any)?.is_personal ? (
+            <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowCreateEvent(true)}>
+              <Calendar className="h-3 w-3" /> New Event
             </Button>
+          ) : (
+            <>
+              {tour.tournament_type === "interclub" && (
+                <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowInvite(true)}>
+                  <UserPlus className="h-3 w-3" /> Invite Club
+                </Button>
+              )}
+              <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowRegister(true)}>
+                <UserPlus className="h-3 w-3" /> Register Player
+              </Button>
+              <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowFlights(true)}>
+                <Layers className="h-3 w-3" /> Flights
+              </Button>
+              <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowCategories(true)}>
+                <Award className="h-3 w-3" /> Categories
+              </Button>
+              <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowCreateEvent(true)}>
+                <Calendar className="h-3 w-3" /> New Event
+              </Button>
+              <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowInvitationDialog(true)}>
+                <FileText className="h-3 w-3" /> Buat Undangan
+              </Button>
+            </>
           )}
-          <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowRegister(true)}>
-            <UserPlus className="h-3 w-3" /> Register Player
-          </Button>
-          <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowFlights(true)}>
-            <Layers className="h-3 w-3" /> Flights
-          </Button>
-          <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowCategories(true)}>
-            <Award className="h-3 w-3" /> Categories
-          </Button>
-          <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowCreateEvent(true)}>
-            <Calendar className="h-3 w-3" /> New Event
-          </Button>
-          <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowInvitationDialog(true)}>
-            <FileText className="h-3 w-3" /> Buat Undangan
-          </Button>
         </div>
       )}
 
