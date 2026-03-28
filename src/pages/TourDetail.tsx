@@ -1055,7 +1055,7 @@ const TourDetail = () => {
             </div>
             <div>
               <Label className="text-xs">Tanggal Event</Label>
-              <Popover>
+              <Popover modal={true}>
                 <PopoverTrigger asChild>
                   <button
                     className={`flex w-full items-center justify-between rounded-xl border px-3 py-2.5 text-sm transition-colors hover:border-primary/50 ${
@@ -1070,7 +1070,7 @@ const TourDetail = () => {
                     <CalendarIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
                   </button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
+                <PopoverContent className="w-auto p-0 z-[300]" align="start">
                   <Calendar
                     mode="single"
                     selected={editEventDate ? parseISO(editEventDate) : undefined}
