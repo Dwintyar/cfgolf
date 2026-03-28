@@ -91,7 +91,7 @@ const TourList = () => {
       // (private tour events handled separately via myEvents)
       const { data, error } = await supabase
         .from("events")
-        .select("*, courses(name, location), tours!inner(is_public)")
+        .select("*, courses(name, location), tours!inner(is_public, organizer_club_id, clubs!tours_organizer_club_id_fkey(is_personal))")
         .eq("tours.is_public", true)
         .order("event_date", { ascending: false });
       if (error) throw error;
