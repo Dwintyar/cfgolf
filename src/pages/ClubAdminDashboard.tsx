@@ -1348,6 +1348,15 @@ const ClubAdminDashboard = () => {
           </Select>
         </div>
       )}
+      <div className="flex items-center gap-2 px-3 py-2 mx-4 mb-2 rounded-xl border bg-amber-500/15 border-amber-500/40 text-amber-400">
+        <span className="relative flex h-2 w-2 shrink-0">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-60" />
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-400" />
+        </span>
+        <span className="font-bold text-[11px] uppercase tracking-wider shrink-0">Club Admin</span>
+        <span className="opacity-40 text-xs">›</span>
+        <span className="text-[11px] font-medium opacity-80 truncate">{club?.name ?? ""}</span>
+      </div>
       {/* KPI Cards */}
       {renderKPIs()}
 
