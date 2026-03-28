@@ -719,6 +719,8 @@ const EventDetail = () => {
 
   const showAdminActions = !!isEventAdmin;
   const isPersonalTour = !!(event?.tours as any)?.clubs?.is_personal;
+  const pairingModeVal = (event as any)?.pairing_mode ?? "self";
+  const isPersonalWithPairing = isPersonalTour && pairingModeVal !== "self";
 
   // --- Handlers ---
   const invokeWithAuth = async (fnName: string, body: any) => {
@@ -1202,14 +1204,59 @@ ${liveUrl}`;
     <Tabs value={activeTab} onValueChange={setActiveTab} className={isDesktop ? "" : "px-4"}>
       <TabsList className="w-full overflow-x-auto flex">
         <TabsTrigger value="overview" className="flex-1 text-[11px]">Overview</TabsTrigger>
-        <TabsTrigger value="checkin" className="flex-1 text-[11px]">Check-in</TabsTrigger>
-        {!isPersonalTour && <TabsTrigger value="pairings" className="flex-1 text-[11px]">Pairings</TabsTrigger>}
+        {/* Check-in — only for internal/interclub */}
+        {!isPersonalTour && <TabsTrigger value="checkin" className="flex-1 text-[11px]">Check-in</TabsTrigger>}
+        {/* Pairings — internal/interclub OR personal with open/arranged pairing */}
+        {(!isPersonalTour || isPersonalWithPairing) && (
+          <TabsTrigger value="pairings" className="flex-1 text-[11px]">Pairings</TabsTrigger>
+        )}
         <TabsTrigger value="leaderboard" className="flex-1 text-[11px]">{isPersonalTour ? "Scorecard" : "Board"}</TabsTrigger>
         {!isPersonalTour && <TabsTrigger value="hcpcorr" className="flex-1 text-[11px]">HCP Corr</TabsTrigger>}
       </TabsList>
 
       {/* OVERVIEW */}
       <TabsContent value="overview" className="space-y-4 pt-2">
+        {/* Personal score summary */}
+        {isPersonalTour && event?.status === "done" && myContestant && (
+          <div className="golf-card p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                <Trophy className="h-4 w-4 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm font-bold">Round Complete</p>
+                <p className="text-xs text-muted-foreground">{event?.event_date} · {(event?.courses as any)?.name}</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-3 text-center">
+              <div className="golf-card p-2">
+                <p className="text-xl font-bold">{(myContestant as any)?.gross_score ?? "—"}</p>
+                <p className="text-[10px] text-muted-foreground uppercase">Gross</p>
+              </div>
+              <div className="golf-card p-2 border-primary/30">
+                <p className="text-xl font-bold text-primary">{(myContestant as any)?.net_score ?? "—"}</p>
+                <p className="text-[10px] text-muted-foreground uppercase">Net</p>
+              </div>
+              <div className="golf-card p-2">
+                <p className="text-xl font-bold">{(myContestant as any)?.hcp ?? "—"}</p>
+                <p className="text-[10px] text-muted-foreground uppercase">HCP</p>
+              </div>
+            </div>
+          </div>
+        )}
+        {/* Personal — scheduled/playing state */}
+        {isPersonalTour && event?.status !== "done" && (
+          <div className="golf-card p-4 text-center">
+            <p className="text-sm font-semibold">
+              {event?.status === "playing" ? "Round in progress" : "Round not started yet"}
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {event?.status === "playing"
+                ? "Use Input Score to continue entering your scores."
+                : "Click Start Round or use the Play button to begin."}
+            </p>
+          </div>
+        )}
         {showAdminActions && event?.status !== "done" && !isPersonalTour && (
           <div className="golf-card p-3 flex items-center justify-between">
             <div>
@@ -1286,6 +1333,55 @@ ${liveUrl}`;
       </TabsContent>
 
 
+      {/* Personal Pairings — read-only view of course assignment */}
+      {isPersonalWithPairing && (
+        <TabsContent value="pairings" className="space-y-3 pt-2">
+          <div className="golf-card p-4 space-y-3">
+            <div className="flex items-center gap-2 mb-1">
+              <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                pairingModeVal === "open"
+                  ? "bg-blue-500/15 text-blue-400 border border-blue-500/30"
+                  : "bg-primary/15 text-primary border border-primary/30"
+              }`}>
+                {pairingModeVal === "open" ? "🌐 Open Pairing" : "🏌️ Course Arranged"}
+              </span>
+            </div>
+            {/* Show my pairing info if assigned */}
+            {myContestant && (
+              <>
+                {(myContestant as any).tee_time && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">Tee Time</span>
+                    <span className="text-xs font-semibold">
+                      {new Date((myContestant as any).tee_time).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
+                    </span>
+                  </div>
+                )}
+                {(myContestant as any).cart_number && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">Cart</span>
+                    <span className="text-xs font-semibold">#{(myContestant as any).cart_number}</span>
+                  </div>
+                )}
+                {(myContestant as any).caddy_name && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">Caddy</span>
+                    <span className="text-xs font-semibold">{(myContestant as any).caddy_name}</span>
+                  </div>
+                )}
+                {!(myContestant as any).tee_time && !(myContestant as any).cart_number && !(myContestant as any).caddy_name && (
+                  <div className="text-center py-6">
+                    <p className="text-sm text-muted-foreground">Pairing details not yet assigned.</p>
+                    <p className="text-xs text-muted-foreground mt-1">The golf course will update this before your tee time.</p>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </TabsContent>
+      )}
+      {/* Internal/Interclub Pairings */}
+      {!isPersonalWithPairing && (
       <TabsContent value="pairings" className="space-y-3 pt-2">
         {showAdminActions && (
           <div className="golf-card space-y-3 p-4">
