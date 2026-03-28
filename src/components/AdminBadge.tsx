@@ -1,4 +1,5 @@
 import { Shield, Trophy, Calendar, Settings, Flag } from "lucide-react";
+import type { ReactNode } from "react";
 
 type AdminLevel = "platform" | "club" | "tour" | "event" | "course";
 
@@ -11,7 +12,7 @@ interface Props {
 
 const config: Record<AdminLevel, {
   label: string;
-  icon: React.ReactNode;
+  icon: ReactNode;
   bg: string;
   border: string;
   text: string;
