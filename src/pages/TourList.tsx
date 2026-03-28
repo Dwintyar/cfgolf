@@ -120,7 +120,7 @@ const TourList = () => {
         if (ids.length > 0) {
           const { data: pe } = await supabase
             .from("events")
-            .select("*, courses(name, location), tours(is_public)")
+            .select("*, courses(name, location), tours(is_public, organizer_club_id, clubs!tours_organizer_club_id_fkey(is_personal))")
             .in("tour_id", ids)
             .order("event_date", { ascending: false });
           privateEvents = [...privateEvents, ...(pe ?? [])];
@@ -137,7 +137,7 @@ const TourList = () => {
         if (ids.length > 0) {
           const { data: pe } = await supabase
             .from("events")
-            .select("*, courses(name, location), tours(is_public)")
+            .select("*, courses(name, location), tours(is_public, organizer_club_id, clubs!tours_organizer_club_id_fkey(is_personal))")
             .in("tour_id", ids)
             .order("event_date", { ascending: false });
           privateEvents = [...privateEvents, ...(pe ?? [])];
