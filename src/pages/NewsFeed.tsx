@@ -37,23 +37,71 @@ const NewsFeed = () => {
   const [submittingComments, setSubmittingComments] = useState<Set<string>>(new Set());
   const queryClient = useQueryClient();
 
+  const [isPlatformAdmin, setIsPlatformAdmin] = useState(false);
+  const [isAnnouncement, setIsAnnouncement] = useState(false);
+
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) setUserId(user.id);
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (user) {
+        setUserId(user.id);
+        // Check platform admin
+        const { data } = await supabase.rpc("is_platform_admin", { check_user_id: user.id });
+        setIsPlatformAdmin(!!data);
+      }
     });
   }, []);
 
   const { data: posts, isLoading } = useQuery({
-    queryKey: ["feed-posts"],
+    queryKey: ["feed-posts", userId],
     queryFn: async () => {
+      if (!userId) return [];
+
+      // 1. My buddy IDs (accepted connections)
+      const { data: buddyConns } = await supabase
+        .from("buddy_connections")
+        .select("requester_id, addressee_id")
+        .eq("status", "accepted")
+        .or(`requester_id.eq.${userId},addressee_id.eq.${userId}`);
+      const buddyIds = (buddyConns ?? []).map((b: any) =>
+        b.requester_id === userId ? b.addressee_id : b.requester_id
+      );
+
+      // 2. My club member IDs
+      const { data: myMemberships } = await supabase
+        .from("members").select("club_id").eq("user_id", userId);
+      const myClubIds = (myMemberships ?? []).map((m: any) => m.club_id);
+      let clubMemberIds: string[] = [];
+      if (myClubIds.length > 0) {
+        const { data: clubMembers } = await supabase
+          .from("members").select("user_id").in("club_id", myClubIds);
+        clubMemberIds = (clubMembers ?? []).map((m: any) => m.user_id);
+      }
+
+      // 3. My tournament contestant IDs
+      const { data: myContestants } = await supabase
+        .from("contestants").select("event_id").eq("player_id", userId);
+      const myEventIds = (myContestants ?? []).map((c: any) => c.event_id);
+      let tourMemberIds: string[] = [];
+      if (myEventIds.length > 0) {
+        const { data: eventContestants } = await supabase
+          .from("contestants").select("player_id").in("event_id", myEventIds);
+        tourMemberIds = (eventContestants ?? []).map((c: any) => c.player_id);
+      }
+
+      // Merge all allowed author IDs (include self)
+      const allowedIds = [...new Set([userId, ...buddyIds, ...clubMemberIds, ...tourMemberIds])];
+
+      // 4. Fetch posts — from allowed authors OR platform announcements
       const { data, error } = await supabase
         .from("posts")
         .select("*, profiles:author_id(full_name, avatar_url, handicap, members(clubs(name))))")
+        .or(`author_id.in.(${allowedIds.join(",")}),is_announcement.eq.true`)
         .order("created_at", { ascending: false })
         .limit(50);
       if (error) throw error;
       return data ?? [];
     },
+    enabled: !!userId,
   });
 
   const { data: courses } = useQuery({
@@ -114,6 +162,7 @@ const NewsFeed = () => {
       category,
       image_url: photoUrl || null,
       course_id: taggedCourseId || null,
+      is_announcement: isPlatformAdmin && isAnnouncement,
     });
     setPosting(false);
     if (error) { toast.error(error.message); return; }
@@ -123,6 +172,7 @@ const NewsFeed = () => {
     setPhotoUrl(null);
     setTaggedCourseId(null);
     setTaggedCourseName(null);
+    setIsAnnouncement(false);
     setShowCreate(false);
     queryClient.invalidateQueries({ queryKey: ["feed-posts"] });
   };
@@ -262,13 +312,18 @@ const NewsFeed = () => {
             <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
               <MessageSquare className="h-8 w-8 text-primary/60" />
             </div>
-            <p className="text-lg font-semibold text-foreground">No posts yet</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Jadilah yang pertama berbagi momen golf hari ini.
+            <p className="text-lg font-semibold text-foreground">Your feed is empty</p>
+            <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
+              Posts will appear from your <strong>buddies</strong>, <strong>club members</strong>, and <strong>tournament participants</strong>.
             </p>
-            <Button className="mt-4" onClick={() => setShowCreate(true)}>
-              Buat Postingan
-            </Button>
+            <p className="text-xs text-muted-foreground mt-1">
+              Add buddies or join a club to see their posts here.
+            </p>
+            <div className="flex gap-2 mt-4">
+              <Button variant="outline" size="sm" onClick={() => setShowCreate(true)}>
+                Share Something
+              </Button>
+            </div>
           </div>
         )}
 
@@ -524,10 +579,20 @@ const NewsFeed = () => {
               </div>
             )}
           </div>
+          {/* Platform Admin — announcement toggle */}
+          {isPlatformAdmin && (
+            <div className="flex items-center justify-between rounded-xl border border-amber-500/30 bg-amber-500/5 px-3 py-2.5">
+              <div>
+                <p className="text-xs font-semibold text-amber-500">📢 Platform Announcement</p>
+                <p className="text-[10px] text-muted-foreground">Visible to all users regardless of connections</p>
+              </div>
+              <Switch checked={isAnnouncement} onCheckedChange={setIsAnnouncement} />
+            </div>
+          )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
             <Button onClick={handlePost} disabled={posting || (!content.trim() && !photoUrl)}>
-              {posting ? "Posting…" : "Post"}
+              {posting ? "Posting…" : isAnnouncement ? "📢 Announce" : "Post"}
             </Button>
           </DialogFooter>
         </DialogContent>
