@@ -54,7 +54,7 @@ const CreateEventDialog = ({ tourId, open, onOpenChange, onDone, isPersonal = fa
       ticket_total: isPersonal ? 1 : (parseInt(ticketTotal) || 0),
       status: "scheduled",
       pairing_approval_required: isPersonal ? false : pairingApproval,
-      pairing_mode: isPersonal ? "self" : pairingMode,
+      pairing_mode: pairingMode,
     }).select("id").single();
     if (error || !newEvent) { setLoading(false); toast.error(error?.message ?? "Failed"); return; }
 
@@ -126,29 +126,43 @@ const CreateEventDialog = ({ tourId, open, onOpenChange, onDone, isPersonal = fa
               <Input type="number" value={ticketTotal} onChange={e => setTicketTotal(e.target.value)} />
             </div>
           )}
-          {!isPersonal && (
-            <div>
-              <Label className="text-xs">Pairing Mode</Label>
-              <Select value={pairingMode} onValueChange={setPairingMode}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="self">👤 Self — Tentukan sendiri group & pasangan</SelectItem>
-                  <SelectItem value="open">🌐 Open — Minta golf course untuk memasangkan</SelectItem>
-                  <SelectItem value="course_arranged">🏌️ Course Arranged — Sepenuhnya diatur golf course</SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-[10px] text-muted-foreground mt-1">
-                {pairingMode === "self" && "Kamu atur sendiri siapa yang main bersama"}
-                {pairingMode === "open" && "Golf course akan mencarikan pasangan bermain untukmu"}
-                {pairingMode === "course_arranged" && "Golf course mengatur sepenuhnya: cart, caddy, tee time, start hole"}
-              </p>
+          {/* Pairing Mode — always shown */}
+          <div>
+            <Label className="text-xs">Pairing Mode</Label>
+            <div className="grid grid-cols-3 gap-2 mt-1">
+              {[
+                { value: "self", icon: "👤", label: "Solo", desc: isPersonal ? "Play alone" : "Self-arranged" },
+                { value: "open", icon: "🌐", label: "Open", desc: "Course pairs you" },
+                { value: "course_arranged", icon: "🏌️", label: "Arranged", desc: "Course arranges all" },
+              ].map(opt => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setPairingMode(opt.value)}
+                  className={`rounded-xl border p-2.5 text-center transition-all ${
+                    pairingMode === opt.value
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border bg-card text-muted-foreground hover:border-primary/40"
+                  }`}
+                >
+                  <div className="text-base">{opt.icon}</div>
+                  <p className="text-[11px] font-semibold mt-0.5">{opt.label}</p>
+                  <p className="text-[9px] opacity-60 mt-0.5 leading-tight">{opt.desc}</p>
+                </button>
+              ))}
             </div>
-          )}
+            <p className="text-[10px] text-muted-foreground mt-1.5">
+              {pairingMode === "self" && (isPersonal ? "You will play alone or arrange your own group." : "You arrange your own groups and pairings.")}
+              {pairingMode === "open" && "The golf course will pair you with other players at the same tee time."}
+              {pairingMode === "course_arranged" && "The golf course fully arranges your cart, caddy, tee time, and start hole."}
+            </p>
+          </div>
+          {/* Pairing Approval — internal/interclub + self mode only */}
           {!isPersonal && pairingMode === "self" && (
             <div className="golf-card p-3 flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium">Pairing Approval</p>
-                <p className="text-xs text-muted-foreground">Review pairing sebelum dipublikasi</p>
+                <p className="text-xs text-muted-foreground">Review pairings before publishing</p>
               </div>
               <Switch checked={pairingApproval} onCheckedChange={setPairingApproval} />
             </div>
