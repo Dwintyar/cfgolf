@@ -7,7 +7,7 @@ import { ChatNotifContext } from "@/App";
 import { Badge } from "@/components/ui/badge";
 import {
   Newspaper, Users, Trophy, MapPin,
-  Bell, MessageCircle, Settings,
+  Bell, MessageSquare, Settings,
   Building2, Search, Flag, ShieldCheck,
   ChevronDown, LogOut, TrendingUp, User
 } from "lucide-react";
@@ -253,8 +253,8 @@ const DesktopLayout = ({ children, sidebarRightHidden = false }: { children: Rea
   const hasResults = searchResults.golfers.length > 0 || searchResults.clubs.length > 0 || searchResults.events.length > 0;
 
   const navItems = [
-    { path: "/news", label: "Lounge", icon: Newspaper },
-    { path: "/chat", label: "Chats", icon: MessageCircle },
+    { path: "/news", label: "Lounge", icon: Home },
+    { path: "/chat", label: "Chats", icon: MessageSquare },
     { path: "/clubs", label: "Clubs", icon: Building2 },
     { path: "/tour", label: "Rounds", icon: Flag },
     { path: "/venue", label: "Courses", icon: MapPin },
@@ -398,7 +398,7 @@ const DesktopLayout = ({ children, sidebarRightHidden = false }: { children: Rea
             onClick={() => navigate("/chat")}
             className="relative p-2 rounded-full hover:bg-secondary transition-colors"
           >
-            <MessageCircle className="h-5 w-5 text-foreground" />
+            <MessageSquare className="h-5 w-5 text-foreground" />
             {unreadCount > 0 && (
               <span className="absolute top-0.5 right-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-bold text-destructive-foreground">
                 {unreadCount > 9 ? "9+" : unreadCount}
