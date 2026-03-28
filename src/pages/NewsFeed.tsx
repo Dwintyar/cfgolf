@@ -211,7 +211,7 @@ const NewsFeed = () => {
   return (
     <DesktopLayout>
     <div className="bottom-nav-safe">
-      <AppHeader title="Feeds" />
+      <AppHeader title="Lounge" />
 
       <div className="space-y-4 px-4 pb-20">
         {/* Create Post Box */}

@@ -149,7 +149,7 @@ const ChatList = () => {
     <div className="bottom-nav-safe">
       {/* Header */}
       <div className="flex items-center justify-between p-4">
-        <h1 className="font-display text-2xl font-bold">Messages</h1>
+        <h1 className="font-display text-2xl font-bold">Chats</h1>
         <button
           onClick={() => setNewMsgOpen(true)}
           className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"

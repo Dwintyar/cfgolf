@@ -4,11 +4,11 @@ import { Newspaper, MessageCircle, Trophy, Flag, MapPin } from "lucide-react";
 import { ChatNotifContext } from "@/App";
 
 const tabs = [
-  { path: "/news", label: "Feeds", icon: Newspaper },
-  { path: "/chat", label: "Messages", icon: MessageCircle, showChatBadge: true },
+  { path: "/news", label: "Lounge", icon: Newspaper },
+  { path: "/chat", label: "Chats", icon: MessageCircle, showChatBadge: true },
   { path: "/clubs", label: "Clubs", icon: Trophy },
-  { path: "/tour", label: "Play", icon: Flag },
-  { path: "/venue", label: "Venues", icon: MapPin },
+  { path: "/tour", label: "Rounds", icon: Flag },
+  { path: "/venue", label: "Courses", icon: MapPin },
 ];
 
 const hiddenPaths = ["/login", "/reset-password"];

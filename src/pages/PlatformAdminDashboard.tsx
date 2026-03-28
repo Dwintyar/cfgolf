@@ -272,7 +272,7 @@ const PlatformAdminDashboard = () => {
             <TabsTrigger value="clubs" className="flex-1 text-xs">Clubs</TabsTrigger>
             <TabsTrigger value="tours" className="flex-1 text-xs">Tours</TabsTrigger>
             <TabsTrigger value="events" className="flex-1 text-xs">Events</TabsTrigger>
-            <TabsTrigger value="venues" className="flex-1 text-xs">Venues</TabsTrigger>
+            <TabsTrigger value="venues" className="flex-1 text-xs">Courses</TabsTrigger>
             <TabsTrigger value="reports" className="flex-1 text-xs">Reports</TabsTrigger>
           </TabsList>
 

@@ -276,7 +276,7 @@ const TourList = () => {
     <DesktopLayout>
     <div className="bottom-nav-safe">
       <AppHeader
-        title="Play"
+        title="Rounds"
         icon={<Trophy className="h-5 w-5 text-primary" />}
       />
 

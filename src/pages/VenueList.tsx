@@ -116,7 +116,7 @@ const VenueList = () => {
   return (
     <DesktopLayout>
       <div className="bottom-nav-safe">
-        <AppHeader title="Venues" icon={<MapPin className="h-5 w-5 text-primary" />} />
+        <AppHeader title="Courses" icon={<MapPin className="h-5 w-5 text-primary" />} />
 
         {/* Search + Filter */}
         <div className="px-4 pb-3 space-y-3">

@@ -90,7 +90,7 @@ const VenuesWidget = ({ navigate }: { navigate: (path: string) => void }) => {
   return (
     <div className="golf-card p-3 mb-4">
       <div className="flex items-center justify-between mb-2">
-        <p className="text-xs font-semibold text-foreground">Venues</p>
+        <p className="text-xs font-semibold text-foreground">Courses</p>
         <button onClick={() => navigate("/venue")} className="text-[10px] text-primary hover:underline">
           See all
         </button>
@@ -253,11 +253,11 @@ const DesktopLayout = ({ children, sidebarRightHidden = false }: { children: Rea
   const hasResults = searchResults.golfers.length > 0 || searchResults.clubs.length > 0 || searchResults.events.length > 0;
 
   const navItems = [
-    { path: "/news", label: "Feeds", icon: Newspaper },
-    { path: "/chat", label: "Messages", icon: MessageCircle },
+    { path: "/news", label: "Lounge", icon: Newspaper },
+    { path: "/chat", label: "Chats", icon: MessageCircle },
     { path: "/clubs", label: "Clubs", icon: Building2 },
-    { path: "/tour", label: "Play", icon: Flag },
-    { path: "/venue", label: "Venues", icon: MapPin },
+    { path: "/tour", label: "Rounds", icon: Flag },
+    { path: "/venue", label: "Courses", icon: MapPin },
   ];
 
   const getInitials = (name: string | null) =>
