@@ -104,25 +104,19 @@ const CreateEventDialog = ({ tourId, open, onOpenChange, onDone, isPersonal = fa
           <div>
             <Label className="text-xs">Tanggal Event</Label>
             <div className="relative">
-              <button
-                type="button"
-                onClick={() => (document.getElementById('event-date-input') as HTMLInputElement)?.showPicker?.()}
-                className={`flex w-full items-center justify-between rounded-xl border px-3 py-2.5 text-sm transition-colors hover:border-primary/50 bg-background border-input ${date ? "text-foreground" : "text-muted-foreground"}`}
-              >
+              <div className={`flex w-full items-center justify-between rounded-xl border px-3 py-2.5 text-sm bg-background border-input ${date ? "text-foreground" : "text-muted-foreground"}`}>
                 <span>
                   {date
                     ? new Date(date + "T00:00:00").toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })
                     : "Pilih tanggal..."}
                 </span>
-                <CalendarIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
-              </button>
+                <CalendarIcon className="h-4 w-4 shrink-0 text-muted-foreground pointer-events-none" />
+              </div>
               <input
-                id="event-date-input"
                 type="date"
                 value={date}
                 onChange={e => setDate(e.target.value)}
-                className="absolute inset-0 opacity-0 w-full cursor-pointer"
-                style={{ colorScheme: "dark" }}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
               />
             </div>
           </div>
