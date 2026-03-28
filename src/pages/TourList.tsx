@@ -318,7 +318,7 @@ const TourList = () => {
                           : "bg-primary text-primary-foreground hover:bg-primary/90"
                       }`}
                     >
-                      ▶ {isPlaying ? "Lanjut" : "Mulai"}
+                      ▶ {isPlaying ? "Play" : "Play"}
                     </button>
                   </div>
                 </div>
