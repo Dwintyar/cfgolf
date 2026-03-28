@@ -52,70 +52,16 @@ const NewsFeed = () => {
   }, []);
 
   const { data: posts, isLoading } = useQuery({
-    queryKey: ["feed-posts", userId],
+    queryKey: ["feed-posts"],
     queryFn: async () => {
-      if (!userId) return [];
-
-      // Fetch all posts first
-      const { data: allPosts, error } = await supabase
+      const { data, error } = await supabase
         .from("posts")
         .select("*, profiles:author_id(full_name, avatar_url, handicap, members(clubs(name))))")
         .order("created_at", { ascending: false })
-        .limit(100);
+        .limit(50);
       if (error) throw error;
-      if (!allPosts?.length) return [];
-
-      // Get my buddy IDs
-      const { data: buddyConns } = await supabase
-        .from("buddy_connections")
-        .select("requester_id, addressee_id")
-        .eq("status", "accepted")
-        .or(`requester_id.eq.${userId},addressee_id.eq.${userId}`);
-      const buddyIds = new Set((buddyConns ?? []).map((b: any) =>
-        b.requester_id === userId ? b.addressee_id : b.requester_id
-      ));
-
-      // Get my club member IDs
-      const { data: myMemberships } = await supabase
-        .from("members").select("club_id").eq("user_id", userId);
-      const myClubIds = (myMemberships ?? []).map((m: any) => m.club_id);
-      const clubMemberIds = new Set<string>();
-      if (myClubIds.length > 0) {
-        const { data: cm } = await supabase
-          .from("members").select("user_id").in("club_id", myClubIds);
-        (cm ?? []).forEach((m: any) => clubMemberIds.add(m.user_id));
-      }
-
-      // Get my tournament contestant IDs
-      const { data: myC } = await supabase
-        .from("contestants").select("event_id").eq("player_id", userId);
-      const myEventIds = (myC ?? []).map((c: any) => c.event_id);
-      const tourMemberIds = new Set<string>();
-      if (myEventIds.length > 0) {
-        const { data: ec } = await supabase
-          .from("contestants").select("player_id").in("event_id", myEventIds);
-        (ec ?? []).forEach((c: any) => tourMemberIds.add(c.player_id));
-      }
-
-      // Filter posts client-side
-      const filtered = allPosts.filter((p: any) => {
-        if (p.is_announcement) return true;  // always show announcements
-        if (p.author_id === userId) return true;  // own posts
-        if (buddyIds.has(p.author_id)) return true;
-        if (clubMemberIds.has(p.author_id)) return true;
-        if (tourMemberIds.has(p.author_id)) return true;
-        return false;
-      });
-
-      // If no connections yet, show own posts + announcements only
-      // (don't return empty feed)
-      if (filtered.length === 0) {
-        return allPosts.filter((p: any) => p.author_id === userId || p.is_announcement);
-      }
-
-      return filtered;
+      return data ?? [];
     },
-    enabled: !!userId,
   });
 
   const { data: courses } = useQuery({
