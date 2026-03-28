@@ -75,6 +75,50 @@ const ScorecardInput = () => {
     enabled: !!userId,
   });
 
+  // Fetch existing saved scores
+  const { data: existingScores } = useQuery({
+    queryKey: ["existing-scores-sc", eventId, userId],
+    queryFn: async () => {
+      const courseId = (event?.courses as any)?.id;
+      if (!courseId || !userId) return null;
+
+      // Find round for this course by this user
+      const { data: round } = await supabase
+        .from("rounds").select("id")
+        .eq("course_id", courseId).eq("created_by", userId)
+        .maybeSingle();
+      if (!round) return null;
+
+      // Find scorecard
+      const { data: sc } = await supabase
+        .from("scorecards").select("id")
+        .eq("round_id", round.id).eq("player_id", userId)
+        .maybeSingle();
+      if (!sc) return null;
+
+      // Fetch hole scores
+      const { data: hs } = await supabase
+        .from("hole_scores").select("hole_number, strokes")
+        .eq("scorecard_id", sc.id);
+      return hs ?? [];
+    },
+    enabled: !!event && !!userId,
+  });
+
+  // Pre-populate scores from database when loaded
+  useEffect(() => {
+    if (!existingScores || existingScores.length === 0) return;
+    setScores(prev => {
+      // Only set if no scores entered yet (don't overwrite user input)
+      if (Object.keys(prev).length > 0) return prev;
+      const loaded: Record<number, number | null> = {};
+      existingScores.forEach((hs: any) => {
+        if (hs.strokes !== null) loaded[hs.hole_number] = hs.strokes;
+      });
+      return loaded;
+    });
+  }, [existingScores]);
+
   // Auto-set playing + auto-register contestant
   useEffect(() => {
     if (!event || !eventId || !userId) return;
