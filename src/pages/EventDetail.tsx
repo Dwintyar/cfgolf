@@ -1105,13 +1105,13 @@ ${liveUrl}`;
         <TabsTrigger value="overview" className="flex-1 text-[11px]">Overview</TabsTrigger>
         <TabsTrigger value="checkin" className="flex-1 text-[11px]">Check-in</TabsTrigger>
         {!isPersonalTour && <TabsTrigger value="pairings" className="flex-1 text-[11px]">Pairings</TabsTrigger>}
-        <TabsTrigger value="leaderboard" className="flex-1 text-[11px]">Board</TabsTrigger>
+        <TabsTrigger value="leaderboard" className="flex-1 text-[11px]">{isPersonalTour ? "Scorecard" : "Board"}</TabsTrigger>
         {!isPersonalTour && <TabsTrigger value="hcpcorr" className="flex-1 text-[11px]">HCP Corr</TabsTrigger>}
       </TabsList>
 
       {/* OVERVIEW */}
       <TabsContent value="overview" className="space-y-4 pt-2">
-        {showAdminActions && event?.status !== "completed" && (
+        {showAdminActions && event?.status !== "completed" && !isPersonalTour && (
           <div className="golf-card p-3 flex items-center justify-between">
             <div>
               <p className="text-xs font-medium">Pairing Approval</p>
@@ -1135,7 +1135,7 @@ ${liveUrl}`;
           </div>
         )}
 
-        <Section title={isPersonalTour ? "Player" : "Contestants"} icon={Users} count={contestants?.length}>
+        {!isPersonalTour && <Section title="Contestants" icon={Users} count={contestants?.length}>
           {contestants?.length === 0 && <EmptyState text="No contestants" />}
           {contestants?.slice().sort((a: any, b: any) => ((a.profiles as any)?.full_name ?? "").localeCompare((b.profiles as any)?.full_name ?? "", "id")).slice(0, 10).map((c) => (
             <div key={c.id} className="golf-card flex items-center gap-3 p-3">
@@ -1150,7 +1150,7 @@ ${liveUrl}`;
             </div>
           ))}
           {(contestants?.length ?? 0) > 10 && <p className="text-xs text-muted-foreground text-center py-1">+{(contestants!.length) - 10} more</p>}
-        </Section>
+        </Section>}
 
         {!isPersonalTour && (<Section title="Tickets" icon={Ticket} count={tickets?.length} sub={`${usedTickets} assigned`}>
           {tickets?.length === 0 && <EmptyState text="No tickets" />}
