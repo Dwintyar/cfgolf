@@ -18,7 +18,6 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
-import AdminBadge from "@/components/AdminBadge";
 import AssignContestantDialog from "@/components/tour/AssignContestantDialog";
 import WinnerResultsDialog from "@/components/event/WinnerResultsDialog";
 import EventCheckin from "@/components/event/EventCheckin";

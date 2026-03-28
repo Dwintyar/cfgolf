@@ -16,7 +16,6 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { useState, useEffect, useMemo } from "react";
 import { toast } from "sonner";
-import AdminBadge from "@/components/AdminBadge";
 import { CalendarIcon } from "lucide-react";
 import InviteClubDialog from "@/components/tour/InviteClubDialog";
 import RegisterPlayerDialog from "@/components/tour/RegisterPlayerDialog";
@@ -492,13 +491,6 @@ const TourDetail = () => {
 
   return (
     <div className="bottom-nav-safe">
-      {isOrganizer && (
-        <AdminBadge
-          level="tour"
-          context={tour.name}
-          subContext={(tour.clubs as any)?.name ?? ""}
-        />
-      )}
       {/* Header */}
       <div className="p-4">
         <button onClick={() => navigate("/tour")} className="mb-2 text-xs text-muted-foreground hover:text-foreground transition-colors">← All Tours</button>
