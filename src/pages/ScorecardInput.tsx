@@ -31,6 +31,16 @@ const ScorecardInput = () => {
     });
   }, [navigate]);
 
+  // Auto-set event to playing when scorecard is opened (personal tournaments)
+  useEffect(() => {
+    if (!event || !eventId) return;
+    if (event.status === "scheduled" || event.status === "ready") {
+      supabase.from("events").update({ status: "playing" }).eq("id", eventId).then(() => {
+        // Silently update — user doesn't need to see this
+      });
+    }
+  }, [event, eventId]);
+
   const { data: event } = useQuery({
     queryKey: ["event-scorecard", eventId],
     queryFn: async () => {

@@ -1048,8 +1048,8 @@ const EventDetail = () => {
 
   const actionButtonsBlock = (
     <div className="flex gap-2 overflow-x-auto px-4 pb-3 scrollbar-none">
-      {/* Personal: langsung ke scorecard tanpa perlu contestant/checkin */}
-      {isPersonalTour && showAdminActions && event?.status !== "done" && (
+      {/* Personal: langsung ke scorecard, hanya saat playing */}
+      {isPersonalTour && showAdminActions && event?.status === "playing" && (
         <Button
           size="sm"
           className="h-7 shrink-0 gap-1 text-[11px]"
@@ -1107,11 +1107,8 @@ const EventDetail = () => {
               {settingReady ? "Setting…" : "Set Ready"}
             </Button>
           )}
-          {/* Set Playing — personal: from scheduled, internal: from ready */}
-          {event?.status !== "playing" && event?.status !== "done" && (
-            (isPersonalTour && event?.status === "scheduled") ||
-            (!isPersonalTour && event?.status === "ready")
-          ) && (
+          {/* Set Playing — internal/interclub only (personal auto-sets via scorecard) */}
+          {!isPersonalTour && event?.status === "ready" && (
             <Button size="sm" variant="outline"
               className="h-7 shrink-0 gap-1 text-[11px] border-green-500/40 text-green-400 hover:bg-green-500/10"
               onClick={handleSetPlaying}>
