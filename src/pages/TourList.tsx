@@ -379,10 +379,19 @@ const TourList = () => {
                 </p>
               </div>
               <Badge
-                variant={event.status === "done" ? "secondary" : "outline"}
-                className="text-[9px] shrink-0"
+                variant="outline"
+                className={`text-[9px] shrink-0 ${
+                  event.status === "playing" ? "border-green-500/40 text-green-400 bg-green-500/5" :
+                  event.status === "done" ? "border-primary/40 text-primary bg-primary/5" :
+                  event.status === "ready" ? "border-accent/40 text-accent bg-accent/5" :
+                  event.status === "scheduled" ? "border-blue-400/40 text-blue-400 bg-blue-400/5" :
+                  "border-muted-foreground/30 text-muted-foreground"
+                }`}
               >
-                {event.status}
+                {event.status === "scheduled" ? "Scheduled" :
+                 event.status === "ready" ? "Ready" :
+                 event.status === "playing" ? "Playing" :
+                 event.status === "done" ? "Done" : "Draft"}
               </Badge>
               <Button
                 size="sm"
