@@ -156,7 +156,7 @@ const ScorecardInput = () => {
     if (hole < holesCount) setTimeout(() => inputRefs.current[hole]?.focus(), 80);
   };
 
-  const handleSave = async () => {
+  const handleSave = async (finish = false) => {
     if (!userId || !event) return;
     setSubmitting(true);
     try {
@@ -203,11 +203,11 @@ const ScorecardInput = () => {
         }, { onConflict: "scorecard_id,hole_number" });
       }
 
-      if (allFilled) {
+      if (finish) {
         // Finish round
         await supabase.from("rounds").update({ status: "done", finished_at: new Date().toISOString() }).eq("id", round.id);
         
-        // Finalize event — set to done + update HCP
+        // Finalize event — set to done
         await supabase.from("events").update({ status: "done" }).eq("id", eventId!);
 
         // Update HCP
@@ -226,7 +226,8 @@ const ScorecardInput = () => {
 
         queryClient.invalidateQueries({ queryKey: ["event-leaderboard"] });
         queryClient.invalidateQueries({ queryKey: ["event", eventId] });
-        toast.success(`Round complete! Gross: ${totalStrokes} · Net: ${netTotal} · HCP: ${oldHcp} → ${newHcp}`);
+        queryClient.invalidateQueries({ queryKey: ["event-scorecard", eventId] });
+        toast.success(`Round complete! Gross: ${totalStrokes} · Net: ${netTotal}`);
       } else {
         queryClient.invalidateQueries({ queryKey: ["event-leaderboard"] });
         toast.success("Progress saved!");
@@ -400,19 +401,25 @@ const ScorecardInput = () => {
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Net</p>
           </div>
         </div>
-        <Button
-          className="w-full h-12 text-sm font-bold"
-          disabled={submitting || filledCount === 0}
-          onClick={handleSave}
-        >
-          {submitting
-            ? "Saving..."
-            : allFilled
-            ? "Save & Finish"
-            : filledCount === 0
-            ? "Enter scores to save"
-            : `Save Progress (${filledCount}/${holesCount})`}
-        </Button>
+        <div className="flex gap-2">
+          {/* Save Progress — always available if any score entered */}
+          <Button
+            variant="outline"
+            className="flex-1 h-12 text-sm font-bold"
+            disabled={submitting || filledCount === 0}
+            onClick={() => handleSave(false)}
+          >
+            {submitting ? "Saving..." : filledCount === 0 ? "Enter scores" : `Save (${filledCount}/${holesCount})`}
+          </Button>
+          {/* Save & Finish — finalize round */}
+          <Button
+            className="flex-1 h-12 text-sm font-bold"
+            disabled={submitting || filledCount === 0}
+            onClick={() => handleSave(true)}
+          >
+            {submitting ? "..." : "Save & Finish"}
+          </Button>
+        </div>
       </div>
     </div>
   );
