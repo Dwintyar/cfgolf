@@ -764,6 +764,23 @@ const EventDetail = () => {
     }
   };
 
+  const handleSelesaiBermain = async () => {
+    if (!id) return;
+    setFinalizing(true);
+    try {
+      // Update HCP for this player only
+      await invokeWithAuth("update-player-handicap", { event_id: id });
+      // Set status done
+      await supabase.from("events").update({ status: "done" }).eq("id", id);
+      toast.success("Selesai bermain! HCP kamu telah diupdate.");
+      queryClient.invalidateQueries({ queryKey: ["event", id] });
+      refetchResults();
+    } catch {
+      toast.error("Gagal menyimpan. Coba lagi.");
+    }
+    setFinalizing(false);
+  };
+
   const handleSetReady = async () => {
     if (!id) return;
     setSettingReady(true);
@@ -1080,15 +1097,27 @@ const EventDetail = () => {
             </Button>
           )}
           {event?.status !== "done" ? (
-            <Button
-              size="sm"
-              className="h-7 shrink-0 gap-1 text-[11px] bg-primary"
-              onClick={() => setShowFinalizeConfirm(true)}
-              disabled={finalizing || event?.status !== "playing"}
-            >
-              <Trophy className="h-3 w-3" />
-              {finalizing ? "Finalizing…" : "Finalize Event"}
-            </Button>
+            isPersonalTour ? (
+              <Button
+                size="sm"
+                className="h-7 shrink-0 gap-1 text-[11px] bg-primary"
+                onClick={handleSelesaiBermain}
+                disabled={finalizing || event?.status !== "playing"}
+              >
+                <CheckCircle className="h-3 w-3" />
+                {finalizing ? "Menyimpan…" : "Selesai Bermain"}
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                className="h-7 shrink-0 gap-1 text-[11px] bg-primary"
+                onClick={() => setShowFinalizeConfirm(true)}
+                disabled={finalizing || event?.status !== "playing"}
+              >
+                <Trophy className="h-3 w-3" />
+                {finalizing ? "Finalizing…" : "Finalize Event"}
+              </Button>
+            )
           ) : (
             <Badge className="text-[10px] bg-primary/20 text-primary border-primary/30">
               ✓ Done
