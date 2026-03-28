@@ -703,23 +703,26 @@ const UpcomingEventsWidget = ({ navigate, userId }: { navigate: (path: string) =
         {events.map((e: any) => {
           const isToday = e.event_date === today;
           const isTomorrow = e.event_date === tomorrow;
+          const isPlaying = (e as any).status === "playing";
+          const showPlay = isToday || isPlaying;
           return (
-            <div key={e.id} className={`rounded-xl p-2 transition-colors ${isToday ? "bg-primary/10 border border-primary/30" : "hover:bg-muted/50"}`}>
+            <div key={e.id} className={`rounded-xl p-2 transition-colors ${showPlay ? "bg-primary/10 border border-primary/30" : "hover:bg-muted/50"}`}>
               <div className="flex items-start justify-between gap-2">
                 <button
                   onClick={() => navigate(`/event/${e.id}`)}
                   className="flex-1 text-left min-w-0"
                 >
                   <div className="flex items-center gap-1.5">
-                    {isToday && <span className="text-[9px] font-bold text-primary uppercase bg-primary/20 px-1.5 py-0.5 rounded-full">Hari Ini</span>}
-                    {isTomorrow && <span className="text-[9px] font-bold text-amber-400 uppercase bg-amber-400/20 px-1.5 py-0.5 rounded-full">Besok</span>}
+                    {isPlaying && <span className="text-[9px] font-bold text-green-400 uppercase bg-green-400/20 px-1.5 py-0.5 rounded-full">🟢 Live</span>}
+                    {isToday && !isPlaying && <span className="text-[9px] font-bold text-primary uppercase bg-primary/20 px-1.5 py-0.5 rounded-full">Hari Ini</span>}
+                    {isTomorrow && !showPlay && <span className="text-[9px] font-bold text-amber-400 uppercase bg-amber-400/20 px-1.5 py-0.5 rounded-full">Besok</span>}
                   </div>
                   <p className="text-xs font-medium truncate text-foreground mt-0.5">{e.name}</p>
                   <p className="text-[10px] text-muted-foreground">
                     {e.event_date} · {(e.courses as any)?.name}
                   </p>
                 </button>
-                {isToday && (
+                {showPlay && (
                   <button
                     onClick={() => navigate(`/event/${e.id}`)}
                     className="shrink-0 flex items-center gap-1 bg-primary text-primary-foreground text-[10px] font-bold px-2.5 py-1.5 rounded-lg hover:bg-primary/90 transition-colors"

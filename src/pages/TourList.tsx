@@ -280,34 +280,50 @@ const TourList = () => {
         icon={<Trophy className="h-5 w-5 text-primary" />}
       />
 
-      {/* ═══ TODAY'S ROUND BANNER ═══ */}
+      {/* ═══ TODAY'S ROUND / LIVE BANNER ═══ */}
       {(() => {
         const today = new Date().toISOString().split("T")[0];
-        const todayEvents = upcomingEvents.filter(e => e.event_date === today);
-        if (!todayEvents.length) return null;
+        const activeEvents = upcomingEvents.filter(e =>
+          e.event_date === today || (e as any).status === "playing"
+        );
+        if (!activeEvents.length) return null;
         return (
           <div className="mx-4 mb-4 space-y-2">
-            {todayEvents.map(e => (
-              <div key={e.id} className="relative overflow-hidden rounded-2xl border border-primary/40 bg-gradient-to-r from-primary/20 to-primary/5 p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/20 px-2 py-0.5 rounded-full">🏌️ Hari Ini</span>
+            {activeEvents.map(e => {
+              const isPlaying = (e as any).status === "playing";
+              return (
+                <div key={e.id} className={`relative overflow-hidden rounded-2xl border p-4 ${
+                  isPlaying
+                    ? "border-green-500/40 bg-gradient-to-r from-green-500/15 to-green-500/5"
+                    : "border-primary/40 bg-gradient-to-r from-primary/20 to-primary/5"
+                }`}>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        {isPlaying
+                          ? <span className="text-[10px] font-bold uppercase tracking-wider text-green-400 bg-green-400/20 px-2 py-0.5 rounded-full">🟢 Sedang Berlangsung</span>
+                          : <span className="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/20 px-2 py-0.5 rounded-full">🏌️ Hari Ini</span>
+                        }
+                      </div>
+                      <p className="text-sm font-bold text-foreground truncate">{e.name}</p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        {(e.courses as any)?.name ?? ""}
+                      </p>
                     </div>
-                    <p className="text-sm font-bold text-foreground truncate">{e.name}</p>
-                    <p className="text-[11px] text-muted-foreground mt-0.5">
-                      {(e.courses as any)?.name ?? ""}
-                    </p>
+                    <button
+                      onClick={() => navigate(`/event/${e.id}`)}
+                      className={`shrink-0 flex items-center gap-1.5 font-bold text-xs px-4 py-2.5 rounded-xl transition-colors ${
+                        isPlaying
+                          ? "bg-green-500 text-white hover:bg-green-500/90"
+                          : "bg-primary text-primary-foreground hover:bg-primary/90"
+                      }`}
+                    >
+                      ▶ {isPlaying ? "Lanjut" : "Mulai"}
+                    </button>
                   </div>
-                  <button
-                    onClick={() => navigate(`/event/${e.id}`)}
-                    className="shrink-0 flex items-center gap-1.5 bg-primary text-primary-foreground font-bold text-xs px-4 py-2.5 rounded-xl hover:bg-primary/90 transition-colors"
-                  >
-                    ▶ Mulai
-                  </button>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         );
       })()}
