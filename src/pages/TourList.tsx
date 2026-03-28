@@ -314,14 +314,21 @@ const TourList = () => {
                       </p>
                     </div>
                     <button
-                      onClick={() => navigate(`/event/${e.id}`)}
+                      onClick={() => {
+                        const isPersonal = (e as any).tours?.clubs?.is_personal;
+                        if (isPersonal && (e as any).status !== "done") {
+                          navigate(`/event/${e.id}/scorecard`);
+                        } else {
+                          navigate(`/event/${e.id}`);
+                        }
+                      }}
                       className={`shrink-0 flex items-center gap-1.5 font-bold text-xs px-4 py-2.5 rounded-xl transition-colors ${
                         isPlaying
                           ? "bg-green-500 text-white hover:bg-green-500/90"
                           : "bg-primary text-primary-foreground hover:bg-primary/90"
                       }`}
                     >
-                      ▶ {isPlaying ? "Play" : "Play"}
+                      ▶ Play
                     </button>
                   </div>
                 </div>

@@ -652,33 +652,38 @@ const UpcomingEventsWidget = ({ navigate, userId }: { navigate: (path: string) =
         .eq("player_id", userId);
       const contestantEventIds = (myContestant ?? []).map((c: any) => c.event_id);
 
-      // Club IDs user belongs to
+      // Club IDs — member of or owner of (includes personal club)
       const { data: myMemberships } = await supabase
-        .from("members")
-        .select("club_id")
-        .eq("user_id", userId);
-      const clubIds = (myMemberships ?? []).map((m: any) => m.club_id);
+        .from("members").select("club_id").eq("user_id", userId);
+      const memberClubIds = (myMemberships ?? []).map((m: any) => m.club_id);
+      const { data: myOwnedClubs } = await supabase
+        .from("clubs").select("id").eq("owner_id", userId);
+      const ownedClubIds = (myOwnedClubs ?? []).map((c: any) => c.id);
+      const allClubIds = [...new Set([...memberClubIds, ...ownedClubIds])];
 
-      // Tours from those clubs
-      let tourOrganizerEventIds: string[] = [];
-      if (clubIds.length > 0) {
-        const { data: orgEvents } = await supabase
-          .from("events")
-          .select("id, tours!inner(organizer_club_id)")
-          .in("status", ["ready", "draft", "playing"]);
-        tourOrganizerEventIds = (orgEvents ?? [])
-          .filter((e: any) => clubIds.includes((e.tours as any)?.organizer_club_id))
-          .map((e: any) => e.id);
+      // Events from tours organized by those clubs
+      let clubEventIds: string[] = [];
+      if (allClubIds.length > 0) {
+        const { data: myTours } = await supabase
+          .from("tours").select("id").in("organizer_club_id", allClubIds);
+        const tourIds = (myTours ?? []).map((t: any) => t.id);
+        if (tourIds.length > 0) {
+          const { data: te } = await supabase
+            .from("events").select("id")
+            .in("tour_id", tourIds)
+            .in("status", ["scheduled", "ready", "playing"]);
+          clubEventIds = (te ?? []).map((e: any) => e.id);
+        }
       }
 
-      const allIds = [...new Set([...contestantEventIds, ...tourOrganizerEventIds])];
+      const allIds = [...new Set([...contestantEventIds, ...clubEventIds])];
       if (!allIds.length) return [];
 
       const { data } = await supabase
         .from("events")
-        .select("id, name, event_date, courses(name)")
+        .select("id, name, event_date, status, courses(name)")
         .in("id", allIds)
-        .in("status", ["ready", "draft", "playing"])
+        .in("status", ["scheduled", "ready", "playing"])
         .order("event_date")
         .limit(5);
       return data ?? [];
@@ -724,7 +729,14 @@ const UpcomingEventsWidget = ({ navigate, userId }: { navigate: (path: string) =
                 </button>
                 {showPlay && (
                   <button
-                    onClick={() => navigate(`/event/${e.id}`)}
+                    onClick={() => {
+                      const isPersonal = (e as any).clubs?.is_personal || (e as any).tours?.clubs?.is_personal;
+                      if (isPersonal) {
+                        navigate(`/event/${e.id}/scorecard`);
+                      } else {
+                        navigate(`/event/${e.id}`);
+                      }
+                    }}
                     className="shrink-0 flex items-center gap-1 bg-primary text-primary-foreground text-[10px] font-bold px-2.5 py-1.5 rounded-lg hover:bg-primary/90 transition-colors"
                   >
                     ▶ Play
