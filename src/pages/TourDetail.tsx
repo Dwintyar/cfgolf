@@ -613,7 +613,7 @@ const TourDetail = () => {
           return (
             <TabsList className="w-full flex-wrap h-auto gap-0.5 p-1">
               <TabsTrigger value="events" className="flex-1 text-xs">Events</TabsTrigger>
-              <TabsTrigger value="leaderboard" className="flex-1 text-xs">Leaderboard</TabsTrigger>
+              <TabsTrigger value="leaderboard" className="flex-1 text-xs">{isPersonalTour ? "Performance" : "Leaderboard"}</TabsTrigger>
               <TabsTrigger value="players" className="flex-1 text-xs">
                 {isPersonalTour ? "My Stats" : "Players"}
               </TabsTrigger>
