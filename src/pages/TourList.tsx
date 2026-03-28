@@ -251,9 +251,9 @@ const TourList = () => {
     enabled: !!userId,
   });
 
-  const upcomingEvents = events?.filter(e =>
+  const upcomingEvents = (events?.filter(e =>
     e.status !== "completed" && e.status !== "cancelled"
-  ) ?? [];
+  ) ?? []).sort((a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime());
 
   const completedEvents = events?.filter(e =>
     e.status === "completed"
