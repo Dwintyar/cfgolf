@@ -734,7 +734,7 @@ const UpcomingEventsWidget = ({ navigate, userId }: { navigate: (path: string) =
 
       const { data } = await supabase
         .from("events")
-        .select("id, name, event_date, status, courses(name)")
+        .select("id, name, event_date, status, courses(name), tours(organizer_club_id, clubs!tours_organizer_club_id_fkey(is_personal))")
         .in("id", allIds)
         .in("status", ["scheduled", "ready", "playing"])
         .order("event_date")
@@ -783,7 +783,7 @@ const UpcomingEventsWidget = ({ navigate, userId }: { navigate: (path: string) =
                 {showPlay && (
                   <button
                     onClick={() => {
-                      const isPersonal = (e as any).clubs?.is_personal || (e as any).tours?.clubs?.is_personal;
+                      const isPersonal = (e as any)?.tours?.clubs?.is_personal;
                       if (isPersonal) {
                         navigate(`/event/${e.id}/scorecard`);
                       } else {
