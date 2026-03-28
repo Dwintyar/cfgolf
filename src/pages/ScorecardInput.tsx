@@ -203,7 +203,7 @@ const ScorecardInput = () => {
   const inStrokes = inHoles.reduce((s, h) => s + (getStrokes(h.hole_number) ?? 0), 0);
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <div className="flex flex-col h-screen overflow-hidden bg-background">
       {/* Header */}
       <div className="border-b border-border/50 p-4 flex items-center gap-3">
         <button onClick={() => navigate(-1)} className="rounded-full p-1.5 hover:bg-muted shrink-0">
@@ -322,8 +322,8 @@ const ScorecardInput = () => {
         </table>
       </div>
 
-      {/* Bottom */}
-      <div className="border-t border-border/50 bg-background p-4 space-y-3">
+      {/* Bottom — sticky, always visible */}
+      <div className="shrink-0 border-t border-border/50 bg-background p-4 space-y-3">
         <div className="flex gap-3">
           <div className="golf-card flex-1 p-3 text-center">
             <p className="text-2xl font-bold">{totalStrokes || "—"}</p>
@@ -336,10 +336,16 @@ const ScorecardInput = () => {
         </div>
         <Button
           className="w-full h-12 text-sm font-bold"
-          disabled={!allFilled || submitting}
+          disabled={submitting || filledCount === 0}
           onClick={handleSave}
         >
-          {submitting ? "Saving..." : allFilled ? "Save Scorecard" : `Fill all ${holesCount} holes (${filledCount}/${holesCount})`}
+          {submitting
+            ? "Saving..."
+            : allFilled
+            ? "Save & Finish"
+            : filledCount === 0
+            ? "Enter scores to save"
+            : `Save Progress (${filledCount}/${holesCount})`}
         </Button>
       </div>
     </div>
