@@ -579,7 +579,7 @@ const DesktopLayout = ({ children, sidebarRightHidden = false }: { children: Rea
           className="fixed right-0 top-14 h-[calc(100vh-3.5rem)] border-l border-border/50 bg-card/50 z-40 p-4 overflow-y-auto"
         >
           <LiveTournamentWidget navigate={navigate} liveEvent={liveEvent} />
-          <UpcomingEventsWidget navigate={navigate} />
+          <UpcomingEventsWidget navigate={navigate} userId={userId} />
           <ActiveGolfersWidget navigate={navigate} />
         </aside>
       )}
@@ -639,18 +639,51 @@ const LiveTournamentWidget = ({
   );
 };
 
-const UpcomingEventsWidget = ({ navigate }: { navigate: (path: string) => void }) => {
+const UpcomingEventsWidget = ({ navigate, userId }: { navigate: (path: string) => void; userId: string | null }) => {
   const { data: events } = useQuery({
-    queryKey: ["desktop-upcoming-events"],
+    queryKey: ["desktop-upcoming-events", userId],
     queryFn: async () => {
+      if (!userId) return [];
+
+      // Events where user is contestant
+      const { data: myContestant } = await supabase
+        .from("contestants")
+        .select("event_id")
+        .eq("player_id", userId);
+      const contestantEventIds = (myContestant ?? []).map((c: any) => c.event_id);
+
+      // Club IDs user belongs to
+      const { data: myMemberships } = await supabase
+        .from("members")
+        .select("club_id")
+        .eq("user_id", userId);
+      const clubIds = (myMemberships ?? []).map((m: any) => m.club_id);
+
+      // Tours from those clubs
+      let tourOrganizerEventIds: string[] = [];
+      if (clubIds.length > 0) {
+        const { data: orgEvents } = await supabase
+          .from("events")
+          .select("id, tours!inner(organizer_club_id)")
+          .in("status", ["registration", "draft", "playing"]);
+        tourOrganizerEventIds = (orgEvents ?? [])
+          .filter((e: any) => clubIds.includes((e.tours as any)?.organizer_club_id))
+          .map((e: any) => e.id);
+      }
+
+      const allIds = [...new Set([...contestantEventIds, ...tourOrganizerEventIds])];
+      if (!allIds.length) return [];
+
       const { data } = await supabase
         .from("events")
         .select("id, name, event_date, courses(name)")
+        .in("id", allIds)
         .in("status", ["registration", "draft", "playing"])
         .order("event_date")
         .limit(5);
       return data ?? [];
     },
+    enabled: !!userId,
   });
 
   if (!events?.length) return null;
