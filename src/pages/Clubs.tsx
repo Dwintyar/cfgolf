@@ -111,124 +111,54 @@ const Clubs = () => {
     const isOwner = club.owner_id === currentUserId;
     const isAdmin = role === "admin" || role === "owner";
 
+    const isSelected = selectedClubId === club.id;
     return (
-      <div
+      <button
         key={club.id}
-        className="group golf-card overflow-hidden cursor-pointer hover:border-primary/40 hover:shadow-md transition-all duration-200 animate-fade-in"
-        style={{ animationDelay: `${i * 50}ms` }}
-        onClick={() => navigate(isAdmin ? `/admin/club/${club.id}` : `/clubs/${club.id}`)}
+        className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors border-b border-border/30 last:border-0 ${isSelected ? "bg-primary/10 border-l-2 border-l-primary" : "hover:bg-secondary/50"}`}
+        onClick={() => { setSelectedClubId(club.id); setMobileShowDetail(true); }}
       >
-        {/* Header band */}
-        <div className="h-16 bg-gradient-to-br from-primary/20 to-primary/5 relative overflow-hidden">
-          <div className="absolute inset-0 opacity-10"
-            style={{ backgroundImage: "radial-gradient(circle at 20% 50%, hsl(var(--primary)) 0%, transparent 60%)" }} />
+        <Avatar className="h-12 w-12 rounded-2xl shrink-0">
+          <AvatarImage src={club.logo_url ?? ""} className="rounded-2xl object-cover" />
+          <AvatarFallback className="rounded-2xl bg-primary/10 text-sm font-bold text-primary">{club.initials}</AvatarFallback>
+        </Avatar>
+        <div className="flex-1 min-w-0">
+          <p className={`text-sm font-semibold truncate ${isSelected ? "text-primary" : ""}`}>{club.name}</p>
+          <p className="text-[11px] text-muted-foreground truncate mt-0.5">
+            {facilityLabel[club.facility_type] ?? club.facility_type} · {club.memberCount} members
+            {isOwner ? " · Owner" : isAdmin ? " · Admin" : " · Member"}
+          </p>
+          {club.description && <p className="text-[10px] text-muted-foreground truncate mt-0.5">{club.description}</p>}
         </div>
-
-        <div className="px-4 pb-4">
-          {/* Avatar overlapping header */}
-          <div className="flex items-end justify-between -mt-8 mb-3">
-            <Avatar className="h-16 w-16 rounded-2xl border-4 border-card shadow-md">
-              <AvatarImage src={club.logo_url ?? ""} className="rounded-xl object-cover" />
-              <AvatarFallback className="rounded-xl bg-primary/15 text-lg font-bold text-primary">
-                {club.initials}
-              </AvatarFallback>
-            </Avatar>
-            {/* Role badge */}
-            {isOwner ? (
-              <span className="flex items-center gap-1 rounded-full bg-yellow-500/15 px-2.5 py-1 text-[10px] font-bold text-yellow-500 border border-yellow-500/30">
-                <Crown className="h-3 w-3" /> Owner
-              </span>
-            ) : isAdmin ? (
-              <span className="flex items-center gap-1 rounded-full bg-blue-500/15 px-2.5 py-1 text-[10px] font-bold text-blue-400 border border-blue-500/30">
-                <Shield className="h-3 w-3" /> Admin
-              </span>
-            ) : (
-              <span className="rounded-full bg-secondary px-2.5 py-1 text-[10px] font-medium text-muted-foreground border border-border">
-                Member
-              </span>
-            )}
-          </div>
-
-          <h3 className="font-semibold text-sm leading-tight truncate">{club.name}</h3>
-          <div className="flex items-center gap-2 mt-1">
-            <span className="text-[10px] text-muted-foreground font-medium">
-              {facilityLabel[club.facility_type] ?? club.facility_type}
-            </span>
-            <span className="text-muted-foreground/40">·</span>
-            <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
-              <Users className="h-3 w-3" /> {club.memberCount}
-            </span>
-          </div>
-          {club.description && (
-            <p className="mt-1.5 text-[11px] text-muted-foreground line-clamp-2">{club.description}</p>
-          )}
-
-          <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/50">
-            {isAdmin ? (
-              <Button size="sm" className="h-7 text-[10px] font-bold px-4 gap-1"
-                onClick={e => { e.stopPropagation(); navigate(`/admin/club/${club.id}`); }}>
-                Manage
-              </Button>
-            ) : (
-              <Button size="sm" variant="outline" className="h-7 text-[10px] px-4"
-                onClick={e => { e.stopPropagation(); navigate(`/clubs/${club.id}`); }}>
-                View
-              </Button>
-            )}
-            <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-          </div>
-        </div>
-      </div>
+        <ChevronRight className={`h-4 w-4 shrink-0 ${isSelected ? "text-primary" : "text-muted-foreground"}`} />
+      </button>
     );
   };
 
-  // ── Community Club Card (compact grid) ──
-  const renderCommunityCard = (club: ClubData, i: number) => (
-    <div
+  // ── Community Club Row (WA-style) ──
+  const renderCommunityCard = (club: ClubData, i: number) => {
+    const isSelected = selectedClubId === club.id;
+    return (
+    <button
       key={club.id}
-      className="group golf-card overflow-hidden cursor-pointer hover:border-primary/30 hover:shadow-md transition-all duration-200 animate-fade-in"
-      style={{ animationDelay: `${i * 40}ms` }}
+      className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors border-b border-border/30 last:border-0 ${isSelected ? "bg-primary/10 border-l-2 border-l-primary" : "hover:bg-secondary/50"}`}
       onClick={() => { setSelectedClubId(club.id); setMobileShowDetail(true); }}
     >
-      <div className="p-4">
-        <div className="flex items-start gap-3">
-          <Avatar className="h-12 w-12 rounded-xl border border-border/50 shrink-0">
-            <AvatarImage src={club.logo_url ?? ""} className="rounded-xl object-cover" />
-            <AvatarFallback className="rounded-xl bg-primary/10 text-sm font-bold text-primary">
-              {club.initials}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold truncate leading-tight">{club.name}</p>
-            <div className="flex items-center gap-1.5 mt-0.5">
-              <span className="text-[10px] text-muted-foreground">
-                {facilityLabel[club.facility_type] ?? club.facility_type}
-              </span>
-              <span className="text-muted-foreground/40 text-[10px]">·</span>
-              <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
-                <Users className="h-2.5 w-2.5" /> {club.memberCount}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {club.description && (
-          <p className="mt-2 text-[11px] text-muted-foreground line-clamp-2 leading-relaxed">
-            {club.description}
-          </p>
-        )}
-
-        <Button
-          size="sm"
-          className="mt-3 w-full h-8 text-xs font-bold uppercase tracking-wide"
-          disabled={joiningClubId === club.id}
-          onClick={e => handleJoin(club, e)}
-        >
-          {joiningClubId === club.id ? "Joining…" : "Join"}
-        </Button>
+      <Avatar className="h-12 w-12 rounded-2xl shrink-0">
+        <AvatarImage src={club.logo_url ?? ""} className="rounded-2xl object-cover" />
+        <AvatarFallback className="rounded-2xl bg-primary/10 text-sm font-bold text-primary">{club.initials}</AvatarFallback>
+      </Avatar>
+      <div className="flex-1 min-w-0">
+        <p className={`text-sm font-semibold truncate ${isSelected ? "text-primary" : ""}`}>{club.name}</p>
+        <p className="text-[11px] text-muted-foreground truncate mt-0.5">
+          {facilityLabel[club.facility_type] ?? club.facility_type} · {club.memberCount} members
+        </p>
+        {club.description && <p className="text-[10px] text-muted-foreground truncate mt-0.5">{club.description}</p>}
       </div>
-    </div>
-  );
+      <ChevronRight className={`h-4 w-4 shrink-0 ${isSelected ? "text-primary" : "text-muted-foreground"}`} />
+    </button>
+    );
+  };
 
   return (
     <DesktopLayout>
@@ -277,9 +207,9 @@ const Clubs = () => {
 
         {/* My Clubs */}
         {tab === "my" && (
-          <div className="px-4">
+          <div>
             {isLoading && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              <div className="flex flex-col gap-2 px-4">
                 {Array.from({ length: 3 }).map((_, i) => (
                   <div key={i} className="golf-card overflow-hidden">
                     <Skeleton className="h-16 w-full" />
@@ -304,7 +234,7 @@ const Clubs = () => {
                 </Button>
               </div>
             )}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="flex flex-col">
               {myClubs.map((club, i) => renderMyCard(club, i))}
             </div>
           </div>
@@ -319,9 +249,9 @@ const Clubs = () => {
 
         {/* Community */}
         {tab === "community" && (
-          <div className="px-4">
+          <div>
             {isLoading && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              <div className="flex flex-col gap-2 px-4">
                 {Array.from({ length: 6 }).map((_, i) => (
                   <div key={i} className="golf-card p-4 space-y-3">
                     <div className="flex gap-3">
@@ -343,7 +273,7 @@ const Clubs = () => {
                 </p>
               </div>
             )}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="flex flex-col">
               {communityClubs.map((club, i) => renderCommunityCard(club, i))}
             </div>
           </div>
