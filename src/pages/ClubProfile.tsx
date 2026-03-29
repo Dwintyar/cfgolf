@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
 import EditClubDialog from "@/components/EditClubDialog";
+import TournamentsTab from "@/components/tour/TournamentsTab";
 import InviteMemberDialog from "@/components/InviteMemberDialog";
 import {
   AlertDialog,
@@ -30,7 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-type Tab = "members" | "requests" | "settings";
+type Tab = "members" | "tournaments" | "requests" | "settings";
 
 const ClubProfile = () => {
   const navigate = useNavigate();
@@ -259,113 +260,89 @@ const ClubProfile = () => {
 
   return (
     <div className="bottom-nav-safe">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4">
+      {/* WA-style: back button top left */}
+      <div className="flex items-center justify-between px-4 pt-4 pb-2">
         <button onClick={() => navigate(-1)} className="rounded-full p-1.5 hover:bg-muted transition-colors">
           <ArrowLeft className="h-5 w-5" />
         </button>
-        <div className="flex items-center gap-2">
-          {isOwner && (
-            <>
-              <button
-                onClick={() => setShowInvite(true)}
-                className="rounded-full p-2 hover:bg-muted transition-colors"
-              >
-                <UserPlus className="h-5 w-5 text-primary" />
-              </button>
-              <button
-                onClick={() => setShowEdit(true)}
-                className="rounded-full p-2 hover:bg-muted transition-colors"
-              >
-                <Settings className="h-5 w-5" />
-              </button>
-            </>
+        {isOwner && (
+          <div className="flex gap-1">
+            <button onClick={() => setShowInvite(true)} className="rounded-full p-2 hover:bg-muted transition-colors">
+              <UserPlus className="h-5 w-5 text-primary" />
+            </button>
+            <button onClick={() => setShowEdit(true)} className="rounded-full p-2 hover:bg-muted transition-colors">
+              <Settings className="h-5 w-5" />
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* WA-style hero: centered logo + name */}
+      <div className="flex flex-col items-center px-4 pb-4 text-center">
+        <Avatar className="h-24 w-24 border-4 border-primary/20 mb-3">
+          <AvatarImage src={club?.logo_url ?? ""} />
+          <AvatarFallback className="bg-primary/10 text-2xl font-bold text-primary">{initials}</AvatarFallback>
+        </Avatar>
+        {clubLoading ? (
+          <div className="space-y-2 w-full max-w-xs">
+            <Skeleton className="h-7 w-3/4 mx-auto" />
+            <Skeleton className="h-4 w-1/2 mx-auto" />
+          </div>
+        ) : (
+          <>
+            <h1 className="text-xl font-bold">{club?.name}</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              Golf Club · <span className="text-primary font-semibold">{members?.length ?? 0} members</span>
+            </p>
+            {club?.description && (
+              <p className="text-sm text-muted-foreground mt-2 max-w-sm leading-relaxed">{club.description}</p>
+            )}
+          </>
+        )}
+
+        {/* Action buttons — WA style */}
+        <div className="flex gap-3 mt-4">
+          {!isOwner && !isMember && currentUserId && (
+            hasPendingRequest || joining ? (
+              <Button variant="outline" size="sm" disabled>
+                {joining ? <><Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> Requesting...</> : "⏳ Pending"}
+              </Button>
+            ) : (
+              <Button size="sm" onClick={handleJoinRequest} disabled={joining}>
+                <LogIn className="h-3.5 w-3.5 mr-1.5" /> Join Club
+              </Button>
+            )
           )}
-          <Avatar className="h-12 w-12 border-2 border-primary/30">
-            <AvatarImage src={club?.logo_url ?? ""} />
-            <AvatarFallback className="bg-primary/10 text-sm font-bold text-primary">
-              {initials}
-            </AvatarFallback>
-          </Avatar>
+          {!isOwner && isMember && (
+            <Badge className="text-sm bg-primary/10 text-primary border-primary/20 px-3 py-1">✓ Member</Badge>
+          )}
+          {isOwner && (
+            <Badge className="text-sm bg-yellow-500/10 text-yellow-500 border-yellow-500/20 px-3 py-1">👑 Owner</Badge>
+          )}
         </div>
       </div>
 
       <div className="px-4">
-        {clubLoading ? (
-          <div className="space-y-2">
-            <Skeleton className="h-6 w-3/4" />
-            <Skeleton className="h-4 w-1/2" />
-          </div>
-        ) : (
-          <div className="mb-4">
-            <h1 className="font-display text-xl font-bold">{club?.name}</h1>
-            <p className="text-xs uppercase tracking-wider text-muted-foreground">
-              {club?.description || "Golf Club"}
-            </p>
-            <div className="mt-2 flex items-center gap-2">
-              <Badge variant="outline" className="text-xs">{members?.length ?? 0} Members</Badge>
-              {/* Join / Requested badge for non-owner non-members */}
-              {!isOwner && !isMember && currentUserId && (
-                hasPendingRequest || joining ? (
-                  <Badge variant="outline" className="text-xs text-muted-foreground">
-                    {joining ? (
-                      <><Loader2 className="h-3 w-3 animate-spin mr-1" /> Requesting...</>
-                    ) : (
-                      "⏳ Menunggu persetujuan"
-                    )}
-                  </Badge>
-                ) : (
-                  <Button
-                    size="sm"
-                    className="h-7 rounded-lg px-4 text-xs font-bold uppercase tracking-wider"
-                    onClick={handleJoinRequest}
-                    disabled={joining}
-                  >
-                    <LogIn className="h-3.5 w-3.5 mr-1" />
-                    Join
-                  </Button>
-                )
-              )}
-              {!isOwner && isMember && (
-                <Badge className="text-xs bg-primary/10 text-primary border-primary/20">
-                  ✓ Member
-                </Badge>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Tabs for owner */}
-        {isOwner && (
-          <div className="flex gap-4 mb-4 border-b border-border/50">
-            <button
-              onClick={() => setTab("members")}
-              className={`pb-2 text-sm font-semibold tracking-wider transition-colors relative ${tab === "members" ? "text-foreground" : "text-muted-foreground"}`}
+        {/* Tabs — WA underline style */}
+        <div className="flex border-b border-border/50 mb-4">
+          {[
+            { id: "members", label: "Members" },
+            { id: "tournaments", label: "Tournaments" },
+            ...(isOwner ? [
+              { id: "requests", label: `Requests${pendingCount > 0 ? ` (${pendingCount})` : ""}` },
+              { id: "settings", label: "Settings" },
+            ] : []),
+          ].map(t => (
+            <button key={t.id}
+              onClick={() => setTab(t.id as Tab)}
+              className={`flex-1 py-2.5 text-sm font-semibold transition-colors border-b-2 ${
+                tab === t.id ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
             >
-              MEMBERS
-              {tab === "members" && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />}
+              {t.label}
             </button>
-            <button
-              onClick={() => setTab("requests")}
-              className={`pb-2 text-sm font-semibold tracking-wider transition-colors relative flex items-center gap-1.5 ${tab === "requests" ? "text-foreground" : "text-muted-foreground"}`}
-            >
-              REQUESTS
-              {pendingCount > 0 && (
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
-                  {pendingCount}
-                </span>
-              )}
-              {tab === "requests" && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />}
-            </button>
-            <button
-              onClick={() => setTab("settings")}
-              className={`pb-2 text-sm font-semibold tracking-wider transition-colors relative ${tab === "settings" ? "text-foreground" : "text-muted-foreground"}`}
-            >
-              SETTINGS
-              {tab === "settings" && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />}
-            </button>
-          </div>
-        )}
+          ))}
+        </div>
 
         {/* Members tab */}
         {tab === "members" && (
@@ -488,6 +465,13 @@ const ClubProfile = () => {
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* Tournaments tab */}
+        {tab === "tournaments" && (
+          <div className="-mx-4">
+            <TournamentsTab />
           </div>
         )}
 

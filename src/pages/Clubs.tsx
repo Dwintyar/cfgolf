@@ -11,7 +11,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import TournamentsTab from "@/components/tour/TournamentsTab";
 
 type ClubData = {
   id: string;
@@ -35,7 +34,7 @@ const Clubs = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
-  const [tab, setTab] = useState<"my" | "tournaments" | "community">("my");
+  const [tab, setTab] = useState<"my" | "community">("my");
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [showCreateClub, setShowCreateClub] = useState(false);
   const [joiningClubId, setJoiningClubId] = useState<string | null>(null);
@@ -116,7 +115,7 @@ const Clubs = () => {
       <button
         key={club.id}
         className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors border-b border-border/30 last:border-0 ${isSelected ? "bg-primary/10 border-l-2 border-l-primary" : "hover:bg-secondary/50"}`}
-        onClick={() => { setSelectedClubId(club.id); setMobileShowDetail(true); }}
+        onClick={() => navigate(`/clubs/${club.id}`)}
       >
         <Avatar className="h-12 w-12 rounded-2xl shrink-0">
           <AvatarImage src={club.logo_url ?? ""} className="rounded-2xl object-cover" />
@@ -142,7 +141,7 @@ const Clubs = () => {
     <button
       key={club.id}
       className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors border-b border-border/30 last:border-0 ${isSelected ? "bg-primary/10 border-l-2 border-l-primary" : "hover:bg-secondary/50"}`}
-      onClick={() => { setSelectedClubId(club.id); setMobileShowDetail(true); }}
+      onClick={() => navigate(`/clubs/${club.id}`)}
     >
       <Avatar className="h-12 w-12 rounded-2xl shrink-0">
         <AvatarImage src={club.logo_url ?? ""} className="rounded-2xl object-cover" />
@@ -187,17 +186,16 @@ const Clubs = () => {
         </div>
 
         {/* Tabs */}
-        <div className="flex px-4 mb-4 gap-1 rounded-xl overflow-hidden border border-border/50 mx-4">
+        <div className="flex px-4 mb-0 border-b border-border/50">
           {([
             { id: "my", label: `My Clubs${myClubs.length > 0 ? ` (${myClubs.length})` : ""}` },
-            { id: "tournaments", label: "Tournaments" },
             { id: "community", label: `Community${communityClubs.length > 0 ? ` (${communityClubs.length})` : ""}` },
           ] as const).map(t => (
             <button
               key={t.id}
               onClick={() => setTab(t.id as any)}
-              className={`flex-1 py-2.5 text-xs font-bold uppercase tracking-wider transition-colors ${
-                tab === t.id ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:text-foreground"
+              className={`flex-1 py-2.5 text-sm font-semibold transition-colors border-b-2 ${
+                tab === t.id ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
               }`}
             >
               {t.label}
@@ -237,13 +235,6 @@ const Clubs = () => {
             <div className="flex flex-col">
               {myClubs.map((club, i) => renderMyCard(club, i))}
             </div>
-          </div>
-        )}
-
-        {/* Tournaments */}
-        {tab === "tournaments" && (
-          <div className="px-0">
-            <TournamentsTab />
           </div>
         )}
 
