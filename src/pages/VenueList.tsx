@@ -12,7 +12,7 @@ import venueImg from "@/assets/golf-venue.jpg";
 import { useState, useEffect } from "react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
-const VenueList = () => {
+const VenueList = ({ embedded = false }: { embedded?: boolean }) => {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [venueTab, setVenueTab] = useState<"all" | "golf" | "range">("all");

@@ -20,7 +20,7 @@ const CATEGORIES = [
   { value: "gear", label: "Gear" },
 ];
 
-const NewsFeed = () => {
+const NewsFeed = ({ embedded = false }: { embedded?: boolean }) => {
   const [userId, setUserId] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [content, setContent] = useState("");

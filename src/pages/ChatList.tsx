@@ -26,7 +26,7 @@ const formatRelativeTime = (dateStr: string) => {
 const getInitials = (name: string | null) =>
   name ? name.split(" ").slice(0, 2).map((w) => w[0]).join("").toUpperCase() : "?";
 
-const ChatList = () => {
+const ChatList = ({ embedded = false }: { embedded?: boolean }) => {
   const navigate = useNavigate();
   const [userId, setUserId] = useState<string | null>(null);
   const [newMsgOpen, setNewMsgOpen] = useState(false);

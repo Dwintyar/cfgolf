@@ -11,7 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useState, useEffect } from "react";
 import CreateTourDialog from "@/components/tour/CreateTourDialog";
 
-const TourList = () => {
+const TourList = ({ embedded = false }: { embedded?: boolean }) => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);

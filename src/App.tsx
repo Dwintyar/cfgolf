@@ -16,6 +16,8 @@ import Login from "./pages/Login";
 import Onboarding from "./pages/Onboarding";
 import ResetPassword from "./pages/ResetPassword";
 import NewsFeed from "./pages/NewsFeed";
+import Lounge from "./pages/Lounge";
+import Rounds from "./pages/Rounds";
 import Clubs from "./pages/Clubs";
 import ClubProfile from "./pages/ClubProfile";
 import TourList from "./pages/TourList";
@@ -114,6 +116,8 @@ const AppInner = () => {
             <Route path="/admin/course/:courseId" element={<ProtectedRoute><CourseAdminDashboard /></ProtectedRoute>} />
             <Route path="/export-queries" element={<ProtectedRoute><ExportQueries /></ProtectedRoute>} />
             <Route path="/news" element={<ProtectedRoute><NewsFeed /></ProtectedRoute>} />
+            <Route path="/lounge" element={<ProtectedRoute><Lounge /></ProtectedRoute>} />
+            <Route path="/rounds" element={<ProtectedRoute><Rounds /></ProtectedRoute>} />
             <Route path="/clubs" element={<ProtectedRoute><Clubs /></ProtectedRoute>} />
             <Route path="/clubs/:id" element={<ProtectedRoute><ClubProfile /></ProtectedRoute>} />
             <Route path="/tour" element={<ProtectedRoute><TourList /></ProtectedRoute>} />

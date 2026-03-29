@@ -253,10 +253,10 @@ const DesktopLayout = ({ children, sidebarRightHidden = false }: { children: Rea
   const hasResults = searchResults.golfers.length > 0 || searchResults.clubs.length > 0 || searchResults.events.length > 0;
 
   const navItems = [
-    { path: "/news", label: "Lounge", icon: Home },
+    { path: "/lounge", label: "Lounge", icon: Home },
     { path: "/chat", label: "Chats", icon: MessageSquare },
     { path: "/clubs", label: "Clubs", icon: Building2 },
-    { path: "/tour", label: "Rounds", icon: Flag },
+    { path: "/rounds", label: "Rounds", icon: Flag },
     { path: "/venue", label: "Courses", icon: MapPin },
   ];
 

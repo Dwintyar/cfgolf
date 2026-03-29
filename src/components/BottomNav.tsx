@@ -1,14 +1,13 @@
 import { useContext, useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Home, MessageSquare, Trophy, Flag, MapPin } from "lucide-react";
+import { Home, Trophy, Flag, User } from "lucide-react";
 import { ChatNotifContext } from "@/App";
 
 const tabs = [
-  { path: "/news", label: "Lounge", icon: Home },
-  { path: "/chat", label: "Chats", icon: MessageSquare, showChatBadge: true },
+  { path: "/lounge", label: "Lounge", icon: Home },
   { path: "/clubs", label: "Clubs", icon: Trophy },
-  { path: "/tour", label: "Rounds", icon: Flag },
-  { path: "/venue", label: "Courses", icon: MapPin },
+  { path: "/rounds", label: "Rounds", icon: Flag },
+  { path: "/profile", label: "Profile", icon: User },
 ];
 
 const hiddenPaths = ["/login", "/reset-password"];
@@ -33,20 +32,20 @@ const BottomNav = () => {
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border/50 bg-card/95 backdrop-blur-lg">
       <div className="flex w-full items-stretch py-1.5">
-        {tabs.map(({ path, label, icon: Icon, showChatBadge }) => {
+        {tabs.map(({ path, label, icon: Icon }) => {
           const active = location.pathname.startsWith(path);
+          const isLounge = path === "/lounge";
           return (
             <button
               key={path}
               onClick={() => navigate(path)}
               className={`relative flex flex-1 flex-col items-center justify-center gap-0.5 py-1 text-[10px] transition-colors ${
-                active
-                  ? "text-primary"
-                  : "text-muted-foreground hover:text-foreground"
+                active ? "text-primary" : "text-muted-foreground hover:text-foreground"
               }`}
             >
               <Icon className={`h-[22px] w-[22px] ${active ? "golf-glow" : ""}`} />
-              {showChatBadge && unreadCount > 0 && (
+              {/* Chat unread badge on Lounge */}
+              {isLounge && unreadCount > 0 && (
                 <span className="absolute top-0 right-[22%] flex h-4 min-w-[16px] items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">
                   {unreadCount > 9 ? "9+" : unreadCount}
                 </span>
