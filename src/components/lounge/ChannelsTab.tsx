@@ -5,7 +5,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Bell, BellOff, Megaphone, Users, MapPin, Globe, ChevronRight } from "lucide-react";
+import { Bell, BellOff, Megaphone, Users, MapPin, Globe, Heart, MessageCircle, MoreHorizontal } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
 
 const ChannelsTab = () => {
@@ -63,6 +64,26 @@ const ChannelsTab = () => {
         .eq("user_id", userId)
         .order("created_at", { ascending: false });
       return (data ?? []).map((f: any) => f.channels).filter(Boolean);
+    },
+    enabled: !!userId,
+  });
+
+  // Posts from followed channels
+  const { data: channelPosts } = useQuery({
+    queryKey: ["channel-posts", userId],
+    queryFn: async () => {
+      if (!userId) return [];
+      const { data: follows } = await supabase
+        .from("channel_follows").select("channel_id").eq("user_id", userId);
+      const channelIds = (follows ?? []).map((f: any) => f.channel_id);
+      if (!channelIds.length) return [];
+      const { data } = await supabase
+        .from("posts")
+        .select("*, profiles:author_id(full_name, avatar_url), channels(name, channel_type)")
+        .in("channel_id", channelIds)
+        .order("created_at", { ascending: false })
+        .limit(30);
+      return data ?? [];
     },
     enabled: !!userId,
   });
@@ -169,15 +190,71 @@ const ChannelsTab = () => {
       <div className="flex-1 overflow-auto px-4 py-2">
         {view === "following" && (
           <>
-            {!followedChannels?.length ? (
+            {/* Followed channel pills */}
+            {(followedChannels?.length ?? 0) > 0 && (
+              <div className="flex gap-2 overflow-x-auto pb-2 mb-3 scrollbar-hide">
+                {followedChannels!.map((ch: any) => (
+                  <div key={ch.id} className="flex items-center gap-1.5 shrink-0 bg-secondary rounded-full px-3 py-1">
+                    <div className={`h-5 w-5 rounded-full flex items-center justify-center text-[10px] ${
+                      ch.channel_type === "platform" ? "bg-primary/20 text-primary" :
+                      ch.channel_type === "club" ? "bg-amber-500/20 text-amber-400" : "bg-secondary text-muted-foreground"
+                    }`}>
+                      {ch.channel_type === "platform" ? "📢" : ch.channel_type === "club" ? "🏌️" : "🌐"}
+                    </div>
+                    <span className="text-xs font-medium truncate max-w-[80px]">{ch.name}</span>
+                  </div>
+                ))}
+                <button onClick={() => setView("discover")}
+                  className="shrink-0 flex items-center gap-1 bg-primary/10 text-primary rounded-full px-3 py-1 text-xs font-medium">
+                  + Follow
+                </button>
+              </div>
+            )}
+
+            {/* Posts from followed channels */}
+            {!channelPosts?.length ? (
               <div className="text-center py-12">
                 <Megaphone className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
-                <p className="text-sm font-semibold">No channels yet</p>
-                <p className="text-xs text-muted-foreground mt-1">Discover and follow channels to see updates here</p>
+                <p className="text-sm font-semibold">No posts yet</p>
+                <p className="text-xs text-muted-foreground mt-1">Channels you follow will post updates here</p>
                 <Button size="sm" className="mt-3" onClick={() => setView("discover")}>Discover Channels</Button>
               </div>
-            ) : followedChannels.map((ch: any) => (
-              <ChannelRow key={ch.id} ch={ch} isFollowing={true} />
+            ) : channelPosts.map((post: any) => (
+              <div key={post.id} className="golf-card p-3 mb-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={post.profiles?.avatar_url ?? ""} />
+                    <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                      {post.profiles?.full_name?.charAt(0) ?? "?"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold truncate">{post.profiles?.full_name}</p>
+                    <div className="flex items-center gap-1">
+                      <span className="text-[9px] text-muted-foreground">
+                        {new Date(post.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                      </span>
+                      {post.channels && (
+                        <span className="text-[9px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">
+                          {post.channels.name}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <p className="text-sm text-foreground leading-relaxed mb-2">{post.content}</p>
+                {post.image_url && (
+                  <img src={post.image_url} className="w-full rounded-lg object-cover max-h-48 mb-2" />
+                )}
+                <div className="flex items-center gap-4 pt-1 border-t border-border/30">
+                  <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors">
+                    <Heart className="h-3.5 w-3.5" /> {post.likes_count ?? 0}
+                  </button>
+                  <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors">
+                    <MessageCircle className="h-3.5 w-3.5" /> {post.comments_count ?? 0}
+                  </button>
+                </div>
+              </div>
             ))}
           </>
         )}

@@ -30,6 +30,7 @@ const NewsFeed = ({ embedded = false }: { embedded?: boolean }) => {
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [taggedCourseId, setTaggedCourseId] = useState<string | null>(null);
   const [taggedCourseName, setTaggedCourseName] = useState<string | null>(null);
+  const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null);
   const [showCourseSheet, setShowCourseSheet] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
@@ -54,6 +55,19 @@ const NewsFeed = ({ embedded = false }: { embedded?: boolean }) => {
       if (error) throw error;
       return data ?? [];
     },
+  });
+
+  const { data: myChannels } = useQuery({
+    queryKey: ["my-channels-for-post", userId],
+    queryFn: async () => {
+      if (!userId) return [];
+      const { data } = await supabase
+        .from("channel_follows")
+        .select("*, channels(*)")
+        .eq("user_id", userId);
+      return (data ?? []).map((f: any) => f.channels).filter(Boolean);
+    },
+    enabled: !!userId,
   });
 
   const { data: courses } = useQuery({
@@ -114,6 +128,7 @@ const NewsFeed = ({ embedded = false }: { embedded?: boolean }) => {
       category,
       image_url: photoUrl || null,
       course_id: taggedCourseId || null,
+      channel_id: selectedChannelId || null,
     });
     setPosting(false);
     if (error) { toast.error(error.message); return; }
@@ -123,6 +138,7 @@ const NewsFeed = ({ embedded = false }: { embedded?: boolean }) => {
     setPhotoUrl(null);
     setTaggedCourseId(null);
     setTaggedCourseName(null);
+    setSelectedChannelId(null);
     setShowCreate(false);
     queryClient.invalidateQueries({ queryKey: ["feed-posts"] });
   };
@@ -450,6 +466,22 @@ const NewsFeed = ({ embedded = false }: { embedded?: boolean }) => {
         <DialogContent className="max-w-sm">
           <DialogHeader><DialogTitle>Create Post</DialogTitle></DialogHeader>
           <div className="space-y-3">
+            {/* Channel selector */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground shrink-0">Post to:</span>
+              <select
+                value={selectedChannelId ?? ""}
+                onChange={e => setSelectedChannelId(e.target.value || null)}
+                className="flex-1 rounded-lg border border-border bg-secondary text-xs px-2 py-1.5 text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+              >
+                <option value="">🌐 Public (no channel)</option>
+                {(myChannels ?? []).map((ch: any) => (
+                  <option key={ch.id} value={ch.id}>
+                    {ch.channel_type === "platform" ? "📢" : ch.channel_type === "club" ? "🏌️" : "📍"} {ch.name}
+                  </option>
+                ))}
+              </select>
+            </div>
             <Textarea
               placeholder="What's on your mind?"
               value={content}

@@ -1,11 +1,10 @@
 import { useState, useContext } from "react";
 import { ChatNotifContext } from "@/App";
 import ChannelsTab from "@/components/lounge/ChannelsTab";
-import NewsFeed from "./NewsFeed";
 import ChatList from "./ChatList";
 
 const Lounge = () => {
-  const [tab, setTab] = useState<"channels" | "feed" | "chats">("channels");
+  const [tab, setTab] = useState<"channels" | "chats">("channels");
   const { unreadCount } = useContext(ChatNotifContext);
 
   return (
@@ -18,7 +17,6 @@ const Lounge = () => {
         <div className="flex mt-1">
           {[
             { id: "channels", label: "Channels" },
-            { id: "feed", label: "Feed" },
             { id: "chats", label: "Chats", badge: unreadCount },
           ].map(({ id, label, badge }) => (
             <button
@@ -43,11 +41,8 @@ const Lounge = () => {
 
       {/* Content */}
       <div className="flex-1 overflow-hidden">
-        <div className={tab === "channels" ? "h-full pb-20 lg:pb-0" : "hidden"}>
+        <div className={tab === "channels" ? "h-full overflow-auto pb-20 lg:pb-0" : "hidden"}>
           <ChannelsTab />
-        </div>
-        <div className={tab === "feed" ? "h-full overflow-auto pb-20 lg:pb-0" : "hidden"}>
-          <NewsFeed embedded />
         </div>
         <div className={tab === "chats" ? "h-full overflow-auto pb-20 lg:pb-0" : "hidden"}>
           <ChatList embedded />
