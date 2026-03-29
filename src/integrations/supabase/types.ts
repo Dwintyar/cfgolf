@@ -402,6 +402,57 @@ export type Database = {
           },
         ]
       }
+      channels: {
+        Row: {
+          id: string
+          name: string
+          description: string | null
+          avatar_url: string | null
+          owner_id: string | null
+          club_id: string | null
+          course_id: string | null
+          channel_type: string
+          is_official: boolean
+          follower_count: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          description?: string | null
+          avatar_url?: string | null
+          owner_id?: string | null
+          club_id?: string | null
+          course_id?: string | null
+          channel_type?: string
+          is_official?: boolean
+          follower_count?: number
+          created_at?: string
+        }
+        Update: {
+          name?: string
+          description?: string | null
+          avatar_url?: string | null
+          follower_count?: number
+        }
+        Relationships: []
+      }
+      channel_follows: {
+        Row: {
+          id: string
+          channel_id: string
+          user_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          channel_id: string
+          user_id: string
+          created_at?: string
+        }
+        Update: {}
+        Relationships: []
+      }
       clubs: {
         Row: {
           contact_email: string | null
