@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import TournamentsTab from "@/components/tour/TournamentsTab";
 
 type ClubData = {
   id: string;
@@ -34,7 +35,7 @@ const Clubs = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
-  const [tab, setTab] = useState<"my" | "community">("my");
+  const [tab, setTab] = useState<"my" | "tournaments" | "community">("my");
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [showCreateClub, setShowCreateClub] = useState(false);
   const [joiningClubId, setJoiningClubId] = useState<string | null>(null);
@@ -252,15 +253,19 @@ const Clubs = () => {
 
         {/* Tabs */}
         <div className="flex px-4 mb-4 gap-1 rounded-xl overflow-hidden border border-border/50 mx-4">
-          {(["my", "community"] as const).map(t => (
+          {([
+            { id: "my", label: `My Clubs${myClubs.length > 0 ? ` (${myClubs.length})` : ""}` },
+            { id: "tournaments", label: "Tournaments" },
+            { id: "community", label: `Community${communityClubs.length > 0 ? ` (${communityClubs.length})` : ""}` },
+          ] as const).map(t => (
             <button
-              key={t}
-              onClick={() => setTab(t)}
+              key={t.id}
+              onClick={() => setTab(t.id as any)}
               className={`flex-1 py-2.5 text-xs font-bold uppercase tracking-wider transition-colors ${
-                tab === t ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:text-foreground"
+                tab === t.id ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:text-foreground"
               }`}
             >
-              {t === "my" ? `My Clubs${myClubs.length > 0 ? ` (${myClubs.length})` : ""}` : `Community${communityClubs.length > 0 ? ` (${communityClubs.length})` : ""}`}
+              {t.label}
             </button>
           ))}
         </div>
@@ -297,6 +302,13 @@ const Clubs = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {myClubs.map((club, i) => renderMyCard(club, i))}
             </div>
+          </div>
+        )}
+
+        {/* Tournaments */}
+        {tab === "tournaments" && (
+          <div className="px-0">
+            <TournamentsTab />
           </div>
         )}
 
