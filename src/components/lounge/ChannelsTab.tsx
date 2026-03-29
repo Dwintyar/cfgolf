@@ -124,10 +124,12 @@ const ChannelsTab = () => {
     ch?.name?.toLowerCase().includes(search.toLowerCase())
   );
 
+  const isMobileDetail = selectedChannelId !== null;
+
   return (
     <div className="flex h-full">
-      {/* LEFT PANEL — channel list (WA-style) */}
-      <div className="w-[280px] lg:w-[320px] shrink-0 flex flex-col border-r border-border/50 h-full">
+      {/* LEFT PANEL — channel list */}
+      <div className={`${isMobileDetail ? "hidden lg:flex" : "flex"} w-full lg:w-[320px] shrink-0 flex-col border-r border-border/50 h-full`}>
         {/* Search + tabs */}
         <div className="px-3 pt-3 pb-2 space-y-2 shrink-0">
           <div className="flex items-center gap-2 bg-secondary rounded-xl px-3 py-2">
@@ -205,7 +207,7 @@ const ChannelsTab = () => {
       </div>
 
       {/* RIGHT PANEL — channel content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className={`${isMobileDetail ? "flex" : "hidden lg:flex"} flex-1 flex-col overflow-hidden`}>
         {!selectedChannel ? (
           <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
             <Megaphone className="h-12 w-12 text-muted-foreground/30 mb-4" />
@@ -215,7 +217,14 @@ const ChannelsTab = () => {
         ) : (
           <>
             {/* Channel header */}
-            <div className="shrink-0 px-5 py-3 border-b border-border/50 flex items-center gap-3">
+            <div className="shrink-0 px-3 py-3 border-b border-border/50 flex items-center gap-3">
+              {/* Back button — mobile only */}
+              <button
+                className="lg:hidden flex items-center justify-center h-8 w-8 rounded-full hover:bg-secondary shrink-0"
+                onClick={() => setSelectedChannelId(null)}
+              >
+                ←
+              </button>
               <div className={`h-10 w-10 rounded-2xl flex items-center justify-center text-lg ${
                 selectedChannel.channel_type === "platform" ? "bg-primary/20" :
                 selectedChannel.channel_type === "club" ? "bg-amber-500/20" : "bg-secondary"
