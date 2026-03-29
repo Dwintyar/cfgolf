@@ -353,29 +353,7 @@ const DesktopLayout = ({ children, sidebarRightHidden = false }: { children: Rea
           </div>
         </div>
 
-        {/* ── TENGAH: Nav items merata (seperti Facebook) ── */}
-        <nav className="flex-1 flex items-stretch justify-center gap-1 h-full">
-          {navItems.map(({ path, label, icon: Icon }) => {
-            const active = location.pathname.startsWith(path);
-            return (
-              <button
-                key={path}
-                onClick={() => navigate(path)}
-                className={`relative flex flex-col items-center justify-center gap-0.5 px-6 xl:px-8 text-xs font-medium transition-colors h-full ${ 
-                  active
-                    ? "text-primary"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/60"
-                }`}
-              >
-                <Icon className="h-5 w-5" />
-                <span className="leading-none hidden xl:block">{label}</span>
-                {active && (
-                  <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-primary" />
-                )}
-              </button>
-            );
-          })}
-        </nav>
+        <div className="flex-1" />
 
         {/* ── KANAN: Quick actions + Avatar dropdown ── */}
         <div className="flex items-center gap-0.5 shrink-0">
@@ -472,7 +450,7 @@ const DesktopLayout = ({ children, sidebarRightHidden = false }: { children: Rea
       {/* SIDEBAR KIRI — WA-style icon nav + content */}
       <aside
         style={{ width: 256 }}
-        className="fixed left-0 top-0 h-screen border-r border-border/50 bg-card z-40 flex flex-col overflow-y-auto"
+        className="fixed left-0 top-14 h-[calc(100vh-3.5rem)] border-r border-border/50 bg-card z-40 flex flex-col overflow-y-auto"
       >
         {/* Icon-only nav strip — WA style */}
         <div className="flex flex-col items-center gap-1 py-4 px-2 border-b border-border/50">
@@ -492,8 +470,8 @@ const DesktopLayout = ({ children, sidebarRightHidden = false }: { children: Rea
               </button>
             );
           })}
-          {/* Settings at bottom */}
-          <div className="mt-auto pt-2">
+          {/* Avatar at bottom of nav */}
+          <div className="pt-2">
             <button
               onClick={() => navigate("/profile")}
               className="flex items-center justify-center w-12 h-12 rounded-xl text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
@@ -654,7 +632,6 @@ const DesktopLayout = ({ children, sidebarRightHidden = false }: { children: Rea
           marginRight: (isWide && !sidebarRightHidden) ? "260px" : "0px",
           width: `calc(100% - 256px - ${(isWide && !sidebarRightHidden) ? "260px" : "0px"})`,
           minHeight: "100vh",
-          paddingTop: "3.5rem",
         }}
         className="pt-14"
       >

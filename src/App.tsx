@@ -100,7 +100,7 @@ const AppInner = () => {
         <PushNotifBanner />
         <AppLayout>
           <Routes>
-            <Route path="/" element={<Navigate to="/login" replace />} />
+            <Route path="/" element={<Navigate to="/lounge" replace />} />
             {/* Public routes — no auth needed */}
             <Route path="/login" element={<Login />} />
             <Route path="/onboarding" element={<Onboarding />} />
@@ -118,6 +118,11 @@ const AppInner = () => {
             <Route path="/news" element={<ProtectedRoute><NewsFeed /></ProtectedRoute>} />
             <Route path="/lounge" element={<ProtectedRoute><Lounge /></ProtectedRoute>} />
             <Route path="/rounds" element={<ProtectedRoute><Rounds /></ProtectedRoute>} />
+            {/* Redirects from old URLs */}
+            <Route path="/news" element={<Navigate to="/lounge" replace />} />
+            <Route path="/tour" element={<Navigate to="/rounds" replace />} />
+            <Route path="/venue" element={<Navigate to="/rounds" replace />} />
+            <Route path="/chat" element={<Navigate to="/lounge" replace />} />
             <Route path="/clubs" element={<ProtectedRoute><Clubs /></ProtectedRoute>} />
             <Route path="/clubs/:id" element={<ProtectedRoute><ClubProfile /></ProtectedRoute>} />
             <Route path="/tour" element={<ProtectedRoute><TourList /></ProtectedRoute>} />
