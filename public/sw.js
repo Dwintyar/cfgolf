@@ -1,7 +1,14 @@
-// CFGolf Service Worker — handles background push notifications
-
+// GolfBuana Service Worker v2 — 
 self.addEventListener('install', () => { self.skipWaiting(); });
-self.addEventListener('activate', (event) => { event.waitUntil(clients.claim()); });
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    Promise.all([
+      clients.claim(),
+      // Clear ALL caches to force fresh content
+      caches.keys().then(keys => Promise.all(keys.map(key => caches.delete(key))))
+    ])
+  );
+});
 
 // Fetch handler — required for PWA/TWA packaging
 // Network-first strategy: always fetch fresh, fall back to cache
