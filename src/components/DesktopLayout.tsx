@@ -254,10 +254,9 @@ const DesktopLayout = ({ children, sidebarRightHidden = false }: { children: Rea
 
   const navItems = [
     { path: "/lounge", label: "Lounge", icon: Home },
-    { path: "/chat", label: "Chats", icon: MessageSquare },
-    { path: "/clubs", label: "Clubs", icon: Building2 },
+    { path: "/clubs", label: "Clubs", icon: Trophy },
     { path: "/rounds", label: "Rounds", icon: Flag },
-    { path: "/venue", label: "Courses", icon: MapPin },
+    { path: "/profile", label: "Profile", icon: User },
   ];
 
   const getInitials = (name: string | null) =>
@@ -470,11 +469,48 @@ const DesktopLayout = ({ children, sidebarRightHidden = false }: { children: Rea
         </div>
       </header>
 
-      {/* SIDEBAR KIRI — Profile & personal stats */}
+      {/* SIDEBAR KIRI — WA-style icon nav + content */}
       <aside
         style={{ width: 256 }}
-        className="fixed left-0 top-14 h-[calc(100vh-3.5rem)] border-r border-border/50 bg-card z-40 p-4 flex flex-col overflow-y-auto gap-3"
+        className="fixed left-0 top-0 h-screen border-r border-border/50 bg-card z-40 flex flex-col overflow-y-auto"
       >
+        {/* Icon-only nav strip — WA style */}
+        <div className="flex flex-col items-center gap-1 py-4 px-2 border-b border-border/50">
+          {navItems.map(({ path, label, icon: Icon }) => {
+            const active = location.pathname.startsWith(path);
+            return (
+              <button
+                key={path}
+                onClick={() => navigate(path)}
+                title={label}
+                className={`flex flex-col items-center justify-center w-12 h-12 rounded-xl transition-colors ${
+                  active ? "bg-primary/15 text-primary" : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                }`}
+              >
+                <Icon className="h-5 w-5" />
+                <span className="text-[9px] mt-0.5 font-medium">{label}</span>
+              </button>
+            );
+          })}
+          {/* Settings at bottom */}
+          <div className="mt-auto pt-2">
+            <button
+              onClick={() => navigate("/profile")}
+              className="flex items-center justify-center w-12 h-12 rounded-xl text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+              title="Settings"
+            >
+              <Avatar className="h-8 w-8">
+                <AvatarImage src={profile?.avatar_url ?? ""} />
+                <AvatarFallback className="bg-primary/10 text-xs font-bold text-primary">
+                  {getInitials(profile?.full_name ?? null)}
+                </AvatarFallback>
+              </Avatar>
+            </button>
+          </div>
+        </div>
+
+        {/* Profile & stats below nav */}
+        <div className="flex-1 overflow-y-auto p-3 space-y-3">
         {/* Profile card */}
         <div
           className="golf-card p-4 cursor-pointer hover:border-primary/30 transition-colors"
@@ -608,6 +644,7 @@ const DesktopLayout = ({ children, sidebarRightHidden = false }: { children: Rea
             </button>
           </div>
         )}
+        </div>
       </aside>
 
       {/* MAIN CONTENT */}
@@ -617,6 +654,7 @@ const DesktopLayout = ({ children, sidebarRightHidden = false }: { children: Rea
           marginRight: (isWide && !sidebarRightHidden) ? "260px" : "0px",
           width: `calc(100% - 256px - ${(isWide && !sidebarRightHidden) ? "260px" : "0px"})`,
           minHeight: "100vh",
+          paddingTop: "3.5rem",
         }}
         className="pt-14"
       >
