@@ -224,7 +224,7 @@ const NewsFeed = ({ embedded = false }: { embedded?: boolean }) => {
     ? myProfile.full_name.split(" ").slice(0, 2).map((w: string) => w[0]).join("").toUpperCase()
     : "?";
 
-  const content = (
+  const pageContent = (
     <div className="bottom-nav-safe">
       {!embedded && <AppHeader title="Lounge" />}
 
@@ -571,8 +571,8 @@ const NewsFeed = ({ embedded = false }: { embedded?: boolean }) => {
 
     </div>
   );
-  if (embedded) return content;
-  return <DesktopLayout>{content}</DesktopLayout>;
+  if (embedded) return pageContent;
+  return <DesktopLayout>{pageContent}</DesktopLayout>;
 };
 
 export default NewsFeed;
