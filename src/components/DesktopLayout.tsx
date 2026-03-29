@@ -447,210 +447,60 @@ const DesktopLayout = ({ children, sidebarRightHidden = false }: { children: Rea
         </div>
       </header>
 
-      {/* SIDEBAR KIRI — WA-style icon nav + content */}
+      {/* SIDEBAR KIRI — WA-style icon-only nav */}
       <aside
-        style={{ width: 256 }}
-        className="fixed left-0 top-14 h-[calc(100vh-3.5rem)] border-r border-border/50 bg-card z-40 flex flex-col overflow-y-auto"
+        style={{ width: 64 }}
+        className="fixed left-0 top-14 h-[calc(100vh-3.5rem)] border-r border-border/50 bg-card z-40 flex flex-col items-center py-3 gap-1"
       >
-        {/* Icon-only nav strip — WA style */}
-        <div className="flex flex-col items-center gap-2 py-4 px-2 border-b border-border/50">
-          {navItems.map(({ path, label, icon: Icon }) => {
-            const active = location.pathname.startsWith(path);
-            return (
-              <button
-                key={path}
-                onClick={() => navigate(path)}
-                title={label}
-                className={`flex flex-col items-center justify-center w-14 h-14 rounded-xl transition-colors ${
-                  active ? "bg-primary/15 text-primary" : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-                }`}
-              >
-                <Icon className="h-5 w-5" />
-                <span className="text-[9px] mt-0.5 font-semibold tracking-tight">{label}</span>
-              </button>
-            );
-          })}
-          {/* Avatar at bottom of nav */}
-          <div className="pt-2">
+        {/* Nav icons */}
+        {navItems.map(({ path, label, icon: Icon }) => {
+          const active = location.pathname.startsWith(path);
+          return (
             <button
-              onClick={() => navigate("/profile")}
-              className="flex items-center justify-center w-12 h-12 rounded-xl text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
-              title="Settings"
+              key={path}
+              onClick={() => navigate(path)}
+              title={label}
+              className={`flex flex-col items-center justify-center w-12 h-12 rounded-xl transition-colors ${
+                active ? "bg-primary/15 text-primary" : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+              }`}
             >
-              <Avatar className="h-8 w-8">
-                <AvatarImage src={profile?.avatar_url ?? ""} />
-                <AvatarFallback className="bg-primary/10 text-xs font-bold text-primary">
-                  {getInitials(profile?.full_name ?? null)}
-                </AvatarFallback>
-              </Avatar>
+              <Icon className="h-5 w-5" />
+              <span className="text-[9px] mt-0.5 font-semibold">{label}</span>
             </button>
-          </div>
-        </div>
-
-        {/* Profile & stats below nav */}
-        <div className="flex-1 overflow-y-auto p-3 space-y-3">
-        {/* Profile card */}
-        <div
-          className="golf-card p-4 cursor-pointer hover:border-primary/30 transition-colors"
-          onClick={() => navigate("/profile")}
-        >
-          <div className="flex items-center gap-3 mb-3">
-            <Avatar className="h-12 w-12 border-2 border-primary/20">
+          );
+        })}
+        {/* Avatar at bottom */}
+        <div className="mt-auto">
+          <button
+            onClick={() => navigate("/profile")}
+            title="Profile"
+            className="flex items-center justify-center w-12 h-12 rounded-xl hover:bg-secondary transition-colors"
+          >
+            <Avatar className="h-8 w-8">
               <AvatarImage src={profile?.avatar_url ?? ""} />
-              <AvatarFallback className="bg-primary/10 text-base font-bold text-primary">
+              <AvatarFallback className="bg-primary/10 text-xs font-bold text-primary">
                 {getInitials(profile?.full_name ?? null)}
               </AvatarFallback>
             </Avatar>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-bold truncate text-foreground">
-                {profile?.full_name ?? "Golfer"}
-              </p>
-              <p className="text-xs text-muted-foreground">View profile →</p>
-            </div>
-          </div>
-          {/* HCP badge */}
-          <div className="flex items-center justify-between bg-primary/10 rounded-lg px-3 py-2 mb-2">
-            <span className="text-xs text-muted-foreground font-medium">Handicap Index</span>
-            <span className="text-lg font-extrabold text-primary tabular-nums">
-              {profile?.handicap ?? "N/A"}
-            </span>
-          </div>
-
-          {/* Mini HCP Trend Chart */}
-          {hcpHistory && hcpHistory.length >= 2 && (() => {
-            const vals = hcpHistory.map((h: any) => h.new_hcp ?? h.old_hcp ?? 0);
-            const min = Math.min(...vals) - 1;
-            const max = Math.max(...vals) + 1;
-            const range = max - min || 1;
-            const w = 200; const h = 48;
-            const pts = vals.map((v: number, i: number) => {
-              const x = (i / (vals.length - 1)) * w;
-              const y = h - ((v - min) / range) * h;
-              return `${x},${y}`;
-            }).join(" ");
-            const first = vals[0]; const last = vals[vals.length - 1];
-            const improving = last < first;
-            return (
-              <div className="mt-1">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-[10px] text-muted-foreground">HCP Trend</span>
-                  <span className={`text-[10px] font-semibold ${improving ? "text-green-500" : "text-red-400"}`}>
-                    {improving ? "▼" : "▲"} {Math.abs(last - first).toFixed(1)} ({hcpHistory.length} events)
-                  </span>
-                </div>
-                <svg viewBox={`0 0 ${w} ${h}`} className="w-full" style={{ height: 40 }}>
-                  <defs>
-                    <linearGradient id="hcpGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={improving ? "#22c55e" : "#ef4444"} stopOpacity="0.3" />
-                      <stop offset="100%" stopColor={improving ? "#22c55e" : "#ef4444"} stopOpacity="0" />
-                    </linearGradient>
-                  </defs>
-                  <polyline
-                    points={pts}
-                    fill="none"
-                    stroke={improving ? "#22c55e" : "#ef4444"}
-                    strokeWidth="2"
-                    strokeLinejoin="round"
-                    strokeLinecap="round"
-                  />
-                  {vals.map((v: number, i: number) => {
-                    const x = (i / (vals.length - 1)) * w;
-                    const y = h - ((v - min) / range) * h;
-                    return <circle key={i} cx={x} cy={y} r="2.5" fill={improving ? "#22c55e" : "#ef4444"} />;
-                  })}
-                </svg>
-              </div>
-            );
-          })()}
-        </div>
-
-        {/* Quick links */}
-        <div className="golf-card p-3 space-y-1">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-1 mb-2">Quick Links</p>
-          {[
-            { path: "/profile", label: "My Profile", icon: User },
-            { path: "/clubs", label: "My Clubs", icon: Building2 },
-            { path: "/clubs", label: "Tournaments", icon: Trophy },
-            { path: "/rounds", label: "Find Courses", icon: MapPin },
-          ].map(({ path, label, icon: Icon }) => {
-            const active = location.pathname.startsWith(path);
-            return (
-              <button
-                key={path}
-                onClick={() => navigate(path)}
-                className={`flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-sm transition-colors text-left ${
-                  active
-                    ? "bg-primary/10 text-primary font-medium"
-                    : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-                }`}
-              >
-                <Icon className="h-4 w-4 shrink-0" />
-                {label}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Golfers — social section */}
-        <ActiveGolfersWidget navigate={navigate} />
-
-        {/* Admin section */}
-        {isAdmin && (
-          <div className="golf-card p-3 space-y-1">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-1 mb-2">Admin</p>
-            <button
-              onClick={() => navigate("/admin/approvals")}
-              className={`flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-sm transition-colors text-left ${
-                location.pathname === "/admin/approvals"
-                  ? "bg-primary/10 text-primary font-medium"
-                  : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-              }`}
-            >
-              <ShieldCheck className="h-4 w-4 shrink-0" />
-              Approvals
-              {(pendingCount ?? 0) > 0 && (
-                <Badge variant="destructive" className="ml-auto text-[10px] px-1.5 py-0 h-5 min-w-[20px] flex items-center justify-center">
-                  {pendingCount}
-                </Badge>
-              )}
-            </button>
-            <button
-              onClick={() => navigate("/admin")}
-              className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-sm text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors text-left"
-            >
-              <TrendingUp className="h-4 w-4 shrink-0" /> Dashboard
-            </button>
-          </div>
-        )}
+          </button>
         </div>
       </aside>
 
-      {/* MAIN CONTENT */}
+      {/* MAIN CONTENT — full width minus icon nav */}
       <main
         style={{
-          marginLeft: "256px",
-          marginRight: (isWide && !sidebarRightHidden) ? "260px" : "0px",
-          width: `calc(100% - 256px - ${(isWide && !sidebarRightHidden) ? "260px" : "0px"})`,
+          marginLeft: "64px",
+          width: "calc(100% - 64px)",
           minHeight: "100vh",
         }}
         className="pt-14"
       >
-        <div className="w-full px-6 py-4">
+        <div className="w-full">
           {children}
         </div>
       </main>
 
-      {/* SIDEBAR KANAN — wide screens only */}
-      {isWide && !sidebarRightHidden && (
-        <aside
-          style={{ width: 260 }}
-          className="fixed right-0 top-14 h-[calc(100vh-3.5rem)] border-l border-border/50 bg-card/50 z-40 p-4 overflow-y-auto"
-        >
-          <LiveTournamentWidget navigate={navigate} liveEvent={liveEvent} />
-          <UpcomingEventsWidget navigate={navigate} userId={userId} />
-          <VenuesWidget navigate={navigate} />
-        </aside>
-      )}
+
     </div>
   );
 };
