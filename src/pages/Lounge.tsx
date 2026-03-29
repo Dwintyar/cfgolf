@@ -43,13 +43,13 @@ const Lounge = () => {
 
       {/* Content */}
       <div className="flex-1 overflow-hidden">
-        <div className={tab === "channels" ? "h-full" : "hidden"}>
+        <div className={tab === "channels" ? "h-full pb-20 lg:pb-0" : "hidden"}>
           <ChannelsTab />
         </div>
-        <div className={tab === "feed" ? "h-full overflow-auto" : "hidden"}>
+        <div className={tab === "feed" ? "h-full overflow-auto pb-20 lg:pb-0" : "hidden"}>
           <NewsFeed embedded />
         </div>
-        <div className={tab === "chats" ? "h-full overflow-auto" : "hidden"}>
+        <div className={tab === "chats" ? "h-full overflow-auto pb-20 lg:pb-0" : "hidden"}>
           <ChatList embedded />
         </div>
       </div>

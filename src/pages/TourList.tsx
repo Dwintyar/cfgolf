@@ -269,13 +269,12 @@ const TourList = ({ embedded = false }: { embedded?: boolean }) => {
     { id: "all" as const, label: "All" },
   ];
 
-  return (
-    <DesktopLayout>
+  const content = (
     <div className="bottom-nav-safe">
-      <AppHeader
+      {!embedded && <AppHeader
         title="Rounds"
         icon={<Trophy className="h-5 w-5 text-primary" />}
-      />
+      />}
 
       {/* ═══ TODAY'S ROUND / LIVE BANNER ═══ */}
       {(() => {
@@ -414,8 +413,9 @@ const TourList = ({ embedded = false }: { embedded?: boolean }) => {
       </div>
 
     </div>
-    </DesktopLayout>
   );
+  if (embedded) return <>{content}</>;
+  return <DesktopLayout>{content}</DesktopLayout>;
 };
 
 export default TourList;

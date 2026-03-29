@@ -1,6 +1,4 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import DesktopLayout from "@/components/DesktopLayout";
 import TourList from "./TourList";
 import VenueList from "./VenueList";
 
@@ -40,10 +38,10 @@ const Rounds = () => {
 
       {/* Content */}
       <div className="flex-1 overflow-hidden">
-        <div className={tab === "play" ? "h-full overflow-auto" : "hidden"}>
+        <div className={tab === "play" ? "h-full overflow-auto pb-20 lg:pb-0" : "hidden"}>
           <TourList embedded />
         </div>
-        <div className={tab === "courses" ? "h-full overflow-auto" : "hidden"}>
+        <div className={tab === "courses" ? "h-full overflow-auto pb-20 lg:pb-0" : "hidden"}>
           <VenueList embedded />
         </div>
       </div>

@@ -144,8 +144,7 @@ const ChatList = ({ embedded = false }: { embedded?: boolean }) => {
     navigate(`/chat/${newId}`);
   };
 
-  return (
-    <DesktopLayout>
+  const content = (
     <div className="bottom-nav-safe">
       {/* Header */}
       <div className="flex items-center justify-between p-4">
@@ -292,8 +291,9 @@ const ChatList = ({ embedded = false }: { embedded?: boolean }) => {
         />
       )}
     </div>
-    </DesktopLayout>
   );
+  if (embedded) return content;
+  return <DesktopLayout>{content}</DesktopLayout>;
 };
 
 export default ChatList;

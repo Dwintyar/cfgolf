@@ -208,10 +208,9 @@ const NewsFeed = ({ embedded = false }: { embedded?: boolean }) => {
     ? myProfile.full_name.split(" ").slice(0, 2).map((w: string) => w[0]).join("").toUpperCase()
     : "?";
 
-  return (
-    <DesktopLayout>
+  const content = (
     <div className="bottom-nav-safe">
-      <AppHeader title="Lounge" />
+      {!embedded && <AppHeader title="Lounge" />}
 
       <div className="space-y-4 px-4 pb-20">
         {/* Create Post Box */}
@@ -539,8 +538,9 @@ const NewsFeed = ({ embedded = false }: { embedded?: boolean }) => {
       </Dialog>
 
     </div>
-    </DesktopLayout>
   );
+  if (embedded) return content;
+  return <DesktopLayout>{content}</DesktopLayout>;
 };
 
 export default NewsFeed;

@@ -113,10 +113,9 @@ const VenueList = ({ embedded = false }: { embedded?: boolean }) => {
       : club.facility_type !== "driving_range"
   ) ?? [];
 
-  return (
-    <DesktopLayout>
+  const content = (
       <div className="bottom-nav-safe">
-        <AppHeader title="Courses" icon={<MapPin className="h-5 w-5 text-primary" />} />
+        {!embedded && <AppHeader title="Courses" icon={<MapPin className="h-5 w-5 text-primary" />} />}
 
         {/* Search + Filter */}
         <div className="px-4 pb-3 space-y-3">
@@ -376,8 +375,9 @@ const VenueList = ({ embedded = false }: { embedded?: boolean }) => {
           </div>
         )}
       </div>
-    </DesktopLayout>
   );
+  if (embedded) return content;
+  return <DesktopLayout>{content}</DesktopLayout>;
 };
 
 export default VenueList;
