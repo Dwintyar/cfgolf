@@ -453,7 +453,7 @@ const DesktopLayout = ({ children, sidebarRightHidden = false }: { children: Rea
         className="fixed left-0 top-14 h-[calc(100vh-3.5rem)] border-r border-border/50 bg-card z-40 flex flex-col overflow-y-auto"
       >
         {/* Icon-only nav strip — WA style */}
-        <div className="flex flex-col items-center gap-1 py-4 px-2 border-b border-border/50">
+        <div className="flex flex-col items-center gap-2 py-4 px-2 border-b border-border/50">
           {navItems.map(({ path, label, icon: Icon }) => {
             const active = location.pathname.startsWith(path);
             return (
@@ -461,12 +461,12 @@ const DesktopLayout = ({ children, sidebarRightHidden = false }: { children: Rea
                 key={path}
                 onClick={() => navigate(path)}
                 title={label}
-                className={`flex flex-col items-center justify-center w-12 h-12 rounded-xl transition-colors ${
+                className={`flex flex-col items-center justify-center w-14 h-14 rounded-xl transition-colors ${
                   active ? "bg-primary/15 text-primary" : "text-muted-foreground hover:bg-secondary hover:text-foreground"
                 }`}
               >
                 <Icon className="h-5 w-5" />
-                <span className="text-[9px] mt-0.5 font-medium">{label}</span>
+                <span className="text-[9px] mt-0.5 font-semibold tracking-tight">{label}</span>
               </button>
             );
           })}
@@ -570,8 +570,8 @@ const DesktopLayout = ({ children, sidebarRightHidden = false }: { children: Rea
           {[
             { path: "/profile", label: "My Profile", icon: User },
             { path: "/clubs", label: "My Clubs", icon: Building2 },
-            { path: "/tour", label: "Tournaments", icon: Trophy },
-            { path: "/venue", label: "Book Tee Time", icon: MapPin },
+            { path: "/clubs", label: "Tournaments", icon: Trophy },
+            { path: "/rounds", label: "Find Courses", icon: MapPin },
           ].map(({ path, label, icon: Icon }) => {
             const active = location.pathname.startsWith(path);
             return (
