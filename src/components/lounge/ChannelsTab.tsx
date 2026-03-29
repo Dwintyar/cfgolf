@@ -187,10 +187,10 @@ const ChannelsTab = () => {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1">
-                    <p className={`text-sm font-semibold truncate ${isActive ? "text-primary" : ""}`}>{ch.name}</p>
+                    <p className={`text-base font-semibold truncate ${isActive ? "text-primary" : ""}`}>{ch.name}</p>
                     {ch.is_official && <span className="text-[9px] text-primary shrink-0">✓</span>}
                   </div>
-                  <p className="text-[10px] text-muted-foreground">
+                  <p className="text-[13px] text-muted-foreground">
                     {ch.follower_count?.toLocaleString() ?? 0} followers
                   </p>
                 </div>
@@ -235,12 +235,12 @@ const ChannelsTab = () => {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <p className="text-sm font-bold truncate">{selectedChannel.name}</p>
+                  <p className="text-base font-bold truncate">{selectedChannel.name}</p>
                   {selectedChannel.is_official && (
                     <span className="text-[9px] bg-primary/15 text-primary border border-primary/30 px-1.5 py-0.5 rounded font-bold shrink-0">✓ Official</span>
                   )}
                 </div>
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-[13px] text-muted-foreground">
                   {selectedChannel.follower_count?.toLocaleString() ?? 0} followers
                 </p>
               </div>
@@ -268,13 +268,13 @@ const ChannelsTab = () => {
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="text-sm font-semibold">{post.profiles?.full_name}</p>
-                      <p className="text-[10px] text-muted-foreground">
+                      <p className="text-[15px] font-semibold">{post.profiles?.full_name}</p>
+                      <p className="text-[13px] text-muted-foreground">
                         {new Date(post.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                       </p>
                     </div>
                   </div>
-                  <p className="text-sm text-foreground leading-relaxed whitespace-pre-line">{post.content}</p>
+                  <p className="text-[15px] text-foreground leading-relaxed whitespace-pre-line">{post.content}</p>
                   {post.image_url && (
                     <img src={post.image_url} className="w-full rounded-xl object-cover max-h-64 mt-3" />
                   )}

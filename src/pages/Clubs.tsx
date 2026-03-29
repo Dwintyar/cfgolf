@@ -123,12 +123,12 @@ const Clubs = () => {
           <AvatarFallback className="rounded-2xl bg-primary/10 text-sm font-bold text-primary">{club.initials}</AvatarFallback>
         </Avatar>
         <div className="flex-1 min-w-0">
-          <p className={`text-sm font-semibold truncate ${isSelected ? "text-primary" : ""}`}>{club.name}</p>
-          <p className="text-[11px] text-muted-foreground truncate mt-0.5">
+          <p className={`text-base font-semibold truncate ${isSelected ? "text-primary" : ""}`}>{club.name}</p>
+          <p className="text-[13px] text-muted-foreground truncate mt-0.5">
             {facilityLabel[club.facility_type] ?? club.facility_type} · {club.memberCount} members
             {isOwner ? " · Owner" : isAdmin ? " · Admin" : " · Member"}
           </p>
-          {club.description && <p className="text-[10px] text-muted-foreground truncate mt-0.5">{club.description}</p>}
+          {club.description && <p className="text-[13px] text-muted-foreground truncate mt-0.5">{club.description}</p>}
         </div>
         <ChevronRight className={`h-4 w-4 shrink-0 ${isSelected ? "text-primary" : "text-muted-foreground"}`} />
       </button>
@@ -149,11 +149,11 @@ const Clubs = () => {
         <AvatarFallback className="rounded-2xl bg-primary/10 text-sm font-bold text-primary">{club.initials}</AvatarFallback>
       </Avatar>
       <div className="flex-1 min-w-0">
-        <p className={`text-sm font-semibold truncate ${isSelected ? "text-primary" : ""}`}>{club.name}</p>
-        <p className="text-[11px] text-muted-foreground truncate mt-0.5">
+        <p className={`text-base font-semibold truncate ${isSelected ? "text-primary" : ""}`}>{club.name}</p>
+        <p className="text-[13px] text-muted-foreground truncate mt-0.5">
           {facilityLabel[club.facility_type] ?? club.facility_type} · {club.memberCount} members
         </p>
-        {club.description && <p className="text-[10px] text-muted-foreground truncate mt-0.5">{club.description}</p>}
+        {club.description && <p className="text-[13px] text-muted-foreground truncate mt-0.5">{club.description}</p>}
       </div>
       <ChevronRight className={`h-4 w-4 shrink-0 ${isSelected ? "text-primary" : "text-muted-foreground"}`} />
     </button>
