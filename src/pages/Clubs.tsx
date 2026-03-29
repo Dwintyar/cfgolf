@@ -39,6 +39,8 @@ const Clubs = () => {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [showCreateClub, setShowCreateClub] = useState(false);
   const [joiningClubId, setJoiningClubId] = useState<string | null>(null);
+  const [selectedClubId, setSelectedClubId] = useState<string | null>(null);
+  const [mobileShowDetail, setMobileShowDetail] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -186,7 +188,7 @@ const Clubs = () => {
       key={club.id}
       className="group golf-card overflow-hidden cursor-pointer hover:border-primary/30 hover:shadow-md transition-all duration-200 animate-fade-in"
       style={{ animationDelay: `${i * 40}ms` }}
-      onClick={() => navigate(`/clubs/${club.id}`)}
+      onClick={() => { setSelectedClubId(club.id); setMobileShowDetail(true); }}
     >
       <div className="p-4">
         <div className="flex items-start gap-3">
@@ -230,7 +232,10 @@ const Clubs = () => {
 
   return (
     <DesktopLayout>
-      <div className="bottom-nav-safe">
+      <div className="flex h-screen lg:h-[calc(100vh-0px)] bottom-nav-safe">
+        {/* LEFT PANEL — club list (mobile: full, desktop: fixed width) */}
+        <div className={`${mobileShowDetail ? "hidden lg:flex" : "flex"} flex-col w-full lg:w-[320px] shrink-0 border-r border-border/50 h-full overflow-hidden`}>
+        <div className="flex-1 overflow-y-auto">
 
         {/* Search bar */}
         <div className="flex items-center gap-2 px-4 pt-4 pb-3">
@@ -354,6 +359,64 @@ const Clubs = () => {
             queryClient.invalidateQueries({ queryKey: ["clubs"] });
           }}
         />
+        </div>{/* end left panel scroll */}
+        </div>{/* end left panel */}
+
+        {/* RIGHT PANEL — club detail */}
+        <div className={`${mobileShowDetail ? "flex" : "hidden lg:flex"} flex-1 flex-col overflow-hidden`}>
+          {!selectedClubId ? (
+            <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
+              <div className="h-20 w-20 rounded-full bg-secondary flex items-center justify-center mb-4">
+                <Users className="h-10 w-10 text-muted-foreground/30" />
+              </div>
+              <p className="text-base font-semibold text-muted-foreground">Select a club</p>
+              <p className="text-sm text-muted-foreground mt-1">Choose a club from the left to see details</p>
+            </div>
+          ) : (
+            <div className="flex flex-col h-full overflow-hidden">
+              {/* Back button mobile + mini header */}
+              <div className="shrink-0 flex items-center gap-3 px-4 py-3 border-b border-border/50">
+                <button
+                  className="lg:hidden h-8 w-8 flex items-center justify-center rounded-full hover:bg-secondary"
+                  onClick={() => setMobileShowDetail(false)}
+                >←</button>
+                <p className="text-sm font-bold">Club Profile</p>
+                <button
+                  className="ml-auto text-xs text-primary hover:underline"
+                  onClick={() => navigate(`/clubs/${selectedClubId}`)}
+                >
+                  Full Profile →
+                </button>
+              </div>
+              {/* Embed ClubProfile-like content via iframe-less approach — navigate directly */}
+              <div className="flex-1 flex flex-col items-center justify-center text-center p-8 gap-4">
+                {(() => {
+                  const club = [...myClubs, ...communityClubs].find(c => c.id === selectedClubId);
+                  if (!club) return null;
+                  return (
+                    <>
+                      <Avatar className="h-20 w-20 border-4 border-primary/20">
+                        <AvatarImage src={club.logo_url ?? ""} />
+                        <AvatarFallback className="bg-primary/10 text-2xl font-bold text-primary">{club.initials}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="text-xl font-bold">{club.name}</p>
+                        <p className="text-sm text-muted-foreground mt-1">{facilityLabel[club.facility_type] ?? club.facility_type} · {club.memberCount} members</p>
+                        {club.description && <p className="text-sm text-muted-foreground mt-2 max-w-md">{club.description}</p>}
+                      </div>
+                      <div className="flex gap-3">
+                        <Button onClick={() => navigate(`/clubs/${selectedClubId}`)}>
+                          View Club →
+                        </Button>
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
+            </div>
+          )}
+        </div>
+
       </div>
     </DesktopLayout>
   );
