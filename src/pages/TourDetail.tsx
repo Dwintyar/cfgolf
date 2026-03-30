@@ -563,7 +563,7 @@ const TourDetail = () => {
         ];
 
         return (
-          <div className="grid grid-cols-4 gap-2 px-4 pb-4">
+          <div className="grid grid-cols-3 gap-3 px-4 pb-4">
             {actions.map((action, i) => (
               <button key={i} onClick={action.onClick}
                 className="flex flex-col items-center justify-center gap-1.5 p-3 rounded-2xl bg-secondary hover:bg-secondary/80 transition-colors">
