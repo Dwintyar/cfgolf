@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Trophy } from "lucide-react";
+import { Plus, Trophy, ChevronRight } from "lucide-react";
 import CreateTourDialog from "./CreateTourDialog";
 
 const TournamentsTab = () => {
@@ -78,24 +78,26 @@ const TournamentsTab = () => {
   const tourTabs = [
     { id: "mine" as const, label: "My Tours", count: myTours?.length ?? 0 },
     { id: "invited" as const, label: "Invited", count: invitedTours?.length },
-    { id: "all" as const, label: "All" },
+    { id: "all" as const, label: "Discover" },
   ];
 
   return (
     <div className="px-4 py-3">
       {/* Tab bar + create button */}
-      <div className="flex items-center gap-3 mb-4">
-        {tourTabs.map(t => (
-          <button key={t.id} onClick={() => setTourTab(t.id)}
-            className={`text-xs font-bold uppercase tracking-wider transition-colors ${
-              tourTab === t.id ? "text-foreground" : "text-muted-foreground hover:text-foreground"
-            }`}>
-            {t.label}
-            {t.count != null && t.count > 0 && <span className="ml-1 text-primary">({t.count})</span>}
-          </button>
-        ))}
+      <div className="flex items-center border-b border-border/50 mb-0">
+        <div className="flex flex-1">
+          {tourTabs.map(t => (
+            <button key={t.id} onClick={() => setTourTab(t.id)}
+              className={`flex-1 py-2.5 text-sm font-semibold transition-colors border-b-2 ${
+                tourTab === t.id ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}>
+              {t.label}
+              {t.count != null && t.count > 0 && <span className="ml-1 text-primary text-xs">({t.count})</span>}
+            </button>
+          ))}
+        </div>
         <button onClick={() => setShowCreate(true)}
-          className="ml-auto flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground">
+          className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground mr-1 shrink-0">
           <Plus className="h-4 w-4" />
         </button>
       </div>
@@ -114,20 +116,18 @@ const TournamentsTab = () => {
             </div>
           ) : myTours.map((tour: any, i: number) => (
             <button key={tour.id} onClick={() => navigate(`/tour/${tour.id}`)}
-              className="flex w-full items-center gap-3 golf-card p-3 text-left hover:border-primary/30 transition-all">
-              <Avatar className="h-10 w-10 border-2 border-primary/20">
+              className="flex w-full items-center gap-3 px-4 py-3 text-left border-b border-border/30 last:border-0 hover:bg-secondary/50 transition-colors">
+              <Avatar className="h-12 w-12 rounded-2xl shrink-0">
                 <AvatarImage src={tour.clubs?.logo_url ?? ""} />
-                <AvatarFallback className="bg-primary/10 text-xs font-bold text-primary">{tour.name?.charAt(0)}</AvatarFallback>
+                <AvatarFallback className="rounded-2xl bg-primary/10 text-sm font-bold text-primary">{tour.name?.charAt(0)}</AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold truncate">{tour.name}</p>
-                <p className="text-[10px] text-muted-foreground">{tour.year} · {tour.clubs?.name ?? "—"}</p>
+                <p className="text-base font-semibold truncate">{tour.name}</p>
+                <p className="text-[13px] text-muted-foreground truncate mt-0.5">
+                  {tour.year} · {tour.clubs?.name ?? "—"} · {tour.playerRole === "organizer" ? "Organizer" : "Player"}
+                </p>
               </div>
-              <Badge variant="outline" className={`text-[9px] ${
-                tour.playerRole === "organizer" ? "text-primary border-primary/30" : "text-muted-foreground border-muted-foreground/30"
-              }`}>
-                {tour.playerRole === "organizer" ? "Organizer →" : `Player`}
-              </Badge>
+              <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
             </button>
           ))}
         </div>
@@ -174,21 +174,18 @@ const TournamentsTab = () => {
           )}
           {allTours?.map((tour: any, i: number) => (
             <button key={tour.id} onClick={() => navigate(`/tour/${tour.id}`)}
-              className="flex w-full items-center gap-3 golf-card p-3 text-left hover:border-primary/30 transition-all">
-              <Avatar className="h-10 w-10 border-2 border-primary/20">
+              className="flex w-full items-center gap-3 px-4 py-3 text-left border-b border-border/30 last:border-0 hover:bg-secondary/50 transition-colors">
+              <Avatar className="h-12 w-12 rounded-2xl shrink-0">
                 <AvatarImage src={tour.clubs?.logo_url ?? ""} />
-                <AvatarFallback className="bg-primary/10 text-xs font-bold text-primary">{tour.name?.charAt(0)}</AvatarFallback>
+                <AvatarFallback className="rounded-2xl bg-primary/10 text-sm font-bold text-primary">{tour.name?.charAt(0)}</AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <p className="text-sm font-semibold truncate">{tour.name}</p>
-                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border shrink-0 ${
-                    tour.is_public === false ? "text-amber-500 bg-amber-500/10 border-amber-500/30" : "text-primary/70 bg-primary/10 border-primary/20"
-                  }`}>{tour.is_public === false ? "🔒 Private" : "🌐 Public"}</span>
-                </div>
-                <p className="text-[10px] text-muted-foreground">{tour.year} · {tour.clubs?.name ?? "—"} · {tour.tournament_type}</p>
+                <p className="text-base font-semibold truncate">{tour.name}</p>
+                <p className="text-[13px] text-muted-foreground truncate mt-0.5">
+                  {tour.year} · {tour.clubs?.name ?? "—"} · {tour.is_public === false ? "🔒 Private" : "🌐 Public"}
+                </p>
               </div>
-              <Button size="sm" variant="outline" className="h-7 rounded-lg px-4 text-[10px] font-bold uppercase tracking-wider shrink-0">View →</Button>
+              <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
             </button>
           ))}
         </div>
