@@ -102,10 +102,52 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply text-foreground;
     background: var(--golf-gradient);
+    background-color: hsl(var(--background));
     min-height: 100vh;
     font-size: 17px;
+  }
+
+  /* Light mode — ensure all elements inherit properly */
+  .light body,
+  .light {
+    background: var(--golf-gradient);
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
+
+  .light .golf-card {
+    background: var(--golf-card-gradient);
+    border-color: hsl(var(--border));
+  }
+
+  /* Fix navbar, header, sidebar in light mode */
+  .light header,
+  .light nav,
+  .light aside {
+    background-color: hsl(var(--card));
+    border-color: hsl(var(--border));
+  }
+
+  /* Fix card backgrounds */
+  .light [class*="bg-card"] {
+    background-color: hsl(var(--card));
+  }
+
+  /* Fix text colors in light mode */
+  .light [class*="text-foreground"] {
+    color: hsl(var(--foreground));
+  }
+
+  /* Fix secondary backgrounds */
+  .light [class*="bg-secondary"] {
+    background-color: hsl(var(--secondary));
+  }
+
+  /* Fix muted foreground */
+  .light [class*="text-muted-foreground"] {
+    color: hsl(var(--muted-foreground));
   }
 
   h1, h2, h3 {
