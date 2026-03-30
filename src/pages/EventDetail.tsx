@@ -1069,85 +1069,61 @@ const EventDetail = () => {
     </div>
   ) : null;
 
-  const actionButtonsBlock = (() => {
-    // Build actions array
-    const actions: { icon: any; label: string; onClick: () => void; color?: string; hidden?: boolean }[] = [];
-
-    // Player actions
-    if (isPersonalTour && showAdminActions && event?.status === "playing") {
-      actions.push({ icon: Pencil, label: "Input Score", onClick: async () => {
-        if (!myContestant && userId) {
-          await supabase.from("contestants").insert({
-            event_id: id!, player_id: userId,
-            hcp: (await supabase.from("profiles").select("handicap").eq("id", userId).single()).data?.handicap ?? 0,
-            status: "confirmed",
-          });
-        }
-        navigate(`/event/${id}/scorecard`);
-      }});
-    }
-    if (!isPersonalTour && myContestant && !isCheckedIn) {
-      actions.push({ icon: ClipboardCheck, label: "Check In", onClick: () => setShowCheckinDialog(true) });
-    }
-    if (!isPersonalTour && myContestant && isCheckedIn && event?.status !== "done") {
-      actions.push({ icon: Pencil, label: "Input Score", onClick: () => navigate(`/event/${id}/scorecard`) });
-    }
-
-    // Admin actions
-    if (showAdminActions) {
-      if (!isPersonalTour) actions.push({ icon: Users, label: "Assign", onClick: () => setShowAssign(true) });
-      if (!isPersonalTour && event?.status === "scheduled") {
-        actions.push({ icon: CheckCircle, label: "Set Ready", onClick: handleSetReady });
+  // Build action buttons
+  const _actions: { icon: any; label: string; onClick: () => void; color?: string }[] = [];
+  if (isPersonalTour && showAdminActions && event?.status === "playing") {
+    _actions.push({ icon: Pencil, label: "Input Score", onClick: async () => {
+      if (!myContestant && userId) {
+        const profile = await supabase.from("profiles").select("handicap").eq("id", userId).single();
+        await supabase.from("contestants").insert({ event_id: id!, player_id: userId, hcp: profile.data?.handicap ?? 0, status: "confirmed" });
       }
-      if (!isPersonalTour && event?.status === "ready") {
-        actions.push({ icon: Play, label: "Start Round", onClick: handleSetPlaying, color: "text-green-400" });
-      }
-      if (event?.status === "playing") {
-        if (isPersonalTour) {
-          actions.push({ icon: CheckCircle, label: "Finish Round", onClick: handleSelesaiBermain, color: "text-primary" });
-        } else {
-          actions.push({ icon: Trophy, label: "Finalize", onClick: () => setShowFinalizeConfirm(true), color: "text-primary" });
-        }
-      }
+      navigate(`/event/${id}/scorecard`);
+    }});
+  }
+  if (!isPersonalTour && myContestant && !isCheckedIn) {
+    _actions.push({ icon: ClipboardCheck, label: "Check In", onClick: () => setShowCheckinDialog(true) });
+  }
+  if (!isPersonalTour && myContestant && isCheckedIn && event?.status !== "done") {
+    _actions.push({ icon: Pencil, label: "Input Score", onClick: () => navigate(`/event/${id}/scorecard`) });
+  }
+  if (showAdminActions) {
+    if (!isPersonalTour) _actions.push({ icon: Users, label: "Assign", onClick: () => setShowAssign(true) });
+    if (!isPersonalTour && event?.status === "scheduled") _actions.push({ icon: CheckCircle, label: "Set Ready", onClick: handleSetReady });
+    if (!isPersonalTour && event?.status === "ready") _actions.push({ icon: Play, label: "Start Round", onClick: handleSetPlaying, color: "text-green-400" });
+    if (event?.status === "playing") {
+      if (isPersonalTour) _actions.push({ icon: CheckCircle, label: "Finish Round", onClick: handleSelesaiBermain, color: "text-primary" });
+      else _actions.push({ icon: Trophy, label: "Finalize", onClick: () => setShowFinalizeConfirm(true), color: "text-primary" });
     }
+  }
+  _actions.push({ icon: Trophy, label: "Results", onClick: () => setShowWinners(true) });
+  if (!isPersonalTour) {
+    _actions.push({ icon: Monitor, label: "Live", onClick: () => window.open(`/live/${id}`, "_blank") });
+    _actions.push({ icon: Share2, label: "Share", onClick: () => {
+      const url = `${window.location.origin}/live/${id}`;
+      if (navigator.share) navigator.share({ title: event?.name ?? "", url });
+      else navigator.clipboard.writeText(url).then(() => toast.success("Link copied!"));
+    }});
+    _actions.push({ icon: MessageCircle, label: "WA", onClick: () => {
+      const url = `${window.location.origin}/live/${id}`;
+      window.open(`https://wa.me/?text=${encodeURIComponent(`🏌️ *${event?.name}*
+${url}`)}`, "_blank");
+    }, color: "text-green-400" });
+  }
+  if (event?.status === "done") _actions.push({ icon: Download, label: exporting ? "..." : "Export", onClick: handleExportPDF });
 
-    // Common actions
-    actions.push({ icon: Trophy, label: "Results", onClick: () => setShowWinners(true) });
-    if (!isPersonalTour) {
-      actions.push({ icon: Monitor, label: "Live", onClick: () => window.open(`/live/${id}`, "_blank") });
-      actions.push({ icon: Share2, label: "Share", onClick: () => {
-        const url = `${window.location.origin}/live/${id}`;
-        if (navigator.share) navigator.share({ title: event?.name ?? "", url });
-        else navigator.clipboard.writeText(url).then(() => toast.success("Link copied! 📋"));
-      }});
-      actions.push({ icon: MessageCircle, label: "WA", onClick: () => {
-        const url = `${window.location.origin}/live/${id}`;
-        const text = `🏌️ *${event?.name}*
-View live leaderboard at:
-${url}`;
-        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
-      }, color: "text-green-400" });
-    }
-    if (event?.status === "done") {
-      actions.push({ icon: Download, label: exporting ? "..." : "Export", onClick: handleExportPDF });
-    }
-
-    if (actions.length === 0) return null;
-
-    return (
-      <div className="grid grid-cols-3 gap-3 px-4 pb-4">
-        {actions.map((action, i) => (
-          <button key={i} onClick={action.onClick}
-            className="flex flex-col items-center justify-center gap-2 py-4 px-2 rounded-2xl bg-secondary hover:bg-secondary/70 transition-colors active:scale-95">
-            <div className="h-12 w-12 rounded-2xl bg-background/80 flex items-center justify-center shadow-sm">
-              <action.icon className={`h-5 w-5 ${action.color ?? "text-primary"}`} />
-            </div>
-            <span className="text-xs font-semibold text-center leading-tight">{action.label}</span>
-          </button>
-        ))}
-      </div>
-    );
-  })();
+  const actionButtonsBlock = _actions.length === 0 ? null : (
+    <div className="grid grid-cols-3 gap-3 px-4 pb-4">
+      {_actions.map((action, i) => (
+        <button key={i} onClick={action.onClick}
+          className="flex flex-col items-center justify-center gap-2 py-4 px-2 rounded-2xl bg-secondary hover:bg-secondary/70 transition-colors active:scale-95">
+          <div className="h-12 w-12 rounded-2xl bg-background/80 flex items-center justify-center shadow-sm">
+            <action.icon className={`h-5 w-5 ${action.color ?? "text-primary"}`} />
+          </div>
+          <span className="text-xs font-semibold text-center leading-tight">{action.label}</span>
+        </button>
+      ))}
+    </div>
+  );
 
   const tabsBlock = (
     <Tabs value={activeTab} onValueChange={setActiveTab} className={isDesktop ? "" : "px-4"}>
