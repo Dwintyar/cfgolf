@@ -251,10 +251,12 @@ const TourList = ({ embedded = false }: { embedded?: boolean }) => {
   // Merge events + myEvents (from contestant table) — deduplicated
   const allAccessibleEvents = (() => {
     const map = new Map<string, any>();
-    (events ?? []).forEach(e => map.set(e.id, e));
-    (myEvents ?? []).forEach((c: any) => {
-      const e = c.events;
-      if (e && !map.has(e.id)) map.set(e.id, e);
+    // Add from main events query first
+    (events ?? []).forEach(e => { if (e?.id) map.set(e.id, e); });
+    // Add from contestant query — extract nested event object
+    (myEvents ?? []).forEach((contestant: any) => {
+      const e = contestant?.events;
+      if (e?.id && !map.has(e.id)) map.set(e.id, e);
     });
     return Array.from(map.values());
   })();
