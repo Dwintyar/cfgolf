@@ -1529,6 +1529,89 @@ const GolferProfile = () => {
           </div>
         </div>
       )}
+
+      {/* Settings Sheet */}
+      <Sheet open={showSettings} onOpenChange={setShowSettings}>
+        <SheetContent side="bottom" className="rounded-t-2xl pb-safe pb-8">
+          <SheetHeader className="mb-4">
+            <SheetTitle className="text-left">Settings</SheetTitle>
+          </SheetHeader>
+          <div className="space-y-1">
+            <button onClick={() => { setShowSettings(false); navigate("/settings"); }}
+              className="flex w-full items-center gap-4 px-2 py-3.5 rounded-xl hover:bg-secondary transition-colors">
+              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                <Settings className="h-5 w-5 text-primary" />
+              </div>
+              <div className="flex-1 text-left">
+                <p className="text-sm font-semibold">Edit Profile</p>
+                <p className="text-xs text-muted-foreground">Update name, bio, and photo</p>
+              </div>
+            </button>
+            <button onClick={() => { setShowSettings(false); navigate("/reset-password"); }}
+              className="flex w-full items-center gap-4 px-2 py-3.5 rounded-xl hover:bg-secondary transition-colors">
+              <div className="h-10 w-10 rounded-full bg-secondary flex items-center justify-center shrink-0">
+                <Shield className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <div className="flex-1 text-left">
+                <p className="text-sm font-semibold">Change Password</p>
+                <p className="text-xs text-muted-foreground">Update your account password</p>
+              </div>
+            </button>
+            <div className="flex w-full items-center gap-4 px-2 py-3.5 rounded-xl">
+              <div className="h-10 w-10 rounded-full bg-secondary flex items-center justify-center shrink-0">
+                <span className="text-lg">{isDark ? "🌙" : "☀️"}</span>
+              </div>
+              <div className="flex-1 text-left">
+                <p className="text-sm font-semibold">Dark Mode</p>
+                <p className="text-xs text-muted-foreground">{isDark ? "Switch to light" : "Switch to dark"}</p>
+              </div>
+              <Switch checked={isDark} onCheckedChange={toggleDarkMode} />
+            </div>
+            <button onClick={() => {
+              setShowSettings(false);
+              if ("Notification" in window) {
+                Notification.requestPermission().then(p => {
+                  toast({ title: p === "granted" ? "Notifications enabled!" : "Notifications blocked" });
+                });
+              }
+            }} className="flex w-full items-center gap-4 px-2 py-3.5 rounded-xl hover:bg-secondary transition-colors">
+              <div className="h-10 w-10 rounded-full bg-secondary flex items-center justify-center shrink-0">
+                <span className="text-lg">🔔</span>
+              </div>
+              <div className="flex-1 text-left">
+                <p className="text-sm font-semibold">Push Notifications</p>
+                <p className="text-xs text-muted-foreground">Manage notification permissions</p>
+              </div>
+            </button>
+            {isPlatformAdmin && (
+              <button onClick={() => { setShowSettings(false); navigate("/admin"); }}
+                className="flex w-full items-center gap-4 px-2 py-3.5 rounded-xl hover:bg-secondary transition-colors">
+                <div className="h-10 w-10 rounded-full bg-red-500/10 flex items-center justify-center shrink-0">
+                  <Shield className="h-5 w-5 text-red-500" />
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="text-sm font-semibold text-red-500">Admin Dashboard</p>
+                  <p className="text-xs text-muted-foreground">Platform administration</p>
+                </div>
+              </button>
+            )}
+            <div className="border-t border-border/50 my-2" />
+            <button onClick={async () => {
+              setShowSettings(false);
+              await supabase.auth.signOut();
+              navigate("/login");
+            }} className="flex w-full items-center gap-4 px-2 py-3.5 rounded-xl hover:bg-destructive/10 transition-colors">
+              <div className="h-10 w-10 rounded-full bg-destructive/10 flex items-center justify-center shrink-0">
+                <span className="text-lg">🚪</span>
+              </div>
+              <div className="flex-1 text-left">
+                <p className="text-sm font-semibold text-destructive">Sign Out</p>
+                <p className="text-xs text-muted-foreground">Sign out of your account</p>
+              </div>
+            </button>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };
