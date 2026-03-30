@@ -374,7 +374,9 @@ const TourList = ({ embedded = false }: { embedded?: boolean }) => {
             </div>
           )}
 
-          {displayEvents.map((event, i) => (
+          {displayEvents.filter(event => 
+            tab === "done" ? event.status === "done" : (event.status !== "done" && event.status !== "cancelled")
+          ).map((event, i) => (
             <button
               key={event.id}
               className="flex w-full items-center gap-3 px-4 py-3 text-left border-b border-border/30 last:border-0 hover:bg-secondary/50 transition-colors animate-fade-in"
