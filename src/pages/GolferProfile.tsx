@@ -481,11 +481,11 @@ const GolferProfile = () => {
   const getInitials = (name: string | null) => name ? name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2) : "?";
 
   const tabs: { id: Tab; label: string }[] = [
-    { id: "about", label: "ABOUT" },
-    { id: "clubs", label: "CLUBS" },
-    { id: "stats", label: "STATS" },
-    { id: "gallery", label: "GALLERY" },
-    ...(isOwnProfile ? [{ id: "bookings" as Tab, label: "BOOKINGS" }] : []),
+    { id: "about", label: "About" },
+    { id: "clubs", label: "Clubs" },
+    { id: "stats", label: "Stats" },
+    { id: "gallery", label: "Gallery" },
+    ...(isOwnProfile ? [{ id: "bookings" as Tab, label: "Bookings" }] : []),
   ];
 
   if (loading) {
@@ -1101,11 +1101,11 @@ const GolferProfile = () => {
 
       <div className="px-4 pt-4">
         <div>
-          <div className="relative bg-gradient-to-b from-secondary to-background pb-6 rounded-xl">
-            <button onClick={() => navigate(-1)} className="absolute left-4 top-4 z-10 rounded-full bg-background/40 p-2 backdrop-blur">
+          <div className="relative pb-4">
+            <button onClick={() => navigate(-1)} className="absolute left-0 top-0 z-10 rounded-full p-1.5 hover:bg-muted transition-colors">
               <ArrowLeft className="h-5 w-5" />
             </button>
-            <div className="flex flex-col items-center pt-14">
+            <div className="flex flex-col items-center pt-10">
               <div className="relative">
                 <Avatar className="h-28 w-28 border-4 border-primary/50">
                   <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.full_name || "Avatar"} />
@@ -1170,17 +1170,14 @@ const GolferProfile = () => {
 
         <div className="mt-4">
           {/* Tabs */}
-          <div className="flex items-center justify-center gap-6 border-b border-border/50 px-4">
+          <div className="flex border-b border-border/50">
             {tabs.map((t) => (
-              <div key={t.id} className="flex items-center gap-3">
-                <button onClick={() => setTab(t.id)} className={`relative py-3 text-sm font-semibold tracking-wider transition-colors ${tab === t.id ? "text-foreground" : "text-muted-foreground"}`}>
-                  {t.label}
-                  {tab === t.id && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />}
-                </button>
-                {t.id === "clubs" && isOwnProfile && (
-                  <button onClick={() => setShowCreateClub(true)} className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">+</button>
-                )}
-              </div>
+              <button key={t.id} onClick={() => setTab(t.id)}
+                className={`flex-1 py-2.5 text-sm font-semibold transition-colors border-b-2 ${
+                  tab === t.id ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}>
+                {t.label}
+              </button>
             ))}
           </div>
 
