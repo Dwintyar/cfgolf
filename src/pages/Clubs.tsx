@@ -189,7 +189,7 @@ const Clubs = () => {
         <div className="flex px-4 mb-0 border-b border-border/50">
           {([
             { id: "my", label: `My Clubs${myClubs.length > 0 ? ` (${myClubs.length})` : ""}` },
-            { id: "community", label: `Community${communityClubs.length > 0 ? ` (${communityClubs.length})` : ""}` },
+            { id: "community", label: "Discover" },
           ] as const).map(t => (
             <button
               key={t.id}
