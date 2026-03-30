@@ -76,8 +76,7 @@ const TournamentsTab = () => {
   });
 
   const tourTabs = [
-    { id: "mine" as const, label: "My Tours", count: myTours?.length ?? 0 },
-    { id: "invited" as const, label: "Invited", count: invitedTours?.length },
+    { id: "mine" as const, label: "My Tours" },
     { id: "all" as const, label: "Discover" },
   ];
 
@@ -133,37 +132,7 @@ const TournamentsTab = () => {
         </div>
       )}
 
-      {/* Invited */}
-      {tourTab === "invited" && (
-        <div className="space-y-2">
-          {!invitedTours?.length ? (
-            <p className="text-xs text-muted-foreground text-center py-8">No pending invitations</p>
-          ) : invitedTours.map((tc: any) => {
-            const tour = tc.tours;
-            return (
-              <div key={tc.id} className="golf-card p-3 flex items-center gap-3">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold truncate">{tour?.name}</p>
-                  <p className="text-[10px] text-muted-foreground">{tour?.year} · By {tour?.clubs?.name}</p>
-                </div>
-                <div className="flex gap-2">
-                  <Button size="sm" className="h-7 text-xs" onClick={async () => {
-                    await supabase.from("tour_clubs").update({ status: "accepted" }).eq("id", tc.id);
-                    queryClient.invalidateQueries({ queryKey: ["invited-tours-tab"] });
-                    navigate(`/tour/${tour?.id}`);
-                  }}>Accept</Button>
-                  <Button size="sm" variant="outline" className="h-7 text-xs" onClick={async () => {
-                    await supabase.from("tour_clubs").update({ status: "declined" }).eq("id", tc.id);
-                    queryClient.invalidateQueries({ queryKey: ["invited-tours-tab"] });
-                  }}>Decline</Button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* All */}
+      {/* Discover */}
       {tourTab === "all" && (
         <div className="space-y-2">
           {isLoading && Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}
