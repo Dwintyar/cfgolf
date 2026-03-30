@@ -54,11 +54,15 @@ const GolferProfile = () => {
   // Get userId synchronously from cached session
   const [currentUserId, setCurrentUserId] = useState<string | null>(() => {
     try {
-      // Try to get from supabase's in-memory session cache
-      const raw = localStorage.getItem("sb-duktebslocooppxedanv-auth-token");
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        return parsed?.user?.id ?? null;
+      // Try multiple possible Supabase session keys
+      const keys = Object.keys(localStorage).filter(k => k.includes("auth-token") || k.includes("supabase"));
+      for (const key of keys) {
+        const raw = localStorage.getItem(key);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          const userId = parsed?.user?.id ?? parsed?.session?.user?.id;
+          if (userId) return userId;
+        }
       }
     } catch {}
     return null;

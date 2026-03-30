@@ -109,10 +109,22 @@
     font-size: 17px;
   }
 
-  /* Light mode base */
+  /* Light mode base — override dark golf gradient */
   .light body {
-    background: var(--golf-gradient) !important;
+    background: hsl(var(--background)) !important;
+    background-image: none !important;
     color: hsl(var(--foreground));
+  }
+  
+  .light #root {
+    background: hsl(var(--background));
+    min-height: 100vh;
+  }
+  
+  .light .bottom-nav-safe,
+  .light .flex.flex-col.h-screen,
+  .light .flex.flex-col.min-h-screen {
+    background: hsl(var(--background));
   }
 
   /* Light mode — all divs/sections use CSS vars properly */
