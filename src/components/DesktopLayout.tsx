@@ -12,6 +12,7 @@ import {
   ChevronDown, LogOut, TrendingUp, User
 } from "lucide-react";
 import logo from "@/assets/logo.svg";
+import logoLight from "@/assets/logo-light.png";
 
 const useWindowWidth = () => {
   const [width, setWidth] = useState(
@@ -278,7 +279,7 @@ const DesktopLayout = ({ children, sidebarRightHidden = false }: { children: Rea
             onClick={() => navigate("/news")}
             className="flex items-center gap-2 hover:opacity-80 transition-opacity"
           >
-            <img src={logo} alt="GolfBuana" className="h-9 w-9 object-contain" />
+            <img src={document.documentElement.classList.contains("light") ? logoLight : logo} alt="GolfBuana" className="h-9 w-9 object-contain" />
           </button>
 
           {/* Search bar di samping logo */}
