@@ -109,45 +109,51 @@
     font-size: 17px;
   }
 
-  /* Light mode — ensure all elements inherit properly */
-  .light body,
-  .light {
-    background: var(--golf-gradient);
-    background-color: hsl(var(--background));
+  /* Light mode base */
+  .light body {
+    background: var(--golf-gradient) !important;
     color: hsl(var(--foreground));
   }
 
+  /* Light mode — all divs/sections use CSS vars properly */
   .light .golf-card {
-    background: var(--golf-card-gradient);
-    border-color: hsl(var(--border));
+    background: var(--golf-card-gradient) !important;
   }
 
-  /* Fix navbar, header, sidebar in light mode */
+  /* Tailwind bg-background in light mode */  
+  .light .bg-background { background-color: hsl(var(--background)) !important; }
+  .light .bg-card { background-color: hsl(var(--card)) !important; }
+  .light .bg-card\/95 { background-color: hsl(var(--card) / 0.95) !important; }
+  .light .bg-card\/50 { background-color: hsl(var(--card) / 0.5) !important; }
+  .light .bg-secondary { background-color: hsl(var(--secondary)) !important; }
+  .light .bg-secondary\/50 { background-color: hsl(var(--secondary) / 0.5) !important; }
+  .light .bg-secondary\/30 { background-color: hsl(var(--secondary) / 0.3) !important; }
+  .light .bg-muted { background-color: hsl(var(--muted)) !important; }
+  .light .bg-muted\/50 { background-color: hsl(var(--muted) / 0.5) !important; }
+
+  /* Text colors */
+  .light .text-foreground { color: hsl(var(--foreground)) !important; }
+  .light .text-muted-foreground { color: hsl(var(--muted-foreground)) !important; }
+  .light .text-card-foreground { color: hsl(var(--card-foreground)) !important; }
+
+  /* Border */
+  .light .border-border { border-color: hsl(var(--border)) !important; }
+  .light .border-border\/50 { border-color: hsl(var(--border) / 0.5) !important; }
+  .light .border-border\/30 { border-color: hsl(var(--border) / 0.3) !important; }
+
+  /* Bottom nav and header */
   .light header,
-  .light nav,
+  .light nav.fixed,
   .light aside {
-    background-color: hsl(var(--card));
-    border-color: hsl(var(--border));
+    background-color: hsl(var(--card)) !important;
+    border-color: hsl(var(--border)) !important;
   }
 
-  /* Fix card backgrounds */
-  .light [class*="bg-card"] {
-    background-color: hsl(var(--card));
-  }
-
-  /* Fix text colors in light mode */
-  .light [class*="text-foreground"] {
-    color: hsl(var(--foreground));
-  }
-
-  /* Fix secondary backgrounds */
-  .light [class*="bg-secondary"] {
+  /* Input fields */
+  .light input, .light textarea, .light select {
     background-color: hsl(var(--secondary));
-  }
-
-  /* Fix muted foreground */
-  .light [class*="text-muted-foreground"] {
-    color: hsl(var(--muted-foreground));
+    color: hsl(var(--foreground));
+    border-color: hsl(var(--border));
   }
 
   h1, h2, h3 {
