@@ -1103,16 +1103,12 @@ const EventDetail = () => {
       if (navigator.share) navigator.share({ title: event?.name ?? "", url });
       else navigator.clipboard.writeText(url).then(() => toast.success("Link copied!"));
     }});
-    _actions.push({ icon: MessageCircle, label: "WA", onClick: () => {
-      const url = `${window.location.origin}/live/${id}`;
-      window.open(`https://wa.me/?text=${encodeURIComponent(`🏌️ *${event?.name}*
-${url}`)}`, "_blank");
-    }, color: "text-green-400" });
+
   }
   if (event?.status === "done") _actions.push({ icon: Download, label: exporting ? "..." : "Export", onClick: handleExportPDF });
 
   const actionButtonsBlock = _actions.length === 0 ? null : (
-    <div className="grid grid-cols-3 gap-3 px-4 pb-4">
+    <div className="grid grid-cols-4 gap-3 px-4 pb-4">
       {_actions.map((action, i) => (
         <button key={i} onClick={action.onClick}
           className="flex flex-col items-center justify-center gap-2 py-4 px-2 rounded-2xl bg-secondary hover:bg-secondary/70 transition-colors active:scale-95">
