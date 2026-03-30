@@ -51,7 +51,18 @@ const GolferProfile = () => {
   const [buddyStatus, setBuddyStatus] = useState<string | null>(null);
   const [buddyConnectionId, setBuddyConnectionId] = useState<string | null>(null);
   const [showCreateClub, setShowCreateClub] = useState(false);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  // Get userId synchronously from cached session
+  const [currentUserId, setCurrentUserId] = useState<string | null>(() => {
+    try {
+      // Try to get from supabase's in-memory session cache
+      const raw = localStorage.getItem("sb-duktebslocooppxedanv-auth-token");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        return parsed?.user?.id ?? null;
+      }
+    } catch {}
+    return null;
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [isDesktop, setIsDesktop] = useState(
