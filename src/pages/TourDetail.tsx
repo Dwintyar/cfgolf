@@ -542,55 +542,40 @@ const TourDetail = () => {
         {tour.description && <p className="text-sm text-muted-foreground text-center mt-2 px-4">{tour.description}</p>}
 
 
-      {/* Organizer Actions */}
-      {isOrganizer && (
-        <div className="flex gap-2 overflow-x-auto px-4 pb-3 scrollbar-none">
-          {/* Personal tournament — only New Event */}
-          {(tour.clubs as any)?.is_personal ? (
-            <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowCreateEvent(true)}>
-              <Calendar className="h-3 w-3" /> New Event
-            </Button>
-          ) : (
-            <>
-              {tour.tournament_type === "interclub" && (
-                <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowInvite(true)}>
-                  <UserPlus className="h-3 w-3" /> Invite Club
-                </Button>
-              )}
-              <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowRegister(true)}>
-                <UserPlus className="h-3 w-3" /> Register Player
-              </Button>
-              <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowFlights(true)}>
-                <Layers className="h-3 w-3" /> Flights
-              </Button>
-              <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowCategories(true)}>
-                <Award className="h-3 w-3" /> Categories
-              </Button>
-              <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowCreateEvent(true)}>
-                <Calendar className="h-3 w-3" /> New Event
-              </Button>
-              <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowInvitationDialog(true)}>
-                <FileText className="h-3 w-3" /> Buat Undangan
-              </Button>
-            </>
-          )}
-        </div>
-      )}
+      {/* Action buttons — WA group style icon grid */}
+      {(isOrganizer || (!isOrganizer && isClubAdmin)) && (() => {
+        const isPersonal = (tour.clubs as any)?.is_personal;
+        const isInterclub = tour.tournament_type === "interclub";
 
-      {/* Participant Club Admin Actions (non-organizer) */}
-      {!isOrganizer && isClubAdmin && (
-        <div className="flex gap-2 overflow-x-auto px-4 pb-3 scrollbar-none">
-          <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowRegister(true)}>
-            <UserPlus className="h-3 w-3" /> Register Player
-          </Button>
-          <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => {
-            setSelectedClubForAdd(myClubId ?? null);
-            setShowAddPlayerDialog(true);
-          }}>
-            <UserPlus className="h-3 w-3" /> Daftarkan Player
-          </Button>
-        </div>
-      )}
+        // Build action list
+        const actions = isPersonal ? [
+          { icon: Calendar, label: "New Event", onClick: () => setShowCreateEvent(true) },
+        ] : isOrganizer ? [
+          { icon: Calendar, label: "New Event", onClick: () => setShowCreateEvent(true) },
+          { icon: UserPlus, label: "Register", onClick: () => setShowRegister(true) },
+          { icon: Layers, label: "Flights", onClick: () => setShowFlights(true) },
+          { icon: Award, label: "Categories", onClick: () => setShowCategories(true) },
+          { icon: FileText, label: "Invitation", onClick: () => setShowInvitationDialog(true) },
+          ...(isInterclub ? [{ icon: UserPlus, label: "Invite Club", onClick: () => setShowInvite(true) }] : []),
+        ] : [
+          { icon: UserPlus, label: "Register", onClick: () => setShowRegister(true) },
+          { icon: UserPlus, label: "Add Player", onClick: () => { setSelectedClubForAdd(myClubId ?? null); setShowAddPlayerDialog(true); } },
+        ];
+
+        return (
+          <div className="grid grid-cols-4 gap-2 px-4 pb-4">
+            {actions.map((action, i) => (
+              <button key={i} onClick={action.onClick}
+                className="flex flex-col items-center justify-center gap-1.5 p-3 rounded-2xl bg-secondary hover:bg-secondary/80 transition-colors">
+                <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center">
+                  <action.icon className="h-5 w-5 text-primary" />
+                </div>
+                <span className="text-[11px] font-semibold text-center leading-tight">{action.label}</span>
+              </button>
+            ))}
+          </div>
+        );
+      })()}
 
       {/* Regular user Actions (non-organizer, non-club-admin) */}
       {!isOrganizer && !isClubAdmin && userId && (
