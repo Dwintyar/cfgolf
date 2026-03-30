@@ -21,7 +21,7 @@ const Rounds = () => {
                 : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
-            🚩 Play
+            Play
           </button>
           <button
             onClick={() => setTab("courses")}
@@ -31,7 +31,7 @@ const Rounds = () => {
                 : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
-            📍 Courses
+            Courses
           </button>
         </div>
       </div>

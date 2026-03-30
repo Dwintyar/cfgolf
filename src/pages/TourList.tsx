@@ -335,16 +335,17 @@ const TourList = ({ embedded = false }: { embedded?: boolean }) => {
       })()}
 
       {/* ═══ SECTION 1: EVENTS ═══ */}
-      <div className="mx-4 golf-card overflow-hidden">
-        <div className="flex">
+      <div>
+        {/* Underline tabs */}
+        <div className="flex border-b border-border/50 mx-0">
           {eventTabs.map((t) => (
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className={`flex-1 py-2.5 text-xs font-bold uppercase tracking-wider transition-colors ${
+              className={`flex-1 py-2.5 text-sm font-semibold transition-colors border-b-2 ${
                 tab === t.id
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-card text-muted-foreground hover:text-foreground"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
               }`}
             >
               {t.label}
@@ -352,62 +353,55 @@ const TourList = ({ embedded = false }: { embedded?: boolean }) => {
           ))}
         </div>
 
-        <div className="p-3 space-y-2 max-h-80 overflow-y-auto">
+        <div className="space-y-0">
           {eventsLoading && Array.from({ length: 3 }).map((_, i) => (
-            <Skeleton key={i} className="h-14 w-full rounded-lg" />
+            <div key={i} className="flex items-center gap-3 px-4 py-3 border-b border-border/30">
+              <Skeleton className="h-12 w-12 rounded-2xl shrink-0" />
+              <div className="flex-1 space-y-1.5">
+                <Skeleton className="h-4 w-2/3" />
+                <Skeleton className="h-3 w-1/2" />
+              </div>
+            </div>
           ))}
 
           {!eventsLoading && displayEvents.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="flex flex-col items-center justify-center py-12 text-center px-4">
               <Calendar className="h-10 w-10 text-muted-foreground/40 mb-3" />
               <p className="text-sm font-semibold">
-                {tab === "upcoming" ? "Tidak ada event mendatang" : "Belum ada event selesai"}
+                {tab === "upcoming" ? "No upcoming events" : "No completed events"}
               </p>
-              <p className="text-xs text-muted-foreground mt-1">Event akan muncul setelah dibuat oleh organizer</p>
+              <p className="text-xs text-muted-foreground mt-1">Events will appear after created by organizer</p>
             </div>
           )}
 
           {displayEvents.map((event, i) => (
-            <div
+            <button
               key={event.id}
-              className="flex items-center gap-3 rounded-lg bg-background/50 p-3 animate-fade-in"
+              className="flex w-full items-center gap-3 px-4 py-3 text-left border-b border-border/30 last:border-0 hover:bg-secondary/50 transition-colors animate-fade-in"
               style={{ animationDelay: `${i * 50}ms` }}
+              onClick={() => navigate(`/event/${event.id}`)}
             >
-              <Avatar className="h-9 w-9 border border-primary/20">
-                <AvatarFallback className="bg-primary/10 text-xs font-bold text-primary">
+              <Avatar className="h-12 w-12 rounded-2xl shrink-0">
+                <AvatarImage src={(event.courses as any)?.image_url ?? ""} />
+                <AvatarFallback className="rounded-2xl bg-primary/10 text-sm font-bold text-primary">
                   {event.name.charAt(0)}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold truncate">{event.name}</p>
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-base font-semibold truncate">{event.name}</p>
+                <p className="text-[13px] text-muted-foreground truncate mt-0.5">
                   {event.event_date} · {(event.courses as any)?.name ?? ""}
                 </p>
               </div>
-              <Badge
-                variant="outline"
-                className={`text-[9px] shrink-0 ${
-                  event.status === "playing" ? "border-green-500/40 text-green-400 bg-green-500/5" :
-                  event.status === "done" ? "border-primary/40 text-primary bg-primary/5" :
-                  event.status === "ready" ? "border-accent/40 text-accent bg-accent/5" :
-                  event.status === "scheduled" ? "border-blue-400/40 text-blue-400 bg-blue-400/5" :
-                  "border-muted-foreground/30 text-muted-foreground"
-                }`}
-              >
-                {event.status === "scheduled" ? "Scheduled" :
-                 event.status === "ready" ? "Ready" :
-                 event.status === "playing" ? "Playing" :
-                 event.status === "done" ? "Done" : "Draft"}
-              </Badge>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-7 rounded-lg border-primary/30 px-3 text-[10px] font-bold uppercase tracking-wider text-primary"
-                onClick={() => navigate(`/event/${event.id}`)}
-              >
-                View
-              </Button>
-            </div>
+              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border shrink-0 ${
+                event.status === "playing" ? "border-green-500/40 text-green-400 bg-green-500/5" :
+                event.status === "done" ? "border-primary/40 text-primary bg-primary/5" :
+                event.status === "ready" ? "border-accent/40 text-accent bg-accent/5" :
+                "border-blue-400/40 text-blue-400 bg-blue-400/5"
+              }`}>
+                {event.status}
+              </span>
+            </button>
           ))}
         </div>
       </div>
