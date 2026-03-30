@@ -535,7 +535,7 @@ const TourDetail = () => {
               👑 Organizer
             </span>
           )}
-          {!isOrganizer && isMember && (
+          {!isOrganizer && isClubAdmin && (
             <span className="text-xs bg-primary/10 text-primary border border-primary/20 px-2.5 py-1 rounded-full font-semibold">
               ✓ Player
             </span>
