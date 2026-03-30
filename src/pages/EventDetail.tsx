@@ -956,19 +956,40 @@ const EventDetail = () => {
 
   // Shared content blocks
   const headerBlock = (
-    <div className={isDesktop ? "" : "p-4"}>
-      <button onClick={() => navigate(`/tour/${(event.tours as any)?.id}`)} className="mb-2 text-xs text-muted-foreground hover:text-foreground transition-colors">
-        ← {(event.tours as any)?.name}
-      </button>
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className={`font-display font-bold ${isDesktop ? "text-2xl" : "text-xl"}`}>{event.name}</h1>
-          <div className={`mt-1 flex flex-wrap gap-x-3 text-muted-foreground ${isDesktop ? "text-sm gap-x-4" : "text-xs"}`}>
-            <span className="flex items-center gap-1"><Calendar className={isDesktop ? "h-4 w-4" : "h-3 w-3"} /> {event.event_date}</span>
-            <span className="flex items-center gap-1"><MapPin className={isDesktop ? "h-4 w-4" : "h-3 w-3"} /> {(event.courses as any)?.name}</span>
-          </div>
+    <div>
+      {/* Top bar: back */}
+      <div className="flex items-center justify-between px-4 pt-4 pb-0">
+        <button onClick={() => navigate(`/tour/${(event.tours as any)?.id}`)}
+          className="rounded-full p-1.5 hover:bg-muted transition-colors">
+          <ArrowLeft className="h-5 w-5" />
+        </button>
+        <Badge variant="outline" className={`text-xs font-semibold ${statusColors[event.status] ?? ""}`}>
+          {event.status}
+        </Badge>
+      </div>
+
+      {/* Hero: centered course image + event name */}
+      <div className="flex flex-col items-center px-6 pt-4 pb-4 text-center gap-1.5">
+        <div className="h-20 w-20 rounded-2xl bg-primary/10 border-4 border-primary/20 flex items-center justify-center mb-1 overflow-hidden">
+          {(event.courses as any)?.image_url
+            ? <img src={(event.courses as any).image_url} className="h-full w-full object-cover" />
+            : <Flag className="h-8 w-8 text-primary/60" />}
         </div>
-        <Badge variant="outline" className={`${isDesktop ? "text-xs" : "text-[10px]"} ${statusColors[event.status] ?? ""}`}>{event.status}</Badge>
+        <h1 className="text-xl font-bold">{event.name}</h1>
+        <p className="text-sm text-muted-foreground flex items-center gap-2 justify-center flex-wrap">
+          <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" />{event.event_date}</span>
+          <span className="text-border">·</span>
+          <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{(event.courses as any)?.name}</span>
+        </p>
+        {(event as any)?.pairing_mode && (event as any).pairing_mode !== "self" && (
+          <span className={`text-xs font-bold px-2.5 py-1 rounded-full border ${
+            (event as any).pairing_mode === "open"
+              ? "bg-blue-500/15 text-blue-400 border-blue-500/30"
+              : "bg-primary/15 text-primary border-primary/30"
+          }`}>
+            {(event as any).pairing_mode === "open" ? "🌐 Open Pairing" : "🏌️ Course Arranged"}
+          </span>
+        )}
       </div>
     </div>
   );
@@ -1048,176 +1069,99 @@ const EventDetail = () => {
     </div>
   ) : null;
 
-  const actionButtonsBlock = (
-    <div className="flex gap-2 overflow-x-auto px-4 pb-3 scrollbar-none">
-      {/* Personal: langsung ke scorecard, hanya saat playing */}
-      {isPersonalTour && showAdminActions && event?.status === "playing" && (
-        <Button
-          size="sm"
-          className="h-7 shrink-0 gap-1 text-[11px]"
-          onClick={async () => {
-            // Auto-register as contestant if not yet
-            if (!myContestant && userId) {
-              await supabase.from("contestants").insert({
-                event_id: id!,
-                player_id: userId,
-                hcp: (await supabase.from("profiles").select("handicap").eq("id", userId).single()).data?.handicap ?? 0,
-                status: "confirmed",
-              });
-            }
-            navigate(`/event/${id}/scorecard`);
-          }}
-        >
-          <Pencil className="h-3 w-3" /> Input Score
-        </Button>
-      )}
-      {/* Non-personal: existing flow with checkin */}
-      {!isPersonalTour && myContestant && !isCheckedIn && (
-        <Button size="sm" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowCheckinDialog(true)}>
-          <ClipboardCheck className="h-3 w-3" /> Check In
-        </Button>
-      )}
-      {!isPersonalTour && myContestant && isCheckedIn && (
-        <Button
-          size="sm"
-          variant={event?.status === "done" ? "outline" : "default"}
-          className={`h-7 shrink-0 gap-1 text-[11px] ${
-            event?.status === "done"
-              ? "opacity-50 cursor-not-allowed border-muted-foreground/30 text-muted-foreground"
-              : ""
-          }`}
-          onClick={() => navigate(`/event/${id}/scorecard`)}
-          disabled={event?.status === "done"}
-        >
-          <Pencil className="h-3 w-3" />
-          {event?.status === "done" ? "Score Locked" : "Input Score"}
-        </Button>
-      )}
-      {showAdminActions && (
-        <>
-          {!isPersonalTour && (
-            <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowAssign(true)}>
-              <Users className="h-3 w-3" /> Assign
-            </Button>
-          )}
-          {/* Set Ready — internal/interclub only, when scheduled */}
-          {!isPersonalTour && event?.status === "scheduled" && (
-            <Button size="sm" variant="outline"
-              className="h-7 shrink-0 gap-1 text-[11px] border-accent/40 text-accent hover:bg-accent/10"
-              onClick={handleSetReady} disabled={settingReady}>
-              <CheckCircle className="h-3 w-3" />
-              {settingReady ? "Setting…" : "Set Ready"}
-            </Button>
-          )}
-          {/* Set Playing — internal/interclub only (personal auto-sets via scorecard) */}
-          {!isPersonalTour && event?.status === "ready" && (
-            <Button size="sm" variant="outline"
-              className="h-7 shrink-0 gap-1 text-[11px] border-green-500/40 text-green-400 hover:bg-green-500/10"
-              onClick={handleSetPlaying}>
-              <Play className="h-3 w-3" /> Start Round
-            </Button>
-          )}
-          {event?.status !== "done" ? (
-            isPersonalTour ? (
-              /* Finish Round — backup only, normally triggered from scorecard Save & Finish */
-              event?.status === "playing" && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-7 shrink-0 gap-1 text-[11px] border-primary/40 text-primary"
-                  onClick={handleSelesaiBermain}
-                  disabled={finalizing}
-                >
-                  <CheckCircle className="h-3 w-3" />
-                  {finalizing ? "Saving…" : "Finish Round"}
-                </Button>
-              )
-            ) : (
-              <Button
-                size="sm"
-                className="h-7 shrink-0 gap-1 text-[11px] bg-primary"
-                onClick={() => setShowFinalizeConfirm(true)}
-                disabled={finalizing || event?.status !== "playing"}
-              >
-                <Trophy className="h-3 w-3" />
-                {finalizing ? "Finalizing…" : "Finalize Event"}
-              </Button>
-            )
-          ) : (
-            <Badge className="text-[10px] bg-primary/20 text-primary border-primary/30">
-              ✓ Done
-            </Badge>
-          )}
-        </>
-      )}
-      <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={() => setShowWinners(true)}>
-        <Trophy className="h-3 w-3" /> Results
-      </Button>
-      {!isPersonalTour && (
-        <Button
-          size="sm"
-          variant="outline"
-          className="h-7 shrink-0 gap-1 text-[11px] border-primary/40 text-primary hover:bg-primary/10"
-          onClick={() => window.open(`/live/${id}`, "_blank")}
-        >
-          <Monitor className="h-3 w-3" /> Live Display
-        </Button>
-      )}
-      {!isPersonalTour && (
-        <Button
-          size="sm"
-          variant="outline"
-          className="h-7 shrink-0 gap-1 text-[11px]"
-          onClick={() => {
-            const liveUrl = `${window.location.origin}/live/${id}`;
-            if (navigator.share) {
-              navigator.share({ title: event?.name ?? "Live Leaderboard", url: liveUrl });
-            } else {
-              navigator.clipboard.writeText(liveUrl).then(() => toast.success("Link copied! 📋"));
-            }
-          }}
-        >
-          <Share2 className="h-3 w-3" /> Share
-        </Button>
-      )}
-      {!isPersonalTour && (
-        <Button
-          size="sm"
-          variant="outline"
-          className="h-7 shrink-0 gap-1 text-[11px] bg-green-600/10 border-green-500/40 text-green-500 hover:bg-green-600/20"
-          onClick={() => {
-            const liveUrl = `${window.location.origin}/live/${id}`;
-            const text = `🏌️ *${event?.name}*
+  const actionButtonsBlock = (() => {
+    // Build actions array
+    const actions: { icon: any; label: string; onClick: () => void; color?: string; hidden?: boolean }[] = [];
+
+    // Player actions
+    if (isPersonalTour && showAdminActions && event?.status === "playing") {
+      actions.push({ icon: Pencil, label: "Input Score", onClick: async () => {
+        if (!myContestant && userId) {
+          await supabase.from("contestants").insert({
+            event_id: id!, player_id: userId,
+            hcp: (await supabase.from("profiles").select("handicap").eq("id", userId).single()).data?.handicap ?? 0,
+            status: "confirmed",
+          });
+        }
+        navigate(`/event/${id}/scorecard`);
+      }});
+    }
+    if (!isPersonalTour && myContestant && !isCheckedIn) {
+      actions.push({ icon: ClipboardCheck, label: "Check In", onClick: () => setShowCheckinDialog(true) });
+    }
+    if (!isPersonalTour && myContestant && isCheckedIn && event?.status !== "done") {
+      actions.push({ icon: Pencil, label: "Input Score", onClick: () => navigate(`/event/${id}/scorecard`) });
+    }
+
+    // Admin actions
+    if (showAdminActions) {
+      if (!isPersonalTour) actions.push({ icon: Users, label: "Assign", onClick: () => setShowAssign(true) });
+      if (!isPersonalTour && event?.status === "scheduled") {
+        actions.push({ icon: CheckCircle, label: "Set Ready", onClick: handleSetReady });
+      }
+      if (!isPersonalTour && event?.status === "ready") {
+        actions.push({ icon: Play, label: "Start Round", onClick: handleSetPlaying, color: "text-green-400" });
+      }
+      if (event?.status === "playing") {
+        if (isPersonalTour) {
+          actions.push({ icon: CheckCircle, label: "Finish Round", onClick: handleSelesaiBermain, color: "text-primary" });
+        } else {
+          actions.push({ icon: Trophy, label: "Finalize", onClick: () => setShowFinalizeConfirm(true), color: "text-primary" });
+        }
+      }
+    }
+
+    // Common actions
+    actions.push({ icon: Trophy, label: "Results", onClick: () => setShowWinners(true) });
+    if (!isPersonalTour) {
+      actions.push({ icon: Monitor, label: "Live", onClick: () => window.open(`/live/${id}`, "_blank") });
+      actions.push({ icon: Share2, label: "Share", onClick: () => {
+        const url = `${window.location.origin}/live/${id}`;
+        if (navigator.share) navigator.share({ title: event?.name ?? "", url });
+        else navigator.clipboard.writeText(url).then(() => toast.success("Link copied! 📋"));
+      }});
+      actions.push({ icon: MessageCircle, label: "WA", onClick: () => {
+        const url = `${window.location.origin}/live/${id}`;
+        const text = `🏌️ *${event?.name}*
 View live leaderboard at:
-${liveUrl}`;
-            window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
-          }}
-        >
-          <MessageCircle className="h-3 w-3" /> WA
-        </Button>
-      )}
-      {event?.status === "done" && (
-        <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1 text-[11px]" onClick={handleExportPDF} disabled={exporting}>
-          <Download className="h-3 w-3" /> {exporting ? "..." : "Export"}
-        </Button>
-      )}
-    </div>
-  );
+${url}`;
+        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
+      }, color: "text-green-400" });
+    }
+    if (event?.status === "done") {
+      actions.push({ icon: Download, label: exporting ? "..." : "Export", onClick: handleExportPDF });
+    }
+
+    if (actions.length === 0) return null;
+
+    return (
+      <div className="grid grid-cols-3 gap-3 px-4 pb-4">
+        {actions.map((action, i) => (
+          <button key={i} onClick={action.onClick}
+            className="flex flex-col items-center justify-center gap-2 py-4 px-2 rounded-2xl bg-secondary hover:bg-secondary/70 transition-colors active:scale-95">
+            <div className="h-12 w-12 rounded-2xl bg-background/80 flex items-center justify-center shadow-sm">
+              <action.icon className={`h-5 w-5 ${action.color ?? "text-primary"}`} />
+            </div>
+            <span className="text-xs font-semibold text-center leading-tight">{action.label}</span>
+          </button>
+        ))}
+      </div>
+    );
+  })();
 
   const tabsBlock = (
     <Tabs value={activeTab} onValueChange={setActiveTab} className={isDesktop ? "" : "px-4"}>
-      <TabsList className="w-full overflow-x-auto flex">
-        <TabsTrigger value="overview" className="flex-1 text-[11px]">Overview</TabsTrigger>
-        {/* Check-in — internal/interclub OR personal with Open/Arranged pairing */}
+      <TabsList className="w-full h-auto p-0 bg-transparent border-b border-border/50 rounded-none">
+        <TabsTrigger value="overview" className="flex-1 py-2.5 text-sm font-semibold rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent bg-transparent text-muted-foreground">Overview</TabsTrigger>
         {(!isPersonalTour || isPersonalWithPairing) && (
-          <TabsTrigger value="checkin" className="flex-1 text-[11px]">Check-in</TabsTrigger>
+          <TabsTrigger value="checkin" className="flex-1 py-2.5 text-sm font-semibold rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent bg-transparent text-muted-foreground">Check-in</TabsTrigger>
         )}
         {/* Pairings — internal/interclub OR personal with open/arranged pairing */}
         {(!isPersonalTour || isPersonalWithPairing) && (
-          <TabsTrigger value="pairings" className="flex-1 text-[11px]">Pairings</TabsTrigger>
+          <TabsTrigger value="pairings" className="flex-1 py-2.5 text-sm font-semibold rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent bg-transparent text-muted-foreground">Pairings</TabsTrigger>
         )}
-        <TabsTrigger value="leaderboard" className="flex-1 text-[11px]">{isPersonalTour ? "Scorecard" : "Board"}</TabsTrigger>
-        {!isPersonalTour && <TabsTrigger value="hcpcorr" className="flex-1 text-[11px]">HCP Corr</TabsTrigger>}
+        <TabsTrigger value="leaderboard" className="flex-1 py-2.5 text-sm font-semibold rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent bg-transparent text-muted-foreground">{isPersonalTour ? "Scorecard" : "Board"}</TabsTrigger>
+        {!isPersonalTour && <TabsTrigger value="hcpcorr" className="flex-1 py-2.5 text-sm font-semibold rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent bg-transparent text-muted-foreground">HCP Corr</TabsTrigger>}
       </TabsList>
 
       {/* OVERVIEW */}
