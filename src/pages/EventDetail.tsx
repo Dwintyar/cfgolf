@@ -1105,7 +1105,6 @@ const EventDetail = () => {
     }});
 
   }
-  if (event?.status === "done") _actions.push({ icon: Download, label: exporting ? "..." : "Export", onClick: handleExportPDF });
 
   const actionButtonsBlock = _actions.length === 0 ? null : (
     <div className="grid grid-cols-4 gap-3 px-4 pb-4">
