@@ -366,7 +366,7 @@ const TourList = ({ embedded = false }: { embedded?: boolean }) => {
             </div>
           ))}
 
-          {!eventsLoading && displayEvents.length === 0 && (
+          {!eventsLoading && (tab === "done" ? completedEvents : upcomingEvents).length === 0 && (
             <div className="flex flex-col items-center justify-center py-12 text-center px-4">
               <Calendar className="h-10 w-10 text-muted-foreground/40 mb-3" />
               <p className="text-sm font-semibold">
@@ -376,9 +376,7 @@ const TourList = ({ embedded = false }: { embedded?: boolean }) => {
             </div>
           )}
 
-          {displayEvents.filter(event => 
-            tab === "done" ? event.status === "done" : (event.status !== "done" && event.status !== "cancelled")
-          ).map((event, i) => (
+          {(tab === "done" ? completedEvents : upcomingEvents).map((event, i) => (
             <button
               key={event.id}
               className="flex w-full items-center gap-3 px-4 py-3 text-left border-b border-border/30 last:border-0 hover:bg-secondary/50 transition-colors animate-fade-in"
