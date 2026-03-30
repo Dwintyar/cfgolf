@@ -481,13 +481,18 @@ const GolferProfile = () => {
     const root = document.documentElement;
     if (isDark) {
       root.classList.add("light");
+      root.style.colorScheme = "light";
       localStorage.setItem("theme", "light");
       setIsDark(false);
     } else {
       root.classList.remove("light");
+      root.style.colorScheme = "dark";
       localStorage.setItem("theme", "dark");
       setIsDark(true);
     }
+    // Force all components to re-paint
+    document.body.style.display = "none";
+    requestAnimationFrame(() => { document.body.style.display = ""; });
   };
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {

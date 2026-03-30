@@ -28,8 +28,7 @@ const ChannelsTab = () => {
       if (!official) return;
       await supabase.from("channel_follows")
         .upsert({ channel_id: official.id, user_id: userId }, { onConflict: "channel_id,user_id" });
-      // Auto-select GolfBuana Official on first load
-      setSelectedChannelId(prev => prev ?? official.id);
+      // Don't auto-select — let user pick channel
     };
     autoFollow();
   }, [userId]);

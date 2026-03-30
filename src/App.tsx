@@ -75,6 +75,10 @@ const App = () => {
     const saved = localStorage.getItem("theme");
     if (saved === "light") {
       document.documentElement.classList.add("light");
+      document.documentElement.style.colorScheme = "light";
+    } else {
+      document.documentElement.classList.remove("light");
+      document.documentElement.style.colorScheme = "dark";
     }
   }, []);
 
