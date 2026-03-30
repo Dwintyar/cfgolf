@@ -1137,10 +1137,12 @@ const GolferProfile = () => {
             <button onClick={() => navigate(-1)} className="absolute left-0 top-0 z-10 rounded-full p-1.5 hover:bg-muted transition-colors">
               <ArrowLeft className="h-5 w-5" />
             </button>
-            {/* Settings button — always show, Sheet handles own-profile actions */}
-            <button onClick={() => setShowSettings(true)} className="absolute right-0 top-0 z-10 rounded-full p-1.5 hover:bg-muted transition-colors">
-              <Settings className="h-5 w-5" />
-            </button>
+            {/* Settings button — only on own profile */}
+            {(!paramId || currentUserId === targetId) && (
+              <button onClick={() => setShowSettings(true)} className="absolute right-0 top-0 z-10 rounded-full p-1.5 hover:bg-muted transition-colors">
+                <Settings className="h-5 w-5" />
+              </button>
+            )}
             <div className="flex flex-col items-center pt-10">
               <div className="relative">
                 <Avatar className="h-28 w-28 border-4 border-primary/50">
