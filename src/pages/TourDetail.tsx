@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Trophy, Calendar, Users, MapPin, ChevronRight, Settings, UserPlus, Layers, Award, Check, X, Building2, Star, UserMinus, Search, FileText, Loader2, Download, Pencil, Trash2, MoreHorizontal } from "lucide-react";
+import { Trophy, Calendar, Users, MapPin, ChevronRight, Settings, UserPlus, Layers, Award, Check, X, Building2, Star, UserMinus, Search, FileText, Loader2, Download, Pencil, Trash2, MoreHorizontal, ArrowLeft } from "lucide-react";
 import CommitteeRoleBadges from "@/components/CommitteeRoleBadges";
 import html2canvas from "html2canvas";
 import { Button } from "@/components/ui/button";
@@ -489,60 +489,58 @@ const TourDetail = () => {
       ? Object.entries(playersByClub).filter(([clubId]) => clubId === myClubId)
       : Object.entries(playersByClub);
 
+  const clubLogo = (tour.clubs as any)?.logo_url ?? "";
+  const tourInitial = tour.name?.charAt(0) ?? "T";
+
   return (
     <div className="bottom-nav-safe">
-      {isOrganizer && (
-        <div className="flex items-center gap-2 px-3 py-2 mx-4 mb-2 rounded-xl border bg-amber-500/15 border-amber-500/40 text-amber-400">
-          <span className="relative flex h-2 w-2 shrink-0">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-60" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-400" />
-          </span>
-          <span className="font-bold text-[11px] uppercase tracking-wider shrink-0">Tour Admin</span>
-          <span className="opacity-40 text-xs">›</span>
-          <span className="text-[11px] font-medium opacity-80 truncate">{tour.name}</span>
-        </div>
-      )}
-      {/* Header */}
-      <div className="p-4">
-        <button onClick={() => navigate("/tour")} className="mb-2 text-xs text-muted-foreground hover:text-foreground transition-colors">← All Tours</button>
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="font-display text-xl font-bold">{tour.name}</h1>
-            <div className="mt-1 flex flex-wrap gap-x-3 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1"><Users className="h-3 w-3" /> {(tour.clubs as any)?.name}</span>
-              <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> {tour.year}</span>
-              <span className="flex items-center gap-1"><Building2 className="h-3 w-3" /> {tourClubs?.filter(tc => tc.status === "accepted").length ?? 0} clubs</span>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            {isOrganizer ? (
-              <button
-                onClick={() => handleTogglePublic(!(tour as any).is_public)}
-                className={`flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1 rounded-full border transition-all ${
-                  (tour as any).is_public === false
-                    ? "text-amber-500 bg-amber-500/10 border-amber-500/30 hover:bg-amber-500/20"
-                    : "text-primary/80 bg-primary/10 border-primary/20 hover:bg-primary/20"
-                }`}
-                title="Klik untuk ubah visibility"
-              >
-                {(tour as any).is_public === false ? "🔒 Private" : "🌐 Public"}
-              </button>
-            ) : (
-              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
+      {/* WA-style: back + actions top bar */}
+      <div className="flex items-center justify-between px-4 pt-4 pb-2">
+        <button onClick={() => navigate(-1)} className="rounded-full p-1.5 hover:bg-muted transition-colors">
+          <ArrowLeft className="h-5 w-5" />
+        </button>
+        <div className="flex gap-1">
+          {isOrganizer && (
+            <button
+              onClick={() => handleTogglePublic(!(tour as any).is_public)}
+              className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all ${
                 (tour as any).is_public === false
                   ? "text-amber-500 bg-amber-500/10 border-amber-500/30"
-                  : "text-primary/80 bg-primary/10 border-primary/20"
-              }`}>
-                {(tour as any).is_public === false ? "🔒 Private" : "🌐 Public"}
-              </span>
-            )}
-            <Badge variant="outline" className="text-[10px] uppercase tracking-wider border-primary/30 text-primary">
-              {tour.tournament_type}
-            </Badge>
-          </div>
+                  : "text-primary bg-primary/10 border-primary/20"
+              }`}
+            >
+              {(tour as any).is_public === false ? "🔒 Private" : "🌐 Public"}
+            </button>
+          )}
         </div>
-        {tour.description && <p className="mt-2 text-xs text-muted-foreground">{tour.description}</p>}
       </div>
+
+      {/* WA-style hero: centered logo + name */}
+      <div className="flex flex-col items-center px-4 pb-4 text-center">
+        <Avatar className="h-24 w-24 border-4 border-primary/20 mb-3">
+          <AvatarImage src={clubLogo} />
+          <AvatarFallback className="bg-primary/10 text-2xl font-bold text-primary">{tourInitial}</AvatarFallback>
+        </Avatar>
+        <h1 className="text-xl font-bold">{tour.name}</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">
+          {(tour.clubs as any)?.name} · {tour.year}
+        </p>
+        <div className="flex items-center gap-2 mt-2">
+          <span className="text-xs bg-primary/10 text-primary border border-primary/20 px-2.5 py-1 rounded-full font-semibold">
+            {tour.tournament_type}
+          </span>
+          {isOrganizer && (
+            <span className="text-xs bg-amber-500/10 text-amber-500 border border-amber-500/20 px-2.5 py-1 rounded-full font-semibold">
+              👑 Organizer
+            </span>
+          )}
+          <span className="text-xs text-muted-foreground">
+            <Users className="h-3 w-3 inline mr-1" />{tourClubs?.filter((tc: any) => tc.status === "accepted").length ?? 0} clubs
+          </span>
+        </div>
+      </div>
+        {tour.description && <p className="text-sm text-muted-foreground text-center mt-2 px-4">{tour.description}</p>}
+
 
       {/* Organizer Actions */}
       {isOrganizer && (
@@ -619,24 +617,28 @@ const TourDetail = () => {
         </div>
       )}
 
-      <Tabs defaultValue="events" className="px-4">
+      <Tabs defaultValue="events" className="px-0">
         {(() => {
           const isPersonalTour = (tour.clubs as any)?.is_personal;
+          const tabs = [
+            { value: "events", label: "Events" },
+            { value: "leaderboard", label: isPersonalTour ? "Performance" : "Leaderboard" },
+            { value: "players", label: isPersonalTour ? "My Stats" : "Players" },
+            ...(!isPersonalTour ? [{ value: "clubs", label: "Clubs" }] : []),
+          ];
           return (
-            <TabsList className="w-full flex-wrap h-auto gap-0.5 p-1">
-              <TabsTrigger value="events" className="flex-1 text-xs">Events</TabsTrigger>
-              <TabsTrigger value="leaderboard" className="flex-1 text-xs">{isPersonalTour ? "Performance" : "Leaderboard"}</TabsTrigger>
-              <TabsTrigger value="players" className="flex-1 text-xs">
-                {isPersonalTour ? "My Stats" : "Players"}
-              </TabsTrigger>
-              {!isPersonalTour && (
-                <TabsTrigger value="clubs" className="flex-1 text-xs">Clubs</TabsTrigger>
-              )}
+            <TabsList className="w-full h-auto p-0 bg-transparent border-b border-border/50 rounded-none gap-0">
+              {tabs.map(t => (
+                <TabsTrigger key={t.value} value={t.value}
+                  className="flex-1 py-2.5 text-sm font-semibold rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent bg-transparent text-muted-foreground">
+                  {t.label}
+                </TabsTrigger>
+              ))}
             </TabsList>
           );
         })()}
 
-        <TabsContent value="events" className="space-y-3 pt-2">
+        <TabsContent value="events" className="space-y-3 pt-3 px-4">
           {events?.length === 0 && (
             <div className="golf-card p-6 text-center text-sm text-muted-foreground">No events scheduled</div>
           )}
@@ -699,7 +701,7 @@ const TourDetail = () => {
           })}
         </TabsContent>
 
-        <TabsContent value="players" className="space-y-3 pt-2">
+        <TabsContent value="players" className="space-y-3 pt-3 px-4">
           <p className="text-[10px] text-muted-foreground italic">
             Tournament HCP berkembang setiap event. Personal HCP tidak terpengaruh.
           </p>
@@ -980,7 +982,7 @@ const TourDetail = () => {
           )}
         </TabsContent>
 
-        <TabsContent value="clubs" className="space-y-3 pt-2">
+        <TabsContent value="clubs" className="space-y-3 pt-3 px-4">
           {tourClubs?.length === 0 && (
             <div className="golf-card p-6 text-center text-sm text-muted-foreground">No clubs invited</div>
           )}
