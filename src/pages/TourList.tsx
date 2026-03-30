@@ -277,7 +277,7 @@ const TourList = ({ embedded = false }: { embedded?: boolean }) => {
       />}
 
       {/* ═══ TODAY'S ROUND / LIVE BANNER ═══ */}
-      {(() => {
+      {tab === "upcoming" && (() => {
         const today = new Date().toISOString().split("T")[0];
         const activeEvents = upcomingEvents.filter(e =>
           e.event_date === today || (e as any).status === "playing" || (e as any).status === "ready"
