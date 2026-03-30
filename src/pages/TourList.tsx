@@ -248,13 +248,15 @@ const TourList = ({ embedded = false }: { embedded?: boolean }) => {
     enabled: !!userId,
   });
 
-  const upcomingEvents = (events?.filter(e =>
-    e.status !== "done" && e.status !== "cancelled"
-  ) ?? []).sort((a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime());
+  const upcomingEvents = (events?.filter(e => {
+    const s = String(e.status ?? "").toLowerCase();
+    return s !== "done" && s !== "cancelled";
+  }) ?? []).sort((a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime());
 
-  const completedEvents = events?.filter(e =>
-    e.status === "done"
-  ) ?? [];
+  const completedEvents = (events?.filter(e => {
+    const s = String(e.status ?? "").toLowerCase();
+    return s === "done";
+  }) ?? []).sort((a, b) => new Date(b.event_date).getTime() - new Date(a.event_date).getTime());
 
   const displayEvents = tab === "upcoming" ? upcomingEvents : completedEvents;
 
