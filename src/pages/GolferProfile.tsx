@@ -2,6 +2,8 @@ import { ArrowLeft, Globe, Mail, Camera, UserPlus, UserCheck, MessageCircle, Cro
 import CommitteeRoleBadges from "@/components/CommitteeRoleBadges";
 import { useNavigate, useParams } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -35,6 +37,9 @@ const GolferProfile = () => {
   const navigate = useNavigate();
   const { id: paramId } = useParams<{ id: string }>();
   const [tab, setTab] = useState<Tab>("about");
+  const [showSettings, setShowSettings] = useState(false);
+  const [isDark, setIsDark] = useState(!document.documentElement.classList.contains("light"));
+  const [isPlatformAdmin, setIsPlatformAdmin] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [desktopTab, setDesktopTab] = useState<DesktopTab>("overview");
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -57,6 +62,15 @@ const GolferProfile = () => {
     const handler = () => setIsDesktop(window.innerWidth >= 1024);
     window.addEventListener("resize", handler);
     return () => window.removeEventListener("resize", handler);
+  }, []);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (user) {
+        const { data } = await supabase.rpc("is_platform_admin", { check_user_id: user.id });
+        setIsPlatformAdmin(!!data);
+      }
+    });
   }, []);
 
   const targetId = paramId || currentUserId;
@@ -461,6 +475,19 @@ const GolferProfile = () => {
     const { error } = await supabase.from("buddy_connections").insert({ requester_id: currentUserId, addressee_id: profile.id });
     if (error) toast({ title: "Failed", description: error.message, variant: "destructive" });
     else { setBuddyStatus("sent"); toast({ title: "Permintaan buddy terkirim!" }); }
+  };
+
+  const toggleDarkMode = () => {
+    const root = document.documentElement;
+    if (isDark) {
+      root.classList.add("light");
+      localStorage.setItem("theme", "light");
+      setIsDark(false);
+    } else {
+      root.classList.remove("light");
+      localStorage.setItem("theme", "dark");
+      setIsDark(true);
+    }
   };
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1105,6 +1132,11 @@ const GolferProfile = () => {
             <button onClick={() => navigate(-1)} className="absolute left-0 top-0 z-10 rounded-full p-1.5 hover:bg-muted transition-colors">
               <ArrowLeft className="h-5 w-5" />
             </button>
+            {isOwnProfile && (
+              <button onClick={() => setShowSettings(true)} className="absolute right-0 top-0 z-10 rounded-full p-1.5 hover:bg-muted transition-colors">
+                <Settings className="h-5 w-5" />
+              </button>
+            )}
             <div className="flex flex-col items-center pt-10">
               <div className="relative">
                 <Avatar className="h-28 w-28 border-4 border-primary/50">
@@ -1149,21 +1181,7 @@ const GolferProfile = () => {
                   )}
                 </div>
               )}
-              {isOwnProfile && (
-                <div className="mt-4 flex gap-3 px-8 w-full">
-                  <Button variant="outline" className="flex-1 h-11 rounded-xl text-sm font-bold uppercase tracking-wider border-border" onClick={() => navigate("/settings")}>Edit Profile</Button>
-                  <Button variant="outline" className="flex-1 h-11 rounded-xl text-sm font-bold uppercase tracking-wider border-border gap-2" onClick={() => {
-                    const un = (profile as any)?.username;
-                    if (un) {
-                      const url = `${window.location.origin}/p/${un}`;
-                      navigator.clipboard.writeText(url);
-                      toast({ title: "Link profil disalin! Bagikan ke WhatsApp 🏌️" });
-                    }
-                  }}>
-                    <Share2 className="h-4 w-4" /> Share
-                  </Button>
-                </div>
-              )}
+
             </div>
           </div>
         </div>
