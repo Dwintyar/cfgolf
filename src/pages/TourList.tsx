@@ -248,15 +248,26 @@ const TourList = ({ embedded = false }: { embedded?: boolean }) => {
     enabled: !!userId,
   });
 
-  const upcomingEvents = (events?.filter(e => {
+  // Merge events + myEvents (from contestant table) — deduplicated
+  const allAccessibleEvents = (() => {
+    const map = new Map<string, any>();
+    (events ?? []).forEach(e => map.set(e.id, e));
+    (myEvents ?? []).forEach((c: any) => {
+      const e = c.events;
+      if (e && !map.has(e.id)) map.set(e.id, e);
+    });
+    return Array.from(map.values());
+  })();
+
+  const upcomingEvents = allAccessibleEvents.filter(e => {
     const s = String(e.status ?? "").toLowerCase();
     return s !== "done" && s !== "cancelled";
-  }) ?? []).sort((a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime());
+  }).sort((a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime());
 
-  const completedEvents = (events?.filter(e => {
+  const completedEvents = allAccessibleEvents.filter(e => {
     const s = String(e.status ?? "").toLowerCase();
     return s === "done";
-  }) ?? []).sort((a, b) => new Date(b.event_date).getTime() - new Date(a.event_date).getTime());
+  }).sort((a, b) => new Date(b.event_date).getTime() - new Date(a.event_date).getTime());
 
   const displayEvents = tab === "upcoming" ? upcomingEvents : completedEvents;
 
