@@ -275,7 +275,7 @@ const TourList = ({ embedded = false }: { embedded?: boolean }) => {
 
   const eventTabs = [
     { id: "upcoming" as const, label: "Upcoming" },
-    { id: "done" as const, label: "Done" },
+    { id: "done" as const, label: "Completed" },
   ];
 
   const tourTabs = [
