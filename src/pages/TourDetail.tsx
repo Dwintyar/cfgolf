@@ -494,39 +494,40 @@ const TourDetail = () => {
 
   return (
     <div className="bottom-nav-safe">
-      {/* WA-style: back + actions top bar */}
-      <div className="flex items-center justify-between px-4 pt-4 pb-2">
+      {/* Top bar: back + visibility toggle */}
+      <div className="flex items-center justify-between px-4 pt-4 pb-0">
         <button onClick={() => navigate(-1)} className="rounded-full p-1.5 hover:bg-muted transition-colors">
           <ArrowLeft className="h-5 w-5" />
         </button>
-        <div className="flex gap-1">
-          {isOrganizer && (
-            <button
-              onClick={() => handleTogglePublic(!(tour as any).is_public)}
-              className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all ${
-                (tour as any).is_public === false
-                  ? "text-amber-500 bg-amber-500/10 border-amber-500/30"
-                  : "text-primary bg-primary/10 border-primary/20"
-              }`}
-            >
-              {(tour as any).is_public === false ? "🔒 Private" : "🌐 Public"}
-            </button>
-          )}
-        </div>
+        {isOrganizer && (
+          <button
+            onClick={() => handleTogglePublic(!(tour as any).is_public)}
+            className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border transition-all ${
+              (tour as any).is_public === false
+                ? "text-amber-500 bg-amber-500/10 border-amber-500/30"
+                : "text-primary bg-primary/10 border-primary/20"
+            }`}
+          >
+            {(tour as any).is_public === false ? "🔒 Private" : "🌐 Public"}
+          </button>
+        )}
       </div>
 
-      {/* WA-style hero: centered logo + name */}
-      <div className="flex flex-col items-center px-4 pb-4 text-center">
-        <Avatar className="h-24 w-24 border-4 border-primary/20 mb-3">
+      {/* Hero: centered logo + name + meta */}
+      <div className="flex flex-col items-center px-6 pt-4 pb-5 text-center gap-2">
+        <Avatar className="h-24 w-24 border-4 border-primary/20">
           <AvatarImage src={clubLogo} />
           <AvatarFallback className="bg-primary/10 text-2xl font-bold text-primary">{tourInitial}</AvatarFallback>
         </Avatar>
-        <h1 className="text-xl font-bold">{tour.name}</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          {(tour.clubs as any)?.name} · {tour.year}
-        </p>
-        <div className="flex items-center gap-2 mt-2">
-          <span className="text-xs bg-primary/10 text-primary border border-primary/20 px-2.5 py-1 rounded-full font-semibold">
+        <div>
+          <h1 className="text-xl font-bold mt-1">{tour.name}</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">{(tour.clubs as any)?.name} · {tour.year}</p>
+        </div>
+        {tour.description && (
+          <p className="text-sm text-muted-foreground leading-relaxed max-w-sm">{tour.description}</p>
+        )}
+        <div className="flex flex-wrap items-center justify-center gap-2 mt-1">
+          <span className="text-xs bg-primary/10 text-primary border border-primary/20 px-2.5 py-1 rounded-full font-semibold capitalize">
             {tour.tournament_type}
           </span>
           {isOrganizer && (
@@ -534,13 +535,16 @@ const TourDetail = () => {
               👑 Organizer
             </span>
           )}
-          <span className="text-xs text-muted-foreground">
-            <Users className="h-3 w-3 inline mr-1" />{tourClubs?.filter((tc: any) => tc.status === "accepted").length ?? 0} clubs
+          {!isOrganizer && isMember && (
+            <span className="text-xs bg-primary/10 text-primary border border-primary/20 px-2.5 py-1 rounded-full font-semibold">
+              ✓ Player
+            </span>
+          )}
+          <span className="text-xs text-muted-foreground flex items-center gap-1">
+            <Users className="h-3 w-3" />{tourClubs?.filter((tc: any) => tc.status === "accepted").length ?? 0} clubs
           </span>
         </div>
       </div>
-        {tour.description && <p className="text-sm text-muted-foreground text-center mt-2 px-4">{tour.description}</p>}
-
 
       {/* Action buttons — WA group style icon grid */}
       {(isOrganizer || (!isOrganizer && isClubAdmin)) && (() => {
@@ -566,11 +570,11 @@ const TourDetail = () => {
           <div className="grid grid-cols-3 gap-3 px-4 pb-4">
             {actions.map((action, i) => (
               <button key={i} onClick={action.onClick}
-                className="flex flex-col items-center justify-center gap-1.5 p-3 rounded-2xl bg-secondary hover:bg-secondary/80 transition-colors">
-                <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center">
+                className="flex flex-col items-center justify-center gap-2 py-4 px-2 rounded-2xl bg-secondary hover:bg-secondary/70 transition-colors active:scale-95">
+                <div className="h-12 w-12 rounded-2xl bg-background/80 flex items-center justify-center shadow-sm">
                   <action.icon className="h-5 w-5 text-primary" />
                 </div>
-                <span className="text-[11px] font-semibold text-center leading-tight">{action.label}</span>
+                <span className="text-xs font-semibold text-center leading-tight">{action.label}</span>
               </button>
             ))}
           </div>
@@ -623,7 +627,7 @@ const TourDetail = () => {
           );
         })()}
 
-        <TabsContent value="events" className="space-y-3 pt-3 px-4">
+        <TabsContent value="events" className="space-y-3 pt-4 px-4">
           {events?.length === 0 && (
             <div className="golf-card p-6 text-center text-sm text-muted-foreground">No events scheduled</div>
           )}
@@ -686,7 +690,7 @@ const TourDetail = () => {
           })}
         </TabsContent>
 
-        <TabsContent value="players" className="space-y-3 pt-3 px-4">
+        <TabsContent value="players" className="space-y-3 pt-4 px-4">
           <p className="text-[10px] text-muted-foreground italic">
             Tournament HCP berkembang setiap event. Personal HCP tidak terpengaruh.
           </p>
@@ -967,7 +971,7 @@ const TourDetail = () => {
           )}
         </TabsContent>
 
-        <TabsContent value="clubs" className="space-y-3 pt-3 px-4">
+        <TabsContent value="clubs" className="space-y-3 pt-4 px-4">
           {tourClubs?.length === 0 && (
             <div className="golf-card p-6 text-center text-sm text-muted-foreground">No clubs invited</div>
           )}
