@@ -106,7 +106,7 @@
     background: var(--golf-gradient);
     background-color: hsl(var(--background));
     min-height: 100vh;
-    font-size: 17px;
+    font-size: 16px;
   }
 
   /* Light mode base — override dark golf gradient */
@@ -183,6 +183,20 @@
     box-shadow: var(--golf-accent-glow);
   }
 
+  /* Larger font sizes for better readability (WA-like) */
+  .text-xs { font-size: 0.8rem !important; line-height: 1.2rem !important; }
+  .text-sm { font-size: 0.9375rem !important; line-height: 1.375rem !important; }
+  .text-base { font-size: 1.0625rem !important; line-height: 1.5rem !important; }
+  .text-lg { font-size: 1.1875rem !important; line-height: 1.75rem !important; }
+  .text-xl { font-size: 1.3125rem !important; line-height: 1.875rem !important; }
+  .text-2xl { font-size: 1.5625rem !important; line-height: 2rem !important; }
+  .text-3xl { font-size: 1.875rem !important; line-height: 2.25rem !important; }
+
+  /* WA-specific sizes we use */
+  .text-\[10px\] { font-size: 0.75rem !important; }
+  .text-\[11px\] { font-size: 0.8125rem !important; }
+  .text-\[13px\] { font-size: 0.875rem !important; }
+  .text-\[15px\] { font-size: 1rem !important; }
   .bottom-nav-safe {
     padding-bottom: 5rem;
   }
