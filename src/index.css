@@ -120,6 +120,14 @@
     background: hsl(var(--background));
     min-height: 100vh;
   }
+
+  /* Live display page in light mode */
+  .light .bg-white\/\[0\.02\] { background-color: hsl(var(--card)) !important; }
+  .light .bg-white\/\[0\.06\] { background-color: hsl(var(--primary) / 0.05) !important; }
+  .light .text-foreground\/80 { color: hsl(var(--foreground)) !important; }
+  .light .text-muted-foreground\/40 { color: hsl(var(--muted-foreground)) !important; }
+  .light .border-white\/10 { border-color: hsl(var(--border)) !important; }
+  .light .border-white\/\[0\.06\] { border-color: hsl(var(--border) / 0.5) !important; }
   
   .light .bottom-nav-safe,
   .light .flex.flex-col.h-screen,
@@ -197,12 +205,46 @@
   .text-\[11px\] { font-size: 0.8125rem !important; }
   .text-\[13px\] { font-size: 0.875rem !important; }
   .text-\[15px\] { font-size: 1rem !important; }
+  /* Live Display light mode fixes */
+  .light .bg-\[\#080f1e\] { background-color: hsl(var(--background)) !important; }
+  .light .bg-\[\#0a1628\] { background-color: hsl(var(--card)) !important; }
+  .light .text-white { color: hsl(var(--foreground)) !important; }
+  .light .text-white\/75 { color: hsl(var(--foreground) / 0.75) !important; }
+  .light .text-white\/80 { color: hsl(var(--foreground) / 0.8) !important; }
+  .light .text-white\/40 { color: hsl(var(--muted-foreground)) !important; }
+  .light .text-white\/35 { color: hsl(var(--muted-foreground)) !important; }
+  .light .text-white\/30 { color: hsl(var(--muted-foreground)) !important; }
+  .light .text-white\/25 { color: hsl(var(--muted-foreground)) !important; }
+  .light .text-white\/20 { color: hsl(var(--muted-foreground) / 0.6) !important; }
+  .light .border-white\/20 { border-color: hsl(var(--border)) !important; }
+  .light .border-white\/10 { border-color: hsl(var(--border) / 0.5) !important; }
+  .light .bg-white\/5 { background-color: hsl(var(--secondary)) !important; }
+  .light .bg-white\/10 { background-color: hsl(var(--secondary)) !important; }
+  .light .min-h-screen.bg-\[\#080f1e\] { background-color: hsl(var(--background)) !important; }
+
   .bottom-nav-safe {
     padding-bottom: 5rem;
   }
 
   @media (min-width: 1024px) {
-    .bottom-nav-safe {
+    /* Live Display light mode fixes */
+  .light .bg-\[\#080f1e\] { background-color: hsl(var(--background)) !important; }
+  .light .bg-\[\#0a1628\] { background-color: hsl(var(--card)) !important; }
+  .light .text-white { color: hsl(var(--foreground)) !important; }
+  .light .text-white\/75 { color: hsl(var(--foreground) / 0.75) !important; }
+  .light .text-white\/80 { color: hsl(var(--foreground) / 0.8) !important; }
+  .light .text-white\/40 { color: hsl(var(--muted-foreground)) !important; }
+  .light .text-white\/35 { color: hsl(var(--muted-foreground)) !important; }
+  .light .text-white\/30 { color: hsl(var(--muted-foreground)) !important; }
+  .light .text-white\/25 { color: hsl(var(--muted-foreground)) !important; }
+  .light .text-white\/20 { color: hsl(var(--muted-foreground) / 0.6) !important; }
+  .light .border-white\/20 { border-color: hsl(var(--border)) !important; }
+  .light .border-white\/10 { border-color: hsl(var(--border) / 0.5) !important; }
+  .light .bg-white\/5 { background-color: hsl(var(--secondary)) !important; }
+  .light .bg-white\/10 { background-color: hsl(var(--secondary)) !important; }
+  .light .min-h-screen.bg-\[\#080f1e\] { background-color: hsl(var(--background)) !important; }
+
+  .bottom-nav-safe {
       padding-bottom: 1rem;
     }
   }

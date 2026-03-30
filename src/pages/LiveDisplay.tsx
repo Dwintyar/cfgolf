@@ -42,7 +42,7 @@ const RankBadge = ({ rank }: { rank: number }) => {
   if (rank === 1) return <span className="text-xl leading-none">🥇</span>;
   if (rank === 2) return <span className="text-xl leading-none">🥈</span>;
   if (rank === 3) return <span className="text-xl leading-none">🥉</span>;
-  return <span className="text-sm font-bold text-white/40 tabular-nums">{rank}</span>;
+  return <span className="text-sm font-bold text-muted-foreground tabular-nums">{rank}</span>;
 };
 
 const MoveBadge = ({ curr, prev }: { curr: number; prev?: number }) => {
@@ -67,7 +67,7 @@ const AvatarCircle = ({ url, name }: { url: string | null; name: string }) => {
     );
   }
   return (
-    <div className="h-7 w-7 rounded-full bg-primary/30 flex items-center justify-center text-[11px] font-bold text-white border border-white/20 shrink-0">
+    <div className="h-7 w-7 rounded-full bg-primary/20 flex items-center justify-center text-[11px] font-bold text-primary border border-primary/20 shrink-0">
       {name.charAt(0).toUpperCase()}
     </div>
   );
@@ -109,22 +109,22 @@ const FlightColumn = ({
   return (
     <div className="flex flex-col">
       {/* Flight header */}
-      <div className="flex items-center justify-between px-3 py-2 mb-2 rounded-xl bg-primary/15 border border-primary/30">
+      <div className="flex items-center justify-between px-3 py-2 mb-2 rounded-xl bg-primary/20 border border-primary/30">
         <div>
           <p className="text-sm font-extrabold tracking-wide text-primary uppercase">
             {flight.flight_name || "Flight"}
           </p>
-          <p className="text-[10px] text-white/35">
+          <p className="text-[10px] text-muted-foreground">
             HCP {flight.hcp_min}–{flight.hcp_max}
           </p>
         </div>
-        <span className="text-xs text-white/25">{players.length}p</span>
+        <span className="text-xs text-muted-foreground">{players.length}p</span>
       </div>
 
       {/* Rows */}
       <div className="space-y-1">
         {players.length === 0 ? (
-          <div className="text-center py-8 text-white/20 text-sm">No scores yet</div>
+          <div className="text-center py-8 text-muted-foreground text-sm">No scores yet</div>
         ) : (
           players.map((p) => {
             const flash = flashing.has(p.player_id);
@@ -137,8 +137,8 @@ const FlightColumn = ({
                   flex items-center gap-2 px-2.5 py-2 rounded-xl border cursor-pointer
                   transition-all duration-700 hover:border-primary/40 hover:bg-primary/10
                   ${flash ? "bg-yellow-400/20 border-yellow-400/50 scale-[1.015]" : ""}
-                  ${!flash && top3 ? "bg-white/[0.06] border-white/10" : ""}
-                  ${!flash && !top3 ? "bg-white/[0.02] border-white/[0.06]" : ""}
+                  ${!flash && top3 ? "bg-primary/5 border-primary/20" : ""}
+                  ${!flash && !top3 ? "bg-card border-border/30" : ""}
                 `}
               >
                 {/* Rank */}
@@ -154,7 +154,7 @@ const FlightColumn = ({
                   <div className="flex items-center gap-1 flex-wrap">
                     <p
                       className={`text-sm font-semibold truncate leading-tight ${
-                        top3 ? "text-white" : "text-white/75"
+                        top3 ? "text-foreground font-bold" : "text-foreground"
                       }`}
                     >
                       {p.full_name}
@@ -162,7 +162,7 @@ const FlightColumn = ({
                     {isLive && <MoveBadge curr={p.rank} prev={prevFlightRankRef.current[p.player_id]} />}
                   </div>
                   {p.club_name && (
-                    <p className="text-[10px] text-white/30 truncate leading-tight">
+                    <p className="text-[10px] text-muted-foreground truncate leading-tight">
                       {p.club_name}
                     </p>
                   )}
@@ -170,28 +170,28 @@ const FlightColumn = ({
 
                 {/* HCP */}
                 <div className="text-right shrink-0">
-                  <p className="text-[9px] text-white/25 leading-none">HCP</p>
-                  <p className="text-xs font-mono text-white/45 tabular-nums">
+                  <p className="text-[9px] text-muted-foreground leading-none">HCP</p>
+                  <p className="text-xs font-mono text-muted-foreground tabular-nums">
                     {fmt(p.hcp)}
                   </p>
                 </div>
 
                 {/* Gross */}
                 <div className="text-right shrink-0 w-8">
-                  <p className="text-[9px] text-white/25 leading-none">Grs</p>
+                  <p className="text-[9px] text-muted-foreground leading-none">Grs</p>
                   <p className="text-xs font-mono tabular-nums">{fmt(p.gross)}</p>
                 </div>
 
                 {/* Nett — hero number */}
                 <div className="text-right shrink-0 w-9">
-                  <p className="text-[9px] text-white/25 leading-none">Nett</p>
+                  <p className="text-[9px] text-muted-foreground leading-none">Nett</p>
                   <p
                     className={`text-base font-extrabold font-mono tabular-nums leading-tight ${
                       p.nett != null
                         ? top3
                           ? "text-primary"
-                          : "text-white/80"
-                        : "text-white/20"
+                          : "text-foreground"
+                        : "text-muted-foreground"
                     }`}
                   >
                     {fmt(p.nett)}
@@ -398,10 +398,10 @@ const LiveDisplay = () => {
   /* ── Loading ── */
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#080f1e] flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="h-12 w-12 rounded-full border-4 border-primary border-t-transparent animate-spin mx-auto mb-3" />
-          <p className="text-white/40">Loading leaderboard…</p>
+          <p className="text-muted-foreground">Loading leaderboard…</p>
         </div>
       </div>
     );
@@ -409,7 +409,7 @@ const LiveDisplay = () => {
 
   if (!event) {
     return (
-      <div className="min-h-screen bg-[#080f1e] flex items-center justify-center text-white/30 text-lg">
+      <div className="min-h-screen bg-background flex items-center justify-center text-muted-foreground text-lg">
         Event not found.
       </div>
     );
@@ -419,7 +419,7 @@ const LiveDisplay = () => {
   const cols = Math.min(Math.max(flightGroups.length, 1), 4);
 
   return (
-    <div className="min-h-screen bg-[#080f1e] text-white flex flex-col">
+    <div className="min-h-screen bg-background text-foreground flex flex-col">
       {/* ── HEADER ── */}
       <header className="shrink-0 bg-gradient-to-r from-[#0b1e35] via-[#0d2a45] to-[#0b1e35] border-b border-white/10 px-6 py-3 flex items-center gap-4">
         <img
@@ -588,7 +588,7 @@ const LiveDisplay = () => {
                           <td className="py-1.5 px-2 text-white/50">Score</td>
                           {[1,2,3,4,5,6,7,8,9].map(h => (
                             <td key={h} className="text-center py-1.5 px-1 tabular-nums text-white">
-                              {holeScores[h] ?? <span className="text-white/20">—</span>}
+                              {holeScores[h] ?? <span className="text-muted-foreground">—</span>}
                             </td>
                           ))}
                           <td className="text-center py-1.5 px-1 font-bold text-white tabular-nums">
@@ -615,7 +615,7 @@ const LiveDisplay = () => {
                           <td className="py-1.5 px-2 text-white/50">Score</td>
                           {[10,11,12,13,14,15,16,17,18].map(h => (
                             <td key={h} className="text-center py-1.5 px-1 tabular-nums text-white">
-                              {holeScores[h] ?? <span className="text-white/20">—</span>}
+                              {holeScores[h] ?? <span className="text-muted-foreground">—</span>}
                             </td>
                           ))}
                           <td className="text-center py-1.5 px-1 font-bold text-white tabular-nums">
