@@ -31,7 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-type Tab = "members" | "tournaments" | "requests" | "settings";
+type Tab = "members" | "tournaments" | "settings";
 
 const ClubProfile = () => {
   const navigate = useNavigate();
@@ -326,10 +326,9 @@ const ClubProfile = () => {
         {/* Tabs — WA underline style */}
         <div className="flex border-b border-border/50 mb-4">
           {[
-            { id: "members", label: "Members" },
+            { id: "members", label: `Members${pendingCount > 0 ? ` 🔴` : ""}` },
             { id: "tournaments", label: "Tournaments" },
             ...(isOwner ? [
-              { id: "requests", label: `Requests${pendingCount > 0 ? ` (${pendingCount})` : ""}` },
               { id: "settings", label: "Settings" },
             ] : []),
           ].map(t => (
@@ -347,6 +346,48 @@ const ClubProfile = () => {
         {/* Members tab */}
         {tab === "members" && (
           <>
+            {/* Pending join requests — inline for owner */}
+            {isOwner && pendingCount > 0 && (
+              <div className="mb-3">
+                {pendingInvitations?.map((inv: any) => {
+                  const profile = inv.profiles as any;
+                  return (
+                    <div key={inv.id} className="flex items-center gap-3 py-3 px-0 border-b border-border/30 bg-amber-500/5">
+                      <Avatar className="h-12 w-12 rounded-2xl shrink-0">
+                        <AvatarImage src={profile?.avatar_url ?? ""} />
+                        <AvatarFallback className="rounded-2xl bg-amber-500/10 text-sm font-semibold text-amber-500">
+                          {getInitials(profile?.full_name)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="text-base font-semibold truncate">{profile?.full_name || "Golfer"}</p>
+                          <span className="text-[10px] font-bold bg-amber-500/15 text-amber-500 border border-amber-500/30 px-1.5 py-0.5 rounded-full shrink-0">Pending</span>
+                        </div>
+                        <p className="text-[13px] text-muted-foreground">Requesting to join</p>
+                      </div>
+                      <div className="flex gap-1.5 shrink-0">
+                        <button
+                          onClick={() => handleAcceptInvitation(inv.id, inv.invited_user_id)}
+                          disabled={processingId === inv.id}
+                          className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
+                        >
+                          {processingId === inv.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                        </button>
+                        <button
+                          onClick={() => handleRejectInvitation(inv.id)}
+                          disabled={processingId === inv.id}
+                          className="flex h-8 w-8 items-center justify-center rounded-full bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors disabled:opacity-50"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
             <div className="relative mb-4">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -427,47 +468,6 @@ const ClubProfile = () => {
         )}
 
         {/* Requests tab (owner only) */}
-        {tab === "requests" && isOwner && (
-          <div className="divide-y divide-border/30 animate-fade-in">
-            {pendingCount === 0 && (
-              <p className="text-center text-sm text-muted-foreground py-8">Tidak ada permintaan tertunda</p>
-            )}
-            {pendingInvitations?.map((inv: any) => {
-              const profile = inv.profiles as any;
-              return (
-                <div key={inv.id} className="flex items-center gap-3 py-3">
-                  <Avatar className="h-10 w-10 border-2 border-primary/30">
-                    <AvatarImage src={profile?.avatar_url ?? ""} />
-                    <AvatarFallback className="bg-secondary text-sm font-semibold">
-                      {getInitials(profile?.full_name)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold truncate">{profile?.full_name || "Golfer"}</p>
-                    <p className="text-xs text-muted-foreground">Menunggu persetujuan</p>
-                  </div>
-                  <div className="flex gap-1.5">
-                    <button
-                      onClick={() => handleAcceptInvitation(inv.id, inv.invited_user_id)}
-                      disabled={processingId === inv.id}
-                      className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
-                    >
-                      {processingId === inv.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-                    </button>
-                    <button
-                      onClick={() => handleRejectInvitation(inv.id)}
-                      disabled={processingId === inv.id}
-                      className="flex h-8 w-8 items-center justify-center rounded-full bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors disabled:opacity-50"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-
         {/* Tournaments tab */}
         {tab === "tournaments" && (
           <div className="-mx-4">
