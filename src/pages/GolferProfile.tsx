@@ -1149,9 +1149,11 @@ const GolferProfile = () => {
       <div className="px-4 pt-4">
         <div>
           <div className="relative pb-4">
-            <button onClick={() => navigate(-1)} className="absolute left-0 top-0 z-10 rounded-full p-1.5 hover:bg-muted transition-colors">
-              <ArrowLeft className="h-5 w-5" />
-            </button>
+            {paramId && (
+              <button onClick={() => navigate(-1)} className="absolute left-0 top-0 z-10 rounded-full p-1.5 hover:bg-muted transition-colors">
+                <ArrowLeft className="h-5 w-5" />
+              </button>
+            )}
             {/* Settings button — only on own profile */}
             {(!paramId || currentUserId === targetId) && (
               <button onClick={() => setShowSettings(true)} className="absolute right-0 top-0 z-10 rounded-full p-1.5 hover:bg-muted transition-colors">

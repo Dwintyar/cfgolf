@@ -47,6 +47,7 @@ const ClubProfile = ({ embedded = false, clubId: propClubId }: ClubProfileProps)
   const navigate = useNavigate();
   const params = useParams<{ id: string }>();
   const id = propClubId ?? params.id;
+  const isEmbeddedUrl = typeof window !== "undefined" && new URLSearchParams(window.location.search).has("embedded");
   const [search, setSearch] = useState("");
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isOwner, setIsOwner] = useState(false);
@@ -187,7 +188,7 @@ const ClubProfile = ({ embedded = false, clubId: propClubId }: ClubProfileProps)
         .from("channels").select("id, name").eq("club_id", id!).single();
       return data;
     },
-    enabled: !!id && isVenue,
+    enabled: !!id,
   });
 
   // Used courses — from events of tours organized by this club
@@ -327,12 +328,11 @@ const ClubProfile = ({ embedded = false, clubId: propClubId }: ClubProfileProps)
     <div className="bottom-nav-safe">
       {/* WA-style: back button top left */}
       <div className="flex items-center justify-between px-4 pt-4 pb-2">
-        {!embedded && (
+        {!embedded && !isEmbeddedUrl ? (
           <button onClick={() => navigate(-1)} className="rounded-full p-1.5 hover:bg-muted transition-colors">
             <ArrowLeft className="h-5 w-5" />
           </button>
-        )}
-        {embedded && <div />}
+        ) : <div />}
         {isOwner && (
           <div className="flex gap-1">
             <button onClick={() => setShowInvite(true)} className="rounded-full p-2 hover:bg-muted transition-colors">
@@ -370,7 +370,7 @@ const ClubProfile = ({ embedded = false, clubId: propClubId }: ClubProfileProps)
 
         {/* Action buttons — WA style */}
         <div className="flex flex-wrap gap-2 mt-4 justify-center">
-          {isVenue && clubChannel && (
+          {clubChannel && (
             <button
               onClick={() => window.location.href = `/lounge?channel=${clubChannel.id}`}
               className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-semibold hover:bg-primary/20 transition-colors">
