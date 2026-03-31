@@ -441,11 +441,11 @@ const ClubProfile = ({ embedded = false, clubId: propClubId }: ClubProfileProps)
               </div>
             )}
 
-            {isVenue && (
-              <p className="text-xs text-muted-foreground mb-3 px-1">
-                Staff & management team of this venue
-              </p>
-            )}
+            {isVenue ? (
+              <div className="-mx-4">
+                <VenueStaffTab clubId={id!} />
+              </div>
+            ) : (
             <div className="relative mb-4">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
