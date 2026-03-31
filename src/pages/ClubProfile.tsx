@@ -527,17 +527,43 @@ const ClubProfile = ({ embedded = false, clubId: propClubId }: ClubProfileProps)
 
             <div className="border-t border-border/50 my-2" />
 
-            {/* Transfer Ownership */}
-            <button onClick={() => { setShowClubSettings(false); setShowTransferConfirm(true); }}
-              className="flex w-full items-center gap-4 px-2 py-3.5 rounded-xl hover:bg-destructive/10 transition-colors">
-              <div className="h-10 w-10 rounded-full bg-destructive/10 flex items-center justify-center shrink-0">
-                <Shield className="h-5 w-5 text-destructive" />
+            {/* Transfer Ownership — inline form */}
+            <div className="rounded-xl border border-destructive/30 p-4 space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-destructive/10 flex items-center justify-center shrink-0">
+                  <Shield className="h-5 w-5 text-destructive" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-destructive">Transfer Ownership</p>
+                  <p className="text-xs text-muted-foreground">Pindahkan kepemilikan club ke anggota lain</p>
+                </div>
               </div>
-              <div className="flex-1 text-left">
-                <p className="text-sm font-semibold text-destructive">Transfer Ownership</p>
-                <p className="text-xs text-muted-foreground">Pindahkan kepemilikan club ke anggota lain</p>
+              <div className="rounded-md bg-amber-500/10 border border-amber-500/30 p-3">
+                <p className="text-xs text-amber-600">⚠ Tindakan ini tidak dapat dibatalkan tanpa persetujuan pemilik baru.</p>
               </div>
-            </button>
+              <Select value={selectedTransferMember ?? ""} onValueChange={(val) => setSelectedTransferMember(val || null)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Pilih anggota..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {members?.filter((m) => m.user_id !== currentUserId)
+                    .sort((a, b) => ((a.profiles as any)?.full_name ?? "").localeCompare((b.profiles as any)?.full_name ?? "", "id"))
+                    .map((m) => {
+                      const profile = m.profiles as any;
+                      return (
+                        <SelectItem key={m.user_id} value={m.user_id}>
+                          {profile?.full_name || "Golfer"} ({getRoleLabel(m.role)})
+                        </SelectItem>
+                      );
+                    })}
+                </SelectContent>
+              </Select>
+              <Button variant="destructive" className="w-full"
+                disabled={!selectedTransferMember || transferring}
+                onClick={() => { setShowClubSettings(false); setShowTransferConfirm(true); }}>
+                {transferring ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Transferring...</> : "Transfer Ownership"}
+              </Button>
+            </div>
           </div>
         </SheetContent>
       </Sheet>
