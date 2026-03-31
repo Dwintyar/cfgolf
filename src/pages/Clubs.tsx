@@ -39,17 +39,17 @@ const getClubLabel = (club: ClubData) => {
 const Clubs = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [searchParams] = useSearchParams();
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<"my" | "community" | "courses">(
     (searchParams.get("tab") as "my" | "community" | "courses") ?? "my"
   );
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [showCreateClub, setShowCreateClub] = useState(false);
-  const [joiningClubId, setJoiningClubId] = useState<string | null>(null);
-  const [searchParams] = useSearchParams();
   const [selectedClubId, setSelectedClubId] = useState<string | null>(
     searchParams.get("clubId") ?? null
   );
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [showCreateClub, setShowCreateClub] = useState(false);
+  const [joiningClubId, setJoiningClubId] = useState<string | null>(null);
   const [mobileShowDetail, setMobileShowDetail] = useState(false);
   const [isDesktop, setIsDesktop] = useState(typeof window !== "undefined" ? window.innerWidth >= 1024 : false);
 
