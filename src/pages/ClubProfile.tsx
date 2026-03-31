@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
 import EditClubDialog from "@/components/EditClubDialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import TournamentsTab from "@/components/tour/TournamentsTab";
 import InviteMemberDialog from "@/components/InviteMemberDialog";
 import {
@@ -31,7 +32,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-type Tab = "members" | "tournaments" | "settings";
+type Tab = "members" | "tournaments" | "courses";
 
 interface ClubProfileProps {
   embedded?: boolean;
@@ -47,6 +48,7 @@ const ClubProfile = ({ embedded = false, clubId: propClubId }: ClubProfileProps)
   const [isOwner, setIsOwner] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
+  const [showClubSettings, setShowClubSettings] = useState(false);
   const [tab, setTab] = useState<Tab>("members");
   const [joining, setJoining] = useState(false);
   const [selectedTransferMember, setSelectedTransferMember] = useState<string | null>(null);
@@ -279,7 +281,7 @@ const ClubProfile = ({ embedded = false, clubId: propClubId }: ClubProfileProps)
             <button onClick={() => setShowInvite(true)} className="rounded-full p-2 hover:bg-muted transition-colors">
               <UserPlus className="h-5 w-5 text-primary" />
             </button>
-            <button onClick={() => setShowEdit(true)} className="rounded-full p-2 hover:bg-muted transition-colors">
+            <button onClick={() => setShowClubSettings(true)} className="rounded-full p-2 hover:bg-muted transition-colors">
               <Settings className="h-5 w-5" />
             </button>
           </div>
@@ -337,9 +339,7 @@ const ClubProfile = ({ embedded = false, clubId: propClubId }: ClubProfileProps)
           {[
             { id: "members", label: `Members${pendingCount > 0 ? ` 🔴` : ""}` },
             { id: "tournaments", label: "Tournaments" },
-            ...(isOwner ? [
-              { id: "settings", label: "Settings" },
-            ] : []),
+            { id: "courses", label: "Courses" },
           ].map(t => (
             <button key={t.id}
               onClick={() => setTab(t.id as Tab)}
@@ -484,72 +484,63 @@ const ClubProfile = ({ embedded = false, clubId: propClubId }: ClubProfileProps)
           </div>
         )}
 
-        {/* Settings tab (owner only) */}
-        {tab === "settings" && isOwner && (
-          <div className="animate-fade-in space-y-6 pb-8">
-            {/* Transfer Ownership Section */}
-            <div className="rounded-lg border border-destructive/30 p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Shield className="h-5 w-5 text-destructive" />
-                <h3 className="text-sm font-bold">Transfer Kepemilikan Club</h3>
-              </div>
-              <p className="text-xs text-muted-foreground mb-3">
-                Pindahkan kepemilikan club ini ke anggota lain. Anda akan otomatis menjadi admin setelah transfer.
-              </p>
-
-              <div className="rounded-md bg-accent/60 border border-accent p-3 mb-4">
-                <div className="flex items-start gap-2">
-                  <AlertTriangle className="h-4 w-4 text-accent-foreground/70 mt-0.5 shrink-0" />
-                  <p className="text-xs text-accent-foreground/80">
-                    ⚠ Tindakan ini tidak dapat dibatalkan tanpa persetujuan pemilik baru. Pastikan Anda memilih orang yang tepat.
-                  </p>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <Select
-                  value={selectedTransferMember ?? ""}
-                  onValueChange={(val) => setSelectedTransferMember(val || null)}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Pilih anggota..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {members
-                      ?.filter((m) => m.user_id !== currentUserId)
-                      .sort((a, b) => {
-                        const na = (a.profiles as any)?.full_name ?? "";
-                        const nb = (b.profiles as any)?.full_name ?? "";
-                        return na.localeCompare(nb, "id");
-                      })
-                      .map((m) => {
-                        const profile = m.profiles as any;
-                        return (
-                          <SelectItem key={m.user_id} value={m.user_id}>
-                            {profile?.full_name || "Golfer"} ({getRoleLabel(m.role)})
-                          </SelectItem>
-                        );
-                      })}
-                  </SelectContent>
-                </Select>
-
-                <Button
-                  variant="destructive"
-                  className="w-full"
-                  disabled={!selectedTransferMember || transferring}
-                  onClick={() => setShowTransferConfirm(true)}
-                >
-                  {transferring ? (
-                    <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Transferring...</>
-                  ) : (
-                    "Transfer Ownership"
-                  )}
-                </Button>
-              </div>
-            </div>
+        {/* Courses tab */}
+        {tab === "courses" && (
+          <div className="flex flex-col items-center justify-center py-12 text-center gap-3 text-muted-foreground">
+            <span className="text-4xl">⛳</span>
+            <p className="text-sm font-semibold">Courses — Coming Soon</p>
+            <p className="text-xs">Club akan bisa mengelola golf course di sini</p>
           </div>
         )}
       </div>
+
+      {/* Club Settings Sheet */}
+      <Sheet open={showClubSettings} onOpenChange={setShowClubSettings}>
+        <SheetContent side="bottom" className="rounded-t-2xl pb-8">
+          <SheetHeader className="mb-4">
+            <SheetTitle className="text-left">Club Settings</SheetTitle>
+          </SheetHeader>
+          <div className="space-y-1">
+            {/* Edit Club */}
+            <button onClick={() => { setShowClubSettings(false); setShowEdit(true); }}
+              className="flex w-full items-center gap-4 px-2 py-3.5 rounded-xl hover:bg-secondary transition-colors">
+              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                <Settings className="h-5 w-5 text-primary" />
+              </div>
+              <div className="flex-1 text-left">
+                <p className="text-sm font-semibold">Edit Club</p>
+                <p className="text-xs text-muted-foreground">Update nama, logo, dan deskripsi club</p>
+              </div>
+            </button>
+
+            {/* Invite Member */}
+            <button onClick={() => { setShowClubSettings(false); setShowInvite(true); }}
+              className="flex w-full items-center gap-4 px-2 py-3.5 rounded-xl hover:bg-secondary transition-colors">
+              <div className="h-10 w-10 rounded-full bg-secondary flex items-center justify-center shrink-0">
+                <UserPlus className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <div className="flex-1 text-left">
+                <p className="text-sm font-semibold">Invite Member</p>
+                <p className="text-xs text-muted-foreground">Undang anggota baru ke club</p>
+              </div>
+            </button>
+
+            <div className="border-t border-border/50 my-2" />
+
+            {/* Transfer Ownership */}
+            <button onClick={() => { setShowClubSettings(false); setShowTransferConfirm(true); }}
+              className="flex w-full items-center gap-4 px-2 py-3.5 rounded-xl hover:bg-destructive/10 transition-colors">
+              <div className="h-10 w-10 rounded-full bg-destructive/10 flex items-center justify-center shrink-0">
+                <Shield className="h-5 w-5 text-destructive" />
+              </div>
+              <div className="flex-1 text-left">
+                <p className="text-sm font-semibold text-destructive">Transfer Ownership</p>
+                <p className="text-xs text-muted-foreground">Pindahkan kepemilikan club ke anggota lain</p>
+              </div>
+            </button>
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {/* Transfer Confirmation Dialog */}
       <AlertDialog open={showTransferConfirm} onOpenChange={setShowTransferConfirm}>
