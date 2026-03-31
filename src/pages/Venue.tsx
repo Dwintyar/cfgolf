@@ -1,5 +1,5 @@
 import { ArrowLeft, MapPin, Star, Wifi, Clock, Ship } from "lucide-react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +11,9 @@ import { useState, useMemo } from "react";
 
 const Venue = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const fromClubs = searchParams.get("from") === "clubs";
+  const fromClubId = searchParams.get("clubId");
   const { id } = useParams<{ id: string }>();
   const [selectedTime, setSelectedTime] = useState("07:00");
   const [distUnit, setDistUnit] = useState<"yd" | "m">("m");
@@ -88,7 +91,13 @@ const Venue = () => {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => {
+            if (fromClubs && fromClubId) {
+              navigate(`/clubs?clubId=${fromClubId}&tab=courses`);
+            } else {
+              navigate(-1);
+            }
+          }}
           className="absolute left-4 top-4 rounded-full bg-background/60 p-2 backdrop-blur"
         >
           <ArrowLeft className="h-5 w-5" />

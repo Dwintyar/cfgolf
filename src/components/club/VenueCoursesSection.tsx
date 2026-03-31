@@ -43,7 +43,10 @@ const VenueCoursesSection = ({ clubId, navigate }: { clubId: string; navigate: (
     <div>
       {courses.map((course: any) => (
         <button key={course.id}
-          onClick={() => window.location.href = `/venue/${course.id}`}
+          onClick={() => {
+            const top = window.top ?? window;
+            top.location.href = `/venue/${course.id}?from=clubs&clubId=${clubId}`;
+          }}
           className="flex w-full items-center gap-3 px-4 py-3 border-b border-border/30 last:border-0 hover:bg-secondary/50 transition-colors text-left">
           {/* Course image */}
           <div className="h-16 w-16 rounded-xl overflow-hidden shrink-0 bg-primary/10">

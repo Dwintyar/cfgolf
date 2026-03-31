@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -40,11 +40,16 @@ const Clubs = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
-  const [tab, setTab] = useState<"my" | "community" | "courses">("my");
+  const [tab, setTab] = useState<"my" | "community" | "courses">(
+    (searchParams.get("tab") as "my" | "community" | "courses") ?? "my"
+  );
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [showCreateClub, setShowCreateClub] = useState(false);
   const [joiningClubId, setJoiningClubId] = useState<string | null>(null);
-  const [selectedClubId, setSelectedClubId] = useState<string | null>(null);
+  const [searchParams] = useSearchParams();
+  const [selectedClubId, setSelectedClubId] = useState<string | null>(
+    searchParams.get("clubId") ?? null
+  );
   const [mobileShowDetail, setMobileShowDetail] = useState(false);
   const [isDesktop, setIsDesktop] = useState(typeof window !== "undefined" ? window.innerWidth >= 1024 : false);
 
