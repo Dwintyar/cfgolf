@@ -1040,7 +1040,7 @@ const TourDetail = () => {
       <RegisterPlayerDialog tourId={tour.id} tourType={tour.tournament_type!} organizerClubId={tour.organizer_club_id} callerClubId={callerClubId ?? undefined} open={showRegister} onOpenChange={setShowRegister} onDone={() => { setShowRegister(false); refetchPlayers(); }} />
       <ManageFlightsDialog tourId={tour.id} open={showFlights} onOpenChange={setShowFlights} />
       <ManageCategoriesDialog tourId={tour.id} open={showCategories} onOpenChange={setShowCategories} />
-      <CreateEventDialog tourId={tour.id} open={showCreateEvent} onOpenChange={setShowCreateEvent} onDone={() => { setShowCreateEvent(false); refetchEvents(); }} isPersonal={!!(tour.clubs as any)?.is_personal} />
+      <CreateEventDialog tourId={tour.id} open={showCreateEvent} onOpenChange={setShowCreateEvent} onDone={() => { setShowCreateEvent(false); refetchEvents(); }} isPersonal={!!(tour.clubs as any)?.is_personal} organizerClubId={tour.organizer_club_id} />
 
       {/* Edit Event Dialog */}
       <Dialog open={!!editingEvent} onOpenChange={(v) => { if (!v) setEditingEvent(null); }}>
