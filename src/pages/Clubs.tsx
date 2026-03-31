@@ -183,9 +183,9 @@ const Clubs = () => {
   };
 
   return (
-      <div className="flex" style={{height: "calc(100vh - 56px)"}}>
+      <div className="flex flex-col lg:flex-row h-auto lg:h-[calc(100vh-56px)]">
         {/* LEFT PANEL — club list (mobile: full, desktop: fixed width) */}
-        <div className={`${mobileShowDetail ? "hidden lg:flex lg:w-[320px]" : "flex lg:w-[320px]"} flex-col shrink-0 border-r border-border/50 h-full overflow-hidden`}>
+        <div className={`${mobileShowDetail ? "hidden lg:flex lg:w-[320px]" : "flex w-full lg:w-[320px]"} flex-col shrink-0 border-r border-border/50 lg:h-full overflow-hidden`}>
         <div className="flex-1 overflow-y-auto">
         {/* Header with logo */}
         <div className="flex items-center gap-2 px-4 pt-2 pb-1">
