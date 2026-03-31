@@ -219,7 +219,7 @@ const ClubProfile = ({ embedded = false, clubId: propClubId }: ClubProfileProps)
     queryKey: ["all-courses-discover"],
     queryFn: async () => {
       const { data } = await supabase
-        .from("venues")
+        .from("courses")
         .select("id, name, location, image_url, holes_count, par")
         .order("name");
       return data ?? [];
