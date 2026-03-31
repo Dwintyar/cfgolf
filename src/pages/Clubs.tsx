@@ -19,6 +19,7 @@ type ClubData = {
   facility_type: string;
   owner_id: string | null;
   is_personal: boolean;
+  club_type: string;
   memberCount: number;
   initials: string;
 };
@@ -27,6 +28,12 @@ const facilityLabel: Record<string, string> = {
   golf_club: "Golf Club",
   driving_range: "Driving Range",
   golf_academy: "Academy",
+  "Golf Course": "Golf Course",
+};
+
+const getClubLabel = (club: ClubData) => {
+  if (club.club_type === "venue") return "⛳ Golf Venue";
+  return facilityLabel[club.facility_type] ?? "Golf Club";
 };
 
 const Clubs = () => {
@@ -91,7 +98,10 @@ const Clubs = () => {
 
   // Community — not a member, not personal, not driving range
   const communityClubs = filtered(
-    (clubs ?? []).filter(c => !isMember(c.id) && !c.is_personal && c.facility_type !== "driving_range")
+    (clubs ?? []).filter(c => !isMember(c.id) && !c.is_personal && c.club_type !== "venue" && c.facility_type !== "driving_range")
+  );
+  const venueClubs = filtered(
+    (clubs ?? []).filter(c => c.club_type === "venue")
   );
 
   const handleJoin = async (club: ClubData, e: React.MouseEvent) => {
@@ -130,7 +140,7 @@ const Clubs = () => {
         <div className="flex-1 min-w-0">
           <p className={`text-base font-semibold truncate ${isSelected ? "text-primary" : ""}`}>{club.name}</p>
           <p className="text-[13px] text-muted-foreground truncate mt-0.5">
-            {facilityLabel[club.facility_type] ?? club.facility_type} · {club.memberCount} members
+            {getClubLabel(club)} · {club.memberCount} {club.club_type === "venue" ? "staff" : "members"}
             {isOwner ? " · Owner" : isAdmin ? " · Admin" : " · Member"}
           </p>
           {club.description && <p className="text-[13px] text-muted-foreground truncate mt-0.5">{club.description}</p>}
@@ -156,7 +166,7 @@ const Clubs = () => {
       <div className="flex-1 min-w-0">
         <p className={`text-base font-semibold truncate ${isSelected ? "text-primary" : ""}`}>{club.name}</p>
         <p className="text-[13px] text-muted-foreground truncate mt-0.5">
-          {facilityLabel[club.facility_type] ?? club.facility_type} · {club.memberCount} members
+          {getClubLabel(club)} · {club.memberCount} {club.club_type === "venue" ? "staff" : "members"}
         </p>
         {club.description && <p className="text-[13px] text-muted-foreground truncate mt-0.5">{club.description}</p>}
       </div>
@@ -194,7 +204,7 @@ const Clubs = () => {
           {([
             { id: "my", label: `My Clubs${myClubs.length > 0 ? ` (${myClubs.length})` : ""}` },
             { id: "community", label: "Discover" },
-            { id: "courses", label: "Courses" },
+            { id: "courses", label: `Courses${venueClubs.length > 0 ? ` (${venueClubs.length})` : ""}` },
           ] as const).map(t => (
             <button
               key={t.id}
@@ -208,10 +218,36 @@ const Clubs = () => {
           ))}
         </div>
 
-        {/* Courses tab */}
+        {/* Courses tab — venue clubs */}
         {tab === "courses" && (
           <div className="flex-1 overflow-auto">
-            <VenueList embedded />
+            {venueClubs.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center gap-2 text-muted-foreground">
+                <span className="text-4xl">⛳</span>
+                <p className="text-sm font-semibold">No golf venues yet</p>
+              </div>
+            ) : venueClubs.map((club, i) => {
+              const isSelected = selectedClubId === club.id;
+              return (
+                <button key={club.id}
+                  onClick={() => { if (isDesktop) { setSelectedClubId(club.id); setTab("courses"); } else { navigate(`/clubs/${club.id}`); } }}
+                  className={`flex w-full items-center gap-3 px-4 py-3 text-left border-b border-border/30 hover:bg-secondary/50 transition-colors ${isSelected ? "bg-secondary" : ""}`}>
+                  <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden">
+                    {club.logo_url
+                      ? <img src={club.logo_url} className="h-full w-full object-cover" />
+                      : <span className="text-xl">⛳</span>}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-base font-semibold truncate">{club.name}</p>
+                    <p className="text-[13px] text-muted-foreground truncate mt-0.5">
+                      ⛳ Golf Venue · {club.memberCount} staff
+                    </p>
+                    {club.description && <p className="text-[13px] text-muted-foreground truncate">{club.description}</p>}
+                  </div>
+                  <ChevronRight className={`h-4 w-4 shrink-0 ${isSelected ? "text-primary" : "text-muted-foreground"}`} />
+                </button>
+              );
+            })}
           </div>
         )}
 
