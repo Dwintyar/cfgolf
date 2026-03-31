@@ -633,6 +633,8 @@ const ClubProfile = ({ embedded = false, clubId: propClubId, onBack, onNavigateT
                       <button key={course.id} onClick={() => {
                         if (embedded && onNavigateToClub && course.club_id) {
                           onNavigateToClub(course.club_id);
+                        } else if (course.club_id) {
+                          navigate(`/clubs/${course.club_id}`);
                         } else {
                           navigate(`/venue/${course.id}`);
                         }
@@ -661,6 +663,8 @@ const ClubProfile = ({ embedded = false, clubId: propClubId, onBack, onNavigateT
                       <button key={course.id} onClick={() => {
                         if (embedded && onNavigateToClub && course.club_id) {
                           onNavigateToClub(course.club_id);
+                        } else if (course.club_id) {
+                          navigate(`/clubs/${course.club_id}`);
                         } else {
                           navigate(`/venue/${course.id}`);
                         }
