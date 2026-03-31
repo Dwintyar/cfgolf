@@ -1,4 +1,5 @@
 import { Search, Plus, Users, ChevronRight, Shield, Crown, Star } from "lucide-react";
+import ClubProfilePanel from "./ClubProfile";
 import CreateClubDialog from "@/components/CreateClubDialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
