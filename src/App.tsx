@@ -61,8 +61,9 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const isNoLayout = noLayoutPaths.some(p => location.pathname.startsWith(p));
   const isLeftOnly = leftSidebarOnlyPaths.some(p => location.pathname.startsWith(p));
+  const isEmbedded = new URLSearchParams(location.search).has("embedded");
 
-  if (isNoLayout) return <>{children}</>;
+  if (isNoLayout || isEmbedded) return <>{children}</>;
 
   return (
     <DesktopLayout sidebarRightHidden={isLeftOnly}>
