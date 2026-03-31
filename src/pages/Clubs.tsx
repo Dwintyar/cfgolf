@@ -41,8 +41,8 @@ const Clubs = () => {
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const [search, setSearch] = useState("");
-  const [tab, setTab] = useState<"my" | "community" | "courses">(
-    (searchParams.get("tab") as "my" | "community" | "courses") ?? "my"
+  const [tab, setTab] = useState<"my" | "community" | "venues">(
+    (searchParams.get("tab") as "my" | "community" | "venues") ?? "my"
   );
   const [selectedClubId, setSelectedClubId] = useState<string | null>(
     searchParams.get("clubId") ?? null
@@ -209,7 +209,7 @@ const Clubs = () => {
           {([
             { id: "my", label: `My Clubs${myClubs.length > 0 ? ` (${myClubs.length})` : ""}` },
             { id: "community", label: "Discover" },
-            { id: "courses", label: `Courses${venueClubs.length > 0 ? ` (${venueClubs.length})` : ""}` },
+            { id: "venues", label: `Venues${venueClubs.length > 0 ? ` (${venueClubs.length})` : ""}` },
           ] as const).map(t => (
             <button
               key={t.id}
@@ -223,8 +223,8 @@ const Clubs = () => {
           ))}
         </div>
 
-        {/* Courses tab — venue clubs */}
-        {tab === "courses" && (
+        {/* Venues tab — venue clubs */}
+        {tab === "venues" && (
           <div className="flex-1 overflow-auto">
             {venueClubs.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-center gap-2 text-muted-foreground">

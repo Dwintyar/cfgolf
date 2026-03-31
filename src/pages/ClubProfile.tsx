@@ -36,7 +36,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-type Tab = "members" | "tournaments" | "courses";
+type Tab = "members" | "tournaments" | "venues";
 
 interface ClubProfileProps {
   embedded?: boolean;
@@ -219,12 +219,12 @@ const ClubProfile = ({ embedded = false, clubId: propClubId }: ClubProfileProps)
     queryKey: ["all-courses-discover"],
     queryFn: async () => {
       const { data } = await supabase
-        .from("courses")
+        .from("venues")
         .select("id, name, location, image_url, holes_count, par")
         .order("name");
       return data ?? [];
     },
-    enabled: tab === "courses" && courseTab === "discover",
+    enabled: tab === "venues" && courseTab === "discover",
   });
 
   const usedCourseIds = new Set((usedCourses ?? []).map((c: any) => c.id));
@@ -403,7 +403,7 @@ const ClubProfile = ({ embedded = false, clubId: propClubId }: ClubProfileProps)
           {[
             { id: "members", label: isVenue ? "Staff" : `Members${pendingCount > 0 ? ` 🔴` : ""}` },
             { id: "tournaments", label: isVenue ? "Schedule" : "Tournaments" },
-            { id: "courses", label: "Courses" },
+            { id: "venues", label: "Venues" },
           ].map(t => (
             <button key={t.id}
               onClick={() => setTab(t.id as Tab)}
@@ -556,8 +556,8 @@ const ClubProfile = ({ embedded = false, clubId: propClubId }: ClubProfileProps)
           </div>
         )}
 
-        {/* Courses tab */}
-        {tab === "courses" && (
+        {/* Venues tab */}
+        {tab === "venues" && (
           <div className="-mx-4">
             {isVenue ? (
               /* Venue: show owned courses */

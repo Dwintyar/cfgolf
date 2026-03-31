@@ -165,7 +165,7 @@ const Venue = () => {
         <button
           onClick={() => {
             if (fromClubs && fromClubId) {
-              navigate(`/clubs?clubId=${fromClubId}&tab=courses`);
+              navigate(`/clubs?clubId=${fromClubId}&tab=venues`);
             } else {
               navigate(-1);
             }

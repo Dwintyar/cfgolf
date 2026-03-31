@@ -8,7 +8,7 @@ const VenueCoursesSection = ({ clubId, navigate }: { clubId: string; navigate: (
     queryKey: ["venue-owned-courses", clubId],
     queryFn: async () => {
       const { data } = await supabase
-        .from("courses")
+        .from("venues")
         .select("id, name, location, image_url, holes_count, par, course_type, green_fee_price")
         .eq("club_id", clubId)
         .order("name");
