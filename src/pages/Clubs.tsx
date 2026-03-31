@@ -346,7 +346,7 @@ const Clubs = () => {
               <ClubProfile
                 key={selectedClubId}
                 embedded
-                clubId={selectedClubId}
+                clubId={selectedClubId!}
                 onBack={() => setSelectedClubId(null)}
               />
             </div>

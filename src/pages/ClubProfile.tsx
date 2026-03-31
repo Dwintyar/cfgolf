@@ -45,8 +45,8 @@ interface ClubProfileProps {
 
 const ClubProfile = ({ embedded = false, clubId: propClubId, onBack }: ClubProfileProps) => {
   const navigate = useNavigate();
-  const { id: paramId } = useParams<{ id: string }>();
-  const id = propClubId ?? paramId;
+  const params = useParams<{ id: string }>();
+  const id = propClubId ?? params.id;
   const [search, setSearch] = useState("");
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isOwner, setIsOwner] = useState(false);
