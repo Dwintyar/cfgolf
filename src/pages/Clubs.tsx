@@ -41,8 +41,8 @@ const Clubs = () => {
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const [search, setSearch] = useState("");
-  const [tab, setTab] = useState<"my" | "community" | "venues">(
-    (searchParams.get("tab") as "my" | "community" | "venues") ?? "my"
+  const [tab, setTab] = useState<"my" | "community">(
+    (searchParams.get("tab") as "my" | "community") ?? "my"
   );
   const [selectedClubId, setSelectedClubId] = useState<string | null>(
     searchParams.get("clubId") ?? null
@@ -103,7 +103,7 @@ const Clubs = () => {
 
   // Community — not a member, not personal, not driving range
   const communityClubs = filtered(
-    (clubs ?? []).filter(c => !isMember(c.id) && !c.is_personal && c.club_type !== "venue" && c.facility_type !== "driving_range")
+    (clubs ?? []).filter(c => !isMember(c.id) && !c.is_personal && c.facility_type !== "driving_range")
   );
   const venueClubs = filtered(
     (clubs ?? []).filter(c => c.club_type === "venue")
@@ -209,7 +209,6 @@ const Clubs = () => {
           {([
             { id: "my", label: `My Clubs${myClubs.length > 0 ? ` (${myClubs.length})` : ""}` },
             { id: "community", label: "Discover" },
-            { id: "venues", label: `Venues${venueClubs.length > 0 ? ` (${venueClubs.length})` : ""}` },
           ] as const).map(t => (
             <button
               key={t.id}
@@ -223,38 +222,7 @@ const Clubs = () => {
           ))}
         </div>
 
-        {/* Venues tab — venue clubs */}
-        {tab === "venues" && (
-          <div className="flex-1 overflow-auto">
-            {venueClubs.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-center gap-2 text-muted-foreground">
-                <span className="text-4xl">⛳</span>
-                <p className="text-sm font-semibold">No golf venues yet</p>
-              </div>
-            ) : venueClubs.map((club, i) => {
-              const isSelected = selectedClubId === club.id;
-              return (
-                <button key={club.id}
-                  onClick={() => { if (isDesktop) { setSelectedClubId(club.id); } else { navigate(`/clubs/${club.id}`); } }}
-                  className={`flex w-full items-center gap-3 px-4 py-3 text-left border-b border-border/30 hover:bg-secondary/50 transition-colors ${isSelected ? "bg-secondary" : ""}`}>
-                  <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden">
-                    {club.logo_url
-                      ? <img src={club.logo_url} className="h-full w-full object-cover" />
-                      : <span className="text-xl">⛳</span>}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-base font-semibold truncate">{club.name}</p>
-                    <p className="text-[13px] text-muted-foreground truncate mt-0.5">
-                      ⛳ Golf Venue · {club.memberCount} staff
-                    </p>
-                    {club.description && <p className="text-[13px] text-muted-foreground truncate">{club.description}</p>}
-                  </div>
-                  <ChevronRight className={`h-4 w-4 shrink-0 ${isSelected ? "text-primary" : "text-muted-foreground"}`} />
-                </button>
-              );
-            })}
-          </div>
-        )}
+
 
         {/* My Clubs */}
         {tab === "my" && (
