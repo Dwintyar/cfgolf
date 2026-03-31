@@ -12,8 +12,7 @@ const VenueCoursesSection = ({ clubId, navigate }: { clubId: string; navigate: (
         .select("id, name, location, image_url, holes_count, par, course_type, green_fee_price")
         .eq("club_id", clubId)
         .order("name");
-      console.log("VenueCoursesSection query - clubId:", clubId, "data:", data);
-      return data ?? [];
+return data ?? [];
     },
     enabled: !!clubId,
   });
@@ -37,6 +36,7 @@ const VenueCoursesSection = ({ clubId, navigate }: { clubId: string; navigate: (
       <span className="text-4xl">⛳</span>
       <p className="text-sm font-semibold">No courses yet</p>
       <p className="text-xs">Golf courses managed by this venue will appear here</p>
+      <p className="text-[10px] text-muted-foreground/40 mt-2 font-mono">clubId: {clubId}</p>
     </div>
   );
 
