@@ -13,6 +13,7 @@ import { toast } from "@/hooks/use-toast";
 import EditClubDialog from "@/components/EditClubDialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import ClubTournamentsTab from "@/components/tour/ClubTournamentsTab";
+import VenueStaffTab from "@/components/club/VenueStaffTab";
 import VenueRoundsTab from "@/components/tour/VenueRoundsTab";
 import InviteMemberDialog from "@/components/InviteMemberDialog";
 import {
