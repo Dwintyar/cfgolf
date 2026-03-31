@@ -122,7 +122,7 @@ const VenuesWidget = ({ navigate }: { navigate: (path: string) => void }) => {
   );
 };
 
-const DesktopLayout = ({ children, sidebarRightHidden = false }: { children: React.ReactNode; sidebarRightHidden?: boolean }) => {
+const DesktopLayout = ({ children, sidebarRightHidden = false, noPadding = false }: { children: React.ReactNode; sidebarRightHidden?: boolean; noPadding?: boolean }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { unreadCount } = useContext(ChatNotifContext);
@@ -494,7 +494,7 @@ const DesktopLayout = ({ children, sidebarRightHidden = false }: { children: Rea
           width: "calc(100% - 64px)",
           minHeight: "100vh",
         }}
-        className="pt-14"
+        className={noPadding ? "" : "pt-14"}
       >
         <div className="w-full">
           {children}
