@@ -187,11 +187,11 @@ const Clubs = () => {
         <div className={`${mobileShowDetail ? "hidden lg:flex lg:w-[320px]" : "flex lg:w-[320px]"} flex-col shrink-0 border-r border-border/50 h-full overflow-hidden`}>
         <div className="flex-1 overflow-y-auto">
         {/* Header with logo */}
-        <div className="flex items-center gap-2 px-4 pt-4 pb-1">
+        <div className="flex items-center gap-2 px-4 pt-2 pb-1">
           <img src={GBLogo} alt="GB" className="h-8 w-8 object-contain shrink-0" />
           <h1 className="text-xl font-bold">Clubs</h1>
         </div>
-        <div className="flex items-center gap-2 px-4 pt-2 pb-3">
+        <div className="flex items-center gap-2 px-4 pt-1 pb-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
