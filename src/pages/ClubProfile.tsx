@@ -18,6 +18,7 @@ import VenueCoursesSection from "@/components/club/VenueCoursesSection";
 import VenueRoundsTab from "@/components/tour/VenueRoundsTab";
 import VenueScheduleTab from "@/components/club/VenueScheduleTab";
 import InviteMemberDialog from "@/components/InviteMemberDialog";
+import VenueJoinDialog from "@/components/club/VenueJoinDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -58,6 +59,7 @@ const ClubProfile = ({ embedded = false, clubId: propClubId, onBack }: ClubProfi
   const [tab, setTab] = useState<Tab>("members");
   const [courseTab, setCourseTab] = useState<"used" | "discover">("used");
   const [joining, setJoining] = useState(false);
+  const [showVenueJoin, setShowVenueJoin] = useState(false);
   const [selectedTransferMember, setSelectedTransferMember] = useState<string | null>(null);
   const [showTransferConfirm, setShowTransferConfirm] = useState(false);
   const [transferring, setTransferring] = useState(false);
@@ -138,6 +140,21 @@ const ClubProfile = ({ embedded = false, clubId: propClubId, onBack }: ClubProfi
 
   // Check if current user is already a member
   const isMember = members?.some((m) => m.user_id === currentUserId);
+
+  // Check if current user already has a (pending/active) staff entry for this venue
+  const { data: myStaffEntry, refetch: refetchMyStaff } = useQuery({
+    queryKey: ["my-staff-entry", id, currentUserId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("club_staff")
+        .select("id, staff_role, status")
+        .eq("club_id", id!)
+        .eq("user_id", currentUserId!)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!id && !!currentUserId,
+  });
 
   // Check if current user has a pending join request
   const { data: myJoinRequest } = useQuery({
@@ -385,6 +402,23 @@ const ClubProfile = ({ embedded = false, clubId: propClubId, onBack }: ClubProfi
             </button>
           )}
           {!isOwner && !isMember && currentUserId && (
+            isVenue ? (
+              myStaffEntry ? (
+                myStaffEntry.status === "pending" ? (
+                  <Button variant="outline" size="sm" disabled>
+                    ⏳ Pending ({myStaffEntry.staff_role})
+                  </Button>
+                ) : (
+                  <Badge className="text-sm bg-primary/10 text-primary border-primary/20 px-3 py-1">
+                    ✓ {myStaffEntry.staff_role}
+                  </Badge>
+                )
+              ) : (
+                <Button size="sm" onClick={() => setShowVenueJoin(true)}>
+                  <UserPlus className="h-3.5 w-3.5 mr-1.5" /> Join as Staff
+                </Button>
+              )
+            ) : (
             hasPendingRequest || joining ? (
               <Button variant="outline" size="sm" disabled>
                 {joining ? <><Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> Requesting...</> : "⏳ Pending"}
@@ -393,6 +427,7 @@ const ClubProfile = ({ embedded = false, clubId: propClubId, onBack }: ClubProfi
               <Button size="sm" onClick={handleJoinRequest} disabled={joining}>
                 <LogIn className="h-3.5 w-3.5 mr-1.5" /> Join Club
               </Button>
+            )
             )
           )}
           {!isOwner && isMember && (
@@ -801,6 +836,18 @@ const ClubProfile = ({ embedded = false, clubId: propClubId, onBack }: ClubProfi
           open={showInvite}
           onOpenChange={setShowInvite}
           onDone={() => queryClient.invalidateQueries({ queryKey: ["club-invitations", id] })}
+        />
+      )}
+
+      {/* Venue Join Dialog */}
+      {club && currentUserId && isVenue && (
+        <VenueJoinDialog
+          open={showVenueJoin}
+          onOpenChange={setShowVenueJoin}
+          clubId={club.id}
+          clubName={club.name}
+          userId={currentUserId}
+          onSuccess={() => refetchMyStaff()}
         />
       )}
     </div>
