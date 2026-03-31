@@ -38,7 +38,7 @@ interface ClubProfileProps {
   clubId?: string;
 }
 
-const ClubProfile = ({ embedded = false, clubId: propClubId }: ClubProfileProps = {}) => {
+const ClubProfile = ({ embedded = false, clubId: propClubId }: ClubProfileProps) => {
   const navigate = useNavigate();
   const { id: paramId } = useParams<{ id: string }>();
   const id = propClubId ?? paramId;
