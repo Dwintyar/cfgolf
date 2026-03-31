@@ -1370,7 +1370,7 @@ const EventDetail = () => {
       {/* Internal/Interclub Pairings */}
       {!isPersonalWithPairing && (
       <TabsContent value="pairings" className="space-y-3 pt-2">
-        {showAdminActions && (
+        {showAdminActions && event?.status !== "done" && (
           <div className="golf-card space-y-3 p-4">
             <h3 className="text-sm font-semibold flex items-center gap-2">
               <Shuffle className="h-4 w-4 text-primary" />
