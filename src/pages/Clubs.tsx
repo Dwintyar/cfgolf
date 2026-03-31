@@ -183,7 +183,7 @@ const Clubs = () => {
   };
 
   return (
-      <div className="flex" style={{height: "100vh", paddingTop: "56px"}}>
+      <div className="flex" style={{height: "calc(100vh - 56px)"}}>
         {/* LEFT PANEL — club list (mobile: full, desktop: fixed width) */}
         <div className={`${mobileShowDetail ? "hidden lg:flex lg:w-[320px]" : "flex lg:w-[320px]"} flex-col shrink-0 border-r border-border/50 h-full overflow-hidden`}>
         <div className="flex-1 overflow-y-auto">

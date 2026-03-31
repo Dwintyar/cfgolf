@@ -62,11 +62,12 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const isNoLayout = noLayoutPaths.some(p => location.pathname.startsWith(p));
   const isLeftOnly = leftSidebarOnlyPaths.some(p => location.pathname.startsWith(p));
   const isEmbedded = new URLSearchParams(location.search).has("embedded");
+  const isNoPadding = location.pathname === "/clubs";
 
   if (isNoLayout || isEmbedded) return <>{children}</>;
 
   return (
-    <DesktopLayout sidebarRightHidden={isLeftOnly}>
+    <DesktopLayout sidebarRightHidden={isLeftOnly} noPadding={isNoPadding}>
       {children}
     </DesktopLayout>
   );
