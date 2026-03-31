@@ -165,7 +165,8 @@ const Venue = () => {
         <button
           onClick={() => {
             if (fromClubs && fromClubId) {
-              navigate(`/clubs?clubId=${fromClubId}&tab=venues`);
+              // Navigate back to club profile within iframe context
+              window.location.href = `/clubs/${fromClubId}?embedded=1`;
             } else {
               navigate(-1);
             }
