@@ -93,7 +93,7 @@ const Clubs = () => {
 
   // My Clubs — member of (excluding personal)
   const myClubs = filtered(
-    (clubs ?? []).filter(c => isMember(c.id) && !c.is_personal)
+    (clubs ?? []).filter(c => isMember(c.id) && !c.is_personal && c.club_type !== "venue")
   );
 
   // Community — not a member, not personal, not driving range
