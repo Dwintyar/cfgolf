@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -40,6 +41,13 @@ const Clubs = () => {
   const [joiningClubId, setJoiningClubId] = useState<string | null>(null);
   const [selectedClubId, setSelectedClubId] = useState<string | null>(null);
   const [mobileShowDetail, setMobileShowDetail] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(typeof window !== "undefined" ? window.innerWidth >= 1024 : false);
+
+  useEffect(() => {
+    const handler = () => setIsDesktop(window.innerWidth >= 1024);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -115,7 +123,7 @@ const Clubs = () => {
       <button
         key={club.id}
         className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors border-b border-border/30 last:border-0 ${isSelected ? "bg-primary/10 border-l-2 border-l-primary" : "hover:bg-secondary/50"}`}
-        onClick={() => navigate(`/clubs/${club.id}`)}
+        onClick={() => { if (isDesktop) { setSelectedClubId(club.id); } else { navigate(`/clubs/${club.id}`); } }}
       >
         <Avatar className="h-12 w-12 rounded-2xl shrink-0">
           <AvatarImage src={club.logo_url ?? ""} className="rounded-2xl object-cover" />
@@ -294,46 +302,8 @@ const Clubs = () => {
               <p className="text-sm text-muted-foreground mt-1">Choose a club from the left to see details</p>
             </div>
           ) : (
-            <div className="flex flex-col h-full overflow-hidden">
-              {/* Back button mobile + mini header */}
-              <div className="shrink-0 flex items-center gap-3 px-4 py-3 border-b border-border/50">
-                <button
-                  className="lg:hidden h-8 w-8 flex items-center justify-center rounded-full hover:bg-secondary"
-                  onClick={() => setMobileShowDetail(false)}
-                >←</button>
-                <p className="text-sm font-bold">Club Profile</p>
-                <button
-                  className="ml-auto text-xs text-primary hover:underline"
-                  onClick={() => navigate(`/clubs/${selectedClubId}`)}
-                >
-                  Full Profile →
-                </button>
-              </div>
-              {/* Embed ClubProfile-like content via iframe-less approach — navigate directly */}
-              <div className="flex-1 flex flex-col items-center justify-center text-center p-8 gap-4">
-                {(() => {
-                  const club = [...myClubs, ...communityClubs].find(c => c.id === selectedClubId);
-                  if (!club) return null;
-                  return (
-                    <>
-                      <Avatar className="h-20 w-20 border-4 border-primary/20">
-                        <AvatarImage src={club.logo_url ?? ""} />
-                        <AvatarFallback className="bg-primary/10 text-2xl font-bold text-primary">{club.initials}</AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="text-xl font-bold">{club.name}</p>
-                        <p className="text-sm text-muted-foreground mt-1">{facilityLabel[club.facility_type] ?? club.facility_type} · {club.memberCount} members</p>
-                        {club.description && <p className="text-sm text-muted-foreground mt-2 max-w-md">{club.description}</p>}
-                      </div>
-                      <div className="flex gap-3">
-                        <Button onClick={() => navigate(`/clubs/${selectedClubId}`)}>
-                          View Club →
-                        </Button>
-                      </div>
-                    </>
-                  );
-                })()}
-              </div>
+            <div className="flex-1 overflow-y-auto">
+              <ClubProfile key={selectedClubId} embedded clubId={selectedClubId} />
             </div>
           )}
         </div>

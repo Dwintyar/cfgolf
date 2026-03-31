@@ -33,9 +33,15 @@ import {
 
 type Tab = "members" | "tournaments" | "settings";
 
-const ClubProfile = () => {
+interface ClubProfileProps {
+  embedded?: boolean;
+  clubId?: string;
+}
+
+const ClubProfile = ({ embedded = false, clubId: propClubId }: ClubProfileProps = {}) => {
   const navigate = useNavigate();
-  const { id } = useParams<{ id: string }>();
+  const { id: paramId } = useParams<{ id: string }>();
+  const id = propClubId ?? paramId;
   const [search, setSearch] = useState("");
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isOwner, setIsOwner] = useState(false);
@@ -262,9 +268,12 @@ const ClubProfile = () => {
     <div className="bottom-nav-safe">
       {/* WA-style: back button top left */}
       <div className="flex items-center justify-between px-4 pt-4 pb-2">
-        <button onClick={() => navigate(-1)} className="rounded-full p-1.5 hover:bg-muted transition-colors">
-          <ArrowLeft className="h-5 w-5" />
-        </button>
+        {!embedded && (
+          <button onClick={() => navigate(-1)} className="rounded-full p-1.5 hover:bg-muted transition-colors">
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+        )}
+        {embedded && <div />}
         {isOwner && (
           <div className="flex gap-1">
             <button onClick={() => setShowInvite(true)} className="rounded-full p-2 hover:bg-muted transition-colors">
