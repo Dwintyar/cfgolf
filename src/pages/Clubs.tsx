@@ -47,6 +47,7 @@ const Clubs = () => {
   const [tab, setTab] = useState<"my" | "community">(
     (searchParams.get("tab") as "my" | "community") ?? "my"
   );
+  const [discoverTab, setDiscoverTab] = useState<"community" | "venue">("community");
   const [selectedClubId, setSelectedClubId] = useState<string | null>(
     searchParams.get("clubId") ?? null
   );
@@ -104,12 +105,13 @@ const Clubs = () => {
     (clubs ?? []).filter(c => isMember(c.id) && !c.is_personal)
   );
 
-  // Community — not a member, not personal, not driving range
+  // Community — not a member, not personal, not venue, not driving range
   const communityClubs = filtered(
-    (clubs ?? []).filter(c => !isMember(c.id) && !c.is_personal && c.facility_type !== "driving_range")
+    (clubs ?? []).filter(c => !isMember(c.id) && !c.is_personal && c.club_type !== "venue" && c.facility_type !== "driving_range")
   );
+  // Venue — not yet a staff member
   const venueClubs = filtered(
-    (clubs ?? []).filter(c => c.club_type === "venue")
+    (clubs ?? []).filter(c => c.club_type === "venue" && !isMember(c.id))
   );
 
   const handleJoin = async (club: ClubData, e: React.MouseEvent) => {
@@ -266,35 +268,89 @@ const Clubs = () => {
           </div>
         )}
 
-        {/* Community */}
+        {/* Discover */}
         {tab === "community" && (
           <div>
-            {isLoading && (
-              <div className="flex flex-col gap-2 px-4">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="golf-card p-4 space-y-3">
-                    <div className="flex gap-3">
-                      <Skeleton className="h-12 w-12 rounded-xl shrink-0" />
-                      <div className="flex-1 space-y-1.5">
-                        <Skeleton className="h-4 w-3/4" />
-                        <Skeleton className="h-3 w-1/2" />
-                      </div>
-                    </div>
-                    <Skeleton className="h-8 w-full rounded-lg" />
-                  </div>
-                ))}
-              </div>
-            )}
-            {!isLoading && communityClubs.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-20 text-center">
-                <p className="text-sm text-muted-foreground">
-                  {search ? "Tidak ada club yang cocok" : "Tidak ada club komunitas tersedia"}
-                </p>
-              </div>
-            )}
-            <div className="flex flex-col">
-              {communityClubs.map((club, i) => renderCommunityCard(club, i))}
+            {/* Sub-tabs: Community | Venue */}
+            <div className="flex border-b border-border/50 px-0">
+              {([
+                { id: "community", label: `Community${communityClubs.length ? ` (${communityClubs.length})` : ""}` },
+                { id: "venue",     label: `Venue${venueClubs.length ? ` (${venueClubs.length})` : ""}` },
+              ] as const).map(t => (
+                <button key={t.id} onClick={() => setDiscoverTab(t.id)}
+                  className={`flex-1 py-2.5 text-sm font-semibold transition-colors border-b-2 ${
+                    discoverTab === t.id ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
+                  }`}>
+                  {t.label}
+                </button>
+              ))}
             </div>
+
+            {/* Community clubs */}
+            {discoverTab === "community" && (
+              <>
+                {isLoading && (
+                  <div className="flex flex-col">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <div key={i} className="flex items-center gap-3 px-4 py-3 border-b border-border/30">
+                        <Skeleton className="h-12 w-12 rounded-2xl shrink-0" />
+                        <div className="flex-1 space-y-1.5"><Skeleton className="h-4 w-2/3" /><Skeleton className="h-3 w-1/2" /></div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {!isLoading && communityClubs.length === 0 && (
+                  <div className="flex flex-col items-center justify-center py-20 text-center">
+                    <p className="text-sm text-muted-foreground">{search ? "Tidak ada club yang cocok" : "Semua community club sudah diikuti"}</p>
+                  </div>
+                )}
+                <div className="flex flex-col">
+                  {communityClubs.map((club, i) => renderCommunityCard(club, i))}
+                </div>
+              </>
+            )}
+
+            {/* Venue clubs */}
+            {discoverTab === "venue" && (
+              <>
+                {isLoading && (
+                  <div className="flex flex-col">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <div key={i} className="flex items-center gap-3 px-4 py-3 border-b border-border/30">
+                        <Skeleton className="h-12 w-12 rounded-2xl shrink-0" />
+                        <div className="flex-1 space-y-1.5"><Skeleton className="h-4 w-2/3" /><Skeleton className="h-3 w-1/2" /></div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {!isLoading && venueClubs.length === 0 && (
+                  <div className="flex flex-col items-center justify-center py-20 text-center">
+                    <p className="text-sm text-muted-foreground">{search ? "Tidak ada venue yang cocok" : "Belum ada venue tersedia"}</p>
+                  </div>
+                )}
+                <div className="flex flex-col">
+                  {venueClubs.map((club, i) => (
+                    <button key={club.id}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-left transition-colors border-b border-border/30 last:border-0 hover:bg-secondary/50"
+                      onClick={() => { setSelectedClubId(club.id); setMobileShowDetail(true); }}>
+                      <Avatar className="h-12 w-12 rounded-2xl shrink-0">
+                        <AvatarImage src={club.logo_url ?? ""} className="rounded-2xl object-cover" />
+                        <AvatarFallback className="rounded-2xl bg-amber-500/10 text-sm font-bold text-amber-500">{club.initials}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="text-base font-semibold truncate">{club.name}</p>
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-500 shrink-0">⛳ Venue</span>
+                        </div>
+                        <p className="text-[13px] text-muted-foreground truncate mt-0.5">{club.memberCount} staff</p>
+                        {club.description && <p className="text-[13px] text-muted-foreground truncate mt-0.5">{club.description}</p>}
+                      </div>
+                      <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         )}
 
