@@ -13,6 +13,7 @@ import { toast } from "@/hooks/use-toast";
 import EditClubDialog from "@/components/EditClubDialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import ClubTournamentsTab from "@/components/tour/ClubTournamentsTab";
+import VenueRoundsTab from "@/components/tour/VenueRoundsTab";
 import InviteMemberDialog from "@/components/InviteMemberDialog";
 import {
   AlertDialog,
@@ -172,6 +173,8 @@ const ClubProfile = ({ embedded = false, clubId: propClubId }: ClubProfileProps)
     .map((w: string) => w[0])
     .join("")
     .toUpperCase() ?? "??";
+
+  const isVenue = (club as any)?.club_type === "venue";
 
   // Used courses — from events of tours organized by this club
   const { data: usedCourses } = useQuery({
@@ -377,8 +380,8 @@ const ClubProfile = ({ embedded = false, clubId: propClubId }: ClubProfileProps)
         {/* Tabs — WA underline style */}
         <div className="flex border-b border-border/50 mb-4">
           {[
-            { id: "members", label: `Members${pendingCount > 0 ? ` 🔴` : ""}` },
-            { id: "tournaments", label: "Tournaments" },
+            { id: "members", label: isVenue ? "Staff" : `Members${pendingCount > 0 ? ` 🔴` : ""}` },
+            { id: "tournaments", label: isVenue ? "Rounds" : "Tournaments" },
             { id: "courses", label: "Courses" },
           ].map(t => (
             <button key={t.id}
@@ -437,6 +440,11 @@ const ClubProfile = ({ embedded = false, clubId: propClubId }: ClubProfileProps)
               </div>
             )}
 
+            {isVenue && (
+              <p className="text-xs text-muted-foreground mb-3 px-1">
+                Staff & management team of this venue
+              </p>
+            )}
             <div className="relative mb-4">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -517,10 +525,13 @@ const ClubProfile = ({ embedded = false, clubId: propClubId }: ClubProfileProps)
         )}
 
         {/* Requests tab (owner only) */}
-        {/* Tournaments tab — only tours of this club */}
+        {/* Tournaments/Rounds tab */}
         {tab === "tournaments" && (
           <div className="-mx-4">
-            <ClubTournamentsTab clubId={id!} />
+            {isVenue
+              ? <VenueRoundsTab clubId={id!} />
+              : <ClubTournamentsTab clubId={id!} />
+            }
           </div>
         )}
 

@@ -3,7 +3,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
@@ -16,6 +19,7 @@ interface CreateClubDialogProps {
 const CreateClubDialog = ({ open, onOpenChange, onCreated }: CreateClubDialogProps) => {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [clubType, setClubType] = useState<"communal" | "venue">("communal");
   const [loading, setLoading] = useState(false);
 
   const handleCreate = async () => {
@@ -35,6 +39,7 @@ const CreateClubDialog = ({ open, onOpenChange, onCreated }: CreateClubDialogPro
         description: description.trim() || null,
         owner_id: user.id,
         is_personal: false,
+        club_type: clubType,
       })
       .select("id")
       .single();
@@ -85,6 +90,18 @@ const CreateClubDialog = ({ open, onOpenChange, onCreated }: CreateClubDialogPro
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
             />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">Club Type</Label>
+            <Select value={clubType} onValueChange={(v) => setClubType(v as any)}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="communal">🏌️ Golf Club / Community</SelectItem>
+                <SelectItem value="venue">⛳ Golf Venue (Course Manager)</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <Button onClick={handleCreate} disabled={loading} className="w-full">
             {loading ? "Membuat..." : "Buat Klub"}
