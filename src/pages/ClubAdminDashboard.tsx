@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  Users, UserCheck, Calendar, Bell, ChevronRight, Plus, ArrowLeft,
+  Users, UserCheck, UserX, Calendar, Bell, ChevronRight, Plus, ArrowLeft,
   Settings as SettingsIcon, Building2, Shield, Trash2, MessageSquare,
   Crown, AlertTriangle, MapPin, ChevronDown, ChevronUp, Trophy, Megaphone, DollarSign, Clock,
   Check, X, Loader2
@@ -160,15 +160,31 @@ const ClubAdminDashboard = () => {
     enabled: !!clubId,
   });
 
-  // Staff
-  const { data: staff } = useQuery({
+  // Staff (active only)
+  const { data: staff, refetch: refetchStaff } = useQuery({
     queryKey: ["club-admin-staff", clubId],
     queryFn: async () => {
       const { data } = await supabase
         .from("club_staff")
         .select("*, profiles(full_name, avatar_url)")
         .eq("club_id", clubId)
+        .eq("status", "active")
         .order("staff_role");
+      return data ?? [];
+    },
+    enabled: !!clubId,
+  });
+
+  // Pending staff requests
+  const { data: pendingStaff, refetch: refetchPendingStaff } = useQuery({
+    queryKey: ["club-pending-staff", clubId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("club_staff")
+        .select("*, profiles(full_name, avatar_url, handicap)")
+        .eq("club_id", clubId)
+        .eq("status", "pending")
+        .order("created_at", { ascending: false });
       return data ?? [];
     },
     enabled: !!clubId,
@@ -384,6 +400,7 @@ const ClubAdminDashboard = () => {
   // KPI computations
   const memberCount = members?.length ?? 0;
   const staffCount = staff?.length ?? 0;
+  const pendingStaffCount = pendingStaff?.length ?? 0;
   // joinRequests is a subset of pendingInvitations, so only use joinRequests
   const pendingCount = joinRequests?.length ?? 0;
   const totalTours = clubTours?.length ?? 0;
@@ -407,6 +424,15 @@ const ClubAdminDashboard = () => {
     await supabase.from("members").delete().eq("id", memberId);
     toast.success("Member dihapus");
     refetchMembers();
+  };
+
+  const handleStaffRequest = async (staffId: string, action: "active" | "declined") => {
+    const { error } = await supabase.from("club_staff").update({ status: action }).eq("id", staffId);
+    if (error) { toast.error("Gagal memperbarui request"); return; }
+    if (action === "active") toast.success("Staff request disetujui ✓");
+    else toast.success("Staff request ditolak");
+    refetchStaff();
+    refetchPendingStaff();
   };
 
   const handleSaveSettings = async () => {
@@ -711,7 +737,52 @@ const ClubAdminDashboard = () => {
 
   const renderStaffTab = () => (
     <TabsContent value="staff" className="space-y-2 pt-2">
-      {staff?.length === 0 && (
+
+      {/* Pending requests */}
+      {(pendingStaff?.length ?? 0) > 0 && (
+        <div className="rounded-xl border border-amber-500/30 overflow-hidden mb-2">
+          <div className="px-3 py-2 bg-amber-500/10">
+            <p className="text-xs font-bold text-amber-500 uppercase tracking-wider">
+              ⏳ Staff Requests ({pendingStaff!.length})
+            </p>
+          </div>
+          {pendingStaff!.map((s: any) => (
+            <div key={s.id} className="flex items-center gap-3 px-3 py-2.5 border-t border-amber-500/20 bg-amber-500/5">
+              <Avatar className="h-9 w-9 shrink-0">
+                <AvatarImage src={s.profiles?.avatar_url ?? ""} />
+                <AvatarFallback className="bg-amber-500/20 text-amber-600 text-xs font-bold">
+                  {(s.profiles?.full_name ?? "S").charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium truncate">{s.profiles?.full_name || "Unknown"}</p>
+                <p className="text-xs text-muted-foreground capitalize">
+                  Melamar sebagai <span className="font-semibold text-amber-500">{s.staff_role}</span>
+                </p>
+              </div>
+              <div className="flex gap-1.5 shrink-0">
+                <button
+                  onClick={() => handleStaffRequest(s.id, "active")}
+                  className="h-8 w-8 flex items-center justify-center rounded-lg bg-green-500/10 hover:bg-green-500/20 text-green-500 transition-colors"
+                  title="Approve"
+                >
+                  <UserCheck className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => handleStaffRequest(s.id, "declined")}
+                  className="h-8 w-8 flex items-center justify-center rounded-lg bg-destructive/10 hover:bg-destructive/20 text-destructive transition-colors"
+                  title="Decline"
+                >
+                  <UserX className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Active staff */}
+      {staff?.length === 0 && (pendingStaff?.length ?? 0) === 0 && (
         <div className="golf-card p-6 text-center text-sm text-muted-foreground">No staff yet</div>
       )}
       {staff?.map((s: any) => (
@@ -724,8 +795,15 @@ const ClubAdminDashboard = () => {
           </Avatar>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium truncate">{s.profiles?.full_name || "Staff"}</p>
-            <p className="text-xs text-muted-foreground capitalize">{s.staff_role} · {s.status}</p>
+            <p className="text-xs text-muted-foreground capitalize">{s.staff_role}</p>
           </div>
+          <button
+            onClick={() => handleStaffRequest(s.id, "declined")}
+            className="h-7 w-7 flex items-center justify-center rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+            title="Remove staff"
+          >
+            <UserX className="h-3.5 w-3.5" />
+          </button>
         </div>
       ))}
     </TabsContent>
@@ -1272,7 +1350,7 @@ const ClubAdminDashboard = () => {
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="w-full">
             <TabsTrigger value="members" className="flex-1 text-xs">Members</TabsTrigger>
-            <TabsTrigger value="staff" className="flex-1 text-xs">Staff</TabsTrigger>
+            <TabsTrigger value="staff" className="flex-1 text-xs">Staff{pendingStaffCount > 0 && <span className="ml-1 inline-flex items-center justify-center h-4 w-4 rounded-full bg-amber-500 text-white text-[10px] font-bold">{pendingStaffCount}</span>}</TabsTrigger>
             <TabsTrigger value="tournaments" className="flex-1 text-xs">Tournaments</TabsTrigger>
             <TabsTrigger value="venue" className="flex-1 text-xs">Venue</TabsTrigger>
             <TabsTrigger value="settings" className="flex-1 text-xs">Settings</TabsTrigger>
@@ -1290,7 +1368,7 @@ const ClubAdminDashboard = () => {
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="w-full">
             <TabsTrigger value="members" className="flex-1 text-xs">Members</TabsTrigger>
-            <TabsTrigger value="staff" className="flex-1 text-xs">Staff</TabsTrigger>
+            <TabsTrigger value="staff" className="flex-1 text-xs">Staff{pendingStaffCount > 0 && <span className="ml-1 inline-flex items-center justify-center h-4 w-4 rounded-full bg-amber-500 text-white text-[10px] font-bold">{pendingStaffCount}</span>}</TabsTrigger>
             <TabsTrigger value="schedule" className="flex-1 text-xs">Schedule</TabsTrigger>
             <TabsTrigger value="settings" className="flex-1 text-xs">Settings</TabsTrigger>
           </TabsList>
