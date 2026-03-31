@@ -14,6 +14,7 @@ import EditClubDialog from "@/components/EditClubDialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import ClubTournamentsTab from "@/components/tour/ClubTournamentsTab";
 import VenueStaffTab from "@/components/club/VenueStaffTab";
+import VenueCoursesSection from "@/components/club/VenueCoursesSection";
 import VenueRoundsTab from "@/components/tour/VenueRoundsTab";
 import VenueScheduleTab from "@/components/club/VenueScheduleTab";
 import InviteMemberDialog from "@/components/InviteMemberDialog";
@@ -540,72 +541,71 @@ const ClubProfile = ({ embedded = false, clubId: propClubId }: ClubProfileProps)
         {/* Courses tab */}
         {tab === "courses" && (
           <div className="-mx-4">
-            {/* Sub tabs */}
-            <div className="flex border-b border-border/50 px-4">
-              {[
-                { id: "used", label: `Used Courses${usedCourses?.length ? ` (${usedCourses.length})` : ""}` },
-                { id: "discover", label: "Discover More" },
-              ].map(t => (
-                <button key={t.id} onClick={() => setCourseTab(t.id as "used" | "discover")}
-                  className={`flex-1 py-2.5 text-sm font-semibold transition-colors border-b-2 ${
-                    courseTab === t.id ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
-                  }`}>
-                  {t.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Used Courses */}
-            {courseTab === "used" && (
-              <div>
-                {!usedCourses?.length ? (
-                  <div className="flex flex-col items-center justify-center py-12 text-center gap-2 text-muted-foreground px-4">
-                    <span className="text-4xl">⛳</span>
-                    <p className="text-sm font-semibold">No courses used yet</p>
-                    <p className="text-xs">Courses used in tournament events will appear here</p>
+            {isVenue ? (
+              /* Venue: show owned courses */
+              <VenueCoursesSection clubId={id!} navigate={navigate} />
+            ) : (
+              /* Community club: sub tabs Used/Discover */
+              <>
+                <div className="flex border-b border-border/50 px-4">
+                  {[
+                    { id: "used", label: `Used Courses${usedCourses?.length ? ` (${usedCourses.length})` : ""}` },
+                    { id: "discover", label: "Discover More" },
+                  ].map(t => (
+                    <button key={t.id} onClick={() => setCourseTab(t.id as "used" | "discover")}
+                      className={`flex-1 py-2.5 text-sm font-semibold transition-colors border-b-2 ${
+                        courseTab === t.id ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
+                      }`}>
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+                {courseTab === "used" && (
+                  <div>
+                    {!usedCourses?.length ? (
+                      <div className="flex flex-col items-center justify-center py-12 text-center gap-2 text-muted-foreground px-4">
+                        <span className="text-4xl">⛳</span>
+                        <p className="text-sm font-semibold">No courses used yet</p>
+                        <p className="text-xs">Courses used in tournament events will appear here</p>
+                      </div>
+                    ) : usedCourses.map((course: any) => (
+                      <button key={course.id} onClick={() => window.location.href = `/venue/${course.id}`}
+                        className="flex w-full items-center gap-3 px-4 py-3 border-b border-border/30 last:border-0 hover:bg-secondary/50 transition-colors text-left">
+                        <div className="h-12 w-12 rounded-xl overflow-hidden shrink-0 bg-primary/10">
+                          {course.image_url ? <img src={course.image_url} className="h-full w-full object-cover" /> : <div className="h-full w-full flex items-center justify-center text-xl">⛳</div>}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-base font-semibold truncate">{course.name}</p>
+                          <p className="text-[13px] text-muted-foreground truncate mt-0.5">{course.location ?? "—"} · {course.holes_count ?? 18} holes · Par {course.par ?? 72}</p>
+                        </div>
+                        <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                      </button>
+                    ))}
                   </div>
-                ) : usedCourses.map((course: any) => (
-                  <div key={course.id} className="flex items-center gap-3 px-4 py-3 border-b border-border/30 last:border-0 hover:bg-secondary/50 transition-colors">
-                    <div className="h-12 w-12 rounded-xl overflow-hidden shrink-0 bg-primary/10">
-                      {course.image_url
-                        ? <img src={course.image_url} className="h-full w-full object-cover" />
-                        : <div className="h-full w-full flex items-center justify-center text-xl">⛳</div>}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-base font-semibold truncate">{course.name}</p>
-                      <p className="text-[13px] text-muted-foreground truncate mt-0.5">
-                        {course.location ?? "—"} · {course.holes_count ?? 18} holes · Par {course.par ?? 72}
-                      </p>
-                    </div>
+                )}
+                {courseTab === "discover" && (
+                  <div>
+                    {discoverCourses.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-12 text-center gap-2 text-muted-foreground px-4">
+                        <span className="text-4xl">🔍</span>
+                        <p className="text-sm font-semibold">All courses already used!</p>
+                      </div>
+                    ) : discoverCourses.map((course: any) => (
+                      <button key={course.id} onClick={() => window.location.href = `/venue/${course.id}`}
+                        className="flex w-full items-center gap-3 px-4 py-3 border-b border-border/30 last:border-0 hover:bg-secondary/50 transition-colors text-left">
+                        <div className="h-12 w-12 rounded-xl overflow-hidden shrink-0 bg-primary/10">
+                          {course.image_url ? <img src={course.image_url} className="h-full w-full object-cover" /> : <div className="h-full w-full flex items-center justify-center text-xl">⛳</div>}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-base font-semibold truncate">{course.name}</p>
+                          <p className="text-[13px] text-muted-foreground truncate mt-0.5">{course.location ?? "—"} · {course.holes_count ?? 18} holes · Par {course.par ?? 72}</p>
+                        </div>
+                        <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                      </button>
+                    ))}
                   </div>
-                ))}
-              </div>
-            )}
-
-            {/* Discover More */}
-            {courseTab === "discover" && (
-              <div>
-                {discoverCourses.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-12 text-center gap-2 text-muted-foreground px-4">
-                    <span className="text-4xl">🔍</span>
-                    <p className="text-sm font-semibold">All courses already used!</p>
-                  </div>
-                ) : discoverCourses.map((course: any) => (
-                  <div key={course.id} className="flex items-center gap-3 px-4 py-3 border-b border-border/30 last:border-0 hover:bg-secondary/50 transition-colors">
-                    <div className="h-12 w-12 rounded-xl overflow-hidden shrink-0 bg-primary/10">
-                      {course.image_url
-                        ? <img src={course.image_url} className="h-full w-full object-cover" />
-                        : <div className="h-full w-full flex items-center justify-center text-xl">⛳</div>}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-base font-semibold truncate">{course.name}</p>
-                      <p className="text-[13px] text-muted-foreground truncate mt-0.5">
-                        {course.location ?? "—"} · {course.holes_count ?? 18} holes · Par {course.par ?? 72}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                )}
+              </>
             )}
           </div>
         )}
