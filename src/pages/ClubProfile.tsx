@@ -184,7 +184,7 @@ const ClubProfile = ({ embedded = false, clubId: propClubId }: ClubProfileProps)
       const tourIds = tours.map((t: any) => t.id);
       const { data: events } = await supabase
         .from("events")
-        .select("course_id, courses(id, name, location, image_url, total_holes, par_total)")
+        .select("course_id, courses(id, name, location, image_url, holes_count, par)")
         .in("tour_id", tourIds)
         .not("course_id", "is", null);
       const map = new Map<string, any>();
@@ -202,7 +202,7 @@ const ClubProfile = ({ embedded = false, clubId: propClubId }: ClubProfileProps)
     queryFn: async () => {
       const { data } = await supabase
         .from("courses")
-        .select("id, name, location, image_url, total_holes, par_total")
+        .select("id, name, location, image_url, holes_count, par")
         .order("name");
       return data ?? [];
     },
@@ -561,7 +561,7 @@ const ClubProfile = ({ embedded = false, clubId: propClubId }: ClubProfileProps)
                     <div className="flex-1 min-w-0">
                       <p className="text-base font-semibold truncate">{course.name}</p>
                       <p className="text-[13px] text-muted-foreground truncate mt-0.5">
-                        {course.location ?? "—"} · {course.total_holes ?? 18} holes · Par {course.par_total ?? 72}
+                        {course.location ?? "—"} · {course.holes_count ?? 18} holes · Par {course.par ?? 72}
                       </p>
                     </div>
                   </div>
@@ -587,7 +587,7 @@ const ClubProfile = ({ embedded = false, clubId: propClubId }: ClubProfileProps)
                     <div className="flex-1 min-w-0">
                       <p className="text-base font-semibold truncate">{course.name}</p>
                       <p className="text-[13px] text-muted-foreground truncate mt-0.5">
-                        {course.location ?? "—"} · {course.total_holes ?? 18} holes · Par {course.par_total ?? 72}
+                        {course.location ?? "—"} · {course.holes_count ?? 18} holes · Par {course.par ?? 72}
                       </p>
                     </div>
                   </div>
