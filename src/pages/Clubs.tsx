@@ -178,7 +178,7 @@ const Clubs = () => {
   return (
       <div className="flex" style={{height: "100vh", paddingTop: "56px"}}>
         {/* LEFT PANEL — club list (mobile: full, desktop: fixed width) */}
-        <div className={`${tab === "courses" ? "flex w-full" : mobileShowDetail ? "hidden lg:flex lg:w-[320px]" : "flex lg:w-[320px]"} flex-col shrink-0 border-r border-border/50 h-full overflow-hidden`}>
+        <div className={`${mobileShowDetail ? "hidden lg:flex lg:w-[320px]" : "flex lg:w-[320px]"} flex-col shrink-0 border-r border-border/50 h-full overflow-hidden`}>
         <div className="flex-1 overflow-y-auto">
         {/* Search bar */}
         <div className="flex items-center gap-2 px-4 pt-4 pb-3">
@@ -230,7 +230,7 @@ const Clubs = () => {
               const isSelected = selectedClubId === club.id;
               return (
                 <button key={club.id}
-                  onClick={() => { if (isDesktop) { setSelectedClubId(club.id); setTab("courses"); } else { navigate(`/clubs/${club.id}`); } }}
+                  onClick={() => { if (isDesktop) { setSelectedClubId(club.id); } else { navigate(`/clubs/${club.id}`); } }}
                   className={`flex w-full items-center gap-3 px-4 py-3 text-left border-b border-border/30 hover:bg-secondary/50 transition-colors ${isSelected ? "bg-secondary" : ""}`}>
                   <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden">
                     {club.logo_url
@@ -332,7 +332,7 @@ const Clubs = () => {
         </div>{/* end left panel */}
 
         {/* RIGHT PANEL — club detail (hidden when courses tab active) */}
-        <div className={`${tab === "courses" ? "hidden" : mobileShowDetail ? "flex" : "hidden lg:flex"} flex-1 flex-col overflow-hidden`}>
+        <div className={`${mobileShowDetail ? "flex" : "hidden lg:flex"} flex-1 flex-col overflow-hidden`}>
           {!selectedClubId ? (
             <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
               <div className="h-20 w-20 rounded-full bg-secondary flex items-center justify-center mb-4">
