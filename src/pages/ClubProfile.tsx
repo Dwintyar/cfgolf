@@ -15,6 +15,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import ClubTournamentsTab from "@/components/tour/ClubTournamentsTab";
 import VenueStaffTab from "@/components/club/VenueStaffTab";
 import VenueRoundsTab from "@/components/tour/VenueRoundsTab";
+import VenueScheduleTab from "@/components/club/VenueScheduleTab";
 import InviteMemberDialog from "@/components/InviteMemberDialog";
 import {
   AlertDialog,
@@ -382,7 +383,7 @@ const ClubProfile = ({ embedded = false, clubId: propClubId }: ClubProfileProps)
         <div className="flex border-b border-border/50 mb-4">
           {[
             { id: "members", label: isVenue ? "Staff" : `Members${pendingCount > 0 ? ` 🔴` : ""}` },
-            { id: "tournaments", label: isVenue ? "Rounds" : "Tournaments" },
+            { id: "tournaments", label: isVenue ? "Schedule" : "Tournaments" },
             { id: "courses", label: "Courses" },
           ].map(t => (
             <button key={t.id}
@@ -530,7 +531,7 @@ const ClubProfile = ({ embedded = false, clubId: propClubId }: ClubProfileProps)
         {tab === "tournaments" && (
           <div className="-mx-4">
             {isVenue
-              ? <VenueRoundsTab clubId={id!} />
+              ? <VenueScheduleTab clubId={id!} />
               : <ClubTournamentsTab clubId={id!} />
             }
           </div>
