@@ -995,7 +995,7 @@ const EventDetail = () => {
   );
 
   // My Group card — shown to checked-in players when pairings exist
-  const myGroupBlock = myContestant && isCheckedIn && myPairing ? (
+  const myGroupBlock = myContestant && isCheckedIn && myPairing && event?.status !== "done" ? (
     <div className="mx-4 mb-3">
       <div className="golf-card p-4 border-primary/30 bg-primary/5">
         {/* Pairing info header */}
