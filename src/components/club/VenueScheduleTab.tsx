@@ -37,10 +37,46 @@ const VenueScheduleTab = ({ clubId }: { clubId: string }) => {
     enabled: !!clubId,
   });
 
-  const handleBookingAction = async (bookingId: string, action: "confirmed" | "declined") => {
+  const handleBookingAction = async (bookingId: string, action: "confirmed" | "declined" | "ready") => {
     await supabase.from("venue_bookings").update({ status: action }).eq("id", bookingId);
+
+    // Get booking details for notification
+    const { data: booking } = await supabase
+      .from("venue_bookings")
+      .select("requested_by, courses(name)")
+      .eq("id", bookingId).single();
+
+    if (booking?.requested_by) {
+      const messages: Record<string, string> = {
+        confirmed: `Your booking at ${(booking.courses as any)?.name} has been confirmed! ✅`,
+        declined: `Your booking at ${(booking.courses as any)?.name} was declined.`,
+        ready: `Your booking at ${(booking.courses as any)?.name} is READY! 🏌️ Everything is set for your round.`,
+      };
+      await supabase.from("notifications").insert({
+        user_id: booking.requested_by,
+        title: action === "confirmed" ? "Booking Confirmed" : action === "declined" ? "Booking Declined" : "Ready to Play!",
+        message: messages[action],
+        type: "booking",
+      });
+    }
     refetchBookings();
+    refetchConfirmed();
   };
+
+  // Confirmed bookings (not yet ready)
+  const { data: confirmedBookings, refetch: refetchConfirmed } = useQuery({
+    queryKey: ["venue-confirmed-bookings", clubId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("venue_bookings")
+        .select("*, courses(name), profiles!requested_by(full_name, avatar_url), clubs!organizer_club_id(name, logo_url)")
+        .eq("venue_club_id", clubId)
+        .eq("status", "confirmed")
+        .order("created_at", { ascending: false });
+      return data ?? [];
+    },
+    enabled: !!clubId,
+  });
 
   // Events at this venue's courses
   const { data: events, isLoading } = useQuery({
@@ -111,6 +147,36 @@ const VenueScheduleTab = ({ clubId }: { clubId: string }) => {
                   ✗ Decline
                 </Button>
               </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Confirmed bookings — awaiting Set Ready */}
+      {(confirmedBookings?.length ?? 0) > 0 && (
+        <div className="mb-0">
+          <div className="px-4 py-2 bg-green-500/10 border-b border-green-500/20">
+            <p className="text-xs font-bold text-green-500 uppercase tracking-wider">
+              ✅ Confirmed — Awaiting Ready ({confirmedBookings!.length})
+            </p>
+          </div>
+          {confirmedBookings!.map((booking: any) => (
+            <div key={booking.id} className="px-4 py-3 border-b border-border/30 bg-green-500/5">
+              <div className="flex items-start gap-3">
+                <div className="h-10 w-10 rounded-xl bg-secondary flex items-center justify-center shrink-0 overflow-hidden">
+                  {booking.clubs?.logo_url
+                    ? <img src={booking.clubs.logo_url} className="h-full w-full object-cover" />
+                    : <span className="text-lg">🏌️</span>}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold">{booking.clubs?.name ?? booking.profiles?.full_name ?? "Guest"}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{booking.notes}</p>
+                </div>
+              </div>
+              <Button size="sm" className="w-full mt-3 h-8 text-xs bg-green-600 hover:bg-green-700"
+                onClick={() => handleBookingAction(booking.id, "ready")}>
+                🏁 Set Ready — Notify Player
+              </Button>
             </div>
           ))}
         </div>

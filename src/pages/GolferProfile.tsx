@@ -1401,6 +1401,7 @@ const GolferProfile = () => {
                       const statusColor: Record<string, string> = {
                         pending: "text-amber-400 bg-amber-400/10",
                         confirmed: "text-green-400 bg-green-400/10",
+                        ready: "text-primary bg-primary/10",
                         declined: "text-red-400 bg-red-400/10",
                         cancelled: "text-muted-foreground bg-muted",
                       };
