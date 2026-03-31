@@ -168,11 +168,10 @@ const Clubs = () => {
 
   return (
     <DesktopLayout>
-      <div className="flex h-screen lg:h-[calc(100vh-0px)] bottom-nav-safe">
+      <div className="flex h-screen">
         {/* LEFT PANEL — club list (mobile: full, desktop: fixed width) */}
         <div className={`${tab === "courses" ? "flex w-full" : mobileShowDetail ? "hidden lg:flex lg:w-[320px]" : "flex lg:w-[320px]"} flex-col shrink-0 border-r border-border/50 h-full overflow-hidden`}>
         <div className="flex-1 overflow-y-auto">
-
         {/* Search bar */}
         <div className="flex items-center gap-2 px-4 pt-4 pb-3">
           <div className="relative flex-1">
@@ -312,7 +311,7 @@ const Clubs = () => {
             <div className="flex-1 overflow-y-auto h-full">
               <iframe
                 key={selectedClubId}
-                src={`/clubs/${selectedClubId}`}
+                src={`/clubs/${selectedClubId}?embedded=1`}
                 className="w-full h-full border-0"
                 title="Club Profile"
               />

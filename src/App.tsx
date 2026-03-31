@@ -5,6 +5,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import BottomNav from "@/components/BottomNav";
+import { useLocation } from "react-router-dom";
 import DesktopLayout from "@/components/DesktopLayout";
 import AdminRoute from "@/components/AdminRoute";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -150,7 +151,7 @@ const AppInner = () => {
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AppLayout>
-        <BottomNav />
+        {!new URLSearchParams(window.location.search).has("embedded") && <BottomNav />}
       </div>
     </ChatNotifContext.Provider>
   );

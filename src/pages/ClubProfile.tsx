@@ -12,7 +12,7 @@ import { useState, useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
 import EditClubDialog from "@/components/EditClubDialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import TournamentsTab from "@/components/tour/TournamentsTab";
+import ClubTournamentsTab from "@/components/tour/ClubTournamentsTab";
 import InviteMemberDialog from "@/components/InviteMemberDialog";
 import {
   AlertDialog,
@@ -206,7 +206,7 @@ const ClubProfile = ({ embedded = false, clubId: propClubId }: ClubProfileProps)
         .order("name");
       return data ?? [];
     },
-    enabled: tab === "courses",
+    enabled: tab === "courses" && courseTab === "discover",
   });
 
   const usedCourseIds = new Set((usedCourses ?? []).map((c: any) => c.id));
@@ -517,10 +517,10 @@ const ClubProfile = ({ embedded = false, clubId: propClubId }: ClubProfileProps)
         )}
 
         {/* Requests tab (owner only) */}
-        {/* Tournaments tab */}
+        {/* Tournaments tab — only tours of this club */}
         {tab === "tournaments" && (
           <div className="-mx-4">
-            <TournamentsTab />
+            <ClubTournamentsTab clubId={id!} />
           </div>
         )}
 
