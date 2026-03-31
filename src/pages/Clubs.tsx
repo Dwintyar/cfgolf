@@ -188,8 +188,8 @@ const Clubs = () => {
         <div className={`${mobileShowDetail ? "hidden lg:flex lg:w-[320px]" : "flex w-full lg:w-[320px]"} flex-col shrink-0 border-r border-border/50 lg:h-full overflow-hidden`}>
         <div className="flex-1 overflow-y-auto">
         {/* Header with logo */}
-        <div className="flex items-center gap-2 px-4 pt-2 pb-1">
-          <img src={document.documentElement.classList.contains("light") ? GBLogo : GBLogoDark} alt="GB" className="h-8 w-8 object-contain shrink-0" />
+        <div className="flex items-center gap-2 px-4 pt-3 pb-0">
+          <img src={document.documentElement.classList.contains("light") ? GBLogo : GBLogoDark} alt="GolfBuana" className="h-8 w-8 object-contain shrink-0" />
           <h1 className="text-xl font-bold">Clubs</h1>
         </div>
         <div className="flex items-center gap-2 px-4 pt-1 pb-3">

@@ -1176,9 +1176,9 @@ const GolferProfile = () => {
                 <ArrowLeft className="h-5 w-5" />
               </button>
             ) : (
-              <div className="absolute left-0 top-0 z-10 flex items-center gap-1.5 p-1.5">
-                <img src={document.documentElement.classList.contains("light") ? GBLogo : GBLogoDark} alt="GB" className="h-7 w-7 object-contain" />
-                <span className="text-sm font-bold">Profile</span>
+              <div className="flex items-center gap-2 px-4 pt-3 pb-0">
+                <img src={document.documentElement.classList.contains("light") ? GBLogo : GBLogoDark} alt="GolfBuana" className="h-8 w-8 object-contain shrink-0" />
+                <h1 className="text-xl font-bold">Profile</h1>
               </div>
             )}
             {/* Settings button — only on own profile */}
