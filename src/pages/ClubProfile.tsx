@@ -43,9 +43,10 @@ interface ClubProfileProps {
   embedded?: boolean;
   clubId?: string;
   onBack?: () => void;
+  onNavigateToClub?: (clubId: string) => void;
 }
 
-const ClubProfile = ({ embedded = false, clubId: propClubId, onBack }: ClubProfileProps) => {
+const ClubProfile = ({ embedded = false, clubId: propClubId, onBack, onNavigateToClub }: ClubProfileProps) => {
   const navigate = useNavigate();
   const params = useParams<{ id: string }>();
   const id = propClubId ?? params.id;
@@ -220,7 +221,7 @@ const ClubProfile = ({ embedded = false, clubId: propClubId, onBack }: ClubProfi
       const tourIds = tours.map((t: any) => t.id);
       const { data: events } = await supabase
         .from("events")
-        .select("course_id, courses(id, name, location, image_url, holes_count, par)")
+        .select("course_id, courses(id, name, location, image_url, holes_count, par, club_id)")
         .in("tour_id", tourIds)
         .not("course_id", "is", null);
       const map = new Map<string, any>();
@@ -238,7 +239,7 @@ const ClubProfile = ({ embedded = false, clubId: propClubId, onBack }: ClubProfi
     queryFn: async () => {
       const { data } = await supabase
         .from("courses")
-        .select("id, name, location, image_url, holes_count, par")
+        .select("id, name, location, image_url, holes_count, par, club_id")
         .order("name");
       return data ?? [];
     },
@@ -629,7 +630,13 @@ const ClubProfile = ({ embedded = false, clubId: propClubId, onBack }: ClubProfi
                         <p className="text-xs">Courses used in tournament events will appear here</p>
                       </div>
                     ) : usedCourses.map((course: any) => (
-                      <button key={course.id} onClick={() => navigate(`/venue/${course.id}`)}
+                      <button key={course.id} onClick={() => {
+                        if (embedded && onNavigateToClub && course.club_id) {
+                          onNavigateToClub(course.club_id);
+                        } else {
+                          navigate(`/venue/${course.id}`);
+                        }
+                      }}
                         className="flex w-full items-center gap-3 px-4 py-3 border-b border-border/30 last:border-0 hover:bg-secondary/50 transition-colors text-left">
                         <div className="h-12 w-12 rounded-xl overflow-hidden shrink-0 bg-primary/10">
                           {course.image_url ? <img src={course.image_url} className="h-full w-full object-cover" /> : <div className="h-full w-full flex items-center justify-center text-xl">⛳</div>}
@@ -651,7 +658,13 @@ const ClubProfile = ({ embedded = false, clubId: propClubId, onBack }: ClubProfi
                         <p className="text-sm font-semibold">All courses already used!</p>
                       </div>
                     ) : discoverCourses.map((course: any) => (
-                      <button key={course.id} onClick={() => navigate(`/venue/${course.id}`)}
+                      <button key={course.id} onClick={() => {
+                        if (embedded && onNavigateToClub && course.club_id) {
+                          onNavigateToClub(course.club_id);
+                        } else {
+                          navigate(`/venue/${course.id}`);
+                        }
+                      }}
                         className="flex w-full items-center gap-3 px-4 py-3 border-b border-border/30 last:border-0 hover:bg-secondary/50 transition-colors text-left">
                         <div className="h-12 w-12 rounded-xl overflow-hidden shrink-0 bg-primary/10">
                           {course.image_url ? <img src={course.image_url} className="h-full w-full object-cover" /> : <div className="h-full w-full flex items-center justify-center text-xl">⛳</div>}

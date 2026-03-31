@@ -328,6 +328,7 @@ const Clubs = () => {
                 embedded
                 clubId={selectedClubId!}
                 onBack={() => setSelectedClubId(null)}
+                onNavigateToClub={(cId) => setSelectedClubId(cId)}
               />
             </div>
           )}
