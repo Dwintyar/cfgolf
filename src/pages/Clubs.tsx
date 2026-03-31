@@ -34,7 +34,7 @@ const Clubs = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
-  const [tab, setTab] = useState<"my" | "community">("my");
+  const [tab, setTab] = useState<"my" | "community" | "courses">("my");
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [showCreateClub, setShowCreateClub] = useState(false);
   const [joiningClubId, setJoiningClubId] = useState<string | null>(null);
@@ -170,7 +170,7 @@ const Clubs = () => {
     <DesktopLayout>
       <div className="flex h-screen lg:h-[calc(100vh-0px)] bottom-nav-safe">
         {/* LEFT PANEL — club list (mobile: full, desktop: fixed width) */}
-        <div className={`${mobileShowDetail ? "hidden lg:flex" : "flex"} flex-col w-full lg:w-[320px] shrink-0 border-r border-border/50 h-full overflow-hidden`}>
+        <div className={`${tab === "courses" ? "flex w-full" : mobileShowDetail ? "hidden lg:flex lg:w-[320px]" : "flex lg:w-[320px]"} flex-col shrink-0 border-r border-border/50 h-full overflow-hidden`}>
         <div className="flex-1 overflow-y-auto">
 
         {/* Search bar */}
@@ -197,6 +197,7 @@ const Clubs = () => {
           {([
             { id: "my", label: `My Clubs${myClubs.length > 0 ? ` (${myClubs.length})` : ""}` },
             { id: "community", label: "Discover" },
+            { id: "courses", label: "Courses" },
           ] as const).map(t => (
             <button
               key={t.id}
@@ -209,6 +210,13 @@ const Clubs = () => {
             </button>
           ))}
         </div>
+
+        {/* Courses tab */}
+        {tab === "courses" && (
+          <div className="flex-1 overflow-auto">
+            <VenueList embedded />
+          </div>
+        )}
 
         {/* My Clubs */}
         {tab === "my" && (
@@ -290,8 +298,8 @@ const Clubs = () => {
         </div>{/* end left panel scroll */}
         </div>{/* end left panel */}
 
-        {/* RIGHT PANEL — club detail */}
-        <div className={`${mobileShowDetail ? "flex" : "hidden lg:flex"} flex-1 flex-col overflow-hidden`}>
+        {/* RIGHT PANEL — club detail (hidden when courses tab active) */}
+        <div className={`${tab === "courses" ? "hidden" : mobileShowDetail ? "flex" : "hidden lg:flex"} flex-1 flex-col overflow-hidden`}>
           {!selectedClubId ? (
             <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
               <div className="h-20 w-20 rounded-full bg-secondary flex items-center justify-center mb-4">
