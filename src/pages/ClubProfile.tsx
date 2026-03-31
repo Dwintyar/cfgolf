@@ -40,10 +40,9 @@ type Tab = "members" | "tournaments" | "courses";
 interface ClubProfileProps {
   embedded?: boolean;
   clubId?: string;
-  onBack?: () => void;
 }
 
-const ClubProfile = ({ embedded = false, clubId: propClubId, onBack }: ClubProfileProps) => {
+const ClubProfile = ({ embedded = false, clubId: propClubId }: ClubProfileProps) => {
   const navigate = useNavigate();
   const params = useParams<{ id: string }>();
   const id = propClubId ?? params.id;
@@ -316,9 +315,12 @@ const ClubProfile = ({ embedded = false, clubId: propClubId, onBack }: ClubProfi
     <div className="bottom-nav-safe">
       {/* WA-style: back button top left */}
       <div className="flex items-center justify-between px-4 pt-4 pb-2">
-        <button onClick={() => embedded && onBack ? onBack() : navigate(-1)} className="rounded-full p-1.5 hover:bg-muted transition-colors">
-          <ArrowLeft className="h-5 w-5" />
-        </button>
+        {!embedded && (
+          <button onClick={() => navigate(-1)} className="rounded-full p-1.5 hover:bg-muted transition-colors">
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+        )}
+        {embedded && <div />}
         {isOwner && (
           <div className="flex gap-1">
             <button onClick={() => setShowInvite(true)} className="rounded-full p-2 hover:bg-muted transition-colors">
@@ -440,9 +442,9 @@ const ClubProfile = ({ embedded = false, clubId: propClubId, onBack }: ClubProfi
               </div>
             )}
 
-            {isVenue ? (
+            {isVenue && id ? (
               <div className="-mx-4">
-                <VenueStaffTab clubId={id!} />
+                <VenueStaffTab clubId={id} />
               </div>
             ) : (<>
             <div className="relative mb-4">
