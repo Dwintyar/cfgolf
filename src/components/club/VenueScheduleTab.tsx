@@ -3,9 +3,10 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Calendar, Users, UserCheck, ChevronDown, ChevronUp, Save } from "lucide-react";
+import { Calendar, Users, UserCheck, ChevronDown, ChevronUp, Save, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import InvoiceModal, { InvoiceData } from "@/components/invoice/InvoiceModal";
 
 function parseNotesCount(notes: string | null, key: string): number {
   if (!notes) return 1;
@@ -32,6 +33,7 @@ const VenueScheduleTab = ({ clubId }: { clubId: string }) => {
   const { toast } = useToast();
   const [scheduleTab, setScheduleTab] = useState<"upcoming" | "completed">("upcoming");
   const [expandedAssign, setExpandedAssign] = useState<string | null>(null);
+  const [invoiceData, setInvoiceData] = useState<InvoiceData | null>(null);
   const [assignForm, setAssignForm] = useState<Record<string, { caddies: string[]; cartNumbers: string }>>({});
   const [savingAssign, setSavingAssign] = useState<string | null>(null);
 
@@ -272,6 +274,24 @@ const VenueScheduleTab = ({ clubId }: { clubId: string }) => {
                       onClick={() => handleBookingAction(booking.id, "ready")}>
                       🏁 Set Ready
                     </Button>
+                    <Button size="sm" variant="outline" className="h-8 w-8 p-0 shrink-0"
+                      title="Invoice"
+                      onClick={() => setInvoiceData({
+                        type: "venue",
+                        bookingId: booking.id,
+                        venueName: booking.clubs?.name ?? booking.profiles?.full_name,
+                        courseName: (booking.courses as any)?.name,
+                        organizerClub: booking.clubs?.name,
+                        requesterName: booking.profiles?.full_name,
+                        bookingNotes: booking.notes,
+                        assignedCaddies: booking.assigned_caddies,
+                        assignedCarts: booking.assigned_cart_numbers,
+                        greenFeeAgreed: booking.green_fee_agreed,
+                        status: booking.status,
+                        createdAt: booking.created_at,
+                      })}>
+                      <FileText className="h-3.5 w-3.5" />
+                    </Button>
                   </div>
                 </div>
 
@@ -400,6 +420,14 @@ const VenueScheduleTab = ({ clubId }: { clubId: string }) => {
         })
       )}
     </div>
+
+    {invoiceData && (
+      <InvoiceModal
+        open={!!invoiceData}
+        onOpenChange={(v) => { if (!v) setInvoiceData(null); }}
+        data={invoiceData}
+      />
+    )}
   );
 };
 

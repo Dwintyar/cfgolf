@@ -1,6 +1,6 @@
 import GBLogo from "@/assets/logo-gb.svg";
 import GBLogoDark from "@/assets/logo-gb-dark.svg";
-import { ArrowLeft, Globe, Mail, Camera, UserPlus, UserCheck, MessageCircle, Crown, Check, X, BarChart3, TrendingDown, Trophy, MapPin, Settings, Clock, Share2, Shield, CalendarDays, Loader2, ClipboardList } from "lucide-react";
+import { ArrowLeft, Globe, Mail, Camera, UserPlus, UserCheck, MessageCircle, Crown, Check, X, BarChart3, TrendingDown, Trophy, MapPin, Settings, Clock, Share2, Shield, CalendarDays, Loader2, ClipboardList , FileText} from "lucide-react";
 import CommitteeRoleBadges from "@/components/CommitteeRoleBadges";
 import { useNavigate, useParams } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -13,6 +13,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
+import InvoiceModal, { InvoiceData } from "@/components/invoice/InvoiceModal";
 import CreateClubDialog from "@/components/CreateClubDialog";
 
 type Tab = "about" | "clubs" | "stats" | "gallery" | "bookings";
@@ -291,6 +292,7 @@ const GolferProfile = () => {
 
   // My Bookings — only load for own profile
   const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [invoiceData, setInvoiceData] = useState<InvoiceData | null>(null);
   const { data: myBookings, refetch: refetchBookings } = useQuery({
     queryKey: ["my-bookings", targetId],
     queryFn: async () => {
@@ -1431,13 +1433,34 @@ const GolferProfile = () => {
                             </span>
                           </div>
                           <p className="text-xs text-muted-foreground leading-relaxed">{b.notes}</p>
-                          {b.status === "pending" && (
-                            <Button variant="ghost" size="sm"
-                              className="h-7 px-2 text-xs text-red-400 hover:bg-red-400/10"
-                              onClick={() => handleCancelVenueBooking(b.id)}>
-                              Cancel Request
-                            </Button>
-                          )}
+                          <div className="flex items-center gap-2">
+                            {b.status === "pending" && (
+                              <Button variant="ghost" size="sm"
+                                className="h-7 px-2 text-xs text-red-400 hover:bg-red-400/10"
+                                onClick={() => handleCancelVenueBooking(b.id)}>
+                                Cancel Request
+                              </Button>
+                            )}
+                            {["confirmed","ready"].includes(b.status) && (
+                              <Button variant="ghost" size="sm"
+                                className="h-7 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground"
+                                onClick={() => setInvoiceData({
+                                  type: "venue",
+                                  bookingId: b.id,
+                                  venueName: b.clubs?.name,
+                                  courseName: b.courses?.name,
+                                  courseLocation: b.courses?.location,
+                                  bookingNotes: b.notes,
+                                  assignedCaddies: b.assigned_caddies,
+                                  assignedCarts: b.assigned_cart_numbers,
+                                  greenFeeAgreed: b.green_fee_agreed,
+                                  status: b.status,
+                                  createdAt: b.created_at,
+                                })}>
+                                <FileText className="h-3 w-3" /> Invoice
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       );
                     })}
@@ -1717,5 +1740,13 @@ const StatRow = ({ label, value }: { label: string; value: string }) => (
     <span className="text-sm font-bold">{value}</span>
   </div>
 );
+
+      {invoiceData && (
+        <InvoiceModal
+          open={!!invoiceData}
+          onOpenChange={(v) => { if (!v) setInvoiceData(null); }}
+          data={invoiceData}
+        />
+      )}
 
 export default GolferProfile;
