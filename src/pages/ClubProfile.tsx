@@ -179,6 +179,17 @@ const ClubProfile = ({ embedded = false, clubId: propClubId }: ClubProfileProps)
 
   const isVenue = (club as any)?.club_type === "venue";
 
+  // Get channel for this club (venue)
+  const { data: clubChannel } = useQuery({
+    queryKey: ["club-channel", id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("channels").select("id, name").eq("club_id", id!).single();
+      return data;
+    },
+    enabled: !!id && isVenue,
+  });
+
   // Used courses — from events of tours organized by this club
   const { data: usedCourses } = useQuery({
     queryKey: ["club-used-courses", id],
@@ -355,6 +366,15 @@ const ClubProfile = ({ embedded = false, clubId: propClubId }: ClubProfileProps)
               <p className="text-sm text-muted-foreground mt-2 max-w-sm leading-relaxed">{club.description}</p>
             )}
           </>
+        )}
+
+        {/* Channel button for venue */}
+        {isVenue && clubChannel && (
+          <button
+            onClick={() => window.location.href = `/lounge?channel=${clubChannel.id}`}
+            className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-semibold hover:bg-primary/20 transition-colors mt-2">
+            📢 Open Channel
+          </button>
         )}
 
         {/* Action buttons — WA style */}

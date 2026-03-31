@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,13 @@ const ChannelsTab = () => {
   const queryClient = useQueryClient();
   const [userId, setUserId] = useState<string | null>(null);
   const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null);
+  const [searchParams] = useSearchParams();
+
+  // Auto-select channel from URL param ?channel=id
+  useEffect(() => {
+    const channelParam = searchParams.get("channel");
+    if (channelParam) setSelectedChannelId(channelParam);
+  }, [searchParams]);
   const [view, setView] = useState<"following" | "discover">("following");
   const [search, setSearch] = useState("");
 
