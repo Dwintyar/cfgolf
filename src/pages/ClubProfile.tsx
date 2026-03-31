@@ -50,6 +50,7 @@ const ClubProfile = ({ embedded = false, clubId: propClubId }: ClubProfileProps)
   const [showInvite, setShowInvite] = useState(false);
   const [showClubSettings, setShowClubSettings] = useState(false);
   const [tab, setTab] = useState<Tab>("members");
+  const [courseTab, setCourseTab] = useState<"used" | "discover">("used");
   const [joining, setJoining] = useState(false);
   const [selectedTransferMember, setSelectedTransferMember] = useState<string | null>(null);
   const [showTransferConfirm, setShowTransferConfirm] = useState(false);
@@ -171,6 +172,45 @@ const ClubProfile = ({ embedded = false, clubId: propClubId }: ClubProfileProps)
     .map((w: string) => w[0])
     .join("")
     .toUpperCase() ?? "??";
+
+  // Used courses — from events of tours organized by this club
+  const { data: usedCourses } = useQuery({
+    queryKey: ["club-used-courses", id],
+    queryFn: async () => {
+      if (!id) return [];
+      const { data: tours } = await supabase
+        .from("tours").select("id").eq("organizer_club_id", id);
+      if (!tours?.length) return [];
+      const tourIds = tours.map((t: any) => t.id);
+      const { data: events } = await supabase
+        .from("events")
+        .select("course_id, courses(id, name, location, image_url, total_holes, par_total)")
+        .in("tour_id", tourIds)
+        .not("course_id", "is", null);
+      const map = new Map<string, any>();
+      (events ?? []).forEach((e: any) => {
+        const course = e.courses as any;
+        if (course?.id && !map.has(course.id)) map.set(course.id, course);
+      });
+      return Array.from(map.values());
+    },
+    enabled: !!id,
+  });
+
+  const { data: allCourses } = useQuery({
+    queryKey: ["all-courses-discover"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("courses")
+        .select("id, name, location, image_url, total_holes, par_total")
+        .order("name");
+      return data ?? [];
+    },
+    enabled: tab === "courses",
+  });
+
+  const usedCourseIds = new Set((usedCourses ?? []).map((c: any) => c.id));
+  const discoverCourses = (allCourses ?? []).filter((c: any) => !usedCourseIds.has(c.id));
 
   const getInitials = (name: string | null) =>
     name
@@ -486,10 +526,74 @@ const ClubProfile = ({ embedded = false, clubId: propClubId }: ClubProfileProps)
 
         {/* Courses tab */}
         {tab === "courses" && (
-          <div className="flex flex-col items-center justify-center py-12 text-center gap-3 text-muted-foreground">
-            <span className="text-4xl">⛳</span>
-            <p className="text-sm font-semibold">Courses — Coming Soon</p>
-            <p className="text-xs">Club akan bisa mengelola golf course di sini</p>
+          <div className="-mx-4">
+            {/* Sub tabs */}
+            <div className="flex border-b border-border/50 px-4">
+              {[
+                { id: "used", label: `Used Courses${usedCourses?.length ? ` (${usedCourses.length})` : ""}` },
+                { id: "discover", label: "Discover More" },
+              ].map(t => (
+                <button key={t.id} onClick={() => setCourseTab(t.id as "used" | "discover")}
+                  className={`flex-1 py-2.5 text-sm font-semibold transition-colors border-b-2 ${
+                    courseTab === t.id ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
+                  }`}>
+                  {t.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Used Courses */}
+            {courseTab === "used" && (
+              <div>
+                {!usedCourses?.length ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-center gap-2 text-muted-foreground px-4">
+                    <span className="text-4xl">⛳</span>
+                    <p className="text-sm font-semibold">No courses used yet</p>
+                    <p className="text-xs">Courses used in tournament events will appear here</p>
+                  </div>
+                ) : usedCourses.map((course: any) => (
+                  <div key={course.id} className="flex items-center gap-3 px-4 py-3 border-b border-border/30 last:border-0 hover:bg-secondary/50 transition-colors">
+                    <div className="h-12 w-12 rounded-xl overflow-hidden shrink-0 bg-primary/10">
+                      {course.image_url
+                        ? <img src={course.image_url} className="h-full w-full object-cover" />
+                        : <div className="h-full w-full flex items-center justify-center text-xl">⛳</div>}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-base font-semibold truncate">{course.name}</p>
+                      <p className="text-[13px] text-muted-foreground truncate mt-0.5">
+                        {course.location ?? "—"} · {course.total_holes ?? 18} holes · Par {course.par_total ?? 72}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Discover More */}
+            {courseTab === "discover" && (
+              <div>
+                {discoverCourses.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-center gap-2 text-muted-foreground px-4">
+                    <span className="text-4xl">🔍</span>
+                    <p className="text-sm font-semibold">All courses already used!</p>
+                  </div>
+                ) : discoverCourses.map((course: any) => (
+                  <div key={course.id} className="flex items-center gap-3 px-4 py-3 border-b border-border/30 last:border-0 hover:bg-secondary/50 transition-colors">
+                    <div className="h-12 w-12 rounded-xl overflow-hidden shrink-0 bg-primary/10">
+                      {course.image_url
+                        ? <img src={course.image_url} className="h-full w-full object-cover" />
+                        : <div className="h-full w-full flex items-center justify-center text-xl">⛳</div>}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-base font-semibold truncate">{course.name}</p>
+                      <p className="text-[13px] text-muted-foreground truncate mt-0.5">
+                        {course.location ?? "—"} · {course.total_holes ?? 18} holes · Par {course.par_total ?? 72}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
