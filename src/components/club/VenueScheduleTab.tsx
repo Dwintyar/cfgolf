@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { Calendar, ChevronRight, Users } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const VenueScheduleTab = ({ clubId }: { clubId: string }) => {
   const [scheduleTab, setScheduleTab] = useState<"upcoming" | "completed">("upcoming");
@@ -20,6 +21,26 @@ const VenueScheduleTab = ({ clubId }: { clubId: string }) => {
   });
 
   const courseIds = (courses ?? []).map((c: any) => c.id);
+
+  // Pending booking requests
+  const { data: pendingBookings, refetch: refetchBookings } = useQuery({
+    queryKey: ["venue-pending-bookings", clubId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("venue_bookings")
+        .select("*, courses(name), profiles!requested_by(full_name, avatar_url), clubs!organizer_club_id(name, logo_url)")
+        .eq("venue_club_id", clubId)
+        .eq("status", "pending")
+        .order("created_at", { ascending: false });
+      return data ?? [];
+    },
+    enabled: !!clubId,
+  });
+
+  const handleBookingAction = async (bookingId: string, action: "confirmed" | "declined") => {
+    await supabase.from("venue_bookings").update({ status: action }).eq("id", bookingId);
+    refetchBookings();
+  };
 
   // Events at this venue's courses
   const { data: events, isLoading } = useQuery({
@@ -58,6 +79,43 @@ const VenueScheduleTab = ({ clubId }: { clubId: string }) => {
 
   return (
     <div>
+      {/* Pending Booking Requests */}
+      {(pendingBookings?.length ?? 0) > 0 && (
+        <div className="mb-0">
+          <div className="px-4 py-2 bg-amber-500/10 border-b border-amber-500/20">
+            <p className="text-xs font-bold text-amber-500 uppercase tracking-wider">
+              🔔 Pending Requests ({pendingBookings!.length})
+            </p>
+          </div>
+          {pendingBookings!.map((booking: any) => (
+            <div key={booking.id} className="px-4 py-3 border-b border-border/30 bg-amber-500/5">
+              <div className="flex items-start gap-3">
+                <div className="h-10 w-10 rounded-xl bg-secondary flex items-center justify-center shrink-0 overflow-hidden">
+                  {booking.clubs?.logo_url
+                    ? <img src={booking.clubs.logo_url} className="h-full w-full object-cover" />
+                    : <span className="text-lg">🏌️</span>}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold">{booking.clubs?.name ?? booking.profiles?.full_name ?? "Unknown"}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{booking.notes}</p>
+                  <p className="text-[11px] text-muted-foreground mt-1">{new Date(booking.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}</p>
+                </div>
+              </div>
+              <div className="flex gap-2 mt-3">
+                <Button size="sm" className="flex-1 h-8 text-xs"
+                  onClick={() => handleBookingAction(booking.id, "confirmed")}>
+                  ✓ Confirm
+                </Button>
+                <Button size="sm" variant="outline" className="flex-1 h-8 text-xs border-destructive/30 text-destructive hover:bg-destructive/10"
+                  onClick={() => handleBookingAction(booking.id, "declined")}>
+                  ✗ Decline
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Sub tabs */}
       <div className="flex border-b border-border/50">
         {[

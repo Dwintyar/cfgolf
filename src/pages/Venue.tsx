@@ -8,6 +8,14 @@ import { Badge } from "@/components/ui/badge";
 import venueImg from "@/assets/golf-venue.jpg";
 import heroImg from "@/assets/golf-hero.jpg";
 import { useState, useMemo } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "sonner";
+import { CalendarDays, Users, UserCheck, Car } from "lucide-react";
 
 const Venue = () => {
   const navigate = useNavigate();
@@ -17,6 +25,71 @@ const Venue = () => {
   const { id } = useParams<{ id: string }>();
   const [selectedTime, setSelectedTime] = useState("07:00");
   const [distUnit, setDistUnit] = useState<"yd" | "m">("m");
+  const [showBooking, setShowBooking] = useState(false);
+  const [bookingDate, setBookingDate] = useState("");
+  const [bookingPlayers, setBookingPlayers] = useState("4");
+  const [bookingCaddies, setBookingCaddies] = useState("0");
+  const [bookingCarts, setBookingCarts] = useState("0");
+  const [bookingTee, setBookingTee] = useState("white");
+  const [bookingNotes, setBookingNotes] = useState("");
+  const [submittingBooking, setSubmittingBooking] = useState(false);
+  const queryClient = useQueryClient();
+
+  // Get current user
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentUserClubId, setCurrentUserClubId] = useState<string | null>(null);
+  useState(() => {
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (user) {
+        setCurrentUserId(user.id);
+        // Get first club the user belongs to
+        const { data } = await supabase.from("members").select("club_id").eq("user_id", user.id).limit(1).single();
+        if (data) setCurrentUserClubId(data.club_id);
+      }
+    });
+  });
+
+  const handleSubmitBooking = async () => {
+    if (!bookingDate || !selectedTime) {
+      toast.error("Pilih tanggal dan tee time terlebih dahulu");
+      return;
+    }
+    if (!currentUserId) { toast.error("Login required"); return; }
+    setSubmittingBooking(true);
+    try {
+      // Get venue club_id for this course
+      const { data: courseData } = await supabase
+        .from("courses").select("club_id").eq("id", id!).single();
+      if (!courseData?.club_id) throw new Error("Venue not found");
+
+      const { error } = await supabase.from("venue_bookings").insert({
+        venue_club_id: courseData.club_id,
+        course_id: id,
+        organizer_club_id: currentUserClubId,
+        requested_by: currentUserId,
+        status: "pending",
+        notes: `Date: ${bookingDate} | Time: ${selectedTime} | Players: ${bookingPlayers} | Caddies: ${bookingCaddies} | Carts: ${bookingCarts} | Tee: ${bookingTee}${bookingNotes ? " | Notes: " + bookingNotes : ""}`,
+        green_fee_agreed: null,
+      });
+      if (error) throw error;
+
+      // Send notification to venue
+      await supabase.from("notifications").insert({
+        user_id: currentUserId, // will be updated to venue owner
+        title: "New Booking Request",
+        message: `Booking request for ${course?.name} on ${bookingDate} at ${selectedTime}`,
+        type: "booking",
+      });
+
+      toast.success("Booking request sent! Venue will confirm shortly.");
+      setShowBooking(false);
+      setBookingDate(""); setBookingNotes("");
+    } catch (err: any) {
+      toast.error(err.message ?? "Failed to submit booking");
+    } finally {
+      setSubmittingBooking(false);
+    }
+  };
 
   const { data: course, isLoading } = useQuery({
     queryKey: ["course", id],
@@ -226,6 +299,15 @@ const Venue = () => {
                   </button>
                 ))}
               </div>
+
+              {/* Book This Course button */}
+              <Button
+                className="w-full mt-4 h-12 text-base font-bold gap-2"
+                onClick={() => setShowBooking(true)}
+              >
+                <CalendarDays className="h-5 w-5" />
+                Book This Course
+              </Button>
             </div>
 
             {/* Hole Details */}
@@ -272,6 +354,94 @@ const Venue = () => {
           </>
         )}
       </div>
+
+      {/* Booking Dialog */}
+      <Dialog open={showBooking} onOpenChange={setShowBooking}>
+        <DialogContent className="max-w-md mx-4 rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CalendarDays className="h-5 w-5 text-primary" />
+              Book {course?.name}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            {/* Date */}
+            <div className="space-y-1.5">
+              <Label className="text-sm">Date</Label>
+              <Input type="date" value={bookingDate} onChange={e => setBookingDate(e.target.value)}
+                min={new Date().toISOString().split("T")[0]} />
+            </div>
+
+            {/* Tee time — already selected */}
+            <div className="space-y-1.5">
+              <Label className="text-sm">Tee Time</Label>
+              <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-primary/10 border border-primary/20">
+                <span className="text-primary font-bold">{selectedTime}</span>
+                <span className="text-xs text-muted-foreground">(selected from tee time)</span>
+              </div>
+            </div>
+
+            {/* Players, Caddies, Carts */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs flex items-center gap-1"><Users className="h-3 w-3" />Players</Label>
+                <Input type="number" min="1" max="200" value={bookingPlayers}
+                  onChange={e => setBookingPlayers(e.target.value)} className="text-center" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs flex items-center gap-1"><UserCheck className="h-3 w-3" />Caddies</Label>
+                <Input type="number" min="0" max="100" value={bookingCaddies}
+                  onChange={e => setBookingCaddies(e.target.value)} className="text-center" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs flex items-center gap-1"><Car className="h-3 w-3" />Carts</Label>
+                <Input type="number" min="0" max="100" value={bookingCarts}
+                  onChange={e => setBookingCarts(e.target.value)} className="text-center" />
+              </div>
+            </div>
+
+            {/* Tee selection */}
+            <div className="space-y-1.5">
+              <Label className="text-sm">Tee</Label>
+              <Select value={bookingTee} onValueChange={setBookingTee}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {(course?.course_tees as any[] ?? []).map((tee: any) => (
+                    <SelectItem key={tee.id} value={tee.color}>
+                      <span className="capitalize">{tee.color}</span>
+                      {tee.course_rating && ` · Rating ${tee.course_rating} · Slope ${tee.slope_rating}`}
+                    </SelectItem>
+                  ))}
+                  {!(course?.course_tees as any[])?.length && (
+                    <SelectItem value="white">White (Default)</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Notes */}
+            <div className="space-y-1.5">
+              <Label className="text-sm">Notes (optional)</Label>
+              <Textarea placeholder="Tournament name, special requests..." value={bookingNotes}
+                onChange={e => setBookingNotes(e.target.value)} className="resize-none" rows={2} />
+            </div>
+
+            {/* Green fee estimate */}
+            {course?.green_fee_price && (
+              <div className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-secondary/50 border border-border/50">
+                <span className="text-sm text-muted-foreground">Estimated Green Fee</span>
+                <span className="text-sm font-bold text-primary">
+                  Rp {(Number(course.green_fee_price) * Number(bookingPlayers)).toLocaleString("id-ID")}
+                </span>
+              </div>
+            )}
+
+            <Button className="w-full h-11 font-bold" onClick={handleSubmitBooking} disabled={submittingBooking}>
+              {submittingBooking ? "Submitting..." : "Send Booking Request"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
