@@ -139,7 +139,7 @@ const Clubs = () => {
       <button
         key={club.id}
         className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors border-b border-border/30 last:border-0 ${isSelected ? "bg-primary/10 border-l-2 border-l-primary" : "hover:bg-secondary/50"}`}
-        onClick={() => { if (isDesktop) { setSelectedClubId(club.id); } else { navigate(`/clubs/${club.id}`); } }}
+        onClick={() => { setSelectedClubId(club.id); setMobileShowDetail(true); }}
       >
         <Avatar className="h-12 w-12 rounded-2xl shrink-0">
           <AvatarImage src={club.logo_url ?? ""} className="rounded-2xl object-cover" />
@@ -165,7 +165,7 @@ const Clubs = () => {
     <button
       key={club.id}
       className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors border-b border-border/30 last:border-0 ${isSelected ? "bg-primary/10 border-l-2 border-l-primary" : "hover:bg-secondary/50"}`}
-      onClick={() => { if (isDesktop) { setSelectedClubId(club.id); } else { navigate(`/clubs/${club.id}`); } }}
+      onClick={() => { setSelectedClubId(club.id); setMobileShowDetail(true); }}
     >
       <Avatar className="h-12 w-12 rounded-2xl shrink-0">
         <AvatarImage src={club.logo_url ?? ""} className="rounded-2xl object-cover" />
@@ -327,7 +327,7 @@ const Clubs = () => {
                 key={selectedClubId}
                 embedded
                 clubId={selectedClubId!}
-                onBack={() => setSelectedClubId(null)}
+                onBack={() => { setSelectedClubId(null); setMobileShowDetail(false); }}
                 onNavigateToClub={(cId) => setSelectedClubId(cId)}
               />
             </div>
