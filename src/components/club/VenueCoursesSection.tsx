@@ -12,6 +12,7 @@ const VenueCoursesSection = ({ clubId, navigate }: { clubId: string; navigate: (
         .select("id, name, location, image_url, holes_count, par, course_type, green_fee_price")
         .eq("club_id", clubId)
         .order("name");
+      console.log("VenueCoursesSection query - clubId:", clubId, "data:", data);
       return data ?? [];
     },
     enabled: !!clubId,
