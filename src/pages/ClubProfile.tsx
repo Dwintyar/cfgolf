@@ -604,7 +604,7 @@ const ClubProfile = ({ embedded = false, clubId: propClubId, onBack, onNavigateT
           <div className="-mx-4">
             {isVenue ? (
               /* Venue: show owned courses */
-              <VenueCoursesSection clubId={id!} navigate={navigate} />
+              <VenueCoursesSection clubId={id!} navigate={navigate} embedded={embedded} />
             ) : (
               /* Community club: sub tabs Used/Discover */
               <>

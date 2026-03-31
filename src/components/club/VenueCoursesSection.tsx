@@ -1,9 +1,17 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, ExternalLink } from "lucide-react";
 
-const VenueCoursesSection = ({ clubId, navigate }: { clubId: string; navigate: (path: string) => void }) => {
+const VenueCoursesSection = ({
+  clubId,
+  navigate,
+  embedded = false,
+}: {
+  clubId: string;
+  navigate: (path: string) => void;
+  embedded?: boolean;
+}) => {
   const { data: courses, isLoading } = useQuery({
     queryKey: ["venue-owned-courses", clubId],
     queryFn: async () => {
@@ -12,14 +20,14 @@ const VenueCoursesSection = ({ clubId, navigate }: { clubId: string; navigate: (
         .select("id, name, location, image_url, holes_count, par, course_type, green_fee_price")
         .eq("club_id", clubId)
         .order("name");
-return data ?? [];
+      return data ?? [];
     },
     enabled: !!clubId,
   });
 
   if (isLoading) return (
     <div>
-      {[1,2].map(i => (
+      {[1, 2].map(i => (
         <div key={i} className="flex items-center gap-3 px-4 py-3 border-b border-border/30">
           <Skeleton className="h-16 w-16 rounded-xl shrink-0" />
           <div className="flex-1 space-y-1.5">
@@ -36,17 +44,16 @@ return data ?? [];
       <span className="text-4xl">⛳</span>
       <p className="text-sm font-semibold">No courses yet</p>
       <p className="text-xs">Golf courses managed by this venue will appear here</p>
-
     </div>
   );
 
   return (
     <div>
       {courses.map((course: any) => (
-        <button key={course.id}
-          onClick={() => navigate(`/venue/${course.id}?from=clubs&clubId=${clubId}`)}
-          className="flex w-full items-center gap-3 px-4 py-3 border-b border-border/30 last:border-0 hover:bg-secondary/50 transition-colors text-left">
-          {/* Course image */}
+        <div
+          key={course.id}
+          className="flex w-full items-center gap-3 px-4 py-3 border-b border-border/30 last:border-0 text-left"
+        >
           <div className="h-16 w-16 rounded-xl overflow-hidden shrink-0 bg-primary/10">
             {course.image_url
               ? <img src={course.image_url} className="h-full w-full object-cover" alt={course.name} />
@@ -54,16 +61,30 @@ return data ?? [];
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-base font-semibold truncate">{course.name}</p>
-            <p className="text-[13px] text-muted-foreground truncate mt-0.5">
-              {course.location ?? "—"}
-            </p>
+            <p className="text-[13px] text-muted-foreground truncate mt-0.5">{course.location ?? "—"}</p>
             <p className="text-[13px] text-muted-foreground mt-0.5">
               {course.holes_count ?? 18} holes · Par {course.par ?? 72}
               {course.green_fee_price && ` · Rp ${Number(course.green_fee_price).toLocaleString("id-ID")}`}
             </p>
           </div>
-          <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-        </button>
+          {/* When embedded: small external icon to open detail; when standalone: full row click */}
+          {embedded ? (
+            <button
+              onClick={() => navigate(`/venue/${course.id}`)}
+              className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-secondary transition-colors shrink-0"
+              title="Lihat detail course"
+            >
+              <ExternalLink className="h-4 w-4 text-muted-foreground" />
+            </button>
+          ) : (
+            <button
+              onClick={() => navigate(`/venue/${course.id}?from=clubs&clubId=${clubId}`)}
+              className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-secondary transition-colors shrink-0"
+            >
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            </button>
+          )}
+        </div>
       ))}
     </div>
   );
