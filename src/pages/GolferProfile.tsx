@@ -1,3 +1,4 @@
+import GBLogo from "@/assets/logo-gb.svg";
 import { ArrowLeft, Globe, Mail, Camera, UserPlus, UserCheck, MessageCircle, Crown, Check, X, BarChart3, TrendingDown, Trophy, MapPin, Settings, Clock, Share2, Shield, CalendarDays, Loader2, ClipboardList } from "lucide-react";
 import CommitteeRoleBadges from "@/components/CommitteeRoleBadges";
 import { useNavigate, useParams } from "react-router-dom";
@@ -1169,10 +1170,15 @@ const GolferProfile = () => {
       <div className="px-4 pt-4">
         <div>
           <div className="relative pb-4">
-            {paramId && (
+            {paramId ? (
               <button onClick={() => navigate(-1)} className="absolute left-0 top-0 z-10 rounded-full p-1.5 hover:bg-muted transition-colors">
                 <ArrowLeft className="h-5 w-5" />
               </button>
+            ) : (
+              <div className="absolute left-0 top-0 z-10 flex items-center gap-1.5 p-1.5">
+                <img src={GBLogo} alt="GB" className="h-7 w-7 object-contain" />
+                <span className="text-sm font-bold">Profile</span>
+              </div>
             )}
             {/* Settings button — only on own profile */}
             {(!paramId || currentUserId === targetId) && (

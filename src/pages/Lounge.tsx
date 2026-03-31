@@ -2,6 +2,7 @@ import { useState, useContext } from "react";
 import { ChatNotifContext } from "@/App";
 import ChannelsTab from "@/components/lounge/ChannelsTab";
 import ChatList from "./ChatList";
+import GBLogo from "@/assets/logo-gb.svg";
 
 const Lounge = () => {
   const [tab, setTab] = useState<"channels" | "chats">("channels");
@@ -12,7 +13,10 @@ const Lounge = () => {
       {/* WA-style header */}
       <div className="shrink-0 bg-card border-b border-border/50">
         <div className="px-4 pt-3 pb-0">
-          <h1 className="text-xl font-bold text-foreground">Lounge</h1>
+          <div className="flex items-center gap-2">
+            <img src={GBLogo} alt="GB" className="h-8 w-8 object-contain" />
+            <h1 className="text-xl font-bold text-foreground">Lounge</h1>
+          </div>
         </div>
         <div className="flex mt-1">
           {[

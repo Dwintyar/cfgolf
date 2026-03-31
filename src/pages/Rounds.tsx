@@ -1,3 +1,4 @@
+import GBLogo from "@/assets/logo-gb.svg";
 import { useState } from "react";
 import TourList from "./TourList";
 
@@ -7,7 +8,10 @@ const Rounds = () => {
       {/* Header */}
       <div className="shrink-0 bg-card border-b border-border/50">
         <div className="flex px-4 pt-3 pb-3 items-center justify-between">
-          <h1 className="text-xl font-bold text-foreground">Rounds</h1>
+          <div className="flex items-center gap-2">
+            <img src={GBLogo} alt="GB" className="h-8 w-8 object-contain" />
+            <h1 className="text-xl font-bold text-foreground">Rounds</h1>
+          </div>
         </div>
       </div>
 
