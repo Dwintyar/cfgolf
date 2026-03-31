@@ -303,6 +303,26 @@ const GolferProfile = () => {
     enabled: !!targetId && isOwnProfile,
   });
 
+  // Venue bookings (from venue_bookings table)
+  const { data: myVenueBookings, refetch: refetchVenueBookings } = useQuery({
+    queryKey: ["my-venue-bookings", targetId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("venue_bookings")
+        .select("*, courses(name, location, image_url), clubs!venue_club_id(name)")
+        .eq("requested_by", targetId!)
+        .order("created_at", { ascending: false });
+      return data ?? [];
+    },
+    enabled: !!targetId && isOwnProfile,
+  });
+
+  const handleCancelVenueBooking = async (id: string) => {
+    await supabase.from("venue_bookings").update({ status: "cancelled" }).eq("id", id);
+    refetchVenueBookings();
+    toast({ title: "Booking cancelled" });
+  };
+
   const handleCancelBooking = async (bookingId: string) => {
     setCancellingId(bookingId);
     const { error } = await supabase
@@ -1373,7 +1393,51 @@ const GolferProfile = () => {
 
             {tab === "bookings" && isOwnProfile && (
               <div className="animate-fade-in space-y-3">
-                {!myBookings || myBookings.length === 0 ? (
+                {/* Venue Bookings Section */}
+                {(myVenueBookings?.length ?? 0) > 0 && (
+                  <div className="space-y-3">
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider px-1">Golf Course Bookings</p>
+                    {myVenueBookings!.map((b: any) => {
+                      const statusColor: Record<string, string> = {
+                        pending: "text-amber-400 bg-amber-400/10",
+                        confirmed: "text-green-400 bg-green-400/10",
+                        declined: "text-red-400 bg-red-400/10",
+                        cancelled: "text-muted-foreground bg-muted",
+                      };
+                      return (
+                        <div key={b.id} className="rounded-xl border border-border bg-card p-4 space-y-2">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex items-center gap-3">
+                              <div className="h-10 w-10 rounded-xl overflow-hidden bg-primary/10 shrink-0">
+                                {b.courses?.image_url
+                                  ? <img src={b.courses.image_url} className="h-full w-full object-cover" />
+                                  : <span className="flex h-full w-full items-center justify-center text-lg">⛳</span>}
+                              </div>
+                              <div>
+                                <p className="font-semibold text-sm">{b.courses?.name ?? "Golf Course"}</p>
+                                <p className="text-xs text-muted-foreground">{b.courses?.location ?? ""}</p>
+                              </div>
+                            </div>
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full capitalize shrink-0 ${statusColor[b.status] ?? "bg-muted text-muted-foreground"}`}>
+                              {b.status}
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground leading-relaxed">{b.notes}</p>
+                          {b.status === "pending" && (
+                            <Button variant="ghost" size="sm"
+                              className="h-7 px-2 text-xs text-red-400 hover:bg-red-400/10"
+                              onClick={() => handleCancelVenueBooking(b.id)}>
+                              Cancel Request
+                            </Button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Tee Time Bookings */}
+                {(!myVenueBookings?.length && (!myBookings || myBookings.length === 0)) ? (
                   <div className="flex flex-col items-center justify-center py-16 text-center">
                     <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
                       <CalendarDays className="h-8 w-8 text-primary/60" />
@@ -1381,8 +1445,8 @@ const GolferProfile = () => {
                     <p className="text-base font-semibold">No bookings yet</p>
                     <p className="text-sm text-muted-foreground mt-1">Book tee times from the Venues page.</p>
                   </div>
-                ) : (
-                  myBookings.map((b: any) => {
+                ) : null}
+                {(myBookings?.length ?? 0) > 0 && myBookings!.map((b: any) => {
                     const isPast = b.booking_date < new Date().toISOString().split("T")[0];
                     const isCancelled = b.status === "cancelled";
                     const statusColor = isCancelled
