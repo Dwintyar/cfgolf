@@ -1,4 +1,3 @@
-import DesktopLayout from "@/components/DesktopLayout";
 import { Search, Plus, Users, ChevronRight, Shield, Crown, Star } from "lucide-react";
 import CreateClubDialog from "@/components/CreateClubDialog";
 import { Input } from "@/components/ui/input";
@@ -167,7 +166,6 @@ const Clubs = () => {
   };
 
   return (
-    <DesktopLayout noPadding>
       <div className="flex" style={{height: "100vh", paddingTop: "56px"}}>
         {/* LEFT PANEL — club list (mobile: full, desktop: fixed width) */}
         <div className={`${tab === "courses" ? "flex w-full" : mobileShowDetail ? "hidden lg:flex lg:w-[320px]" : "flex lg:w-[320px]"} flex-col shrink-0 border-r border-border/50 h-full overflow-hidden`}>
@@ -320,7 +318,6 @@ const Clubs = () => {
         </div>
 
       </div>
-    </DesktopLayout>
   );
 };
 

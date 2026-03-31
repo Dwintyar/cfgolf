@@ -54,7 +54,7 @@ const noLayoutPaths = [
 ];
 
 const leftSidebarOnlyPaths = [
-  "/admin", "/export-queries"
+  "/admin", "/export-queries", "/clubs"
 ];
 
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
