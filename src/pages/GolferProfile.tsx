@@ -1507,8 +1507,7 @@ const GolferProfile = () => {
                         )}
                       </div>
                     );
-                  })
-                )}
+                  })}
               </div>
             )}
           </div>
