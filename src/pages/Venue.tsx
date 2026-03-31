@@ -163,14 +163,7 @@ const Venue = () => {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
         <button
-          onClick={() => {
-            if (fromClubs && fromClubId) {
-              // Navigate back to club profile within iframe context
-              window.location.href = `/clubs/${fromClubId}?embedded=1`;
-            } else {
-              navigate(-1);
-            }
-          }}
+          onClick={() => navigate(-1)}
           className="absolute left-4 top-4 rounded-full bg-background/60 p-2 backdrop-blur"
         >
           <ArrowLeft className="h-5 w-5" />

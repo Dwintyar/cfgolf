@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -6,6 +7,7 @@ import { Flag, ChevronRight } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const VenueRoundsTab = ({ clubId }: { clubId: string }) => {
+  const navigate = useNavigate();
 
   // Get all courses owned by this venue club
   const { data: events, isLoading } = useQuery({
@@ -59,7 +61,7 @@ const VenueRoundsTab = ({ clubId }: { clubId: string }) => {
       {events.map((event: any) => {
         const organizer = (event.tours as any)?.clubs;
         return (
-          <button key={event.id} onClick={() => window.location.href = `/event/${event.id}`}
+          <button key={event.id} onClick={() => navigate(`/event/${event.id}`)}
             className="flex w-full items-center gap-3 px-4 py-3 text-left border-b border-border/30 last:border-0 hover:bg-secondary/50 transition-colors">
             <Avatar className="h-12 w-12 rounded-2xl shrink-0">
               <AvatarImage src={(event.courses as any)?.image_url ?? ""} />

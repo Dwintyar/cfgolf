@@ -41,9 +41,10 @@ type Tab = "members" | "tournaments" | "venues";
 interface ClubProfileProps {
   embedded?: boolean;
   clubId?: string;
+  onBack?: () => void;
 }
 
-const ClubProfile = ({ embedded = false, clubId: propClubId }: ClubProfileProps) => {
+const ClubProfile = ({ embedded = false, clubId: propClubId, onBack }: ClubProfileProps) => {
   const navigate = useNavigate();
   const params = useParams<{ id: string }>();
   const id = propClubId ?? params.id;
@@ -328,11 +329,17 @@ const ClubProfile = ({ embedded = false, clubId: propClubId }: ClubProfileProps)
     <div className="bottom-nav-safe">
       {/* WA-style: back button top left */}
       <div className="flex items-center justify-between px-4 pt-4 pb-2">
-        {!embedded && !isEmbeddedUrl ? (
+        {embedded ? (
+          onBack ? (
+            <button onClick={onBack} className="rounded-full p-1.5 hover:bg-muted transition-colors">
+              <ArrowLeft className="h-5 w-5" />
+            </button>
+          ) : <div />
+        ) : (
           <button onClick={() => navigate(-1)} className="rounded-full p-1.5 hover:bg-muted transition-colors">
             <ArrowLeft className="h-5 w-5" />
           </button>
-        ) : <div />}
+        )}
         {isOwner && (
           <div className="flex gap-1">
             <button onClick={() => setShowInvite(true)} className="rounded-full p-2 hover:bg-muted transition-colors">
@@ -372,7 +379,7 @@ const ClubProfile = ({ embedded = false, clubId: propClubId }: ClubProfileProps)
         <div className="flex flex-wrap gap-2 mt-4 justify-center">
           {clubChannel && (
             <button
-              onClick={() => window.location.href = `/lounge?channel=${clubChannel.id}`}
+              onClick={() => navigate(`/lounge?channel=${clubChannel.id}`)}
               className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-semibold hover:bg-primary/20 transition-colors">
               📢 Channel
             </button>
@@ -587,7 +594,7 @@ const ClubProfile = ({ embedded = false, clubId: propClubId }: ClubProfileProps)
                         <p className="text-xs">Courses used in tournament events will appear here</p>
                       </div>
                     ) : usedCourses.map((course: any) => (
-                      <button key={course.id} onClick={() => window.location.href = `/venue/${course.id}`}
+                      <button key={course.id} onClick={() => navigate(`/venue/${course.id}`)}
                         className="flex w-full items-center gap-3 px-4 py-3 border-b border-border/30 last:border-0 hover:bg-secondary/50 transition-colors text-left">
                         <div className="h-12 w-12 rounded-xl overflow-hidden shrink-0 bg-primary/10">
                           {course.image_url ? <img src={course.image_url} className="h-full w-full object-cover" /> : <div className="h-full w-full flex items-center justify-center text-xl">⛳</div>}
@@ -609,7 +616,7 @@ const ClubProfile = ({ embedded = false, clubId: propClubId }: ClubProfileProps)
                         <p className="text-sm font-semibold">All courses already used!</p>
                       </div>
                     ) : discoverCourses.map((course: any) => (
-                      <button key={course.id} onClick={() => window.location.href = `/venue/${course.id}`}
+                      <button key={course.id} onClick={() => navigate(`/venue/${course.id}`)}
                         className="flex w-full items-center gap-3 px-4 py-3 border-b border-border/30 last:border-0 hover:bg-secondary/50 transition-colors text-left">
                         <div className="h-12 w-12 rounded-xl overflow-hidden shrink-0 bg-primary/10">
                           {course.image_url ? <img src={course.image_url} className="h-full w-full object-cover" /> : <div className="h-full w-full flex items-center justify-center text-xl">⛳</div>}
