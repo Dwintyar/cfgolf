@@ -522,10 +522,10 @@ const ClubProfile = ({ embedded = false, clubId: propClubId }: ClubProfileProps)
                 );
               })}
             </div>
+            )}
           </>
         )}
 
-        {/* Requests tab (owner only) */}
         {/* Tournaments/Rounds tab */}
         {tab === "tournaments" && (
           <div className="-mx-4">
