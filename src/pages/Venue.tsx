@@ -7,7 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import venueImg from "@/assets/golf-venue.jpg";
 import heroImg from "@/assets/golf-hero.jpg";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -38,16 +38,15 @@ const Venue = () => {
   // Get current user
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [currentUserClubId, setCurrentUserClubId] = useState<string | null>(null);
-  useState(() => {
+  useEffect(() => {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (user) {
         setCurrentUserId(user.id);
-        // Get first club the user belongs to
         const { data } = await supabase.from("members").select("club_id").eq("user_id", user.id).limit(1).single();
         if (data) setCurrentUserClubId(data.club_id);
       }
     });
-  });
+  }, []);
 
   const handleSubmitBooking = async () => {
     if (!bookingDate || !selectedTime) {
