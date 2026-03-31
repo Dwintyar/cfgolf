@@ -342,12 +342,12 @@ const Clubs = () => {
               <p className="text-sm text-muted-foreground mt-1">Choose a club from the left to see details</p>
             </div>
           ) : (
-            <div className="flex-1 overflow-y-auto h-full">
-              <iframe
+            <div className="flex-1 overflow-y-auto">
+              <ClubProfile
                 key={selectedClubId}
-                src={`/clubs/${selectedClubId}?embedded=1`}
-                className="w-full h-full border-0"
-                title="Club Profile"
+                embedded
+                clubId={selectedClubId}
+                onBack={() => setSelectedClubId(null)}
               />
             </div>
           )}

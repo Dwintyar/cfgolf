@@ -1,12 +1,11 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
+
 import { Skeleton } from "@/components/ui/skeleton";
 import { Calendar, ChevronRight, Users } from "lucide-react";
 
 const VenueScheduleTab = ({ clubId }: { clubId: string }) => {
-  const navigate = useNavigate();
   const [scheduleTab, setScheduleTab] = useState<"upcoming" | "completed">("upcoming");
 
   // Get course(s) linked to this venue club
@@ -100,7 +99,7 @@ const VenueScheduleTab = ({ clubId }: { clubId: string }) => {
           const organizer = (event.tours as any)?.clubs;
           const playerCount = (event.contestants as any)?.[0]?.count ?? 0;
           return (
-            <button key={event.id} onClick={() => navigate(`/event/${event.id}`)}
+            <button key={event.id} onClick={() => window.location.href = `/event/${event.id}`}
               className="flex w-full items-center gap-3 px-4 py-3 text-left border-b border-border/30 last:border-0 hover:bg-secondary/50 transition-colors">
               <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden">
                 {organizer?.logo_url

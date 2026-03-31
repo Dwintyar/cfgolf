@@ -1,12 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Trophy, ChevronRight } from "lucide-react";
 
 const ClubTournamentsTab = ({ clubId }: { clubId: string }) => {
-  const navigate = useNavigate();
 
   const { data: tours, isLoading } = useQuery({
     queryKey: ["club-tournaments", clubId],
@@ -46,7 +45,7 @@ const ClubTournamentsTab = ({ clubId }: { clubId: string }) => {
   return (
     <div>
       {tours.map((tour: any) => (
-        <button key={tour.id} onClick={() => navigate(`/tour/${tour.id}`)}
+        <button key={tour.id} onClick={() => window.location.href = `/tour/${tour.id}`}
           className="flex w-full items-center gap-3 px-4 py-3 text-left border-b border-border/30 last:border-0 hover:bg-secondary/50 transition-colors">
           <Avatar className="h-12 w-12 rounded-2xl shrink-0">
             <AvatarImage src={(tour.clubs as any)?.logo_url ?? ""} />

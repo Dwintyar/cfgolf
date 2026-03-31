@@ -40,9 +40,10 @@ type Tab = "members" | "tournaments" | "courses";
 interface ClubProfileProps {
   embedded?: boolean;
   clubId?: string;
+  onBack?: () => void;
 }
 
-const ClubProfile = ({ embedded = false, clubId: propClubId }: ClubProfileProps) => {
+const ClubProfile = ({ embedded = false, clubId: propClubId, onBack }: ClubProfileProps) => {
   const navigate = useNavigate();
   const { id: paramId } = useParams<{ id: string }>();
   const id = propClubId ?? paramId;
@@ -315,12 +316,9 @@ const ClubProfile = ({ embedded = false, clubId: propClubId }: ClubProfileProps)
     <div className="bottom-nav-safe">
       {/* WA-style: back button top left */}
       <div className="flex items-center justify-between px-4 pt-4 pb-2">
-        {!embedded && (
-          <button onClick={() => navigate(-1)} className="rounded-full p-1.5 hover:bg-muted transition-colors">
-            <ArrowLeft className="h-5 w-5" />
-          </button>
-        )}
-        {embedded && <div />}
+        <button onClick={() => embedded && onBack ? onBack() : navigate(-1)} className="rounded-full p-1.5 hover:bg-muted transition-colors">
+          <ArrowLeft className="h-5 w-5" />
+        </button>
         {isOwner && (
           <div className="flex gap-1">
             <button onClick={() => setShowInvite(true)} className="rounded-full p-2 hover:bg-muted transition-colors">
