@@ -14,7 +14,6 @@ import EditClubDialog from "@/components/EditClubDialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import ClubTournamentsTab from "@/components/tour/ClubTournamentsTab";
 import VenueStaffTab from "@/components/club/VenueStaffTab";
-import VenueCoursesSection from "@/components/club/VenueCoursesSection";
 import VenueRoundsTab from "@/components/tour/VenueRoundsTab";
 import VenueScheduleTab from "@/components/club/VenueScheduleTab";
 import InviteMemberDialog from "@/components/InviteMemberDialog";
@@ -390,17 +389,27 @@ const ClubProfile = ({ embedded = false, clubId: propClubId, onBack, onNavigateT
             </button>
           )}
           {isVenue && venueCourses && venueCourses.length > 0 && (
-            <button
-              onClick={() => {
-                if (venueCourses.length === 1) {
-                  navigate(`/venue/${venueCourses[0].id}`);
-                } else {
-                  navigate(`/venue/${venueCourses[0].id}`);
-                }
-              }}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-semibold hover:bg-primary/20 transition-colors">
-              ⛳ {venueCourses.length === 1 ? venueCourses[0].name : `${venueCourses.length} Courses`}
-            </button>
+            venueCourses.length === 1 ? (
+              <button
+                onClick={() => navigate(`/venue/${venueCourses[0].id}`)}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-semibold hover:bg-primary/20 transition-colors">
+                ⛳ {venueCourses[0].name}
+              </button>
+            ) : (
+              <div className="relative group">
+                <button className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-semibold hover:bg-primary/20 transition-colors">
+                  ⛳ {venueCourses.length} Courses
+                </button>
+                <div className="absolute top-full left-0 mt-1 hidden group-hover:block bg-card border border-border rounded-xl shadow-lg overflow-hidden z-10 min-w-[160px]">
+                  {venueCourses.map((c: any) => (
+                    <button key={c.id} onClick={() => navigate(`/venue/${c.id}`)}
+                      className="w-full text-left px-4 py-2.5 text-sm hover:bg-secondary transition-colors border-b border-border/50 last:border-0">
+                      ⛳ {c.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )
           )}
           {!isOwner && !isMember && currentUserId && (
             isVenue ? (
