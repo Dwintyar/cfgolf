@@ -87,6 +87,8 @@ const ClubProfile = ({ embedded = false, clubId: propClubId, onBack, onNavigateT
     enabled: !!id,
   });
 
+  const isVenue = (club as any)?.club_type === "venue";
+
   // Check ownership
   useEffect(() => {
     if (club && currentUserId) {
@@ -157,6 +159,20 @@ const ClubProfile = ({ embedded = false, clubId: propClubId, onBack, onNavigateT
     enabled: !!id && !!currentUserId,
   });
 
+  // Pending staff requests (for venue club tab badge)
+  const { data: pendingStaff } = useQuery({
+    queryKey: ["club-profile-pending-staff", id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("club_staff")
+        .select("id")
+        .eq("club_id", id!)
+        .eq("status", "pending");
+      return data ?? [];
+    },
+    enabled: !!id && isVenue,
+  });
+
   // Check if current user has a pending join request
   const { data: myJoinRequest } = useQuery({
     queryKey: ["my-join-request", id, currentUserId],
@@ -197,7 +213,6 @@ const ClubProfile = ({ embedded = false, clubId: propClubId, onBack, onNavigateT
     .join("")
     .toUpperCase() ?? "??";
 
-  const isVenue = (club as any)?.club_type === "venue";
 
   // Get channel for this club (venue)
   const { data: clubChannel } = useQuery({
@@ -444,9 +459,20 @@ const ClubProfile = ({ embedded = false, clubId: propClubId, onBack, onNavigateT
         {/* Tabs — WA underline style */}
         <div className="flex border-b border-border/50 mb-4">
           {[
-            { id: "members", label: isVenue ? "Staff" : `Members${pendingCount > 0 ? ` 🔴` : ""}` },
-            { id: "tournaments", label: isVenue ? "Schedule" : "Tournaments" },
-            { id: "venues", label: "Venues" },
+            {
+              id: "members",
+              label: isVenue
+                ? `Staff${(pendingStaff?.length ?? 0) > 0 ? " 🔴" : ""}`
+                : `Members${pendingCount > 0 ? " 🔴" : ""}`,
+            },
+            {
+              id: "tournaments",
+              label: isVenue ? "Schedule" : "Tournaments",
+            },
+            {
+              id: "venues",
+              label: isVenue ? "Courses" : "Venues",
+            },
           ].map(t => (
             <button key={t.id}
               onClick={() => setTab(t.id as Tab)}
