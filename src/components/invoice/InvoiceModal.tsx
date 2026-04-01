@@ -3,7 +3,6 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Download, X } from "lucide-react";
 import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
 
 export interface InvoiceData {
   type: "venue" | "teetime";
@@ -142,7 +141,10 @@ const InvoiceModal = ({ open, onOpenChange, data }: { open: boolean; onOpenChang
     const el = document.getElementById("invoice-document");
     if (!el) { downloading.current = false; return; }
     try {
-      const canvas = await html2canvas(el, { scale: 2, backgroundColor: "#0f1a12", useCORS: true });
+      const [{ default: jsPDF }, canvas] = await Promise.all([
+        import("jspdf"),
+        html2canvas(el, { scale: 2, backgroundColor: "#0f1a12", useCORS: true }),
+      ]);
       const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
       const w = pdf.internal.pageSize.getWidth();
