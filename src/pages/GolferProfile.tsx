@@ -13,7 +13,6 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
-import { lazy, Suspense } from "react";
 const InvoiceModal = lazy(() => import("@/components/invoice/InvoiceModal"));
 import type { InvoiceData } from "@/components/invoice/InvoiceModal";
 import CreateClubDialog from "@/components/CreateClubDialog";

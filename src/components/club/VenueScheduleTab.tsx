@@ -1,12 +1,11 @@
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Calendar, Users, UserCheck, ChevronDown, ChevronUp, Save, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { lazy, Suspense } from "react";
 const InvoiceModal = lazy(() => import("@/components/invoice/InvoiceModal"));
 import type { InvoiceData } from "@/components/invoice/InvoiceModal";
 
