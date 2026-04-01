@@ -224,6 +224,17 @@ const ClubProfile = ({ embedded = false, clubId: propClubId, onBack, onNavigateT
     enabled: !!id,
   });
 
+  // Venue courses (lightweight — for action button)
+  const { data: venueCourses } = useQuery({
+    queryKey: ["venue-courses-action", id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("courses").select("id, name").eq("club_id", id!).order("name");
+      return data ?? [];
+    },
+    enabled: !!id && isVenue,
+  });
+
 
   const getInitials = (name: string | null) =>
     name
@@ -378,6 +389,19 @@ const ClubProfile = ({ embedded = false, clubId: propClubId, onBack, onNavigateT
               📢 Channel
             </button>
           )}
+          {isVenue && venueCourses && venueCourses.length > 0 && (
+            <button
+              onClick={() => {
+                if (venueCourses.length === 1) {
+                  navigate(`/venue/${venueCourses[0].id}`);
+                } else {
+                  navigate(`/venue/${venueCourses[0].id}`);
+                }
+              }}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-semibold hover:bg-primary/20 transition-colors">
+              ⛳ {venueCourses.length === 1 ? venueCourses[0].name : `${venueCourses.length} Courses`}
+            </button>
+          )}
           {!isOwner && !isMember && currentUserId && (
             isVenue ? (
               myStaffEntry ? (
@@ -430,7 +454,7 @@ const ClubProfile = ({ embedded = false, clubId: propClubId, onBack, onNavigateT
               id: "tournaments",
               label: isVenue ? "Schedule" : "Tournaments",
             },
-            ...(isVenue ? [{ id: "venues", label: "Courses" }] : []),
+
           ].map(t => (
             <button key={t.id}
               onClick={() => setTab(t.id as Tab)}
@@ -584,11 +608,7 @@ const ClubProfile = ({ embedded = false, clubId: propClubId, onBack, onNavigateT
         )}
 
         {/* Venues tab */}
-        {tab === "venues" && isVenue && (
-          <div className="-mx-4">
-            <VenueCoursesSection clubId={id!} navigate={navigate} embedded={embedded} />
-          </div>
-        )}
+
       </div>
 
       {/* Club Settings Sheet */}
