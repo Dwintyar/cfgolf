@@ -109,9 +109,9 @@ const Clubs = () => {
   const communityClubs = filtered(
     (clubs ?? []).filter(c => !isMember(c.id) && !c.is_personal && c.club_type !== "venue" && c.facility_type !== "driving_range")
   );
-  // Venue — not yet a staff member
+  // Venue — show all venue clubs (user may want to apply for staff regardless of membership)
   const venueClubs = filtered(
-    (clubs ?? []).filter(c => c.club_type === "venue" && !isMember(c.id))
+    (clubs ?? []).filter(c => c.club_type === "venue")
   );
 
   const handleJoin = async (club: ClubData, e: React.MouseEvent) => {
