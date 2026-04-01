@@ -32,8 +32,51 @@
 
   <body>
     <div id="root"></div>
+
+    <!-- Splash screen — visible before React mounts -->
+    <div id="splash" style="
+      position:fixed; inset:0; z-index:9999;
+      background:#0a1a12;
+      display:flex; flex-direction:column;
+      align-items:center; justify-content:center;
+      gap:0;
+      font-family:'Segoe UI',system-ui,sans-serif;
+      transition:opacity 0.4s ease;
+    ">
+      <!-- App name -->
+      <p style="
+        color:#ffffff; font-size:26px; font-weight:800;
+        letter-spacing:-0.5px; margin:0 0 28px 0;
+      ">GolfBuana</p>
+
+      <!-- Logo dark mode SVG inline -->
+      <img src="/logo-gb-dark.svg" style="width:140px;height:140px;object-fit:contain;" />
+
+      <!-- Taglines -->
+      <div style="margin-top:32px; display:flex; flex-direction:column; align-items:center; gap:8px;">
+        <p style="color:#4ade80;font-size:14px;font-weight:600;margin:0;letter-spacing:0.5px;">⛳ Fair Play</p>
+        <p style="color:#4ade80;font-size:14px;font-weight:600;margin:0;letter-spacing:0.5px;">🤝 Fellowship</p>
+        <p style="color:#4ade80;font-size:14px;font-weight:600;margin:0;letter-spacing:0.5px;">🏆 Fun Competition</p>
+      </div>
+    </div>
+
     <script type="module" src="/src/main.tsx"></script>
     <script>
+      // Hide splash when React has mounted
+      (function() {
+        var splash = document.getElementById('splash');
+        if (!splash) return;
+        var observer = new MutationObserver(function() {
+          var root = document.getElementById('root');
+          if (root && root.children.length > 0) {
+            splash.style.opacity = '0';
+            setTimeout(function() { splash.style.display = 'none'; }, 400);
+            observer.disconnect();
+          }
+        });
+        observer.observe(document.getElementById('root'), { childList: true });
+      })();
+
       // Register service worker on load (required for PWA/TWA)
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', function() {
