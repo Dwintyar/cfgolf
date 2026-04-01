@@ -170,7 +170,8 @@ const VenueScheduleTab = ({ clubId }: { clubId: string }) => {
   };
 
   return (
-    <div>
+    <>
+      <div>
       {/* ── PENDING ── */}
       {(pendingBookings?.length ?? 0) > 0 && (
         <div>
@@ -421,13 +422,14 @@ const VenueScheduleTab = ({ clubId }: { clubId: string }) => {
       )}
     </div>
 
-    {invoiceData && (
-      <InvoiceModal
-        open={!!invoiceData}
-        onOpenChange={(v) => { if (!v) setInvoiceData(null); }}
-        data={invoiceData}
-      />
-    )}
+      {invoiceData && (
+        <InvoiceModal
+          open={!!invoiceData}
+          onOpenChange={(v) => { if (!v) setInvoiceData(null); }}
+          data={invoiceData}
+        />
+      )}
+    </>
   );
 };
 
