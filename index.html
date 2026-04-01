@@ -66,12 +66,22 @@
       (function() {
         var splash = document.getElementById('splash');
         if (!splash) return;
+        var minTime = 2000; // minimum 2 seconds
+        var startTime = Date.now();
+        var reactReady = false;
+        function hideSplash() {
+          var elapsed = Date.now() - startTime;
+          var delay = Math.max(0, minTime - elapsed);
+          setTimeout(function() {
+            splash.style.opacity = '0';
+            setTimeout(function() { splash.style.display = 'none'; }, 400);
+          }, delay);
+        }
         var observer = new MutationObserver(function() {
           var root = document.getElementById('root');
           if (root && root.children.length > 0) {
-            splash.style.opacity = '0';
-            setTimeout(function() { splash.style.display = 'none'; }, 400);
             observer.disconnect();
+            hideSplash();
           }
         });
         observer.observe(document.getElementById('root'), { childList: true });
