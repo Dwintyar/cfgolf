@@ -1,16 +1,20 @@
 {
   "id": "com.golfbuana.app",
-  "name": "GolfBuana - Platform Golf Komunitas Indonesia",
+  "name": "GolfBuana · Play. Connect. Compete.",
   "short_name": "GolfBuana",
-  "description": "GolfBuana — Platform Golf Komunitas Indonesia. Kelola klub, tournament, handicap, dan terhubung dengan sesama golfer.",
+  "description": "GolfBuana · Play. Connect. Compete. — Your golf community platform for Indonesia. Meet fellow golfers, join tournaments, track your handicap.",
   "start_url": "https://golfbuana.com/",
   "scope": "https://golfbuana.com/",
   "display": "standalone",
-  "background_color": "#0a1a12",
+  "background_color": "#ffffff",
   "theme_color": "#1D9E75",
   "orientation": "portrait",
   "lang": "id",
-  "categories": ["sports", "social", "lifestyle"],
+  "categories": [
+    "sports",
+    "social",
+    "lifestyle"
+  ],
   "icons": [
     {
       "src": "/icon-192.png",
