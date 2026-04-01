@@ -1730,6 +1730,13 @@ const GolferProfile = () => {
           </div>
         </SheetContent>
       </Sheet>
+      {invoiceData && (
+        <InvoiceModal
+          open={!!invoiceData}
+          onOpenChange={(v) => { if (!v) setInvoiceData(null); }}
+          data={invoiceData}
+        />
+      )}
     </div>
   );
 };
@@ -1741,12 +1748,5 @@ const StatRow = ({ label, value }: { label: string; value: string }) => (
   </div>
 );
 
-      {invoiceData && (
-        <InvoiceModal
-          open={!!invoiceData}
-          onOpenChange={(v) => { if (!v) setInvoiceData(null); }}
-          data={invoiceData}
-        />
-      )}
 
 export default GolferProfile;
