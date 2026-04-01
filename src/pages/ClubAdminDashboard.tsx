@@ -117,9 +117,18 @@ const ClubAdminDashboard = () => {
     enabled: !!clubId,
   });
 
-  const isGolfCourse = !!linkedCourse;
+  const isVenue = club?.club_type === "venue";
+  const isGolfCourse = !!linkedCourse && isVenue;
   const isDrivingRange = club?.facility_type === "driving_range";
-  const isCommunity = !isGolfCourse && !isDrivingRange;
+  const isCommunity = !isVenue && !isDrivingRange;
+
+  // Reset to appropriate default tab when club type loads
+  useEffect(() => {
+    if (!club) return;
+    if (isVenue) setActiveTab("staff");
+    else if (isDrivingRange) setActiveTab("members");
+    else setActiveTab("members");
+  }, [club?.id, isVenue, isDrivingRange]);
 
   useEffect(() => {
     if (club) {
@@ -1345,19 +1354,19 @@ const ClubAdminDashboard = () => {
 
   // ── Tab structure per type ──
   const renderTabs = () => {
-    if (isGolfCourse) {
+    if (isVenue) {
       return (
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="w-full">
-            <TabsTrigger value="members" className="flex-1 text-xs">Members</TabsTrigger>
-            <TabsTrigger value="staff" className="flex-1 text-xs">Staff{pendingStaffCount > 0 && <span className="ml-1 inline-flex items-center justify-center h-4 w-4 rounded-full bg-amber-500 text-white text-[10px] font-bold">{pendingStaffCount}</span>}</TabsTrigger>
-            <TabsTrigger value="tournaments" className="flex-1 text-xs">Tournaments</TabsTrigger>
-            <TabsTrigger value="venue" className="flex-1 text-xs">Venue</TabsTrigger>
+            <TabsTrigger value="staff" className="flex-1 text-xs">
+              Staff{pendingStaffCount > 0 && <span className="ml-1 inline-flex items-center justify-center h-4 w-4 rounded-full bg-amber-500 text-white text-[10px] font-bold">{pendingStaffCount}</span>}
+            </TabsTrigger>
+            <TabsTrigger value="schedule" className="flex-1 text-xs">Schedule</TabsTrigger>
+            <TabsTrigger value="venue" className="flex-1 text-xs">Course</TabsTrigger>
             <TabsTrigger value="settings" className="flex-1 text-xs">Settings</TabsTrigger>
           </TabsList>
-          {renderMembersTab()}
           {renderStaffTab()}
-          {renderTournamentsTab()}
+          {renderScheduleTab()}
           {renderVenueTab()}
           {renderSettingsTab()}
         </Tabs>
@@ -1406,7 +1415,7 @@ const ClubAdminDashboard = () => {
         <h1 className="font-display text-lg font-bold flex-1 truncate">
           Admin — {club?.name ?? "Loading..."}
         </h1>
-        {isGolfCourse && <Badge variant="outline" className="text-[9px] shrink-0">Golf Course</Badge>}
+        {isVenue && <Badge variant="outline" className="text-[9px] shrink-0">Golf Venue</Badge>}
         {isDrivingRange && <Badge variant="outline" className="text-[9px] shrink-0">Driving Range</Badge>}
         {isCommunity && <Badge variant="outline" className="text-[9px] shrink-0">Community</Badge>}
       </div>
