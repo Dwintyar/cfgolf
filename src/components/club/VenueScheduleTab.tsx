@@ -6,7 +6,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Calendar, Users, UserCheck, ChevronDown, ChevronUp, Save, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import InvoiceModal, { InvoiceData } from "@/components/invoice/InvoiceModal";
+import { lazy, Suspense } from "react";
+const InvoiceModal = lazy(() => import("@/components/invoice/InvoiceModal"));
+import type { InvoiceData } from "@/components/invoice/InvoiceModal";
 
 function parseNotesCount(notes: string | null, key: string): number {
   if (!notes) return 1;
@@ -423,11 +425,13 @@ const VenueScheduleTab = ({ clubId }: { clubId: string }) => {
     </div>
 
       {invoiceData && (
-        <InvoiceModal
-          open={!!invoiceData}
-          onOpenChange={(v) => { if (!v) setInvoiceData(null); }}
-          data={invoiceData}
-        />
+        <Suspense fallback={null}>
+          <InvoiceModal
+            open={!!invoiceData}
+            onOpenChange={(v) => { if (!v) setInvoiceData(null); }}
+            data={invoiceData}
+          />
+        </Suspense>
       )}
     </>
   );
