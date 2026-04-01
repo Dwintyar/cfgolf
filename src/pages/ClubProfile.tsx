@@ -446,6 +446,13 @@ const ClubProfile = ({ embedded = false, clubId: propClubId, onBack, onNavigateT
           {isOwner && (
             <Badge className="text-sm bg-yellow-500/10 text-yellow-500 border-yellow-500/20 px-3 py-1">👑 Owner</Badge>
           )}
+          {(isOwner || (myMemberships && myMemberships[id!] === "admin")) && (
+            <button
+              onClick={() => navigate(`/admin/club/${id}`)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-secondary border border-border text-sm font-semibold hover:bg-secondary/80 transition-colors">
+              ⚙️ Admin
+            </button>
+          )}
         </div>
       </div>
 
