@@ -1,7 +1,7 @@
 {
   "id": "com.golfbuana.app",
   "name": "GolfBuana - Platform Golf Komunitas Indonesia",
-  "short_name": "GB",
+  "short_name": "GolfBuana",
   "description": "GolfBuana — Platform Golf Komunitas Indonesia. Kelola klub, tournament, handicap, dan terhubung dengan sesama golfer.",
   "start_url": "https://golfbuana.com/",
   "scope": "https://golfbuana.com/",
@@ -25,7 +25,7 @@
       "purpose": "any"
     },
     {
-      "src": "/icon-512.png",
+      "src": "/icon-512-maskable.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
@@ -33,11 +33,11 @@
   ],
   "screenshots": [
     {
-      "src": "/icon-192.png",
-      "sizes": "192x192",
+      "src": "/exports/01-news-feed.png",
+      "sizes": "390x844",
       "type": "image/png",
       "form_factor": "narrow",
-      "label": "GolfBuana App"
+      "label": "GolfBuana Lounge"
     }
   ],
   "prefer_related_applications": false
