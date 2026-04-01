@@ -424,13 +424,11 @@ const VenueScheduleTab = ({ clubId }: { clubId: string }) => {
     </div>
 
       {invoiceData && (
-        <Suspense fallback={null}>
           <InvoiceModal
             open={!!invoiceData}
             onOpenChange={(v) => { if (!v) setInvoiceData(null); }}
             data={invoiceData}
           />
-        </Suspense>
       )}
     </>
   );

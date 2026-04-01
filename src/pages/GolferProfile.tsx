@@ -9,12 +9,11 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useState, useEffect, useRef, useCallback, lazy, Suspense } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
-const InvoiceModal = lazy(() => import("@/components/invoice/InvoiceModal"));
-import type { InvoiceData } from "@/components/invoice/InvoiceModal";
+import InvoiceModal, { InvoiceData } from "@/components/invoice/InvoiceModal";
 import CreateClubDialog from "@/components/CreateClubDialog";
 
 type Tab = "about" | "clubs" | "stats" | "gallery" | "bookings";
@@ -1732,13 +1731,11 @@ const GolferProfile = () => {
         </SheetContent>
       </Sheet>
       {invoiceData && (
-        <Suspense fallback={null}>
           <InvoiceModal
             open={!!invoiceData}
             onOpenChange={(v) => { if (!v) setInvoiceData(null); }}
             data={invoiceData}
           />
-        </Suspense>
       )}
     </div>
   );
