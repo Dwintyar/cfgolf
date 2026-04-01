@@ -58,7 +58,6 @@ const ClubProfile = ({ embedded = false, clubId: propClubId, onBack, onNavigateT
   const [showInvite, setShowInvite] = useState(false);
   const [showClubSettings, setShowClubSettings] = useState(false);
   const [tab, setTab] = useState<Tab>("members");
-  const [courseTab, setCourseTab] = useState<"used" | "discover">("used");
   const [joining, setJoining] = useState(false);
   const [showVenueJoin, setShowVenueJoin] = useState(false);
   const [selectedTransferMember, setSelectedTransferMember] = useState<string | null>(null);
@@ -249,20 +248,7 @@ const ClubProfile = ({ embedded = false, clubId: propClubId, onBack, onNavigateT
     enabled: !!id,
   });
 
-  const { data: allCourses } = useQuery({
-    queryKey: ["all-courses-discover"],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("courses")
-        .select("id, name, location, image_url, holes_count, par, club_id")
-        .order("name");
-      return data ?? [];
-    },
-    enabled: tab === "venues" && courseTab === "discover",
-  });
-
   const usedCourseIds = new Set((usedCourses ?? []).map((c: any) => c.id));
-  const discoverCourses = (allCourses ?? []).filter((c: any) => !usedCourseIds.has(c.id));
 
   const getInitials = (name: string | null) =>
     name
@@ -632,83 +618,40 @@ const ClubProfile = ({ embedded = false, clubId: propClubId, onBack, onNavigateT
               /* Venue: show owned courses */
               <VenueCoursesSection clubId={id!} navigate={navigate} embedded={embedded} />
             ) : (
-              /* Community club: sub tabs Used/Discover */
-              <>
-                <div className="flex border-b border-border/50 px-4">
-                  {[
-                    { id: "used", label: `Used Courses${usedCourses?.length ? ` (${usedCourses.length})` : ""}` },
-                    { id: "discover", label: "Discover More" },
-                  ].map(t => (
-                    <button key={t.id} onClick={() => setCourseTab(t.id as "used" | "discover")}
-                      className={`flex-1 py-2.5 text-sm font-semibold transition-colors border-b-2 ${
-                        courseTab === t.id ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
-                      }`}>
-                      {t.label}
-                    </button>
-                  ))}
-                </div>
-                {courseTab === "used" && (
-                  <div>
-                    {!usedCourses?.length ? (
-                      <div className="flex flex-col items-center justify-center py-12 text-center gap-2 text-muted-foreground px-4">
-                        <span className="text-4xl">⛳</span>
-                        <p className="text-sm font-semibold">No courses used yet</p>
-                        <p className="text-xs">Courses used in tournament events will appear here</p>
-                      </div>
-                    ) : usedCourses.map((course: any) => (
-                      <button key={course.id} onClick={() => {
-                        if (embedded && onNavigateToClub && course.club_id) {
-                          onNavigateToClub(course.club_id);
-                        } else if (course.club_id) {
-                          navigate(`/clubs/${course.club_id}`);
-                        } else {
-                          navigate(`/venue/${course.id}`);
-                        }
-                      }}
-                        className="flex w-full items-center gap-3 px-4 py-3 border-b border-border/30 last:border-0 hover:bg-secondary/50 transition-colors text-left">
-                        <div className="h-12 w-12 rounded-xl overflow-hidden shrink-0 bg-primary/10">
-                          {course.image_url ? <img src={course.image_url} className="h-full w-full object-cover" /> : <div className="h-full w-full flex items-center justify-center text-xl">⛳</div>}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-base font-semibold truncate">{course.name}</p>
-                          <p className="text-[13px] text-muted-foreground truncate mt-0.5">{course.location ?? "—"} · {course.holes_count ?? 18} holes · Par {course.par ?? 72}</p>
-                        </div>
-                        <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-                      </button>
-                    ))}
+              /* Community club: venues used in tournaments */
+              <div>
+                {!usedCourses?.length ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-center gap-2 text-muted-foreground px-4">
+                    <span className="text-4xl">⛳</span>
+                    <p className="text-sm font-semibold">No venues used yet</p>
+                    <p className="text-xs">Venues used in tournament events will appear here</p>
                   </div>
-                )}
-                {courseTab === "discover" && (
-                  <div>
-                    {discoverCourses.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center py-12 text-center gap-2 text-muted-foreground px-4">
-                        <span className="text-4xl">🔍</span>
-                        <p className="text-sm font-semibold">All courses already used!</p>
-                      </div>
-                    ) : discoverCourses.map((course: any) => (
-                      <button key={course.id} onClick={() => {
-                        if (embedded && onNavigateToClub && course.club_id) {
-                          onNavigateToClub(course.club_id);
-                        } else if (course.club_id) {
-                          navigate(`/clubs/${course.club_id}`);
-                        } else {
-                          navigate(`/venue/${course.id}`);
-                        }
-                      }}
-                        className="flex w-full items-center gap-3 px-4 py-3 border-b border-border/30 last:border-0 hover:bg-secondary/50 transition-colors text-left">
-                        <div className="h-12 w-12 rounded-xl overflow-hidden shrink-0 bg-primary/10">
-                          {course.image_url ? <img src={course.image_url} className="h-full w-full object-cover" /> : <div className="h-full w-full flex items-center justify-center text-xl">⛳</div>}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-base font-semibold truncate">{course.name}</p>
-                          <p className="text-[13px] text-muted-foreground truncate mt-0.5">{course.location ?? "—"} · {course.holes_count ?? 18} holes · Par {course.par ?? 72}</p>
-                        </div>
-                        <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </>
+                ) : (usedCourses ?? []).map((course: any) => (
+                  <button key={course.id} onClick={() => {
+                    if (embedded && onNavigateToClub && course.club_id) {
+                      onNavigateToClub(course.club_id);
+                    } else if (course.club_id) {
+                      navigate(`/clubs/${course.club_id}`);
+                    } else {
+                      navigate(`/venue/${course.id}`);
+                    }
+                  }}
+                    className="flex w-full items-center gap-3 px-4 py-3 border-b border-border/30 last:border-0 hover:bg-secondary/50 transition-colors text-left">
+                    <div className="h-12 w-12 rounded-xl overflow-hidden shrink-0 bg-primary/10">
+                      {course.image_url
+                        ? <img src={course.image_url} className="h-full w-full object-cover" />
+                        : <div className="h-full w-full flex items-center justify-center text-xl">⛳</div>}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-base font-semibold truncate">{course.name}</p>
+                      <p className="text-[13px] text-muted-foreground truncate mt-0.5">
+                        {course.location ?? "—"} · {course.holes_count ?? 18} holes · Par {course.par ?? 72}
+                      </p>
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                  </button>
+                ))}
+              </div>
             )}
           </div>
         )}
