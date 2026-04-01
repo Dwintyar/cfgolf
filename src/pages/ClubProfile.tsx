@@ -224,31 +224,35 @@ const ClubProfile = ({ embedded = false, clubId: propClubId, onBack, onNavigateT
     enabled: !!id,
   });
 
-  // Used courses — from events of tours organized by this club
+  // Used courses — flat 2-step query (avoids nested select issues)
   const { data: usedCourses } = useQuery({
     queryKey: ["club-used-courses", id],
     queryFn: async () => {
       if (!id) return [];
+      // Step 1: get tour IDs
       const { data: tours } = await supabase
         .from("tours").select("id").eq("organizer_club_id", id);
       if (!tours?.length) return [];
       const tourIds = tours.map((t: any) => t.id);
+      // Step 2: get unique course IDs from events
       const { data: events } = await supabase
         .from("events")
-        .select("course_id, courses(id, name, location, image_url, holes_count, par, club_id)")
+        .select("course_id")
         .in("tour_id", tourIds)
         .not("course_id", "is", null);
-      const map = new Map<string, any>();
-      (events ?? []).forEach((e: any) => {
-        const course = e.courses as any;
-        if (course?.id && !map.has(course.id)) map.set(course.id, course);
-      });
-      return Array.from(map.values());
+      if (!events?.length) return [];
+      const courseIds = [...new Set(events.map((e: any) => e.course_id).filter(Boolean))];
+      if (!courseIds.length) return [];
+      // Step 3: fetch course details directly
+      const { data: courses } = await supabase
+        .from("courses")
+        .select("id, name, location, image_url, holes_count, par, club_id")
+        .in("id", courseIds)
+        .order("name");
+      return courses ?? [];
     },
-    enabled: !!id,
+    enabled: !!id && !isVenue,
   });
-
-  const usedCourseIds = new Set((usedCourses ?? []).map((c: any) => c.id));
 
   const getInitials = (name: string | null) =>
     name
