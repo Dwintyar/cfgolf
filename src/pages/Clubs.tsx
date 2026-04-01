@@ -222,7 +222,7 @@ const Clubs = () => {
             <button
               key={t.id}
               onClick={() => setTab(t.id as any)}
-              className={`flex-1 py-2.5 text-sm font-semibold transition-colors border-b-2 ${
+              className={`flex-1 py-2.5 text-sm font-semibold transition-colors border-b-2 whitespace-nowrap overflow-hidden text-ellipsis ${
                 tab === t.id ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
               }`}
             >
