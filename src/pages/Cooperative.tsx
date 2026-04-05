@@ -10,71 +10,79 @@ import { toast } from "sonner";
 type TierKey = "caddy" | "golfer" | "venue";
 
 const TIERS: Record<TierKey, {
-  emoji: string; label: string; class: string;
+  emoji: string; label: string; memberClass: string;
   price: string; color: string; bg: string; border: string;
   desc: string; benefits: string[];
 }> = {
   caddy: {
-    emoji: "🎒", label: "Caddy", class: "Kelas B",
-    price: "Rp 25.000/bulan", color: "text-green-500",
+    emoji: "🎒", label: "Caddy", memberClass: "Class B",
+    price: "Rp 25,000/month", color: "text-green-500",
     bg: "bg-green-500/10", border: "border-green-500/30",
-    desc: "Untuk caddy aktif yang ingin profil terverifikasi dan penghasilan terstruktur.",
+    desc: "For active caddies who want a verified profile and structured income.",
     benefits: [
-      "Profil caddy terverifikasi + sistem rating",
-      "Terima penugasan booking langsung via app",
-      "Dashboard jadwal & estimasi pendapatan",
-      "Notifikasi push saat ada penugasan baru",
-      "Akses program BPJS kolektif koperasi",
-      "SHU tahunan dari caddy fee yang difasilitasi",
-      "Hak suara di Rapat Anggota Tahunan",
+      "Verified caddy profile with rating system",
+      "Receive booking assignments directly via app",
+      "Schedule & income dashboard",
+      "Push notifications for new assignments",
+      "Collective health insurance access (BPJS)",
+      "Annual profit share (SHU) from facilitated caddy fees",
+      "Voting rights at Annual General Meeting (RAT)",
     ],
   },
   golfer: {
-    emoji: "🏌️", label: "Golfer", class: "Kelas A",
-    price: "Rp 50.000/bulan", color: "text-primary",
+    emoji: "🏌️", label: "Golfer", memberClass: "Class A",
+    price: "Rp 50,000/month", color: "text-primary",
     bg: "bg-primary/10", border: "border-primary/30",
-    desc: "Untuk golfer aktif yang ingin booking tee time, ikut turnamen resmi, dan dapat bagi hasil.",
+    desc: "For active golfers who want tee time booking, official tournaments, and annual dividends.",
     benefits: [
-      "Booking tee time di semua venue koperasi",
-      "Daftar turnamen resmi EGT dan event komunitas",
-      "Diskon green fee 5% di venue anggota",
-      "Notifikasi push semua aktivitas platform",
-      "Bergabung unlimited klub komunitas",
-      "SHU tahunan dari aktivitas ronde & booking",
-      "Hak suara di Rapat Anggota Tahunan",
+      "Tee time booking at all member venues",
+      "Register for official tournaments (EGT and more)",
+      "5% green fee discount at member venues",
+      "Push notifications for all platform activity",
+      "Join unlimited community clubs",
+      "Annual profit share (SHU) from rounds & bookings",
+      "Voting rights at Annual General Meeting (RAT)",
     ],
   },
   venue: {
-    emoji: "🏢", label: "Golf Course", class: "Kelas C",
-    price: "Rp 500.000/bulan", color: "text-amber-500",
+    emoji: "🏢", label: "Golf Course", memberClass: "Class C",
+    price: "Rp 500,000/month", color: "text-amber-500",
     bg: "bg-amber-500/10", border: "border-amber-500/30",
-    desc: "Untuk pengelola lapangan golf yang ingin digitalisasi operasional dan akses komunitas golfer.",
+    desc: "For golf course operators who want to digitize operations and reach an active golfer community.",
     benefits: [
-      "Dashboard venue & analytics kunjungan penuh",
-      "Kelola tee time, caddy, dan booking digital",
-      "Tournament hosting tools lengkap",
-      "Benchmark anonim vs venue koperasi lain",
-      "Co-marketing di platform GolfBuana",
-      "SHU dari nilai booking & transaksi di venue",
-      "Hak suara di Rapat Anggota (cap 40%)",
+      "Full venue dashboard & visit analytics",
+      "Manage tee times, caddies & bookings digitally",
+      "Tournament hosting tools",
+      "Anonymous benchmarking vs other member venues",
+      "Co-marketing on GolfBuana platform",
+      "Annual profit share (SHU) from venue transactions",
+      "Voting rights at Annual General Meeting (capped 40%)",
     ],
   },
 };
 
 const FREE_FEATURES = [
-  "Profil golfer publik",
-  "Handicap tracking & input scorecard",
-  "Lihat leaderboard & hasil turnamen",
-  "Feed komunitas (read-only)",
-  "Bergabung 1 klub komunal",
-  "Mode Demo untuk coba semua fitur",
+  "Public golfer profile",
+  "Handicap tracking & scorecard input",
+  "View leaderboards & tournament results",
+  "Community feed (read-only)",
+  "Join 1 community club",
+  "Demo Mode to explore all features",
 ];
 
 const ROADMAP = [
-  { phase: "Sekarang", title: "Platform Aktif", desc: "GolfBuana beroperasi dengan komunitas EGC dan 199+ golfer terdaftar.", done: true },
-  { phase: "Bulan 1–12", title: "Komunitas Tumbuh", desc: "Akuisisi organik via EGT 2027, demo mode, dan referral komunitas.", done: false },
-  { phase: "Bulan 12–18", title: "Founding Members", desc: "Rekrut 33+ founding members dari tiga kelas — target Anda adalah salah satunya.", done: false },
-  { phase: "Bulan 24+", title: "Koperasi Resmi", desc: "Pengesahan Kemenkop UKM, RAT pertama, distribusi SHU perdana.", done: false },
+  { phase: "Now", title: "Platform Active", desc: "GolfBuana is live with the EGC community and 199+ registered golfers.", done: true },
+  { phase: "Month 1–12", title: "Community Growth", desc: "Organic acquisition via EGT 2025, demo mode, and community referrals.", done: false },
+  { phase: "Month 12–18", title: "Founding Members", desc: "Recruit 33+ founding members across all three classes — you could be one of them.", done: false },
+  { phase: "Month 24+", title: "Formal Cooperative", desc: "Registered with Ministry of Cooperatives, first AGM, first profit share distribution.", done: false },
+];
+
+const SHU_BREAKDOWN = [
+  { label: "Reserve Fund", pct: "25%", color: "bg-primary" },
+  { label: "Member Profit Share (SHU)", pct: "40%", color: "bg-green-500" },
+  { label: "Platform Development", pct: "20%", color: "bg-amber-500" },
+  { label: "Member Education", pct: "5%", color: "bg-blue-500" },
+  { label: "Social Fund", pct: "10%", color: "bg-muted-foreground" },
 ];
 
 const Cooperative = () => {
@@ -107,7 +115,7 @@ const Cooperative = () => {
     enabled: !!userId,
   });
 
-  const { data: myInterest } = useQuery({
+  const { data: myInterest, refetch: refetchInterest } = useQuery({
     queryKey: ["my-coop-interest", userId],
     queryFn: async () => {
       const { data } = await supabase
@@ -120,7 +128,7 @@ const Cooperative = () => {
     enabled: !!userId,
   });
 
-  const { data: interestCount } = useQuery({
+  const { data: interestCount, refetch: refetchCount } = useQuery({
     queryKey: ["coop-interest-count"],
     queryFn: async () => {
       const { count } = await supabase
@@ -142,9 +150,11 @@ const Cooperative = () => {
       status: "pending",
     }, { onConflict: "user_id" });
     setSubmitting(false);
-    if (error) { toast.error("Gagal mendaftar, coba lagi"); return; }
+    if (error) { toast.error("Registration failed, please try again"); return; }
     setSubmitted(true);
-    toast.success("Minat Anda tercatat! Tim GolfBuana akan menghubungi Anda.");
+    refetchInterest();
+    refetchCount();
+    toast.success("Interest registered! The GolfBuana team will contact you.");
   };
 
   const cancelInterest = async () => {
@@ -155,9 +165,11 @@ const Cooperative = () => {
       .delete()
       .eq("user_id", userId);
     setCancelling(false);
-    if (error) { toast.error("Gagal menarik pengajuan"); return; }
-    toast.success("Pengajuan berhasil ditarik");
+    if (error) { toast.error("Failed to withdraw registration"); return; }
+    toast.success("Registration withdrawn");
     setSubmitted(false);
+    refetchInterest();
+    refetchCount();
   };
 
   const alreadyInterested = !!myInterest;
@@ -172,7 +184,7 @@ const Cooperative = () => {
         </button>
         <div>
           <h1 className="font-bold text-base">GBPlay Cooperative</h1>
-          <p className="text-[11px] text-muted-foreground">KMP Platform Golf Indonesia</p>
+          <p className="text-[11px] text-muted-foreground">Golf's member-owned platform in Indonesia</p>
         </div>
       </div>
 
@@ -182,16 +194,16 @@ const Cooperative = () => {
         <div className="text-center space-y-3 py-2">
           <div className="text-4xl">⛳</div>
           <h2 className="text-2xl font-bold leading-tight">
-            Bukan sekadar aplikasi.<br />
-            <span className="text-primary">Kamu adalah pemiliknya.</span>
+            Not just an app.<br />
+            <span className="text-primary">You own a piece of it.</span>
           </h2>
           <p className="text-sm text-muted-foreground leading-relaxed max-w-xs mx-auto">
-            GBPlay Cooperative adalah koperasi digital golf pertama di Indonesia. Subscription Anda bukan biaya — ini simpanan yang menghasilkan bagi hasil.
+            GBPlay Cooperative is Indonesia's first member-owned golf platform. Your subscription isn't a fee — it's a capital contribution that earns you annual profit share.
           </p>
           <div className="flex justify-center gap-4 text-xs text-muted-foreground pt-1">
-            <span>🏌️ Golfer</span>
-            <span>🎒 Caddy</span>
-            <span>🏢 Golf Course</span>
+            <span>🏌️ Golfers</span>
+            <span>🎒 Caddies</span>
+            <span>🏢 Golf Courses</span>
           </div>
         </div>
 
@@ -211,35 +223,35 @@ const Cooperative = () => {
             />
           </div>
           <p className="text-[11px] text-muted-foreground">
-            {33 - (interestCount ?? 0)} slot lagi untuk mencapai kuorum pendirian koperasi.
-            {(interestCount ?? 0) > 0 && ` ${interestCount} orang sudah menyatakan minat.`}
+            {33 - (interestCount ?? 0)} spots remaining to reach the quorum for formal cooperative registration.
+            {(interestCount ?? 0) > 0 && ` ${interestCount} ${(interestCount ?? 0) === 1 ? "person has" : "people have"} expressed interest.`}
           </p>
         </div>
 
         {/* Free tier */}
         <div className="space-y-2">
-          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Selalu gratis</p>
+          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Always free</p>
           <div className="golf-card p-4 space-y-2">
             <div className="flex items-center gap-2">
               <span className="text-xl">🆓</span>
               <div>
-                <p className="text-sm font-semibold">Free — Selamanya</p>
-                <p className="text-[11px] text-muted-foreground">Tidak ada batas waktu, tidak perlu kartu kredit</p>
+                <p className="text-sm font-semibold">Free — Forever</p>
+                <p className="text-[11px] text-muted-foreground">No time limit, no credit card required</p>
               </div>
             </div>
             <div className="space-y-1.5 pt-1">
               {FREE_FEATURES.map((f, i) => (
                 <div key={i} className="flex items-start gap-2 text-[12px] text-muted-foreground">
-                  <span className="text-muted-foreground mt-0.5">✓</span>{f}
+                  <span className="mt-0.5">✓</span>{f}
                 </div>
               ))}
             </div>
           </div>
         </div>
 
-        {/* Paid tiers */}
+        {/* Member tiers */}
         <div className="space-y-2">
-          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Anggota Koperasi</p>
+          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Cooperative membership</p>
           {(Object.entries(TIERS) as [TierKey, typeof TIERS[TierKey]][]).map(([key, t]) => {
             const isExpanded = expandedTier === key;
             return (
@@ -253,7 +265,7 @@ const Cooperative = () => {
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-semibold">{t.label}</p>
                       <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${t.bg} ${t.color} font-medium`}>
-                        {t.class}
+                        {t.memberClass}
                       </span>
                     </div>
                     <p className={`text-xs font-medium ${t.color}`}>{t.price}</p>
@@ -274,7 +286,7 @@ const Cooperative = () => {
                       ))}
                     </div>
                     <div className={`rounded-lg ${t.bg} px-3 py-2 text-[11px] ${t.color} font-medium`}>
-                      💡 Simpanan pokok dicicil otomatis dari subscription bulan pertama
+                      💡 Member capital contribution (simpanan pokok) auto-installment from first month
                     </div>
                   </div>
                 )}
@@ -283,20 +295,14 @@ const Cooperative = () => {
           })}
         </div>
 
-        {/* SHU explanation */}
+        {/* How profit sharing works */}
         <div className="golf-card p-4 space-y-3">
-          <p className="text-sm font-semibold">💰 Bagaimana Bagi Hasil (SHU) Bekerja?</p>
+          <p className="text-sm font-semibold">💰 How Profit Sharing Works</p>
           <p className="text-xs text-muted-foreground leading-relaxed">
-            Setiap tahun, surplus koperasi dibagikan kembali ke anggota berdasarkan kontribusi dan aktivitas masing-masing.
+            Every year, the cooperative's surplus is distributed back to members based on their contribution and activity.
           </p>
           <div className="space-y-2">
-            {[
-              { label: "Dana Cadangan", pct: "25%", color: "bg-primary" },
-              { label: "Bagi Hasil Anggota (SHU)", pct: "40%", color: "bg-green-500" },
-              { label: "Pengembangan Platform", pct: "20%", color: "bg-amber-500" },
-              { label: "Pendidikan Koperasi", pct: "5%",  color: "bg-blue-500" },
-              { label: "Dana Sosial", pct: "10%", color: "bg-muted-foreground" },
-            ].map(item => (
+            {SHU_BREAKDOWN.map(item => (
               <div key={item.label} className="flex items-center gap-3">
                 <div className={`w-2 h-2 rounded-full shrink-0 ${item.color}`} />
                 <span className="text-xs text-muted-foreground flex-1">{item.label}</span>
@@ -304,16 +310,23 @@ const Cooperative = () => {
               </div>
             ))}
           </div>
+          <p className="text-[10px] text-muted-foreground italic">
+            Legally structured as Koperasi Multi Pihak (KMP) under Indonesian Cooperative Law No. 25/1992.
+          </p>
         </div>
 
         {/* Roadmap */}
         <div className="space-y-2">
-          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Roadmap Pendirian</p>
+          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Formation roadmap</p>
           {ROADMAP.map((r, i) => (
             <div key={i} className="flex gap-3">
               <div className="flex flex-col items-center">
-                <div className={`h-6 w-6 rounded-full flex items-center justify-center shrink-0 ${r.done ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
-                  {r.done ? <CheckCircle className="h-3.5 w-3.5" /> : <span className="text-[10px] font-bold">{i + 1}</span>}
+                <div className={`h-6 w-6 rounded-full flex items-center justify-center shrink-0 ${
+                  r.done ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                }`}>
+                  {r.done
+                    ? <CheckCircle className="h-3.5 w-3.5" />
+                    : <span className="text-[10px] font-bold">{i + 1}</span>}
                 </div>
                 {i < ROADMAP.length - 1 && <div className="w-px flex-1 bg-border mt-1 mb-1" />}
               </div>
@@ -326,18 +339,17 @@ const Cooperative = () => {
           ))}
         </div>
 
-        {/* Form minat */}
+        {/* Registration form / status */}
         {alreadyInterested || submitted ? (
           <div className="golf-card p-5 space-y-3">
             <div className="text-center space-y-2">
               <div className="text-3xl">🎉</div>
-              <p className="text-sm font-semibold">Minat Anda sudah tercatat!</p>
+              <p className="text-sm font-semibold">Your interest is registered!</p>
               <p className="text-xs text-muted-foreground">
-                Tier: <span className="font-medium capitalize">{myInterest?.tier ?? selectedTier}</span> ·
-                Kelas {myInterest?.member_class ?? (selectedTier === "caddy" ? "B" : selectedTier === "golfer" ? "A" : "C")}
+                {myInterest?.tier ?? selectedTier} · {myInterest?.member_class ?? (selectedTier === "caddy" ? "Class B" : selectedTier === "golfer" ? "Class A" : "Class C")}
               </p>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                Tim GolfBuana akan menghubungi Anda via WhatsApp untuk konfirmasi pembayaran dan proses bergabung sebagai founding member.
+                The GolfBuana team will reach out via WhatsApp to confirm your membership contribution and onboarding as a founding member.
               </p>
             </div>
             {(myInterest?.status === "pending" || submitted) && (
@@ -348,17 +360,17 @@ const Cooperative = () => {
                 disabled={cancelling}
                 onClick={cancelInterest}
               >
-                {cancelling ? "Menarik..." : "Tarik Pengajuan"}
+                {cancelling ? "Withdrawing..." : "Withdraw Registration"}
               </Button>
             )}
           </div>
         ) : (
           <div className="space-y-3">
             <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-              Daftar minat founding member
+              Register as a founding member
             </p>
             <p className="text-xs text-muted-foreground">
-              Belum ada tagihan sekarang. Tim kami akan menghubungi Anda untuk konfirmasi.
+              No payment required now. Our team will contact you to confirm.
             </p>
 
             {/* Tier selector */}
@@ -377,19 +389,19 @@ const Cooperative = () => {
                   <div className={`text-xs font-medium ${selectedTier === key ? t.color : "text-muted-foreground"}`}>
                     {t.label}
                   </div>
-                  <div className="text-[9px] text-muted-foreground mt-0.5">{t.class}</div>
+                  <div className="text-[9px] text-muted-foreground mt-0.5">{t.memberClass}</div>
                 </button>
               ))}
             </div>
 
             {selectedTier && (
               <div className={`rounded-xl ${TIERS[selectedTier].bg} px-3 py-2 text-[11px] ${TIERS[selectedTier].color}`}>
-                {TIERS[selectedTier].price} · simpanan pokok dicicil otomatis
+                {TIERS[selectedTier].price} · capital contribution auto-installment
               </div>
             )}
 
             <Textarea
-              placeholder="Pertanyaan atau catatan (opsional)..."
+              placeholder="Questions or notes (optional)..."
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               className="text-sm min-h-[80px]"
@@ -401,25 +413,25 @@ const Cooperative = () => {
               onClick={() => selectedTier && setShowConfirm(true)}
             >
               {submitting
-                ? "Mendaftar..."
+                ? "Registering..."
                 : selectedTier
-                ? `Daftar sebagai Founding ${TIERS[selectedTier].label} 🏌️`
-                : "Pilih kelas keanggotaan dulu"}
+                ? `Join as Founding ${TIERS[selectedTier].label} 🏌️`
+                : "Select a membership class first"}
             </Button>
 
             {!userId && (
               <p className="text-xs text-center text-muted-foreground">
                 <button onClick={() => navigate("/login")} className="text-primary underline underline-offset-2">
-                  Login dulu
-                </button>{" "}untuk mendaftar minat.
+                  Sign in
+                </button>{" "}to register your interest.
               </p>
             )}
           </div>
         )}
 
         <p className="text-[10px] text-center text-muted-foreground pb-4">
-          Dengan mendaftar, Anda menyatakan minat bergabung sebagai founding member GBPlay KMP.
-          Koperasi belum resmi terbentuk — tidak ada kewajiban hukum saat ini.
+          By registering, you express interest in joining GBPlay Cooperative as a founding member.
+          The cooperative is not yet formally established — no legal obligations at this time.
         </p>
       </div>
 
@@ -431,30 +443,30 @@ const Cooperative = () => {
             onClick={(e) => e.stopPropagation()}>
             <div className="text-center space-y-2">
               <div className="text-3xl">{TIERS[selectedTier].emoji}</div>
-              <p className="font-semibold text-sm">Konfirmasi Pendaftaran</p>
+              <p className="font-semibold text-sm">Confirm Registration</p>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                Anda akan mendaftar sebagai founding member:
+                You are registering as a founding member:
               </p>
               <div className={`rounded-xl ${TIERS[selectedTier].bg} px-4 py-3 space-y-0.5`}>
                 <p className={`font-bold text-sm ${TIERS[selectedTier].color}`}>
-                  {TIERS[selectedTier].label} · {TIERS[selectedTier].class}
+                  {TIERS[selectedTier].label} · {TIERS[selectedTier].memberClass}
                 </p>
                 <p className="text-xs text-muted-foreground">{TIERS[selectedTier].price}</p>
               </div>
               <p className="text-[11px] text-muted-foreground">
-                Belum ada tagihan sekarang. Tim kami akan menghubungi Anda untuk konfirmasi selanjutnya.
+                No payment required now. Our team will reach out to confirm next steps.
               </p>
             </div>
             <div className="flex gap-2">
               <Button variant="outline" className="flex-1" onClick={() => setShowConfirm(false)}>
-                Batal
+                Cancel
               </Button>
               <Button
                 className="flex-1"
                 disabled={submitting}
                 onClick={() => { setShowConfirm(false); handleSubmit(); }}
               >
-                {submitting ? "Mendaftar..." : "Ya, Daftar"}
+                {submitting ? "Registering..." : "Yes, Register"}
               </Button>
             </div>
           </div>

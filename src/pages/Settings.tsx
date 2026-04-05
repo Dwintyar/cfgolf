@@ -383,7 +383,7 @@ const Settings = () => {
         {adminAccess && adminAccess !== "none" && (
           <SettingsItem icon={LayoutDashboard} label="Admin Dashboard" onClick={handleAdminDashboard} />
         )}
-        <SettingsItem icon={Users} label="GBPlay Cooperative 🏌️" onClick={() => navigate("/cooperative")} />
+        <SettingsItem icon={Users} label="GBPlay Cooperative ⛳" onClick={() => navigate("/cooperative")} />
         <SettingsItem icon={Trophy} label="Klaim Data Turnamen EGT" onClick={() => setShowClaim(true)} />
 
         <Separator className="my-3" />
