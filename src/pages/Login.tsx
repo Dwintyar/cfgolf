@@ -360,6 +360,15 @@ const Login = () => {
           </button>
           {" "}kami
         </p>
+        <p className="text-center text-[11px] text-muted-foreground mt-2">
+          Baru di GolfBuana?{" "}
+          <button
+            onClick={() => navigate("/how-it-works")}
+            className="text-primary underline underline-offset-2 font-medium hover:text-primary/80 transition-colors"
+          >
+            Pelajari cara kerjanya →
+          </button>
+        </p>
       </div>
     </div>
   );

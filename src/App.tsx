@@ -43,6 +43,7 @@ import ScorecardInput from "./pages/ScorecardInput";
 import Notifications from "./pages/Notifications";
 import CourseAdminDashboard from "./pages/CourseAdminDashboard";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+import HowItWorks from "./pages/HowItWorks";
 import PublicProfile from "./pages/PublicProfile";
 import LiveDisplay from "./pages/LiveDisplay";
 import AdminApprovals from "./pages/AdminApprovals";
@@ -115,6 +116,7 @@ const AppInner = () => {
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+            <Route path="/how-it-works" element={<HowItWorks />} />
             <Route path="/p/:username" element={<PublicProfile />} />
             <Route path="/live/:eventId" element={<LiveDisplay />} />
 
