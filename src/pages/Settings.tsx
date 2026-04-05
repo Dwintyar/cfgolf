@@ -2,9 +2,10 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, User, Building2, Lock, Palette, LogOut, ChevronRight, Camera, LayoutDashboard, Bell, Gamepad2, Users } from "lucide-react";
+import { ArrowLeft, User, Building2, Lock, Palette, LogOut, ChevronRight, Camera, LayoutDashboard, Bell, Gamepad2, Users, Trophy } from "lucide-react";
 import { usePushNotifications } from "@/hooks/use-push-notifications";
 import { useDemoInstall } from "@/hooks/use-demo-install";
+import ClaimProfileDialog from "@/components/ClaimProfileDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,6 +29,7 @@ const Settings = () => {
   });
   const [demoMode, setDemoMode] = useState(false);
   const [showDemoConfirm, setShowDemoConfirm] = useState(false);
+  const [showClaim, setShowClaim] = useState(false);
   const { installDemo, uninstallDemo, loading: demoLoading } = useDemoInstall(userId);
 
   // Profile form
@@ -382,6 +384,7 @@ const Settings = () => {
           <SettingsItem icon={LayoutDashboard} label="Admin Dashboard" onClick={handleAdminDashboard} />
         )}
         <SettingsItem icon={Users} label="GBPlay Cooperative 🏌️" onClick={() => navigate("/cooperative")} />
+        <SettingsItem icon={Trophy} label="Klaim Data Turnamen EGT" onClick={() => setShowClaim(true)} />
 
         <Separator className="my-3" />
 
@@ -540,6 +543,15 @@ const Settings = () => {
           <span className="text-sm font-medium">Sign Out</span>
         </button>
       </div>
+
+      {showClaim && userId && (
+        <ClaimProfileDialog
+          open={showClaim}
+          onClose={() => setShowClaim(false)}
+          claimantId={userId}
+          claimantName={profile?.full_name ?? ""}
+        />
+      )}
     </div>
   );
 };

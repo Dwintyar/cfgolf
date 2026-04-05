@@ -43,6 +43,70 @@ const PlatformAdminDashboard = () => {
   const [mergeSearch, setMergeSearch] = useState("");
   const [mergeResults, setMergeResults] = useState<any[]>([]);
   const [merging, setMerging] = useState(false);
+  const [processingClaimId, setProcessingClaimId] = useState<string | null>(null);
+
+  const { data: claimRequests, refetch: refetchClaims } = useQuery({
+    queryKey: ["admin-claim-requests"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profile_claim_requests")
+        .select("*, claimant:claimant_id(full_name, avatar_url), target:target_profile_id(full_name, handicap, location)")
+        .order("created_at", { ascending: false });
+      return data ?? [];
+    },
+  });
+
+  const pendingClaimsCount = claimRequests?.filter((c: any) => c.status === "pending").length ?? 0;
+
+  const handleApproveClaim = async (claim: any) => {
+    setProcessingClaimId(claim.id);
+    try {
+      // Run merge: move all data from target to claimant
+      const oldId = claim.target_profile_id;
+      const newId = claim.claimant_id;
+      await Promise.all([
+        supabase.from("contestants").update({ player_id: newId }).eq("player_id", oldId),
+        supabase.from("tour_players").update({ player_id: newId }).eq("player_id", oldId),
+        supabase.from("handicap_history").update({ player_id: newId }).eq("player_id", oldId),
+        supabase.from("scorecards").update({ player_id: newId }).eq("player_id", oldId),
+        supabase.from("members").update({ user_id: newId }).eq("user_id", oldId),
+        supabase.from("round_players").update({ user_id: newId }).eq("user_id", oldId),
+      ]);
+      // Update claim status
+      await supabase.from("profile_claim_requests")
+        .update({ status: "approved", admin_note: "Data turnamen berhasil digabung" })
+        .eq("id", claim.id);
+      // Notify claimant
+      await supabase.from("notifications").insert({
+        user_id: claim.claimant_id,
+        title: "Klaim Disetujui ✅",
+        message: `Data turnamen atas nama "${(claim.target as any)?.full_name}" berhasil digabung ke akun Anda.`,
+        type: "system",
+      });
+      toast.success("Klaim disetujui, data berhasil digabung");
+      refetchClaims();
+    } catch (e: any) {
+      toast.error(e.message || "Gagal memproses klaim");
+    } finally {
+      setProcessingClaimId(null);
+    }
+  };
+
+  const handleRejectClaim = async (claimId: string, claimantId: string, adminNote: string) => {
+    setProcessingClaimId(claimId);
+    await supabase.from("profile_claim_requests")
+      .update({ status: "rejected", admin_note: adminNote })
+      .eq("id", claimId);
+    await supabase.from("notifications").insert({
+      user_id: claimantId,
+      title: "Klaim Ditolak",
+      message: `Klaim profil tidak dapat disetujui. ${adminNote ? `Alasan: ${adminNote}` : "Hubungi admin untuk informasi lebih lanjut."}`,
+      type: "system",
+    });
+    toast.success("Klaim ditolak");
+    setProcessingClaimId(null);
+    refetchClaims();
+  };
 
   // KPI Stats
   const { data: stats, isLoading } = useQuery({
@@ -274,6 +338,14 @@ const PlatformAdminDashboard = () => {
             <TabsTrigger value="events" className="flex-1 text-xs">Events</TabsTrigger>
             <TabsTrigger value="venues" className="flex-1 text-xs">Courses</TabsTrigger>
             <TabsTrigger value="reports" className="flex-1 text-xs">Reports</TabsTrigger>
+            <TabsTrigger value="claims" className="flex-1 text-xs relative">
+              Claims
+              {pendingClaimsCount > 0 && (
+                <span className="ml-1 inline-flex items-center justify-center h-4 w-4 rounded-full bg-amber-500 text-white text-[10px] font-bold">
+                  {pendingClaimsCount}
+                </span>
+              )}
+            </TabsTrigger>
           </TabsList>
 
           {/* TAB: USERS */}
@@ -558,6 +630,76 @@ const PlatformAdminDashboard = () => {
                 <div className="flex justify-between"><span className="text-muted-foreground">Total Venues</span><span className="font-bold">{stats?.totalVenues}</span></div>
               </div>
             </div>
+          </TabsContent>
+
+          <TabsContent value="claims" className="space-y-3 pt-2">
+            <p className="text-xs text-muted-foreground">
+              Klaim profil dari user yang datanya sudah ada di EGT tapi belum terhubung ke akun mereka.
+            </p>
+            {(claimRequests?.length ?? 0) === 0 && (
+              <div className="golf-card p-8 text-center text-sm text-muted-foreground">
+                Belum ada klaim masuk
+              </div>
+            )}
+            {claimRequests?.map((claim: any) => {
+              const claimant = claim.claimant as any;
+              const target = claim.target as any;
+              const isPending = claim.status === "pending";
+              const isProcessing = processingClaimId === claim.id;
+              return (
+                <div key={claim.id} className="golf-card p-4 space-y-3">
+                  <div className="flex items-start gap-3">
+                    <Avatar className="h-9 w-9 shrink-0">
+                      <AvatarImage src={claimant?.avatar_url ?? ""} />
+                      <AvatarFallback className="text-xs">{claimant?.full_name?.[0] ?? "?"}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold">{claimant?.full_name ?? "—"}</p>
+                      <p className="text-[11px] text-muted-foreground">
+                        mengklaim profil <span className="font-medium text-foreground">"{target?.full_name ?? "—"}"</span>
+                        {target?.location ? ` · ${target.location}` : ""}
+                        {target?.handicap != null ? ` · HCP ${target.handicap}` : ""}
+                      </p>
+                      {claim.reason && (
+                        <p className="text-[11px] text-muted-foreground mt-1 italic">"{claim.reason}"</p>
+                      )}
+                      <p className="text-[10px] text-muted-foreground mt-1">
+                        {new Date(claim.created_at).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}
+                      </p>
+                    </div>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
+                      claim.status === "pending" ? "bg-amber-500/10 text-amber-500" :
+                      claim.status === "approved" ? "bg-green-500/10 text-green-500" :
+                      "bg-red-400/10 text-red-400"
+                    }`}>
+                      {claim.status === "pending" ? "Pending" :
+                       claim.status === "approved" ? "Disetujui" : "Ditolak"}
+                    </span>
+                  </div>
+                  {isPending && (
+                    <div className="flex gap-2 pt-1 border-t border-border/50">
+                      <Button size="sm" variant="outline"
+                        className="flex-1 h-8 text-xs text-red-400 border-red-400/30 hover:bg-red-400/10"
+                        disabled={isProcessing}
+                        onClick={() => handleRejectClaim(claim.id, claim.claimant_id, "Identitas tidak dapat diverifikasi")}>
+                        {isProcessing ? "..." : "Tolak"}
+                      </Button>
+                      <Button size="sm"
+                        className="flex-1 h-8 text-xs"
+                        disabled={isProcessing}
+                        onClick={() => handleApproveClaim(claim)}>
+                        {isProcessing ? "Memproses..." : "✓ Setujui & Gabung Data"}
+                      </Button>
+                    </div>
+                  )}
+                  {claim.admin_note && (
+                    <p className="text-[10px] text-muted-foreground italic border-t border-border/50 pt-2">
+                      Catatan admin: {claim.admin_note}
+                    </p>
+                  )}
+                </div>
+              );
+            })}
           </TabsContent>
         </Tabs>
       </div>

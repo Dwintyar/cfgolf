@@ -615,6 +615,51 @@ export type Database = {
           },
         ]
       }
+      profile_claim_requests: {
+        Row: {
+          id: string
+          claimant_id: string
+          target_profile_id: string
+          reason: string | null
+          status: string
+          admin_note: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          claimant_id: string
+          target_profile_id: string
+          reason?: string | null
+          status?: string
+          admin_note?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          claimant_id?: string
+          target_profile_id?: string
+          reason?: string | null
+          status?: string
+          admin_note?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_claim_requests_claimant_id_fkey"
+            columns: ["claimant_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profile_claim_requests_target_profile_id_fkey"
+            columns: ["target_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cooperative_interests: {
         Row: {
           created_at: string
