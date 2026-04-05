@@ -27,7 +27,7 @@ const ChannelsTab = () => {
     });
   }, []);
 
-  // Auto-follow GolfBuana Official
+  // Auto-follow GolfBuana Official + auto-select if no channel selected
   useEffect(() => {
     if (!userId) return;
     const autoFollow = async () => {
@@ -36,7 +36,8 @@ const ChannelsTab = () => {
       if (!official) return;
       await supabase.from("channel_follows")
         .upsert({ channel_id: official.id, user_id: userId }, { onConflict: "channel_id,user_id" });
-      // Don't auto-select — let user pick channel
+      // Auto-select official channel if nothing selected yet
+      setSelectedChannelId(prev => prev ?? official.id);
     };
     autoFollow();
   }, [userId]);
@@ -61,10 +62,24 @@ const ChannelsTab = () => {
     queryFn: async () => {
       if (!userId) return [];
       const { data } = await supabase.from("channel_follows")
-        .select("*, channels(*)")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false });
-      return (data ?? []).map((f: any) => f.channels).filter(Boolean);
+        .select("*, channels(*, posts(created_at))")
+        .eq("user_id", userId);
+      const channels = (data ?? []).map((f: any) => {
+        const ch = f.channels;
+        if (!ch) return null;
+        const posts: any[] = ch.posts ?? [];
+        const latestPost = posts.length > 0
+          ? Math.max(...posts.map((p: any) => new Date(p.created_at).getTime()))
+          : 0;
+        return { ...ch, _latestPost: latestPost };
+      }).filter(Boolean);
+      // Official first, then by latest post descending
+      channels.sort((a: any, b: any) => {
+        if (a.is_official && !b.is_official) return -1;
+        if (!a.is_official && b.is_official) return 1;
+        return b._latestPost - a._latestPost;
+      });
+      return channels;
     },
     enabled: !!userId,
   });
