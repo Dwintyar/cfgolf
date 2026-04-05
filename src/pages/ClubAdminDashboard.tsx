@@ -299,19 +299,49 @@ const ClubAdminDashboard = () => {
     enabled: !!clubId,
   });
 
-  const { data: courseBookings } = useQuery({
+  const { data: courseBookings, refetch: refetchCourseBookings } = useQuery({
     queryKey: ["club-venue-bookings", linkedCourse?.id],
     queryFn: async () => {
       const today = new Date().toISOString().split("T")[0];
       const { data } = await supabase
         .from("tee_time_bookings")
-        .select("id, booking_date, status")
+        .select("id, booking_date, tee_time, status, players_count, notes, total_price, user_id, profiles:user_id(full_name, avatar_url)")
         .eq("course_id", linkedCourse!.id)
-        .gte("booking_date", today);
+        .gte("booking_date", today)
+        .order("booking_date", { ascending: true })
+        .order("tee_time", { ascending: true });
       return data ?? [];
     },
     enabled: !!linkedCourse?.id,
   });
+
+  const [updatingBookingId, setUpdatingBookingId] = useState<string | null>(null);
+
+  const handleTeeTimeStatus = async (bookingId: string, newStatus: "confirmed" | "declined" | "ready", golferId: string) => {
+    setUpdatingBookingId(bookingId);
+    const { error } = await supabase
+      .from("tee_time_bookings")
+      .update({ status: newStatus })
+      .eq("id", bookingId);
+    if (error) { toast.error("Gagal update status"); setUpdatingBookingId(null); return; }
+
+    const messages: Record<string, string> = {
+      confirmed: `Booking tee time Anda di ${linkedCourse?.name ?? "lapangan"} telah dikonfirmasi.`,
+      declined: `Maaf, booking tee time Anda di ${linkedCourse?.name ?? "lapangan"} tidak dapat diterima.`,
+      ready: `Lapangan siap! Selamat bermain di ${linkedCourse?.name ?? "lapangan"}.`,
+    };
+    await supabase.from("notifications").insert({
+      user_id: golferId,
+      title: newStatus === "confirmed" ? "Booking Dikonfirmasi ✓" : newStatus === "declined" ? "Booking Ditolak" : "Lapangan Siap! ⛳",
+      message: messages[newStatus],
+      type: "booking_update",
+    });
+
+    const labels: Record<string, string> = { confirmed: "dikonfirmasi", declined: "ditolak", ready: "siap" };
+    toast.success(`Booking ${labels[newStatus]}`);
+    setUpdatingBookingId(null);
+    refetchCourseBookings();
+  };
 
   // Range bookings (for Driving Range schedule tab)
   const { data: rangeBookings } = useQuery({
@@ -985,6 +1015,119 @@ const ClubAdminDashboard = () => {
     </TabsContent>
   );
 
+  const renderVenueScheduleTab = () => {
+    const statusColor: Record<string, string> = {
+      pending:   "bg-amber-500/10 text-amber-500",
+      confirmed: "bg-green-500/10 text-green-500",
+      ready:     "bg-primary/10 text-primary",
+      declined:  "bg-red-400/10 text-red-400",
+      cancelled: "bg-muted text-muted-foreground",
+    };
+    const statusLabel: Record<string, string> = {
+      pending: "Menunggu", confirmed: "Dikonfirmasi", ready: "Siap", declined: "Ditolak", cancelled: "Dibatalkan",
+    };
+    const pendingBookings = courseBookings?.filter((b: any) => b.status === "pending") ?? [];
+    const otherBookings   = courseBookings?.filter((b: any) => b.status !== "pending") ?? [];
+
+    const formatRupiah = (n: number | null) =>
+      n ? new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(n) : "-";
+
+    const renderCard = (b: any) => {
+      const golfer = (b.profiles as any);
+      const isUpdating = updatingBookingId === b.id;
+      return (
+        <div key={b.id} className="golf-card p-3 space-y-2">
+          <div className="flex items-start gap-3">
+            <Avatar className="h-9 w-9 shrink-0">
+              <AvatarImage src={golfer?.avatar_url ?? ""} />
+              <AvatarFallback className="text-xs">{golfer?.full_name?.[0] ?? "G"}</AvatarFallback>
+            </Avatar>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold truncate">{golfer?.full_name ?? "Golfer"}</p>
+              <p className="text-[11px] text-muted-foreground">
+                {new Date(b.booking_date).toLocaleDateString("id-ID", { weekday: "short", day: "numeric", month: "short" })}
+                {" · "}{b.tee_time?.slice(0, 5)} · {b.players_count} pemain
+              </p>
+              {b.total_price && <p className="text-[11px] text-primary font-medium">{formatRupiah(b.total_price)}</p>}
+              {b.notes && <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-2">{b.notes}</p>}
+            </div>
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${statusColor[b.status] ?? "bg-muted text-muted-foreground"}`}>
+              {statusLabel[b.status] ?? b.status}
+            </span>
+          </div>
+          {b.status === "pending" && (
+            <div className="flex gap-2 pt-1">
+              <Button size="sm" variant="outline"
+                className="flex-1 h-8 text-xs border-red-400/40 text-red-400 hover:bg-red-400/10"
+                disabled={isUpdating}
+                onClick={() => handleTeeTimeStatus(b.id, "declined", b.user_id)}>
+                {isUpdating ? <Loader2 className="h-3 w-3 animate-spin" /> : <><X className="h-3 w-3 mr-1" />Tolak</>}
+              </Button>
+              <Button size="sm"
+                className="flex-1 h-8 text-xs"
+                disabled={isUpdating}
+                onClick={() => handleTeeTimeStatus(b.id, "confirmed", b.user_id)}>
+                {isUpdating ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Check className="h-3 w-3 mr-1" />Konfirmasi</>}
+              </Button>
+            </div>
+          )}
+          {b.status === "confirmed" && (
+            <Button size="sm" className="w-full h-8 text-xs bg-primary/10 text-primary hover:bg-primary/20"
+              disabled={isUpdating}
+              onClick={() => handleTeeTimeStatus(b.id, "ready", b.user_id)}>
+              {isUpdating ? <Loader2 className="h-3 w-3 animate-spin" /> : "⛳ Set Lapangan Siap"}
+            </Button>
+          )}
+        </div>
+      );
+    };
+
+    return (
+      <TabsContent value="schedule" className="space-y-3 pt-2">
+        <div className="grid grid-cols-3 gap-2">
+          <div className="golf-card p-3 space-y-0.5">
+            <Clock className="h-4 w-4 text-amber-500" />
+            <p className="text-xl font-bold">{pendingBookings.length}</p>
+            <p className="text-[10px] text-muted-foreground">Menunggu</p>
+          </div>
+          <div className="golf-card p-3 space-y-0.5">
+            <Check className="h-4 w-4 text-primary" />
+            <p className="text-xl font-bold">{todayBookings}</p>
+            <p className="text-[10px] text-muted-foreground">Hari Ini</p>
+          </div>
+          <div className="golf-card p-3 space-y-0.5">
+            <Calendar className="h-4 w-4 text-green-500" />
+            <p className="text-xl font-bold">{weekBookings}</p>
+            <p className="text-[10px] text-muted-foreground">Minggu Ini</p>
+          </div>
+        </div>
+
+        {pendingBookings.length > 0 && (
+          <>
+            <p className="text-[10px] font-semibold text-amber-500 uppercase tracking-wider">
+              ● {pendingBookings.length} Booking Menunggu Konfirmasi
+            </p>
+            {pendingBookings.map(renderCard)}
+          </>
+        )}
+
+        {otherBookings.length > 0 && (
+          <>
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mt-2">Booking Lainnya</p>
+            {otherBookings.map(renderCard)}
+          </>
+        )}
+
+        {(courseBookings?.length ?? 0) === 0 && (
+          <div className="golf-card p-8 text-center text-sm text-muted-foreground">
+            <Calendar className="mx-auto h-8 w-8 text-muted-foreground/30 mb-2" />
+            <p>Belum ada booking tee time</p>
+          </div>
+        )}
+      </TabsContent>
+    );
+  };
+
   const renderScheduleTab = () => (
     <TabsContent value="schedule" className="space-y-3 pt-2">
       <div className="grid grid-cols-2 gap-3">
@@ -1366,7 +1509,7 @@ const ClubAdminDashboard = () => {
             <TabsTrigger value="settings" className="flex-1 text-xs">Settings</TabsTrigger>
           </TabsList>
           {renderStaffTab()}
-          {renderScheduleTab()}
+          {renderVenueScheduleTab()}
           {renderVenueTab()}
           {renderSettingsTab()}
         </Tabs>

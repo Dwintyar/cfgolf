@@ -126,6 +126,7 @@ const BookTeeTime = () => {
       players_count: players,
       total_price: totalPrice,
       notes: notes || null,
+      status: "pending",
     });
 
     if (error) {
@@ -137,7 +138,7 @@ const BookTeeTime = () => {
 
     setBooking(false);
     setConfirmed(true);
-    toast.success("Booking confirmed!");
+    toast.success("Booking berhasil dikirim!");
   };
 
   if (confirmed) {
@@ -145,15 +146,18 @@ const BookTeeTime = () => {
       <div className="flex min-h-screen flex-col items-center justify-center p-6 text-center">
         <div className="animate-fade-in">
           <CheckCircle className="mx-auto h-16 w-16 text-primary" />
-          <h1 className="mt-4 font-display text-2xl font-bold">Booking Confirmed!</h1>
+          <h1 className="mt-4 font-display text-2xl font-bold">Booking Terkirim!</h1>
           <p className="mt-2 text-sm text-muted-foreground">
+            Permintaan booking Anda telah dikirim ke venue. Menunggu konfirmasi dari pengelola lapangan.
+          </p>
+          <p className="mt-2 text-sm font-medium">
             {course?.name} · {new Date(selectedDate).toLocaleDateString("id-ID", {
               weekday: "long", day: "numeric", month: "long", year: "numeric"
             })}
           </p>
-          <p className="mt-1 text-lg font-bold text-primary">{selectedTime} · {players} player{players > 1 ? "s" : ""}</p>
+          <p className="mt-1 text-lg font-bold text-primary">{selectedTime} · {players} pemain</p>
           {totalPrice > 0 && (
-            <p className="mt-1 text-sm text-muted-foreground">Total: {formatPrice(totalPrice)}</p>
+            <p className="mt-1 text-sm text-muted-foreground">Estimasi: {formatPrice(totalPrice)}</p>
           )}
           <div className="mt-6 flex gap-3">
             <Button variant="outline" className="flex-1" onClick={() => navigate(`/venue/${courseId}`)}>

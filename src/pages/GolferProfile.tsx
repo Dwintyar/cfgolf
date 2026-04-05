@@ -1479,13 +1479,27 @@ const GolferProfile = () => {
                 ) : null}
                 {(myBookings?.length ?? 0) > 0 && myBookings!.map((b: any) => {
                     const isPast = b.booking_date < new Date().toISOString().split("T")[0];
-                    const isCancelled = b.status === "cancelled";
-                    const statusColor = isCancelled
-                      ? "text-red-400 bg-red-400/10"
-                      : isPast
+                    const statusColorMap: Record<string, string> = {
+                      pending:   "text-amber-500 bg-amber-500/10",
+                      confirmed: "text-green-400 bg-green-400/10",
+                      ready:     "text-primary bg-primary/10",
+                      declined:  "text-red-400 bg-red-400/10",
+                      cancelled: "text-muted-foreground bg-muted",
+                    };
+                    const statusLabelMap: Record<string, string> = {
+                      pending:   "Menunggu",
+                      confirmed: "Dikonfirmasi",
+                      ready:     "Lapangan Siap ⛳",
+                      declined:  "Ditolak",
+                      cancelled: "Dibatalkan",
+                    };
+                    const statusColor = isPast && !["declined","cancelled"].includes(b.status)
                       ? "text-muted-foreground bg-muted"
-                      : "text-green-400 bg-green-400/10";
-                    const statusLabel = isCancelled ? "Cancelled" : isPast ? "Done" : "Confirmed";
+                      : (statusColorMap[b.status] ?? "text-muted-foreground bg-muted");
+                    const statusLabel = isPast && !["declined","cancelled"].includes(b.status)
+                      ? "Selesai"
+                      : (statusLabelMap[b.status] ?? b.status);
+                    const canCancel = !isPast && ["pending","confirmed"].includes(b.status);
 
                     return (
                       <div key={b.id} className="rounded-xl border border-border bg-card p-4 space-y-2">
@@ -1516,7 +1530,7 @@ const GolferProfile = () => {
 
                         <div className="flex items-center justify-between text-xs">
                           <span className="text-muted-foreground">{b.players_count} pemain · Rp {Number(b.total_price ?? 0).toLocaleString("id-ID")}</span>
-                          {!isCancelled && !isPast && (
+                          {canCancel && (
                             <Button
                               variant="ghost"
                               size="sm"
