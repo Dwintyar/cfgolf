@@ -380,20 +380,71 @@ const ClubAdminDashboard = () => {
   };
 
   // Range bookings (for Driving Range schedule tab)
-  const { data: rangeBookings } = useQuery({
-    queryKey: ["club-range-bookings", clubId],
+  const [rangeDate, setRangeDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [showRangeBookingForm, setShowRangeBookingForm] = useState(false);
+  const [rangeForm, setRangeForm] = useState({ bay_id: "", start_time: "07:00", duration_hours: 1, notes: "", balls_bucket_count: 1 });
+  const [savingRangeBooking, setSavingRangeBooking] = useState(false);
+
+  const { data: rangeBays, refetch: refetchBays } = useQuery({
+    queryKey: ["range-bays", clubId],
     queryFn: async () => {
-      const today = new Date().toISOString().split("T")[0];
+      const { data } = await supabase
+        .from("range_bays")
+        .select("*")
+        .eq("club_id", clubId!)
+        .order("bay_number");
+      return data ?? [];
+    },
+    enabled: !!clubId && isDrivingRange,
+  });
+
+  const { data: rangeBookings, refetch: refetchRangeBookings } = useQuery({
+    queryKey: ["club-range-bookings", clubId, rangeDate],
+    queryFn: async () => {
       const { data } = await supabase
         .from("range_bookings")
-        .select("*, profiles:user_id(full_name)")
-        .eq("club_id", clubId)
-        .eq("booking_date", today)
+        .select("*, profiles:user_id(full_name), range_bays:bay_id(bay_number, bay_type)")
+        .eq("club_id", clubId!)
+        .eq("booking_date", rangeDate)
         .order("start_time");
       return data ?? [];
     },
     enabled: !!clubId && isDrivingRange,
   });
+
+  const handleSaveRangeBooking = async () => {
+    if (!rangeForm.bay_id || !rangeForm.start_time) return;
+    setSavingRangeBooking(true);
+    const [sh, sm] = rangeForm.start_time.split(":").map(Number);
+    const endH = sh + rangeForm.duration_hours;
+    const end_time = `${String(endH).padStart(2, "0")}:${String(sm).padStart(2, "0")}`;
+    const bay = rangeBays?.find((b: any) => b.id === rangeForm.bay_id);
+    const total_price = (bay?.price_per_hour ?? 0) * rangeForm.duration_hours;
+    const { error } = await supabase.from("range_bookings").insert({
+      club_id: clubId!,
+      bay_id: rangeForm.bay_id,
+      booking_date: rangeDate,
+      start_time: rangeForm.start_time,
+      end_time,
+      duration_hours: rangeForm.duration_hours,
+      balls_bucket_count: rangeForm.balls_bucket_count,
+      total_price,
+      notes: rangeForm.notes || null,
+      status: "confirmed",
+    });
+    setSavingRangeBooking(false);
+    if (error) { toast.error("Gagal simpan booking"); return; }
+    toast.success("Booking berhasil disimpan");
+    setShowRangeBookingForm(false);
+    setRangeForm({ bay_id: "", start_time: "07:00", duration_hours: 1, notes: "", balls_bucket_count: 1 });
+    refetchRangeBookings();
+  };
+
+  const handleRangeBookingStatus = async (bookingId: string, status: "confirmed" | "cancelled") => {
+    await supabase.from("range_bookings").update({ status }).eq("id", bookingId);
+    toast.success(status === "confirmed" ? "Booking dikonfirmasi" : "Booking dibatalkan");
+    refetchRangeBookings();
+  };
 
   // Realtime subscription for new join requests
   useEffect(() => {
@@ -1194,41 +1245,190 @@ const ClubAdminDashboard = () => {
     );
   };
 
-  const renderScheduleTab = () => (
-    <TabsContent value="schedule" className="space-y-3 pt-2">
-      <div className="grid grid-cols-2 gap-3">
-        <div className="golf-card p-3 space-y-0.5">
-          <Clock className="h-4 w-4 text-primary" />
-          <p className="text-xl font-bold">{todayRangeBookings}</p>
-          <p className="text-[10px] text-muted-foreground">Bookings Today</p>
-        </div>
-        <div className="golf-card p-3 space-y-0.5">
-          <Users className="h-4 w-4 text-accent" />
-          <p className="text-xl font-bold">{rangeBookings?.reduce((s, b: any) => s + (b.duration_hours ?? 1), 0) ?? 0}h</p>
-          <p className="text-[10px] text-muted-foreground">Hours Booked</p>
-        </div>
-      </div>
+  const renderScheduleTab = () => {
+    const formatRupiah = (n: number) =>
+      new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(n);
+    const totalHours = rangeBookings?.reduce((s: number, b: any) => s + (b.duration_hours ?? 1), 0) ?? 0;
+    const totalRevenue = rangeBookings?.reduce((s: number, b: any) => s + (b.total_price ?? 0), 0) ?? 0;
+    const statusColor: Record<string, string> = {
+      confirmed: "bg-green-500/10 text-green-500",
+      pending: "bg-amber-500/10 text-amber-500",
+      cancelled: "bg-muted text-muted-foreground",
+    };
 
-      <h3 className="text-xs font-semibold text-muted-foreground mt-2">Today's Bookings</h3>
-      {todayRangeBookings === 0 && (
-        <div className="golf-card p-6 text-center text-sm text-muted-foreground">No bookings today</div>
-      )}
-      {rangeBookings?.map((b: any) => (
-        <div key={b.id} className="golf-card flex items-center gap-3 p-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
-            <Clock className="h-4 w-4 text-primary" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium truncate">{(b.profiles as any)?.full_name || "Guest"}</p>
-            <p className="text-[10px] text-muted-foreground">
-              {b.start_time?.slice(0, 5)} – {b.end_time?.slice(0, 5)} · {b.duration_hours}h
-            </p>
-          </div>
-          <Badge variant="outline" className="text-[9px]">{b.status}</Badge>
+    return (
+      <TabsContent value="schedule" className="space-y-3 pt-2">
+        {/* Date picker */}
+        <div className="flex items-center gap-2">
+          <input
+            type="date"
+            value={rangeDate}
+            onChange={(e) => setRangeDate(e.target.value)}
+            className="flex-1 h-9 rounded-lg border border-border bg-background px-3 text-sm"
+          />
+          <Button size="sm" className="h-9 gap-1 shrink-0" onClick={() => setShowRangeBookingForm(true)}>
+            <Plus className="h-3.5 w-3.5" />Booking
+          </Button>
         </div>
-      ))}
-    </TabsContent>
-  );
+
+        {/* KPIs */}
+        <div className="grid grid-cols-3 gap-2">
+          <div className="golf-card p-3 space-y-0.5">
+            <Clock className="h-4 w-4 text-primary" />
+            <p className="text-xl font-bold">{todayRangeBookings}</p>
+            <p className="text-[10px] text-muted-foreground">Booking</p>
+          </div>
+          <div className="golf-card p-3 space-y-0.5">
+            <Users className="h-4 w-4 text-amber-500" />
+            <p className="text-xl font-bold">{totalHours}j</p>
+            <p className="text-[10px] text-muted-foreground">Total Jam</p>
+          </div>
+          <div className="golf-card p-3 space-y-0.5">
+            <DollarSign className="h-4 w-4 text-green-500" />
+            <p className="text-xl font-bold">{totalRevenue > 0 ? formatRupiah(totalRevenue).replace("Rp\u00a0","").replace(".000","k") : "–"}</p>
+            <p className="text-[10px] text-muted-foreground">Pendapatan</p>
+          </div>
+        </div>
+
+        {/* Bays overview */}
+        {(rangeBays?.length ?? 0) > 0 && (
+          <div>
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Bay Aktif</p>
+            <div className="flex gap-2 flex-wrap">
+              {rangeBays?.filter((b: any) => b.is_active).map((bay: any) => {
+                const isBooked = rangeBookings?.some((bk: any) =>
+                  bk.bay_id === bay.id && bk.status === "confirmed"
+                );
+                return (
+                  <div key={bay.id} className={`px-3 py-1.5 rounded-lg text-xs font-medium border ${
+                    isBooked ? "bg-red-500/10 border-red-500/30 text-red-500" : "bg-green-500/10 border-green-500/30 text-green-500"
+                  }`}>
+                    Bay {bay.bay_number} {isBooked ? "• Terisi" : "• Kosong"}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Booking list */}
+        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+          Booking {new Date(rangeDate).toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "short" })}
+        </p>
+        {todayRangeBookings === 0 && (
+          <div className="golf-card p-8 text-center text-sm text-muted-foreground">
+            <Clock className="mx-auto h-8 w-8 text-muted-foreground/30 mb-2" />
+            <p>Belum ada booking</p>
+          </div>
+        )}
+        {rangeBookings?.map((b: any) => (
+          <div key={b.id} className="golf-card p-3 space-y-2">
+            <div className="flex items-start gap-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 shrink-0 text-sm font-bold text-primary">
+                {(b.range_bays as any)?.bay_number ?? "–"}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium">{(b.profiles as any)?.full_name || "Walk-in"}</p>
+                <p className="text-[11px] text-muted-foreground">
+                  {b.start_time?.slice(0,5)} – {b.end_time?.slice(0,5)} · {b.duration_hours}j
+                  {b.balls_bucket_count ? ` · ${b.balls_bucket_count} bucket bola` : ""}
+                </p>
+                {b.total_price > 0 && (
+                  <p className="text-[11px] text-primary font-medium">{formatRupiah(b.total_price)}</p>
+                )}
+              </div>
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${statusColor[b.status] ?? "bg-muted text-muted-foreground"}`}>
+                {b.status === "confirmed" ? "Aktif" : b.status === "pending" ? "Pending" : "Batal"}
+              </span>
+            </div>
+            {b.status === "pending" && (
+              <div className="flex gap-2 pt-1">
+                <Button size="sm" variant="outline"
+                  className="flex-1 h-7 text-xs text-red-400 border-red-400/30 hover:bg-red-400/10"
+                  onClick={() => handleRangeBookingStatus(b.id, "cancelled")}>
+                  Batalkan
+                </Button>
+                <Button size="sm" className="flex-1 h-7 text-xs"
+                  onClick={() => handleRangeBookingStatus(b.id, "confirmed")}>
+                  Konfirmasi
+                </Button>
+              </div>
+            )}
+            {b.notes && <p className="text-[10px] text-muted-foreground italic">{b.notes}</p>}
+          </div>
+        ))}
+
+        {/* Quick booking form */}
+        {showRangeBookingForm && (
+          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowRangeBookingForm(false)}>
+            <div className="bg-card border border-border rounded-t-2xl w-full max-w-lg p-5 space-y-3"
+              onClick={(e) => e.stopPropagation()}>
+              <p className="text-sm font-semibold">Tambah Booking</p>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[10px] text-muted-foreground uppercase tracking-wider">Bay</label>
+                  <select
+                    className="w-full mt-1 h-9 rounded-lg border border-border bg-background px-2 text-sm"
+                    value={rangeForm.bay_id}
+                    onChange={(e) => setRangeForm(f => ({ ...f, bay_id: e.target.value }))}
+                  >
+                    <option value="">Pilih bay</option>
+                    {rangeBays?.filter((b: any) => b.is_active).map((bay: any) => (
+                      <option key={bay.id} value={bay.id}>
+                        Bay {bay.bay_number} {bay.bay_type ? `(${bay.bay_type})` : ""} · {formatRupiah(bay.price_per_hour ?? 0)}/jam
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] text-muted-foreground uppercase tracking-wider">Mulai</label>
+                  <input
+                    type="time"
+                    value={rangeForm.start_time}
+                    onChange={(e) => setRangeForm(f => ({ ...f, start_time: e.target.value }))}
+                    className="w-full mt-1 h-9 rounded-lg border border-border bg-background px-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-muted-foreground uppercase tracking-wider">Durasi (jam)</label>
+                  <select
+                    className="w-full mt-1 h-9 rounded-lg border border-border bg-background px-2 text-sm"
+                    value={rangeForm.duration_hours}
+                    onChange={(e) => setRangeForm(f => ({ ...f, duration_hours: Number(e.target.value) }))}
+                  >
+                    {[1,2,3,4].map(h => <option key={h} value={h}>{h} jam</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] text-muted-foreground uppercase tracking-wider">Bucket bola</label>
+                  <select
+                    className="w-full mt-1 h-9 rounded-lg border border-border bg-background px-2 text-sm"
+                    value={rangeForm.balls_bucket_count}
+                    onChange={(e) => setRangeForm(f => ({ ...f, balls_bucket_count: Number(e.target.value) }))}
+                  >
+                    {[1,2,3,4,5].map(n => <option key={n} value={n}>{n} bucket</option>)}
+                  </select>
+                </div>
+              </div>
+              <Input
+                placeholder="Catatan (opsional)"
+                value={rangeForm.notes}
+                onChange={(e) => setRangeForm(f => ({ ...f, notes: e.target.value }))}
+                className="h-9 text-sm"
+              />
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1" onClick={() => setShowRangeBookingForm(false)}>Batal</Button>
+                <Button className="flex-1" disabled={!rangeForm.bay_id || savingRangeBooking} onClick={handleSaveRangeBooking}>
+                  {savingRangeBooking ? "Menyimpan..." : "Simpan Booking"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+      </TabsContent>
+    );
+  };
 
   const renderAnnouncementsTab = () => {
     const pinnedAnnouncements = announcements?.filter((a: any) => a.is_pinned) ?? [];
