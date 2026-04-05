@@ -554,9 +554,9 @@ const TourDetail = () => {
 
         // Build action list
         const actions = isPersonal ? [
-          { icon: Calendar, label: "Event Baru", onClick: () => setShowCreateEvent(true) },
+          { icon: Calendar, label: "New Event", onClick: () => setShowCreateEvent(true) },
         ] : isOrganizer ? [
-          { icon: Calendar, label: "Event Baru", onClick: () => setShowCreateEvent(true) },
+          { icon: Calendar, label: "New Event", onClick: () => setShowCreateEvent(true) },
           { icon: UserPlus, label: "Register", onClick: () => setShowRegister(true) },
           { icon: Layers, label: "Flights", onClick: () => setShowFlights(true) },
           { icon: Award, label: "Categories", onClick: () => setShowCategories(true) },

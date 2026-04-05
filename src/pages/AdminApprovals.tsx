@@ -173,7 +173,7 @@ const AdminApprovals = () => {
               <p className="text-2xl font-bold tabular-nums">
                 {allApprovals?.filter(a => a.status === "approved").length ?? 0}
               </p>
-              <p className="text-xs text-muted-foreground">Disetujui</p>
+              <p className="text-xs text-muted-foreground">Approved</p>
             </div>
           </CardContent>
         </Card>
@@ -186,7 +186,7 @@ const AdminApprovals = () => {
               <p className="text-2xl font-bold tabular-nums">
                 {allApprovals?.filter(a => a.status === "rejected").length ?? 0}
               </p>
-              <p className="text-xs text-muted-foreground">Ditolak</p>
+              <p className="text-xs text-muted-foreground">Rejected</p>
             </div>
           </CardContent>
         </Card>

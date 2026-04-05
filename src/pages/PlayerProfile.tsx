@@ -368,7 +368,7 @@ const PlayerProfile = () => {
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
                   <ClipboardList className="h-8 w-8 mx-auto mb-2 opacity-30" />
-                  <p className="text-sm">Data per lubang belum tersedia</p>
+                  <p className="text-sm">No hole-by-hole data available</p>
                   <p className="text-xs mt-1 text-muted-foreground/50">
                     Gross: {selectedRow.gross_score ?? "—"} · Net: {selectedRow.net_score ?? "—"}
                   </p>

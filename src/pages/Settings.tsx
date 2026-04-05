@@ -232,7 +232,7 @@ const Settings = () => {
           <button onClick={() => setSection("main")} className="rounded-full p-1.5 hover:bg-muted">
             <ArrowLeft className="h-5 w-5" />
           </button>
-          <h1 className="font-display text-xl font-bold">Edit Profil</h1>
+          <h1 className="font-display text-xl font-bold">Edit Profile</h1>
         </div>
         <div className="space-y-4 px-4">
           {/* Avatar with upload */}
@@ -277,7 +277,7 @@ const Settings = () => {
             <p className="mt-1 text-[10px] text-muted-foreground">Handicap is updated automatically after tournaments</p>
           </div>
           <Button className="w-full" onClick={handleSaveProfile} disabled={saving}>
-            {saving ? "Saving…" : "Simpan Perubahan"}
+            {saving ? "Saving…" : "Save Changes"}
           </Button>
         </div>
       </div>
@@ -291,7 +291,7 @@ const Settings = () => {
           <button onClick={() => setSection("main")} className="rounded-full p-1.5 hover:bg-muted">
             <ArrowLeft className="h-5 w-5" />
           </button>
-          <h1 className="font-display text-xl font-bold">Klub Saya</h1>
+          <h1 className="font-display text-xl font-bold">My Clubs</h1>
         </div>
         <div className="space-y-2 px-4">
           {myClubs?.length === 0 && (
@@ -332,7 +332,7 @@ const Settings = () => {
           <button onClick={() => setSection("main")} className="rounded-full p-1.5 hover:bg-muted">
             <ArrowLeft className="h-5 w-5" />
           </button>
-          <h1 className="font-display text-xl font-bold">Ubah Kata Sandi</h1>
+          <h1 className="font-display text-xl font-bold">Change Password</h1>
         </div>
         <div className="space-y-4 px-4">
           <div>
@@ -377,11 +377,11 @@ const Settings = () => {
       </div>
 
       <div className="mt-4 space-y-1 px-4">
-        <SettingsItem icon={User} label="Edit Profil" onClick={() => setSection("profile")} />
-        <SettingsItem icon={Building2} label="Klub Saya" onClick={() => setSection("club")} />
-        <SettingsItem icon={Lock} label="Ubah Kata Sandi" onClick={() => setSection("password")} />
+        <SettingsItem icon={User} label="Edit Profile" onClick={() => setSection("profile")} />
+        <SettingsItem icon={Building2} label="My Clubs" onClick={() => setSection("club")} />
+        <SettingsItem icon={Lock} label="Change Password" onClick={() => setSection("password")} />
         {adminAccess && adminAccess !== "none" && (
-          <SettingsItem icon={LayoutDashboard} label="Dasbor Admin" onClick={handleAdminDashboard} />
+          <SettingsItem icon={LayoutDashboard} label="Admin Dashboard" onClick={handleAdminDashboard} />
         )}
         <SettingsItem icon={Users} label="GBPlay Cooperative 🏌️" onClick={() => navigate("/cooperative")} />
         <SettingsItem icon={Trophy} label="Klaim Data Turnamen EGT" onClick={() => setShowClaim(true)} />
@@ -393,7 +393,7 @@ const Settings = () => {
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted">
               <Palette className="h-4 w-4 text-muted-foreground" />
             </div>
-            <span className="text-sm font-medium">Mode Gelap</span>
+            <span className="text-sm font-medium">Dark Mode</span>
           </div>
           <Switch checked={darkMode} onCheckedChange={setDarkMode} />
         </div>
@@ -484,7 +484,7 @@ const Settings = () => {
                     }
                   }}
                 >
-                  {demoLoading ? "Menghapus..." : "Hapus & Nonaktifkan"}
+                  {demoLoading ? "Menghapus..." : "Hapus & Inactivekan"}
                 </Button>
               </div>
             </div>
@@ -497,21 +497,21 @@ const Settings = () => {
               <Bell className="h-4 w-4 text-muted-foreground" />
             </div>
             <div>
-              <span className="text-sm font-medium">Notifikasi Push</span>
+              <span className="text-sm font-medium">Push Notifications</span>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {permission === "denied"
-                  ? "Diblokir di pengaturan browser"
+                  ? "Blocked in browser settings"
                   : permission === "unsupported"
-                  ? "Tidak didukung perangkat ini"
+                  ? "Not supported on this device"
                   : isSubscribed
-                  ? "Anda akan menerima notifikasi"
-                  : "Aktifkan untuk notifikasi aktivitas"}
+                  ? "You'll receive activity alerts"
+                  : "Enable to get activity alerts"}
               </p>
             </div>
           </div>
           {permission === "denied" || permission === "unsupported" ? (
             <span className="text-xs text-muted-foreground">
-              {permission === "denied" ? "Diblokir" : "T/A"}
+              {permission === "denied" ? "Blocked" : "N/A"}
             </span>
           ) : (
             <Switch
@@ -520,11 +520,11 @@ const Settings = () => {
               onCheckedChange={async (checked) => {
                 if (checked) {
                   const ok = await subscribe();
-                  if (!ok && permission !== "denied") toast.error("Gagal mengaktifkan notifikasi");
-                  else if (ok) toast.success("Notifikasi aktif!");
+                  if (!ok && permission !== "denied") toast.error("Failed to enable notifications");
+                  else if (ok) toast.success("Notifications enabled!");
                 } else {
                   await unsubscribe();
-                  toast.success("Notifikasi dinonaktifkan");
+                  toast.success("Notifications disabled");
                 }
               }}
             />
@@ -540,7 +540,7 @@ const Settings = () => {
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-destructive/10">
             <LogOut className="h-4 w-4" />
           </div>
-          <span className="text-sm font-medium">Keluar</span>
+          <span className="text-sm font-medium">Sign Out</span>
         </button>
       </div>
 

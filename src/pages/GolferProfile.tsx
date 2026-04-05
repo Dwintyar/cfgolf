@@ -570,11 +570,11 @@ const GolferProfile = () => {
   const getInitials = (name: string | null) => name ? name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2) : "?";
 
   const tabs: { id: Tab; label: string }[] = [
-    { id: "about", label: "Tentang" },
-    { id: "clubs", label: "Klub" },
-    { id: "stats", label: "Statistik" },
-    { id: "gallery", label: "Galeri" },
-    ...(isOwnProfile ? [{ id: "bookings" as Tab, label: "Booking" }] : []),
+    { id: "about", label: "About" },
+    { id: "clubs", label: "Clubs" },
+    { id: "stats", label: "Stats" },
+    { id: "gallery", label: "Gallery" },
+    ...(isOwnProfile ? [{ id: "bookings" as Tab, label: "Bookings" }] : []),
     ...(isOwnProfile && isCaddy ? [{ id: "caddy" as Tab, label: "Caddy" }] : []),
   ];
 
@@ -670,7 +670,7 @@ const GolferProfile = () => {
       {(!tournamentHistory || tournamentHistory.length === 0) && (
         <div className="golf-card p-6 text-center">
           <Trophy className="mx-auto h-8 w-8 text-muted-foreground/40" />
-          <p className="mt-2 text-sm text-muted-foreground">Belum ikut turnamen</p>
+          <p className="mt-2 text-sm text-muted-foreground">Not joined any tournament</p>
         </div>
       )}
     </>
@@ -685,19 +685,19 @@ const GolferProfile = () => {
         <div className="golf-card p-4">
           <div className="flex items-center gap-2 mb-3">
             <BarChart3 className="h-4 w-4 text-primary" />
-            <p className="text-sm font-semibold">Statistik Bermain</p>
+            <p className="text-sm font-semibold">Playing Statistics</p>
           </div>
           <div className="space-y-3">
-            <StatRow label="Rata-rata Gross" value={playerStats.avgGross} />
-            <StatRow label="Terbaik" value={playerStats.bestRound?.toString() ?? "—"} />
-            <StatRow label="Putt/Ronde" value={playerStats.avgPutts} />
-            <StatRow label="Jumlah Ronde" value={playerStats.rounds.toString()} />
+            <StatRow label="Scoring Average" value={playerStats.avgGross} />
+            <StatRow label="Best Round" value={playerStats.bestRound?.toString() ?? "—"} />
+            <StatRow label="Putts per Round" value={playerStats.avgPutts} />
+            <StatRow label="Rounds Played" value={playerStats.rounds.toString()} />
           </div>
         </div>
       ) : (
         <div className="golf-card p-8 text-center">
           <BarChart3 className="mx-auto h-8 w-8 text-muted-foreground/40" />
-          <p className="mt-3 text-sm text-muted-foreground">Belum ada statistik</p>
+          <p className="mt-3 text-sm text-muted-foreground">No stats available yet</p>
           <p className="text-xs text-muted-foreground/70 mt-1">Play some rounds to see your statistics</p>
         </div>
       )}
@@ -713,7 +713,7 @@ const GolferProfile = () => {
       const key = h.tour_id ?? "personal";
       if (!byTour[key]) {
         byTour[key] = {
-          tourName: h.tour_id ? ((h.tours as any)?.name ?? "Tournament") : "Pribadi",
+          tourName: h.tour_id ? ((h.tours as any)?.name ?? "Tournament") : "Personal",
           entries: [],
         };
       }
@@ -767,7 +767,7 @@ const GolferProfile = () => {
       <div className="golf-card p-4">
         <div className="flex items-center gap-2 mb-3">
           <TrendingDown className="h-4 w-4 text-primary" />
-          <p className="text-sm font-semibold">Riwayat Handicap</p>
+          <p className="text-sm font-semibold">Handicap History</p>
         </div>
         <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: 80 }}>
           {/* Area fill */}
@@ -854,7 +854,7 @@ const GolferProfile = () => {
                 <div className="mt-3 flex items-center gap-2">
                   <div className="golf-card px-4 py-2 text-center flex-1 border-primary/30 bg-primary/5">
                     <p className="text-2xl font-bold text-primary">{profile?.handicap ?? "N/A"}</p>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider">HCP Referensi</p>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Reference HCP</p>
                   </div>
                   <div className="golf-card px-4 py-2 text-center flex-1">
                     <p className="text-2xl font-bold">{playerStats?.rounds ?? 0}</p>
@@ -941,12 +941,12 @@ const GolferProfile = () => {
             {/* Stats card */}
             {playerStats && (
               <div className="golf-card p-4 space-y-3">
-                <p className="text-sm font-semibold">Statistik Bermain</p>
+                <p className="text-sm font-semibold">Playing Statistics</p>
                 {[
-                  { label: "Rata-rata Gross", value: playerStats.avgGross },
-                  { label: "Terbaik", value: playerStats.bestRound?.toString() ?? "—" },
-                  { label: "Putt/Ronde", value: playerStats.avgPutts },
-                  { label: "Jumlah Ronde", value: playerStats.rounds.toString() },
+                  { label: "Scoring Average", value: playerStats.avgGross },
+                  { label: "Best Round", value: playerStats.bestRound?.toString() ?? "—" },
+                  { label: "Putts per Round", value: playerStats.avgPutts },
+                  { label: "Rounds Played", value: playerStats.rounds.toString() },
                 ].map(s => (
                   <div key={s.label} className="flex justify-between items-center text-sm">
                     <span className="text-muted-foreground">{s.label}</span>
@@ -987,7 +987,7 @@ const GolferProfile = () => {
               <div className="golf-card p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <Shield className="h-4 w-4 text-primary" />
-                  <p className="text-sm font-semibold">Peran di Klub</p>
+                  <p className="text-sm font-semibold">Club Roles</p>
                 </div>
                 <div className="space-y-2">
                   {committeeRoles.map((cr: any, i: number) => (
@@ -1027,12 +1027,12 @@ const GolferProfile = () => {
                 {hcpTrendChart}
 
                 <div className="golf-card p-4">
-                  <p className="text-sm font-semibold mb-3">Ronde Terakhir</p>
+                  <p className="text-sm font-semibold mb-3">Recent Rounds</p>
                   {playerStats ? (
                     <div className="grid grid-cols-3 gap-4 text-center">
                       <div>
                         <p className="text-2xl font-bold text-primary">{playerStats.bestRound ?? "—"}</p>
-                        <p className="text-xs text-muted-foreground">Skor Terbaik</p>
+                        <p className="text-xs text-muted-foreground">Best Score</p>
                       </div>
                       <div>
                         <p className="text-2xl font-bold">{playerStats.avgGross}</p>
@@ -1054,11 +1054,11 @@ const GolferProfile = () => {
                   <p className="text-sm text-muted-foreground italic">{profile?.bio || "No bio yet"}</p>
                   <div className="flex items-center gap-3 text-sm text-muted-foreground">
                     <Globe className="h-4 w-4 shrink-0" />
-                    <span>Belum ada website</span>
+                    <span>No website linked</span>
                   </div>
                   <div className="flex items-center gap-3 text-sm text-muted-foreground">
                     <Mail className="h-4 w-4 shrink-0" />
-                    <span>Kirim Pesan</span>
+                    <span>Contact via Message</span>
                   </div>
                 </div>
               </div>
@@ -1246,7 +1246,7 @@ const GolferProfile = () => {
                   {buddyStatus === "accepted" ? (
                     <Button className="flex-1 h-11 rounded-xl text-sm font-bold uppercase tracking-wider" variant="outline" disabled><UserCheck className="h-4 w-4 mr-2" /> Buddies</Button>
                   ) : buddyStatus === "sent" ? (
-                    <Button className="flex-1 h-11 rounded-xl text-sm font-bold uppercase tracking-wider" variant="outline" disabled>Diminta</Button>
+                    <Button className="flex-1 h-11 rounded-xl text-sm font-bold uppercase tracking-wider" variant="outline" disabled>Requested</Button>
                   ) : (
                     <Button className="flex-1 h-11 rounded-xl text-sm font-bold uppercase tracking-wider" onClick={handleAddBuddy}><UserPlus className="h-4 w-4 mr-2" /> Add Buddy</Button>
                   )}
@@ -1279,11 +1279,11 @@ const GolferProfile = () => {
                 </div>
                 <div className="golf-card p-4 flex items-start gap-4">
                   <Globe className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
-                  <p className="text-sm text-muted-foreground">Belum ada website</p>
+                  <p className="text-sm text-muted-foreground">No website linked</p>
                 </div>
                 <div className="golf-card p-4 flex items-center gap-4">
                   <Mail className="h-5 w-5 text-muted-foreground shrink-0" />
-                  <p className="text-sm text-muted-foreground">Kirim Pesan</p>
+                  <p className="text-sm text-muted-foreground">Contact via Message</p>
                 </div>
                 {hcpTrendChart}
               </div>
@@ -1335,7 +1335,7 @@ const GolferProfile = () => {
                   <div className="golf-card p-4">
                     <div className="flex items-center gap-2 mb-3">
                       <Shield className="h-4 w-4 text-primary" />
-                      <p className="text-sm font-semibold">Peran di Klub</p>
+                      <p className="text-sm font-semibold">Club Roles</p>
                     </div>
                     <div className="space-y-2">
                       {committeeRoles.map((cr: any, i: number) => (
@@ -1410,7 +1410,7 @@ const GolferProfile = () => {
                     <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
                       <Camera className="h-8 w-8 text-primary/60" />
                     </div>
-                    <p className="text-base font-semibold">Belum ada foto</p>
+                    <p className="text-base font-semibold">No photos yet</p>
                     <p className="text-sm text-muted-foreground mt-1">
                       {isOwnProfile ? "Tap tombol di atas untuk tambah foto pertama." : "Belum ada foto yang dibagikan."}
                     </p>
@@ -1590,10 +1590,10 @@ const GolferProfile = () => {
                       </div>
                       <div className="flex-1">
                         <p className="text-sm font-semibold">{(s.clubs as any)?.name ?? "Golf Course"}</p>
-                        <p className="text-[11px] text-muted-foreground">Caddy Aktif</p>
+                        <p className="text-[11px] text-muted-foreground">Caddy Active</p>
                       </div>
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-500/10 text-green-500">
-                        {s.status === "active" ? "Aktif" : s.status}
+                        {s.status === "active" ? "Active" : s.status}
                       </span>
                     </div>
                   ))}
@@ -1754,7 +1754,7 @@ const GolferProfile = () => {
                 <Settings className="h-5 w-5 text-primary" />
               </div>
               <div className="flex-1 text-left">
-                <p className="text-sm font-semibold">Edit Profil</p>
+                <p className="text-sm font-semibold">Edit Profile</p>
                 <p className="text-xs text-muted-foreground">Update name, bio, and photo</p>
               </div>
             </button>
@@ -1764,7 +1764,7 @@ const GolferProfile = () => {
                 <Shield className="h-5 w-5 text-muted-foreground" />
               </div>
               <div className="flex-1 text-left">
-                <p className="text-sm font-semibold">Ubah Kata Sandi</p>
+                <p className="text-sm font-semibold">Change Password</p>
                 <p className="text-xs text-muted-foreground">Update your account password</p>
               </div>
             </button>
@@ -1773,7 +1773,7 @@ const GolferProfile = () => {
                 <span className="text-lg">{isDark ? "🌙" : "☀️"}</span>
               </div>
               <div className="flex-1 text-left">
-                <p className="text-sm font-semibold">Mode Gelap</p>
+                <p className="text-sm font-semibold">Dark Mode</p>
                 <p className="text-xs text-muted-foreground">{isDark ? "Switch to light" : "Switch to dark"}</p>
               </div>
               <Switch checked={isDark} onCheckedChange={toggleDarkMode} />
@@ -1790,8 +1790,8 @@ const GolferProfile = () => {
                 <span className="text-lg">🔔</span>
               </div>
               <div className="flex-1 text-left">
-                <p className="text-sm font-semibold">Notifikasi Push</p>
-                <p className="text-xs text-muted-foreground">Kelola izin notifikasi</p>
+                <p className="text-sm font-semibold">Push Notifications</p>
+                <p className="text-xs text-muted-foreground">Manage notification permissions</p>
               </div>
             </button>
             {isPlatformAdmin && (
@@ -1801,8 +1801,8 @@ const GolferProfile = () => {
                   <Shield className="h-5 w-5 text-red-500" />
                 </div>
                 <div className="flex-1 text-left">
-                  <p className="text-sm font-semibold text-red-500">Dasbor Admin</p>
-                  <p className="text-xs text-muted-foreground">Administrasi platform</p>
+                  <p className="text-sm font-semibold text-red-500">Admin Dashboard</p>
+                  <p className="text-xs text-muted-foreground">Platform administration</p>
                 </div>
               </button>
             )}
@@ -1816,7 +1816,7 @@ const GolferProfile = () => {
                 <span className="text-lg">🚪</span>
               </div>
               <div className="flex-1 text-left">
-                <p className="text-sm font-semibold text-destructive">Keluar</p>
+                <p className="text-sm font-semibold text-destructive">Sign Out</p>
                 <p className="text-xs text-muted-foreground">Sign out of your account</p>
               </div>
             </button>
