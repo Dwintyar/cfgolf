@@ -49,8 +49,8 @@
         letter-spacing:-0.5px; margin:0 0 28px 0;
       ">GolfBuana</p>
 
-      <!-- Logo dark mode SVG inline -->
-      <img src="/logo-gb-dark.svg" style="width:140px;height:140px;object-fit:contain;" />
+      <!-- Logo auto sesuai system mode -->
+      <img id="splash-logo" src="/logo-gb-dark.svg" style="width:140px;height:140px;object-fit:contain;" />
 
       <!-- Taglines -->
       <div style="margin-top:32px; display:flex; flex-direction:column; align-items:center; gap:8px;">
@@ -62,7 +62,25 @@
 
     <script type="module" src="/src/main.tsx"></script>
     <script>
-      // Hide splash when React has mounted
+      // Auto theme + correct splash logo
+      (function() {
+        var saved = localStorage.getItem('theme');
+        var systemLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+        var isLight = saved === 'light' || (!saved && systemLight);
+        var splash = document.getElementById('splash');
+        var logo   = document.getElementById('splash-logo');
+        if (splash) {
+          splash.style.background = isLight ? '#f5f8f5' : '#0a1a12';
+          splash.querySelectorAll('p').forEach(function(p) {
+            if (p.textContent.trim() === 'GolfBuana') {
+              p.style.color = isLight ? '#0a1a12' : '#ffffff';
+            } else {
+              p.style.color = isLight ? '#1D9E75' : '#4ade80';
+            }
+          });
+        }
+        if (logo) logo.src = isLight ? '/logo-gb.svg' : '/logo-gb-dark.svg';
+      })();
       (function() {
         var splash = document.getElementById('splash');
         if (!splash) return;

@@ -76,7 +76,9 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
 const App = () => {
   useEffect(() => {
     const saved = localStorage.getItem("theme");
-    if (saved === "light") {
+    const systemLight = window.matchMedia("(prefers-color-scheme: light)").matches;
+    const useLight = saved === "light" || (!saved && systemLight);
+    if (useLight) {
       document.documentElement.classList.add("light");
       document.documentElement.style.colorScheme = "light";
     } else {
