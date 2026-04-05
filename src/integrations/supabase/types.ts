@@ -1535,6 +1535,7 @@ export type Database = {
           gir: boolean | null
           hole_number: number
           id: string
+          is_demo: boolean | null
           putts: number | null
           scorecard_id: string
           strokes: number | null
@@ -1545,6 +1546,7 @@ export type Database = {
           gir?: boolean | null
           hole_number: number
           id?: string
+          is_demo?: boolean | null
           putts?: number | null
           scorecard_id: string
           strokes?: number | null
@@ -1555,6 +1557,7 @@ export type Database = {
           gir?: boolean | null
           hole_number?: number
           id?: string
+          is_demo?: boolean | null
           putts?: number | null
           scorecard_id?: string
           strokes?: number | null
@@ -2141,6 +2144,7 @@ export type Database = {
           created_by: string
           finished_at: string | null
           id: string
+          is_demo: boolean | null
           started_at: string
           status: string
         }
@@ -2150,6 +2154,7 @@ export type Database = {
           created_by: string
           finished_at?: string | null
           id?: string
+          is_demo?: boolean | null
           started_at?: string
           status?: string
         }
@@ -2159,6 +2164,7 @@ export type Database = {
           created_by?: string
           finished_at?: string | null
           id?: string
+          is_demo?: boolean | null
           started_at?: string
           status?: string
         }

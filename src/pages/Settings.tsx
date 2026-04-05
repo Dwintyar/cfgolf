@@ -431,8 +431,10 @@ const Settings = () => {
             <div className="text-[11px] text-muted-foreground space-y-1.5 pl-12 border-t border-border/50 pt-2">
               <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Data aktif</p>
               <p>✓ Anggota GolfBuana Demo Club</p>
-              <p>✓ 1 booking tee time di Jagorawi (pending)</p>
-              <p>✓ Akses lihat data turnamen EGT 2027</p>
+              <p>✓ 1 ronde selesai di Jagorawi (90 gross · 72 nett)</p>
+              <p>✓ 18 hole scores lengkap</p>
+              <p>✓ 1 booking tee time pending</p>
+              <p>✓ 1 booking tee time dikonfirmasi</p>
               <button
                 onClick={() => navigate("/how-it-works")}
                 className="text-primary underline underline-offset-2 mt-1 block"
