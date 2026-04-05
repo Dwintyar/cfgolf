@@ -314,10 +314,10 @@ const PlatformAdminDashboard = () => {
       <div className="space-y-4 p-4">
         {/* KPI Cards */}
         <div className="grid grid-cols-3 gap-2">
-          <StatCard icon={Users} label="Users" value={stats?.totalUsers ?? 0} />
-          <StatCard icon={Building2} label="Clubs" value={stats?.totalClubs ?? 0} color="text-accent" />
-          <StatCard icon={Trophy} label="Tours" value={stats?.totalTours ?? 0} />
-          <StatCard icon={Calendar} label="Events" value={stats?.totalEvents ?? 0} color="text-accent" />
+          <StatCard icon={Users} label="Pengguna" value={stats?.totalUsers ?? 0} />
+          <StatCard icon={Building2} label="Klub" value={stats?.totalClubs ?? 0} color="text-accent" />
+          <StatCard icon={Trophy} label="Tur" value={stats?.totalTours ?? 0} />
+          <StatCard icon={Calendar} label="Event" value={stats?.totalEvents ?? 0} color="text-accent" />
           <StatCard icon={MapPin} label="Venues" value={stats?.totalVenues ?? 0} />
           <StatCard icon={Flag} label="Active" value={(allTours ?? []).filter((t: any) => t.status === "active").length} color="text-accent" />
         </div>
@@ -333,9 +333,9 @@ const PlatformAdminDashboard = () => {
                 </span>
               )}
             </TabsTrigger>
-            <TabsTrigger value="clubs" className="flex-1 text-xs">Clubs</TabsTrigger>
-            <TabsTrigger value="tours" className="flex-1 text-xs">Tours</TabsTrigger>
-            <TabsTrigger value="events" className="flex-1 text-xs">Events</TabsTrigger>
+            <TabsTrigger value="clubs" className="flex-1 text-xs">Klub</TabsTrigger>
+            <TabsTrigger value="tours" className="flex-1 text-xs">Tur</TabsTrigger>
+            <TabsTrigger value="events" className="flex-1 text-xs">Event</TabsTrigger>
             <TabsTrigger value="venues" className="flex-1 text-xs">Courses</TabsTrigger>
             <TabsTrigger value="reports" className="flex-1 text-xs">Reports</TabsTrigger>
             <TabsTrigger value="claims" className="flex-1 text-xs relative">
@@ -386,7 +386,7 @@ const PlatformAdminDashboard = () => {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Cari nama user..."
+                placeholder="Cari nama pengguna..."
                 value={userSearch}
                 onChange={e => setUserSearch(e.target.value)}
                 className="pl-9 h-9 text-sm"
@@ -469,7 +469,7 @@ const PlatformAdminDashboard = () => {
                         </DropdownMenuItem>
                       )}
                       <DropdownMenuItem onClick={() => { setMergeTarget(u); setShowMergeDialog(true); }}>
-                        <Users className="h-3.5 w-3.5 mr-2" /> Merge Profile
+                        <Users className="h-3.5 w-3.5 mr-2" /> Gabung Profil
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -516,7 +516,7 @@ const PlatformAdminDashboard = () => {
           {/* TAB: TOURS */}
           <TabsContent value="tours" className="space-y-2 pt-2">
             {(!allTours || allTours.length === 0) ? (
-              <p className="text-center text-sm text-muted-foreground py-8">No tours found</p>
+              <p className="text-center text-sm text-muted-foreground py-8">Belum ada tur</p>
             ) : allTours.map((t: any) => (
               <button key={t.id} onClick={() => navigate(`/tour/${t.id}`)} className="golf-card w-full text-left flex items-center gap-3 p-3 hover:border-primary/30 transition-colors">
                 <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
@@ -598,7 +598,7 @@ const PlatformAdminDashboard = () => {
           <TabsContent value="reports" className="space-y-4 pt-2">
             <div className="golf-card p-4">
               <h3 className="text-sm font-semibold flex items-center gap-2 mb-3">
-                <TrendingUp className="h-4 w-4 text-primary" /> Registrasi User per Bulan
+                <TrendingUp className="h-4 w-4 text-primary" /> Registrasi Pengguna per Bulan
               </h3>
               <div className="space-y-2">
                 {usersByMonth?.map(m => {
@@ -624,10 +624,10 @@ const PlatformAdminDashboard = () => {
                 <BarChart3 className="h-4 w-4 text-accent" /> Ringkasan Platform
               </h3>
               <div className="grid grid-cols-2 gap-3 text-sm">
-                <div className="flex justify-between"><span className="text-muted-foreground">Total Users</span><span className="font-bold">{stats?.totalUsers}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Total Clubs</span><span className="font-bold">{stats?.totalClubs}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Total Events</span><span className="font-bold">{stats?.totalEvents}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Total Venues</span><span className="font-bold">{stats?.totalVenues}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Total Pengguna</span><span className="font-bold">{stats?.totalUsers}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Total Klub</span><span className="font-bold">{stats?.totalClubs}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Total Event</span><span className="font-bold">{stats?.totalEvents}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Total Venue</span><span className="font-bold">{stats?.totalVenues}</span></div>
               </div>
             </div>
           </TabsContent>
@@ -704,12 +704,12 @@ const PlatformAdminDashboard = () => {
         </Tabs>
       </div>
 
-      {/* Merge Profile Dialog */}
+      {/* Gabung Profil Dialog */}
       {showMergeDialog && mergeTarget && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
           <div className="w-full max-w-md golf-card p-5 space-y-4">
             <div>
-              <h3 className="font-bold text-base">Merge Profile</h3>
+              <h3 className="font-bold text-base">Gabung Profil</h3>
               <p className="text-xs text-muted-foreground mt-1">
                 Semua data tournament, scorecard, dan membership dari profile lama akan dipindahkan ke:
               </p>

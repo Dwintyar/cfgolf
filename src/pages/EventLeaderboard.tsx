@@ -183,7 +183,7 @@ const EventLeaderboard = () => {
         </button>
         <div className="flex items-center gap-2">
           <Trophy className="h-5 w-5 text-accent" />
-          <h1 className="font-display text-xl font-bold">Leaderboard</h1>
+          <h1 className="font-display text-xl font-bold">Papan Skor</h1>
         </div>
         <div className="mt-1 flex flex-wrap gap-x-3 text-xs text-muted-foreground">
           <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> {event.event_date}</span>

@@ -143,7 +143,7 @@ const EventDetail = () => {
         <h2 style="font-size:16px;color:#1a6b3c;margin-bottom:12px">Leaderboard</h2>
         <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:24px">
           <thead><tr style="background:#1a6b3c;color:white">
-            <th style="padding:8px 12px;text-align:left">Rank</th>
+            <th style="padding:8px 12px;text-align:left">Peringkat</th>
             <th style="padding:8px 12px;text-align:left">Nama</th>
             <th style="padding:8px 12px;text-align:center">HCP</th>
             <th style="padding:8px 12px;text-align:center">Gross</th>
@@ -612,7 +612,7 @@ const EventDetail = () => {
         avatar_url: prof?.avatar_url,
         player_id: c?.player_id ?? null,
         hcp: c?.hcp ?? null,
-        flight_name: f?.flight_name?.replace("Flight Level ", "") ?? "?",
+        flight_name: f?.flight_name?.replace("Grup ", "") ?? "?",
         cart_number: caMap[row.contestant_id!] ?? null,
         bag_number: ecMap[row.contestant_id!] ?? null,
         caddy_name: cdyMap[row.contestant_id!] ?? null,
@@ -1095,7 +1095,7 @@ const EventDetail = () => {
       else _actions.push({ icon: Trophy, label: "Finalize", onClick: () => setShowFinalizeConfirm(true), color: "text-primary" });
     }
   }
-  _actions.push({ icon: Trophy, label: "Results", onClick: () => setShowWinners(true) });
+  _actions.push({ icon: Trophy, label: "Hasil", onClick: () => setShowWinners(true) });
   if (!isPersonalTour) {
     _actions.push({ icon: Monitor, label: "Live", onClick: () => window.open(`/live/${id}`, "_blank") });
     _actions.push({ icon: Share2, label: "Share", onClick: () => {
@@ -1123,15 +1123,15 @@ const EventDetail = () => {
   const tabsBlock = (
     <Tabs value={activeTab} onValueChange={setActiveTab} className={isDesktop ? "" : "px-4"}>
       <TabsList className="w-full h-auto p-0 bg-transparent border-b border-border/50 rounded-none">
-        <TabsTrigger value="overview" className="flex-1 py-2.5 text-sm font-semibold rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent bg-transparent text-muted-foreground">Overview</TabsTrigger>
+        <TabsTrigger value="overview" className="flex-1 py-2.5 text-sm font-semibold rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent bg-transparent text-muted-foreground">Ikhtisar</TabsTrigger>
         {(!isPersonalTour || isPersonalWithPairing) && (
           <TabsTrigger value="checkin" className="flex-1 py-2.5 text-sm font-semibold rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent bg-transparent text-muted-foreground">Check-in</TabsTrigger>
         )}
         {/* Pairings — internal/interclub OR personal with open/arranged pairing */}
         {(!isPersonalTour || isPersonalWithPairing) && (
-          <TabsTrigger value="pairings" className="flex-1 py-2.5 text-sm font-semibold rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent bg-transparent text-muted-foreground">Pairings</TabsTrigger>
+          <TabsTrigger value="pairings" className="flex-1 py-2.5 text-sm font-semibold rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent bg-transparent text-muted-foreground">Pasangan</TabsTrigger>
         )}
-        <TabsTrigger value="leaderboard" className="flex-1 py-2.5 text-sm font-semibold rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent bg-transparent text-muted-foreground">{isPersonalTour ? "Scorecard" : "Board"}</TabsTrigger>
+        <TabsTrigger value="leaderboard" className="flex-1 py-2.5 text-sm font-semibold rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent bg-transparent text-muted-foreground">{isPersonalTour ? "Kartu Skor" : "Board"}</TabsTrigger>
         {!isPersonalTour && <TabsTrigger value="hcpcorr" className="flex-1 py-2.5 text-sm font-semibold rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:bg-transparent bg-transparent text-muted-foreground">HCP Corr</TabsTrigger>}
       </TabsList>
 
@@ -1203,7 +1203,7 @@ const EventDetail = () => {
         )}
 
         {!isPersonalTour && <Section title="Contestants" icon={Users} count={contestants?.length}>
-          {contestants?.length === 0 && <EmptyState text="No contestants" />}
+          {contestants?.length === 0 && <EmptyState text="Belum ada peserta" />}
           {contestants?.slice().sort((a: any, b: any) => ((a.profiles as any)?.full_name ?? "").localeCompare((b.profiles as any)?.full_name ?? "", "id")).slice(0, 10).map((c) => (
             <div key={c.id} className="golf-card flex items-center gap-3 p-3">
               <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
@@ -1220,7 +1220,7 @@ const EventDetail = () => {
         </Section>}
 
         {!isPersonalTour && (<Section title="Tickets" icon={Ticket} count={tickets?.length} sub={`${usedTickets} assigned`}>
-          {tickets?.length === 0 && <EmptyState text="No tickets" />}
+          {tickets?.length === 0 && <EmptyState text="Belum ada tiket" />}
           {tickets?.slice(0, 6).map((t) => (
             <div key={t.id} className="golf-card flex items-center justify-between p-3">
               <div>
@@ -1234,8 +1234,8 @@ const EventDetail = () => {
 
         )}
 
-        <Section title="Results" icon={Award} count={results?.length}>
-          {results?.length === 0 && <EmptyState text="No results yet" />}
+        <Section title="Hasil" icon={Award} count={results?.length}>
+          {results?.length === 0 && <EmptyState text="Belum ada hasil" />}
           {results?.map((r) => (
             <div key={r.id} className="golf-card flex items-center gap-3 p-3">
               <div className="flex h-7 w-7 items-center justify-center rounded-full bg-accent/10 text-xs font-bold text-accent">#{r.rank_position}</div>
@@ -1438,7 +1438,7 @@ const EventDetail = () => {
         {(!event?.pairing_approval_required || showAdminActions) && (() => {
           const groups = pairingsList;
           if (groups.length === 0) {
-            return <EmptyState text="No pairings generated yet" />;
+            return <EmptyState text="Pasangan belum dibuat" />;
           }
 
           const parMap: Record<number, number> = {};
@@ -1590,16 +1590,16 @@ const EventDetail = () => {
 
           const getRemarkAbbr = (cat: string) => {
             if (!cat) return "";
-            if (cat.includes("Best Gross Overall")) return "BGO";
-            if (cat.includes("Best Nett Overall")) return "BNO";
-            if (cat.includes("Best Gross") && cat.includes("A")) return "BG A";
-            if (cat.includes("Best Gross") && cat.includes("B")) return "BG B";
-            if (cat.includes("Best Gross") && cat.includes("C")) return "BG C";
-            if (cat.includes("Best Nett II")) return "BN II";
-            if (cat.includes("Best Nett I")) return "BN I";
-            if (cat.includes("Best Nett") && cat.includes("A")) return "BN A";
-            if (cat.includes("Best Nett") && cat.includes("B")) return "BN B";
-            if (cat.includes("Best Nett") && cat.includes("C")) return "BN C";
+            if (cat.includes("Gross Terbaik Overall")) return "BGO";
+            if (cat.includes("Nett Terbaik Overall")) return "BNO";
+            if (cat.includes("Gross Terbaik") && cat.includes("A")) return "BG A";
+            if (cat.includes("Gross Terbaik") && cat.includes("B")) return "BG B";
+            if (cat.includes("Gross Terbaik") && cat.includes("C")) return "BG C";
+            if (cat.includes("Nett Terbaik II")) return "BN II";
+            if (cat.includes("Nett Terbaik I")) return "BN I";
+            if (cat.includes("Nett Terbaik") && cat.includes("A")) return "BN A";
+            if (cat.includes("Nett Terbaik") && cat.includes("B")) return "BN B";
+            if (cat.includes("Nett Terbaik") && cat.includes("C")) return "BN C";
             return cat.length > 8 ? cat.slice(0, 8) : cat;
           };
 
@@ -1957,7 +1957,7 @@ const EventDetail = () => {
         <DialogContent className="max-w-sm p-0 overflow-hidden">
           <DialogHeader className="px-4 pt-4 pb-2">
             <DialogTitle className="text-sm font-bold truncate">
-              {selectedScoreboardPlayer?.full_name ?? "Scorecard"}
+              {selectedScoreboardPlayer?.full_name ?? "Kartu Skor"}
             </DialogTitle>
             <p className="text-[11px] text-muted-foreground">
               {selectedScoreboardPlayer?.club_name ?? ""} · Flight {selectedScoreboardPlayer?.flight_name ?? "—"} · HCP {selectedScoreboardPlayer?.hcp ?? "—"}
@@ -1986,7 +1986,7 @@ const EventDetail = () => {
                       </thead>
                       <tbody>
                         <tr className="border-t border-border/50">
-                          <td className="py-1 px-2 text-muted-foreground font-medium">Score</td>
+                          <td className="py-1 px-2 text-muted-foreground font-medium">Skor</td>
                           {[1,2,3,4,5,6,7,8,9].map(h => (
                             <td key={h} className="text-center py-1 px-1 tabular-nums">
                               {playerHoleScores[h] ?? <span className="text-muted-foreground/40">—</span>}
@@ -2012,7 +2012,7 @@ const EventDetail = () => {
                       </thead>
                       <tbody>
                         <tr className="border-t border-border/50">
-                          <td className="py-1 px-2 text-muted-foreground font-medium">Score</td>
+                          <td className="py-1 px-2 text-muted-foreground font-medium">Skor</td>
                           {[10,11,12,13,14,15,16,17,18].map(h => (
                             <td key={h} className="text-center py-1 px-1 tabular-nums">
                               {playerHoleScores[h] ?? <span className="text-muted-foreground/40">—</span>}

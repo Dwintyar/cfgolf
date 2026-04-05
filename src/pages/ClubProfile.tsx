@@ -436,7 +436,7 @@ const ClubProfile = ({ embedded = false, clubId: propClubId, onBack, onNavigateT
               </Button>
             ) : (
               <Button size="sm" onClick={handleJoinRequest} disabled={joining}>
-                <LogIn className="h-3.5 w-3.5 mr-1.5" /> Join Club
+                <LogIn className="h-3.5 w-3.5 mr-1.5" /> Bergabung
               </Button>
             )
             )

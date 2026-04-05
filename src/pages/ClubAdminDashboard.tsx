@@ -17,17 +17,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardJudul } from "@/components/ui/card";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger
+  AlertDialogDeskripsi, AlertDialogFooter, AlertDialogHeader, AlertDialogJudul, AlertDialogTrigger
 } from "@/components/ui/alert-dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
 import InviteMemberDialog from "@/components/InviteMemberDialog";
 import AssignEventRolesDialog from "@/components/tour/AssignEventRolesDialog";
 import CreateTourDialog from "@/components/tour/CreateTourDialog";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogJudul, DialogFooter } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { Pin, MoreVertical } from "lucide-react";
 
@@ -56,7 +56,7 @@ const ClubAdminDashboard = () => {
 
   // Announcements
   const [showCreateAnnouncement, setShowCreateAnnouncement] = useState(false);
-  const [annTitle, setAnnTitle] = useState("");
+  const [annJudul, setAnnJudul] = useState("");
   const [annContent, setAnnContent] = useState("");
   const [annPinned, setAnnPinned] = useState(false);
 
@@ -609,18 +609,18 @@ const ClubAdminDashboard = () => {
   };
 
   const handleCreateAnnouncement = async () => {
-    if (!clubId || !userId || !annTitle.trim() || !annContent.trim()) return;
+    if (!clubId || !userId || !annJudul.trim() || !annContent.trim()) return;
     const { error } = await supabase.from("club_announcements").insert({
       club_id: clubId,
       author_id: userId,
-      title: annTitle.trim(),
+      title: annJudul.trim(),
       content: annContent.trim(),
       is_pinned: annPinned,
     });
     if (error) { toast.error(error.message); return; }
     toast.success("Pengumuman dipublikasikan");
     setShowCreateAnnouncement(false);
-    setAnnTitle("");
+    setAnnJudul("");
     setAnnContent("");
     setAnnPinned(false);
     refetchAnnouncements();
@@ -840,7 +840,7 @@ const ClubAdminDashboard = () => {
               )}
               {m.role === "admin" && (
                 <DropdownMenuItem onClick={() => handleChangeRole(m.id, "member")}>
-                  <Users className="h-3.5 w-3.5 mr-2" /> Demote to Member
+                  <Users className="h-3.5 w-3.5 mr-2" /> Turunkan ke Anggota
                 </DropdownMenuItem>
               )}
               {m.role !== "owner" && (
@@ -856,7 +856,7 @@ const ClubAdminDashboard = () => {
         </div>
       ))}
       {displayMembers.length === 0 && memberSearch && (
-        <p className="text-xs text-muted-foreground text-center py-4">Not found</p>
+        <p className="text-xs text-muted-foreground text-center py-4">Tidak ditemukan</p>
       )}
     </TabsContent>
   );
@@ -909,7 +909,7 @@ const ClubAdminDashboard = () => {
 
       {/* Active staff */}
       {staff?.length === 0 && (pendingStaff?.length ?? 0) === 0 && (
-        <div className="golf-card p-6 text-center text-sm text-muted-foreground">No staff yet</div>
+        <div className="golf-card p-6 text-center text-sm text-muted-foreground">Belum ada staf</div>
       )}
       {staff?.map((s: any) => (
         <div key={s.id} className="golf-card flex items-center gap-3 p-3">
@@ -964,9 +964,9 @@ const ClubAdminDashboard = () => {
                     <Badge variant="outline" className="text-[9px]">{tour.tournament_type}</Badge>
                     <Badge variant="secondary" className="text-[9px]">{tour.year}</Badge>
                     {tour.clubRole === "organizer" ? (
-                      <Badge variant="outline" className="text-[9px] text-primary border-primary/30">Organizer</Badge>
+                      <Badge variant="outline" className="text-[9px] text-primary border-primary/30">Penyelenggara</Badge>
                     ) : (
-                      <Badge variant="outline" className="text-[9px] text-accent border-accent/30">Participant</Badge>
+                      <Badge variant="outline" className="text-[9px] text-accent border-accent/30">Peserta</Badge>
                     )}
                     <span className="text-[10px] text-muted-foreground">{events.length} events · {totalPlayers} players</span>
                   </div>
@@ -1091,7 +1091,7 @@ const ClubAdminDashboard = () => {
         <div className="golf-card p-3 space-y-0.5">
           <Calendar className="h-4 w-4 text-primary" />
           <p className="text-xl font-bold">{todayBookings}</p>
-          <p className="text-[10px] text-muted-foreground">Bookings Today</p>
+          <p className="text-[10px] text-muted-foreground">Booking Hari Ini</p>
         </div>
         <div className="golf-card p-3 space-y-0.5">
           <Calendar className="h-4 w-4 text-accent" />
@@ -1438,8 +1438,8 @@ const ClubAdminDashboard = () => {
     const timeAgo = (date: string) => {
       const diff = Date.now() - new Date(date).getTime();
       const days = Math.floor(diff / 86400000);
-      if (days === 0) return "Today";
-      if (days === 1) return "Yesterday";
+      if (days === 0) return "Hari ini";
+      if (days === 1) return "Kemarin";
       return `${days} days ago`;
     };
 
@@ -1482,7 +1482,7 @@ const ClubAdminDashboard = () => {
         {announcements?.length === 0 && (
           <div className="golf-card p-6 text-center text-sm text-muted-foreground">
             <Megaphone className="mx-auto h-8 w-8 text-muted-foreground/40 mb-2" />
-            <p>No announcements yet</p>
+            <p>Belum ada pengumuman</p>
           </div>
         )}
         {pinnedAnnouncements.length > 0 && (
@@ -1494,7 +1494,7 @@ const ClubAdminDashboard = () => {
         {regularAnnouncements.length > 0 && (
           <>
             {pinnedAnnouncements.length > 0 && (
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mt-2">All Announcements</p>
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mt-2">Semua Pengumuman</p>
             )}
             {regularAnnouncements.map(renderAnnCard)}
           </>
@@ -1508,29 +1508,29 @@ const ClubAdminDashboard = () => {
       {/* SECTION 1: Club Identity */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm flex items-center gap-2">
+          <CardJudul className="text-sm flex items-center gap-2">
             <Building2 className="h-4 w-4 text-primary" /> Club Identity
-          </CardTitle>
+          </CardJudul>
         </CardHeader>
         <CardContent className="space-y-3">
           <div>
-            <Label className="text-xs text-muted-foreground">Club Name</Label>
+            <Label className="text-xs text-muted-foreground">Nama Klub</Label>
             <Input value={editName} onChange={(e) => setEditName(e.target.value)} className="mt-1" />
           </div>
           <div>
-            <Label className="text-xs text-muted-foreground">Description</Label>
+            <Label className="text-xs text-muted-foreground">Deskripsi</Label>
             <Textarea value={editDesc} onChange={(e) => setEditDesc(e.target.value)} className="mt-1" rows={3} />
           </div>
           <div>
-            <Label className="text-xs text-muted-foreground">Contact Phone</Label>
+            <Label className="text-xs text-muted-foreground">Telepon Kontak</Label>
             <Input value={editPhone} onChange={(e) => setEditPhone(e.target.value)} className="mt-1" />
           </div>
           <div>
-            <Label className="text-xs text-muted-foreground">Contact Email</Label>
+            <Label className="text-xs text-muted-foreground">Email Kontak</Label>
             <Input value={editEmail} onChange={(e) => setEditEmail(e.target.value)} className="mt-1" />
           </div>
           <Button className="w-full" onClick={handleSaveSettings} disabled={saving}>
-            {saving ? "Saving…" : "Save Changes"}
+            {saving ? "Saving…" : "Simpan Perubahan"}
           </Button>
         </CardContent>
       </Card>
@@ -1539,9 +1539,9 @@ const ClubAdminDashboard = () => {
       {isOwner && (
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm flex items-center gap-2">
+            <CardJudul className="text-sm flex items-center gap-2">
               <Shield className="h-4 w-4 text-primary" /> Admin Management
-            </CardTitle>
+            </CardJudul>
           </CardHeader>
           <CardContent className="space-y-3">
             {admins.length === 0 ? (
@@ -1569,7 +1569,7 @@ const ClubAdminDashboard = () => {
             )}
             {regularMembers.length > 0 && (
               <div>
-                <Label className="text-xs text-muted-foreground mb-1 block">Promote Member to Admin</Label>
+                <Label className="text-xs text-muted-foreground mb-1 block">Jadikan Admin</Label>
                 <Select onValueChange={(memberId) => handleChangeRole(memberId, "admin")}>
                   <SelectTrigger className="h-9 text-xs">
                     <SelectValue placeholder="+ Select member to promote" />
@@ -1590,9 +1590,9 @@ const ClubAdminDashboard = () => {
       {isOwner && (
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm flex items-center gap-2">
+            <CardJudul className="text-sm flex items-center gap-2">
               <Crown className="h-4 w-4 text-primary" /> Succession & Transfer
-            </CardTitle>
+            </CardJudul>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
@@ -1629,13 +1629,13 @@ const ClubAdminDashboard = () => {
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Transfer Ownership</AlertDialogTitle>
-                    <AlertDialogDescription>
+                    <AlertDialogJudul>Transfer Ownership</AlertDialogJudul>
+                    <AlertDialogDeskripsi>
                       Anda akan menyerahkan kepemilikan klub kepada <strong>{getProfileName(transferTargetId)}</strong>. Anda akan menjadi Admin biasa. Tindakan ini tidak dapat dibatalkan.
-                    </AlertDialogDescription>
+                    </AlertDialogDeskripsi>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogCancel>Batal</AlertDialogCancel>
                     <AlertDialogAction onClick={handleTransferOwnership}>Ya, Transfer</AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
@@ -1649,9 +1649,9 @@ const ClubAdminDashboard = () => {
       {isOwner && (
         <Card className="border-destructive/30">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm flex items-center gap-2 text-destructive">
+            <CardJudul className="text-sm flex items-center gap-2 text-destructive">
               <AlertTriangle className="h-4 w-4" /> Danger Zone
-            </CardTitle>
+            </CardJudul>
           </CardHeader>
           <CardContent>
             <p className="text-[11px] text-muted-foreground mb-3">
@@ -1659,17 +1659,17 @@ const ClubAdminDashboard = () => {
             </p>
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="outline" size="sm" className="w-full text-xs text-destructive border-destructive/30 hover:bg-destructive/10">Archive Club</Button>
+                <Button variant="outline" size="sm" className="w-full text-xs text-destructive border-destructive/30 hover:bg-destructive/10">Arsipkan Klub</Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Archive Club</AlertDialogTitle>
-                  <AlertDialogDescription>
+                  <AlertDialogJudul>Arsipkan Klub</AlertDialogJudul>
+                  <AlertDialogDeskripsi>
                     Club akan diarsipkan dan tidak bisa menerima member baru. Data tetap tersimpan. Lanjutkan?
-                  </AlertDialogDescription>
+                  </AlertDialogDeskripsi>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogCancel>Batal</AlertDialogCancel>
                   <AlertDialogAction onClick={handleArchiveClub} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Ya, Archive</AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
@@ -1688,17 +1688,17 @@ const ClubAdminDashboard = () => {
           <div className="golf-card p-3 space-y-0.5">
             <Users className="h-4 w-4 text-primary" />
             <p className="text-xl font-bold">{memberCount}</p>
-            <p className="text-[10px] text-muted-foreground">Members</p>
+            <p className="text-[10px] text-muted-foreground">Anggota</p>
           </div>
           <div className="golf-card p-3 space-y-0.5">
             <UserCheck className="h-4 w-4 text-accent" />
             <p className="text-xl font-bold">{staffCount}</p>
-            <p className="text-[10px] text-muted-foreground">Staff</p>
+            <p className="text-[10px] text-muted-foreground">Staf</p>
           </div>
           <div className="golf-card p-3 space-y-0.5">
             <Calendar className="h-4 w-4 text-primary" />
             <p className="text-xl font-bold">{todayBookings}</p>
-            <p className="text-[10px] text-muted-foreground">Today Bookings</p>
+            <p className="text-[10px] text-muted-foreground">Booking Hari Ini</p>
           </div>
           <div className="golf-card p-3 space-y-0.5">
             <Bell className="h-4 w-4 text-accent" />
@@ -1714,17 +1714,17 @@ const ClubAdminDashboard = () => {
           <div className="golf-card p-3 space-y-0.5">
             <Users className="h-4 w-4 text-primary" />
             <p className="text-xl font-bold">{memberCount}</p>
-            <p className="text-[10px] text-muted-foreground">Members</p>
+            <p className="text-[10px] text-muted-foreground">Anggota</p>
           </div>
           <div className="golf-card p-3 space-y-0.5">
             <Clock className="h-4 w-4 text-accent" />
             <p className="text-xl font-bold">{todayRangeBookings}</p>
-            <p className="text-[10px] text-muted-foreground">Today Bookings</p>
+            <p className="text-[10px] text-muted-foreground">Booking Hari Ini</p>
           </div>
           <div className="golf-card p-3 space-y-0.5">
             <DollarSign className="h-4 w-4 text-primary" />
             <p className="text-xl font-bold">–</p>
-            <p className="text-[10px] text-muted-foreground">Monthly Revenue</p>
+            <p className="text-[10px] text-muted-foreground">Pendapatan Bulanan</p>
           </div>
           <div className="golf-card p-3 space-y-0.5">
             <Bell className="h-4 w-4 text-accent" />
@@ -1740,17 +1740,17 @@ const ClubAdminDashboard = () => {
         <div className="golf-card p-3 space-y-0.5">
           <Users className="h-4 w-4 text-primary" />
           <p className="text-xl font-bold">{memberCount}</p>
-          <p className="text-[10px] text-muted-foreground">Members</p>
+          <p className="text-[10px] text-muted-foreground">Anggota</p>
         </div>
         <div className="golf-card p-3 space-y-0.5">
           <Trophy className="h-4 w-4 text-accent" />
           <p className="text-xl font-bold">{totalTours}</p>
-          <p className="text-[10px] text-muted-foreground">Tournaments</p>
+          <p className="text-[10px] text-muted-foreground">Turnamen</p>
         </div>
         <div className="golf-card p-3 space-y-0.5">
           <Megaphone className="h-4 w-4 text-primary" />
           <p className="text-xl font-bold">–</p>
-          <p className="text-[10px] text-muted-foreground">Announcements</p>
+          <p className="text-[10px] text-muted-foreground">Pengumuman</p>
         </div>
         <div className="golf-card p-3 space-y-0.5">
           <Bell className="h-4 w-4 text-accent" />
@@ -1771,8 +1771,8 @@ const ClubAdminDashboard = () => {
               Staff{pendingStaffCount > 0 && <span className="ml-1 inline-flex items-center justify-center h-4 w-4 rounded-full bg-amber-500 text-white text-[10px] font-bold">{pendingStaffCount}</span>}
             </TabsTrigger>
             <TabsTrigger value="schedule" className="flex-1 text-xs">Schedule</TabsTrigger>
-            <TabsTrigger value="venue" className="flex-1 text-xs">Course</TabsTrigger>
-            <TabsTrigger value="settings" className="flex-1 text-xs">Settings</TabsTrigger>
+            <TabsTrigger value="venue" className="flex-1 text-xs">Lapangan</TabsTrigger>
+            <TabsTrigger value="settings" className="flex-1 text-xs">Pengaturan</TabsTrigger>
           </TabsList>
           {renderStaffTab()}
           {renderVenueScheduleTab()}
@@ -1785,10 +1785,10 @@ const ClubAdminDashboard = () => {
       return (
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="w-full">
-            <TabsTrigger value="members" className="flex-1 text-xs">Members</TabsTrigger>
+            <TabsTrigger value="members" className="flex-1 text-xs">Anggota</TabsTrigger>
             <TabsTrigger value="staff" className="flex-1 text-xs">Staff{pendingStaffCount > 0 && <span className="ml-1 inline-flex items-center justify-center h-4 w-4 rounded-full bg-amber-500 text-white text-[10px] font-bold">{pendingStaffCount}</span>}</TabsTrigger>
             <TabsTrigger value="schedule" className="flex-1 text-xs">Schedule</TabsTrigger>
-            <TabsTrigger value="settings" className="flex-1 text-xs">Settings</TabsTrigger>
+            <TabsTrigger value="settings" className="flex-1 text-xs">Pengaturan</TabsTrigger>
           </TabsList>
           {renderMembersTab()}
           {renderStaffTab()}
@@ -1801,10 +1801,10 @@ const ClubAdminDashboard = () => {
     return (
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="w-full">
-          <TabsTrigger value="members" className="flex-1 text-xs">Members</TabsTrigger>
-          <TabsTrigger value="tournaments" className="flex-1 text-xs">Tournaments</TabsTrigger>
-          <TabsTrigger value="announcements" className="flex-1 text-xs">Announcements</TabsTrigger>
-          <TabsTrigger value="settings" className="flex-1 text-xs">Settings</TabsTrigger>
+          <TabsTrigger value="members" className="flex-1 text-xs">Anggota</TabsTrigger>
+          <TabsTrigger value="tournaments" className="flex-1 text-xs">Turnamen</TabsTrigger>
+          <TabsTrigger value="announcements" className="flex-1 text-xs">Pengumuman</TabsTrigger>
+          <TabsTrigger value="settings" className="flex-1 text-xs">Pengaturan</TabsTrigger>
         </TabsList>
         {renderMembersTab()}
         {renderTournamentsTab()}
@@ -1824,9 +1824,9 @@ const ClubAdminDashboard = () => {
         <h1 className="font-display text-lg font-bold flex-1 truncate">
           Admin — {club?.name ?? "Loading..."}
         </h1>
-        {isVenue && <Badge variant="outline" className="text-[9px] shrink-0">Golf Venue</Badge>}
+        {isVenue && <Badge variant="outline" className="text-[9px] shrink-0">Venue Golf</Badge>}
         {isDrivingRange && <Badge variant="outline" className="text-[9px] shrink-0">Driving Range</Badge>}
-        {isCommunity && <Badge variant="outline" className="text-[9px] shrink-0">Community</Badge>}
+        {isCommunity && <Badge variant="outline" className="text-[9px] shrink-0">Komunitas</Badge>}
       </div>
 
       {/* Club selector */}
@@ -1890,15 +1890,15 @@ const ClubAdminDashboard = () => {
       <Dialog open={showCreateAnnouncement} onOpenChange={setShowCreateAnnouncement}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-base">New Announcement</DialogTitle>
+            <DialogJudul className="text-base">Pengumuman Baru</DialogJudul>
           </DialogHeader>
           <div className="space-y-3 py-2">
             <div>
-              <Label className="text-xs text-muted-foreground">Title</Label>
-              <Input value={annTitle} onChange={(e) => setAnnTitle(e.target.value)} className="mt-1" placeholder="Announcement title" />
+              <Label className="text-xs text-muted-foreground">Judul</Label>
+              <Input value={annJudul} onChange={(e) => setAnnJudul(e.target.value)} className="mt-1" placeholder="Announcement title" />
             </div>
             <div>
-              <Label className="text-xs text-muted-foreground">Content</Label>
+              <Label className="text-xs text-muted-foreground">Isi</Label>
               <Textarea value={annContent} onChange={(e) => setAnnContent(e.target.value)} className="mt-1" rows={4} placeholder="Write your announcement..." />
             </div>
             <div className="flex items-center gap-2">
@@ -1907,7 +1907,7 @@ const ClubAdminDashboard = () => {
             </div>
           </div>
           <DialogFooter>
-            <Button onClick={handleCreateAnnouncement} disabled={!annTitle.trim() || !annContent.trim()} className="w-full">
+            <Button onClick={handleCreateAnnouncement} disabled={!annJudul.trim() || !annContent.trim()} className="w-full">
               Publish
             </Button>
           </DialogFooter>

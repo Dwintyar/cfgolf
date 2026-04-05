@@ -14,13 +14,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { useToast } from "@/hooks/use-toast";
 
 const TABS = [
-  { id: "overview", label: "Overview", icon: LayoutDashboard },
-  { id: "holes", label: "Holes", icon: Grid3X3 },
+  { id: "overview", label: "Ikhtisar", icon: LayoutDashboard },
+  { id: "holes", label: "Lubang", icon: Grid3X3 },
   { id: "teebox", label: "Tee Box", icon: Layers },
-  { id: "teetimes", label: "Tee Times", icon: Clock },
-  { id: "caddies", label: "Caddies", icon: Users },
+  { id: "teetimes", label: "Tee Time", icon: Clock },
+  { id: "caddies", label: "Caddy", icon: Users },
   { id: "pairings", label: "Pairings", icon: GitMerge },
-  { id: "settings", label: "Settings", icon: Settings },
+  { id: "settings", label: "Pengaturan", icon: Settings },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
@@ -98,7 +98,7 @@ const CourseAdminDashboard = () => {
     enabled: !isNew,
   });
 
-  // Active events check for course lock
+  // Aktif events check for course lock
   const { data: activeEvents } = useQuery({
     queryKey: ["active-events-for-course", courseId],
     queryFn: async () => {
@@ -246,7 +246,7 @@ const CourseAdminDashboard = () => {
   };
 
   const handleSaveCaddy = async () => {
-    if (!caddyForm.name.trim()) { toast({ title: "Caddy name is required", variant: "destructive" }); return; }
+    if (!caddyForm.name.trim()) { toast({ title: "Nama caddy wajib diisi", variant: "destructive" }); return; }
     setSavingCaddy(true);
     if (editingCaddy) {
       const { error } = await supabase.from("course_caddies").update({
@@ -254,7 +254,7 @@ const CourseAdminDashboard = () => {
         caddy_number: caddyForm.caddy_number.trim() || null,
         notes: caddyForm.notes.trim() || null,
       }).eq("id", editingCaddy.id);
-      if (error) { toast({ title: "Save failed", variant: "destructive" }); setSavingCaddy(false); return; }
+      if (error) { toast({ title: "Gagal menyimpan", variant: "destructive" }); setSavingCaddy(false); return; }
     } else {
       const { error } = await supabase.from("course_caddies").insert({
         course_id: courseId!,
@@ -262,9 +262,9 @@ const CourseAdminDashboard = () => {
         caddy_number: caddyForm.caddy_number.trim() || null,
         notes: caddyForm.notes.trim() || null,
       });
-      if (error) { toast({ title: "Failed to add caddy", variant: "destructive" }); setSavingCaddy(false); return; }
+      if (error) { toast({ title: "Gagal menambah caddy", variant: "destructive" }); setSavingCaddy(false); return; }
     }
-    toast({ title: editingCaddy ? "Caddy updated" : "Caddy added" });
+    toast({ title: editingCaddy ? "Caddy diperbarui" : "Caddy ditambahkan" });
     setSavingCaddy(false);
     setShowCaddyDialog(false);
     refetchCaddies();
@@ -273,12 +273,12 @@ const CourseAdminDashboard = () => {
   const handleDeleteCaddy = async (id: string) => {
     setDeletingCaddyId(id);
     const { error } = await supabase.from("course_caddies").delete().eq("id", id);
-    if (error) toast({ title: "Delete failed", variant: "destructive" });
-    else { toast({ title: "Caddy deleted" }); refetchCaddies(); }
+    if (error) toast({ title: "Gagal menghapus", variant: "destructive" });
+    else { toast({ title: "Caddy dihapus" }); refetchCaddies(); }
     setDeletingCaddyId(null);
   };
 
-  const handleToggleCaddyActive = async (caddy: any) => {
+  const handleToggleCaddyAktif = async (caddy: any) => {
     const { error } = await supabase.from("course_caddies")
       .update({ is_active: !caddy.is_active }).eq("id", caddy.id);
     if (error) toast({ title: "Gagal memperbarui status", variant: "destructive" });
@@ -667,7 +667,7 @@ const CourseAdminDashboard = () => {
                 { label: "Green Fee", value: course?.green_fee_price
                   ? new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(Number(course.green_fee_price))
                   : "—" },
-                { label: "Bookings Today", value: todayBookings ?? 0 },
+                { label: "Booking Hari Ini", value: todayBookings ?? 0 },
               ].map(kpi => (
                 <div key={kpi.label} className="golf-card p-4 text-center">
                   <p className="text-2xl font-bold text-primary">{kpi.value}</p>
@@ -832,7 +832,7 @@ const CourseAdminDashboard = () => {
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label className="text-xs text-muted-foreground">Course Rating</Label>
+                    <Label className="text-xs text-muted-foreground">Rating Lapangan</Label>
                     <Input type="number" step="0.1" placeholder="72.0"
                       value={teeForm.rating ?? ""}
                       onChange={e => setTeeForm(f => ({ ...f, rating: e.target.value ? Number(e.target.value) : null }))}
@@ -848,7 +848,7 @@ const CourseAdminDashboard = () => {
                 </div>
                 <div className="flex gap-2">
                   <Button size="sm" onClick={handleSaveTee} disabled={savingTee || !teeForm.tee_name.trim()} className="flex-1">
-                    <Save className="h-3.5 w-3.5 mr-1" /> {savingTee ? "Saving..." : "Save"}
+                    <Save className="h-3.5 w-3.5 mr-1" /> {savingTee ? "Menyimpan..." : "Save"}
                   </Button>
                   <Button size="sm" variant="outline" onClick={() => { setShowTeeForm(false); setEditingTeeId(null); }}>
                     Cancel
@@ -925,7 +925,7 @@ const CourseAdminDashboard = () => {
                 </div>
               </div>
               <Button className="w-full" onClick={handleSaveSlots} disabled={savingSlots}>
-                {savingSlots ? "Saving..." : "Save Schedule"}
+                {savingSlots ? "Menyimpan..." : "Save Schedule"}
               </Button>
             </div>
 
@@ -998,7 +998,7 @@ const CourseAdminDashboard = () => {
                           </span>
                         )}
                         {!caddy.is_active && (
-                          <span className="text-[10px] text-muted-foreground shrink-0">Inactive</span>
+                          <span className="text-[10px] text-muted-foreground shrink-0">Nonaktif</span>
                         )}
                       </div>
                       {caddy.notes && (
@@ -1016,7 +1016,7 @@ const CourseAdminDashboard = () => {
                       <Button
                         variant="ghost" size="icon"
                         className={`h-8 w-8 ${caddy.is_active ? "text-yellow-500 hover:text-yellow-400" : "text-green-500 hover:text-green-400"}`}
-                        onClick={() => handleToggleCaddyActive(caddy)}
+                        onClick={() => handleToggleCaddyAktif(caddy)}
                         title={caddy.is_active ? "Disable" : "Enable"}
                       >
                         {caddy.is_active ? <AlertTriangle className="h-3.5 w-3.5" /> : <Save className="h-3.5 w-3.5" />}
@@ -1148,7 +1148,7 @@ const CourseAdminDashboard = () => {
                                 }}
                               >
                                 {savingPairing === c.id
-                                  ? "Saving..."
+                                  ? "Menyimpan..."
                                   : <><CheckCircle2 className="h-3 w-3" /> Simpan</>}
                               </Button>
                             </div>
@@ -1167,7 +1167,7 @@ const CourseAdminDashboard = () => {
           <div className="space-y-4">
             <div className="space-y-3">
               <div>
-                <label className="text-xs font-medium text-muted-foreground">Course Name</label>
+                <label className="text-xs font-medium text-muted-foreground">Nama Lapangan</label>
                 <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className="mt-1" />
               </div>
               <div>
@@ -1184,7 +1184,7 @@ const CourseAdminDashboard = () => {
                   <Input type="number" value={form.par} onChange={e => setForm(f => ({ ...f, par: Number(e.target.value) }))} className="mt-1" />
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-muted-foreground">Holes Count</label>
+                  <label className="text-xs font-medium text-muted-foreground">Jumlah Lubang</label>
                   <Select value={String(form.holes_count)} onValueChange={v => setForm(f => ({ ...f, holes_count: Number(v) }))}>
                     <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -1211,7 +1211,7 @@ const CourseAdminDashboard = () => {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-medium text-muted-foreground">Course Rating</label>
+                  <label className="text-xs font-medium text-muted-foreground">Rating Lapangan</label>
                   <Input type="number" step="0.1" value={form.course_rating} onChange={e => setForm(f => ({ ...f, course_rating: Number(e.target.value) }))} className="mt-1" />
                 </div>
                 <div>
@@ -1297,7 +1297,7 @@ const CourseAdminDashboard = () => {
               }
             }} disabled={saveMutation.isPending || !form.name} className="w-full">
               <Save className="h-4 w-4 mr-2" />
-              {isNew ? "Create Course" : "Save Changes"}
+              {isNew ? "Create Course" : "Simpan Perubahan"}
             </Button>
             {isCourseLocked && !isNew && (
               <p className="text-[10px] text-accent text-center">
@@ -1361,7 +1361,7 @@ const CourseAdminDashboard = () => {
             <DialogFooter>
               <Button variant="outline" onClick={() => setShowCaddyDialog(false)}>Cancel</Button>
               <Button onClick={handleSaveCaddy} disabled={savingCaddy}>
-                {savingCaddy ? "Saving..." : "Save"}
+                {savingCaddy ? "Menyimpan..." : "Save"}
               </Button>
             </DialogFooter>
           </DialogContent>
