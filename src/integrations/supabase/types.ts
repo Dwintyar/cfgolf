@@ -462,6 +462,7 @@ export type Database = {
           description: string | null
           facility_type: string
           id: string
+          is_demo: boolean | null
           is_personal: boolean
           is_verified: boolean
           logo_url: string | null
@@ -1870,6 +1871,7 @@ export type Database = {
           bio: string | null
           created_at: string
           club_hcp: number | null
+          demo_mode: boolean | null
           full_name: string | null
           handicap: number | null
           id: string
