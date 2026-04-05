@@ -85,6 +85,8 @@ const Cooperative = () => {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [expandedTier, setExpandedTier] = useState<TierKey | null>("golfer");
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -145,6 +147,19 @@ const Cooperative = () => {
     toast.success("Minat Anda tercatat! Tim GolfBuana akan menghubungi Anda.");
   };
 
+  const cancelInterest = async () => {
+    if (!userId) return;
+    setCancelling(true);
+    const { error } = await supabase
+      .from("cooperative_interests")
+      .delete()
+      .eq("user_id", userId);
+    setCancelling(false);
+    if (error) { toast.error("Gagal menarik pengajuan"); return; }
+    toast.success("Pengajuan berhasil ditarik");
+    setSubmitted(false);
+  };
+
   const alreadyInterested = !!myInterest;
   const progressPct = Math.min(Math.round(((interestCount ?? 0) / 33) * 100), 100);
 
@@ -157,7 +172,7 @@ const Cooperative = () => {
         </button>
         <div>
           <h1 className="font-bold text-base">GBPlay Cooperative</h1>
-          <p className="text-[11px] text-muted-foreground">Koperasi Multi Pihak Golf Indonesia</p>
+          <p className="text-[11px] text-muted-foreground">KMP Platform Golf Indonesia</p>
         </div>
       </div>
 
@@ -313,16 +328,29 @@ const Cooperative = () => {
 
         {/* Form minat */}
         {alreadyInterested || submitted ? (
-          <div className="golf-card p-5 text-center space-y-2">
-            <div className="text-3xl">🎉</div>
-            <p className="text-sm font-semibold">Minat Anda sudah tercatat!</p>
-            <p className="text-xs text-muted-foreground">
-              Tier: <span className="font-medium capitalize">{myInterest?.tier ?? selectedTier}</span> ·
-              Kelas {myInterest?.member_class ?? (selectedTier === "caddy" ? "B" : selectedTier === "golfer" ? "A" : "C")}
-            </p>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Tim GolfBuana akan menghubungi Anda via WhatsApp untuk konfirmasi pembayaran dan proses bergabung sebagai founding member.
-            </p>
+          <div className="golf-card p-5 space-y-3">
+            <div className="text-center space-y-2">
+              <div className="text-3xl">🎉</div>
+              <p className="text-sm font-semibold">Minat Anda sudah tercatat!</p>
+              <p className="text-xs text-muted-foreground">
+                Tier: <span className="font-medium capitalize">{myInterest?.tier ?? selectedTier}</span> ·
+                Kelas {myInterest?.member_class ?? (selectedTier === "caddy" ? "B" : selectedTier === "golfer" ? "A" : "C")}
+              </p>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Tim GolfBuana akan menghubungi Anda via WhatsApp untuk konfirmasi pembayaran dan proses bergabung sebagai founding member.
+              </p>
+            </div>
+            {(myInterest?.status === "pending" || submitted) && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full text-xs text-muted-foreground hover:text-destructive hover:border-destructive/50"
+                disabled={cancelling}
+                onClick={cancelInterest}
+              >
+                {cancelling ? "Menarik..." : "Tarik Pengajuan"}
+              </Button>
+            )}
           </div>
         ) : (
           <div className="space-y-3">
@@ -370,12 +398,12 @@ const Cooperative = () => {
             <Button
               className="w-full h-12 text-sm font-semibold"
               disabled={!selectedTier || submitting || !userId}
-              onClick={handleSubmit}
+              onClick={() => selectedTier && setShowConfirm(true)}
             >
               {submitting
                 ? "Mendaftar..."
                 : selectedTier
-                ? `Saya Tertarik Jadi Founding ${TIERS[selectedTier].label} 🏌️`
+                ? `Daftar sebagai Founding ${TIERS[selectedTier].label} 🏌️`
                 : "Pilih kelas keanggotaan dulu"}
             </Button>
 
@@ -394,6 +422,44 @@ const Cooperative = () => {
           Koperasi belum resmi terbentuk — tidak ada kewajiban hukum saat ini.
         </p>
       </div>
+
+      {/* Confirm dialog */}
+      {showConfirm && selectedTier && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-6"
+          onClick={() => setShowConfirm(false)}>
+          <div className="bg-card border border-border rounded-2xl w-full max-w-sm p-5 space-y-4"
+            onClick={(e) => e.stopPropagation()}>
+            <div className="text-center space-y-2">
+              <div className="text-3xl">{TIERS[selectedTier].emoji}</div>
+              <p className="font-semibold text-sm">Konfirmasi Pendaftaran</p>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Anda akan mendaftar sebagai founding member:
+              </p>
+              <div className={`rounded-xl ${TIERS[selectedTier].bg} px-4 py-3 space-y-0.5`}>
+                <p className={`font-bold text-sm ${TIERS[selectedTier].color}`}>
+                  {TIERS[selectedTier].label} · {TIERS[selectedTier].class}
+                </p>
+                <p className="text-xs text-muted-foreground">{TIERS[selectedTier].price}</p>
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                Belum ada tagihan sekarang. Tim kami akan menghubungi Anda untuk konfirmasi selanjutnya.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => setShowConfirm(false)}>
+                Batal
+              </Button>
+              <Button
+                className="flex-1"
+                disabled={submitting}
+                onClick={() => { setShowConfirm(false); handleSubmit(); }}
+              >
+                {submitting ? "Mendaftar..." : "Ya, Daftar"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
