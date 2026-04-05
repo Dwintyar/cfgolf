@@ -2286,6 +2286,7 @@ export type Database = {
       tee_time_bookings: {
         Row: {
           booking_date: string
+          caddy_id: string | null
           course_id: string
           created_at: string
           id: string
@@ -2298,6 +2299,7 @@ export type Database = {
         }
         Insert: {
           booking_date: string
+          caddy_id?: string | null
           course_id: string
           created_at?: string
           id?: string
@@ -2310,6 +2312,7 @@ export type Database = {
         }
         Update: {
           booking_date?: string
+          caddy_id?: string | null
           course_id?: string
           created_at?: string
           id?: string
@@ -2321,6 +2324,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "tee_time_bookings_caddy_id_fkey"
+            columns: ["caddy_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "tee_time_bookings_course_id_fkey"
             columns: ["course_id"]

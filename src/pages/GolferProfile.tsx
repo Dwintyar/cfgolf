@@ -16,7 +16,7 @@ import { toast } from "@/hooks/use-toast";
 import InvoiceModal, { InvoiceData } from "@/components/invoice/InvoiceModal";
 import CreateClubDialog from "@/components/CreateClubDialog";
 
-type Tab = "about" | "clubs" | "stats" | "gallery" | "bookings";
+type Tab = "about" | "clubs" | "stats" | "gallery" | "bookings" | "caddy";
 type DesktopTab = "overview" | "stats" | "history";
 
 interface Profile {
@@ -327,6 +327,24 @@ const GolferProfile = () => {
     toast({ title: "Booking cancelled" });
   };
 
+  // Caddy assignments — bookings where this user is assigned as caddy
+  const isCaddy = (staffPositions?.some((s: any) => s.staff_role === "caddy")) ?? false;
+  const { data: myCaddyBookings } = useQuery({
+    queryKey: ["my-caddy-bookings", targetId],
+    queryFn: async () => {
+      const today = new Date().toISOString().split("T")[0];
+      const { data } = await supabase
+        .from("tee_time_bookings")
+        .select("*, courses:course_id(name, location), profiles:user_id(full_name)")
+        .eq("caddy_id", targetId!)
+        .gte("booking_date", today)
+        .order("booking_date", { ascending: true })
+        .order("tee_time", { ascending: true });
+      return data ?? [];
+    },
+    enabled: !!targetId && isOwnProfile && isCaddy,
+  });
+
   const handleCancelBooking = async (bookingId: string) => {
     setCancellingId(bookingId);
     const { error } = await supabase
@@ -557,6 +575,7 @@ const GolferProfile = () => {
     { id: "stats", label: "Stats" },
     { id: "gallery", label: "Gallery" },
     ...(isOwnProfile ? [{ id: "bookings" as Tab, label: "Bookings" }] : []),
+    ...(isOwnProfile && isCaddy ? [{ id: "caddy" as Tab, label: "Caddy" }] : []),
   ];
 
   if (loading) {
@@ -1553,6 +1572,64 @@ const GolferProfile = () => {
                       </div>
                     );
                   })}
+              </div>
+            )}
+
+            {/* ── Caddy Tab ── */}
+            {tab === "caddy" && isOwnProfile && isCaddy && (
+              <div className="animate-fade-in space-y-4 pb-6">
+                {/* Venues registered at */}
+                <div>
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider px-1 mb-2">Venue Tempat Bertugas</p>
+                  {staffPositions?.filter((s: any) => s.staff_role === "caddy").map((s: any, i: number) => (
+                    <div key={i} className="rounded-xl border border-border bg-card p-3 flex items-center gap-3 mb-2">
+                      <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                        <span className="text-base">🏌️</span>
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold">{(s.clubs as any)?.name ?? "Golf Course"}</p>
+                        <p className="text-[11px] text-muted-foreground">Caddy Aktif</p>
+                      </div>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-500/10 text-green-500">
+                        {s.status === "active" ? "Aktif" : s.status}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Upcoming caddy assignments */}
+                <div>
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider px-1 mb-2">
+                    Jadwal Mendatang ({myCaddyBookings?.length ?? 0})
+                  </p>
+                  {(myCaddyBookings?.length ?? 0) === 0 ? (
+                    <div className="rounded-xl border border-border bg-card p-8 text-center">
+                      <p className="text-sm text-muted-foreground">Belum ada penugasan mendatang</p>
+                    </div>
+                  ) : myCaddyBookings!.map((b: any) => (
+                    <div key={b.id} className="rounded-xl border border-border bg-card p-3 space-y-1.5 mb-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <p className="text-sm font-semibold">{(b.courses as any)?.name ?? "Golf Course"}</p>
+                          <p className="text-[11px] text-muted-foreground">{(b.courses as any)?.location ?? ""}</p>
+                        </div>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
+                          b.status === "ready" ? "bg-primary/10 text-primary" : "bg-green-500/10 text-green-500"
+                        }`}>
+                          {b.status === "ready" ? "Siap ⛳" : "Dikonfirmasi"}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+                        <span>📅 {new Date(b.booking_date).toLocaleDateString("id-ID", { weekday: "short", day: "numeric", month: "short" })}</span>
+                        <span>🕐 {b.tee_time?.slice(0,5)}</span>
+                        <span>👥 {b.players_count} pemain</span>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground">
+                        Golfer: {(b.profiles as any)?.full_name ?? "—"}
+                      </p>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>

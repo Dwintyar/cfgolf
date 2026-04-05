@@ -316,6 +316,42 @@ const ClubAdminDashboard = () => {
   });
 
   const [updatingBookingId, setUpdatingBookingId] = useState<string | null>(null);
+  const [assigningCaddyBookingId, setAssigningCaddyBookingId] = useState<string | null>(null);
+
+  // Caddy staff for this venue club (for assignment dropdown)
+  const { data: venueCaddyStaff } = useQuery({
+    queryKey: ["venue-caddy-staff", clubId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("club_staff")
+        .select("user_id, profiles:user_id(full_name)")
+        .eq("club_id", clubId!)
+        .eq("staff_role", "caddy")
+        .eq("status", "active");
+      return data ?? [];
+    },
+    enabled: !!clubId && isVenue,
+  });
+
+  const handleAssignCaddy = async (bookingId: string, caddyUserId: string, golferUserId: string) => {
+    const { error } = await supabase
+      .from("tee_time_bookings")
+      .update({ caddy_id: caddyUserId || null })
+      .eq("id", bookingId);
+    if (error) { toast.error("Gagal assign caddy"); return; }
+    if (caddyUserId) {
+      const booking = courseBookings?.find((b: any) => b.id === bookingId);
+      await supabase.from("notifications").insert({
+        user_id: caddyUserId,
+        title: "Penugasan Caddy Baru 🏌️",
+        message: `Anda ditugaskan sebagai caddy pada ${booking?.booking_date ? new Date(booking.booking_date).toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long" }) : ""} pukul ${booking?.tee_time?.slice(0,5) ?? ""} di ${linkedCourse?.name ?? "lapangan"}.`,
+        type: "caddy_assignment",
+      });
+    }
+    toast.success(caddyUserId ? "Caddy berhasil di-assign" : "Caddy assignment dihapus");
+    setAssigningCaddyBookingId(null);
+    refetchCourseBookings();
+  };
 
   const handleTeeTimeStatus = async (bookingId: string, newStatus: "confirmed" | "declined" | "ready", golferId: string) => {
     setUpdatingBookingId(bookingId);
@@ -1072,11 +1108,41 @@ const ClubAdminDashboard = () => {
             </div>
           )}
           {b.status === "confirmed" && (
-            <Button size="sm" className="w-full h-8 text-xs bg-primary/10 text-primary hover:bg-primary/20"
-              disabled={isUpdating}
-              onClick={() => handleTeeTimeStatus(b.id, "ready", b.user_id)}>
-              {isUpdating ? <Loader2 className="h-3 w-3 animate-spin" /> : "⛳ Set Lapangan Siap"}
-            </Button>
+            <div className="space-y-2 pt-1">
+              {/* Caddy assignment */}
+              {assigningCaddyBookingId === b.id ? (
+                <div className="flex gap-2">
+                  <select
+                    className="flex-1 h-8 text-xs rounded-lg border border-border bg-background px-2"
+                    defaultValue={b.caddy_id ?? ""}
+                    onChange={(e) => handleAssignCaddy(b.id, e.target.value, b.user_id)}
+                  >
+                    <option value="">— Tanpa caddy —</option>
+                    {venueCaddyStaff?.map((cs: any) => (
+                      <option key={cs.user_id} value={cs.user_id}>
+                        {(cs.profiles as any)?.full_name ?? cs.user_id}
+                      </option>
+                    ))}
+                  </select>
+                  <Button size="sm" variant="ghost" className="h-8 px-2 text-xs"
+                    onClick={() => setAssigningCaddyBookingId(null)}>Batal</Button>
+                </div>
+              ) : (
+                <button
+                  className="w-full text-left text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                  onClick={() => setAssigningCaddyBookingId(b.id)}
+                >
+                  🎒 {b.caddy_id
+                    ? `Caddy: ${venueCaddyStaff?.find((cs: any) => cs.user_id === b.caddy_id) ? (venueCaddyStaff.find((cs: any) => cs.user_id === b.caddy_id)?.profiles as any)?.full_name : "Assigned"} · Ganti`
+                    : "Assign caddy →"}
+                </button>
+              )}
+              <Button size="sm" className="w-full h-8 text-xs bg-primary/10 text-primary hover:bg-primary/20"
+                disabled={isUpdating}
+                onClick={() => handleTeeTimeStatus(b.id, "ready", b.user_id)}>
+                {isUpdating ? <Loader2 className="h-3 w-3 animate-spin" /> : "⛳ Set Lapangan Siap"}
+              </Button>
+            </div>
           )}
         </div>
       );
