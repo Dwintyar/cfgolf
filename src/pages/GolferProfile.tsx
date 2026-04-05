@@ -1489,11 +1489,13 @@ const GolferProfile = () => {
                 {/* Tee Time Bookings */}
                 {(!myVenueBookings?.length && (!myBookings || myBookings.length === 0)) ? (
                   <div className="flex flex-col items-center justify-center py-16 text-center">
-                    <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                      <CalendarDays className="h-8 w-8 text-primary/60" />
+                    <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-4 text-3xl">
+                      📅
                     </div>
-                    <p className="text-base font-semibold">No bookings yet</p>
-                    <p className="text-sm text-muted-foreground mt-1">Book tee times from the Venues page.</p>
+                    <p className="text-base font-semibold">Belum ada booking</p>
+                    <p className="text-sm text-muted-foreground mt-1 max-w-[220px] leading-relaxed">
+                      Book tee time di lapangan pilihan Anda melalui tab Venues.
+                    </p>
                   </div>
                 ) : null}
                 {(myBookings?.length ?? 0) > 0 && myBookings!.map((b: any) => {

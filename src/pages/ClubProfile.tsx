@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import EmptyState from "@/components/EmptyState";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useEffect } from "react";
@@ -561,7 +562,7 @@ const ClubProfile = ({ embedded = false, clubId: propClubId, onBack, onNavigateT
                   <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
                     <Users className="h-8 w-8 text-primary/60" />
                   </div>
-                  <p className="text-lg font-semibold text-foreground">No members yet</p>
+                  <EmptyState icon="👥" title="Belum ada anggota" desc="Undang teman untuk bergabung ke klub ini." />
                   <p className="text-sm text-muted-foreground mt-1">
                     {search ? "No matching members found." : "Share your club link to invite golfers to join."}
                   </p>

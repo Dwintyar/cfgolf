@@ -454,14 +454,14 @@ const Play = () => {
                 </p>
                 {filteredBuddies.length === 0 && (
                   <div className="flex flex-col items-center justify-center py-12 text-center">
-                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
-                      <Users className="h-6 w-6 text-primary/60" />
+                    <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center mb-3 text-2xl">
+                      {search ? "🔍" : "👫"}
                     </div>
                     <p className="text-sm font-semibold">
-                      {search ? "No results" : "No buddies yet"}
+                      {search ? "Tidak ditemukan" : "Belum ada teman bermain"}
                     </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {search ? "Try different keywords." : "Find golfers in the Discover tab and send a request."}
+                    <p className="text-xs text-muted-foreground mt-1 max-w-[200px] leading-relaxed">
+                      {search ? "Coba kata kunci lain." : "Temukan golfer di tab Discover dan kirim permintaan berteman."}
                     </p>
                   </div>
                 )}

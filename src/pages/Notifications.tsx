@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import EmptyState from "@/components/EmptyState";
 import { supabase } from "@/integrations/supabase/client";
 import { Bell, UserPlus, Calendar, TrendingDown, Trophy, Building2, Check, X } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -398,15 +399,11 @@ const Notifications = () => {
         ))}
 
         {!isLoading && (!notifications || notifications.length === 0) && (
-          <div className="flex flex-col items-center justify-center py-20 px-8 text-center">
-            <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-              <Bell className="h-8 w-8 text-primary/60" />
-            </div>
-            <p className="text-base font-semibold">No notifications yet</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Notifikasi klub, tournament, dan aktivitas teman akan muncul di sini.
-            </p>
-          </div>
+          <EmptyState
+            icon="🔔"
+            title="Belum ada notifikasi"
+            desc="Notifikasi klub, turnamen, dan aktivitas teman akan muncul di sini."
+          />
         )}
 
         {notifications?.map((n) => {

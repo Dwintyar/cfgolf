@@ -23,6 +23,7 @@ import ManageFlightsDialog from "@/components/tour/ManageFlightsDialog";
 import ManageCategoriesDialog from "@/components/tour/ManageCategoriesDialog";
 import CreateEventDialog from "@/components/tour/CreateEventDialog";
 import TourLeaderboard from "@/components/tour/TourLeaderboard";
+import EmptyState from "@/components/EmptyState";
 
 const TourDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -629,7 +630,7 @@ const TourDetail = () => {
 
         <TabsContent value="events" className="space-y-3 pt-4 px-4">
           {events?.length === 0 && (
-            <div className="golf-card p-6 text-center text-sm text-muted-foreground">No events scheduled</div>
+            <EmptyState icon="📅" title="Belum ada event" desc="Event turnamen akan tampil di sini setelah dijadwalkan." />
           )}
           {events?.map((event, i) => {
             const eventStatusLabel = event.status === "done" ? "Done" : event.status === "playing" || event.status === "checkin" ? "Upcoming" : "Scheduled";
@@ -973,7 +974,7 @@ const TourDetail = () => {
 
         <TabsContent value="clubs" className="space-y-3 pt-4 px-4">
           {tourClubs?.length === 0 && (
-            <div className="golf-card p-6 text-center text-sm text-muted-foreground">No clubs invited</div>
+            <EmptyState icon="🏌️" title="Belum ada klub" desc="Klub peserta akan tampil di sini setelah diundang." />
           )}
           {(() => {
             const accepted = tourClubs?.filter(tc => tc.status === "accepted") ?? [];
