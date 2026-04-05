@@ -8,11 +8,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import venueImg from "@/assets/golf-venue.jpg";
 import { toast } from "sonner";
+import { useTier } from "@/hooks/use-tier";
+import UpgradeDialog from "@/components/UpgradeDialog";
 
 const BookTeeTime = () => {
   const navigate = useNavigate();
   const { courseId } = useParams<{ courseId: string }>();
   const [userId, setUserId] = useState<string | null>(null);
+  const [showUpgrade, setShowUpgrade] = useState(false);
+  const { hasFeature } = useTier(userId);
   const [selectedDate, setSelectedDate] = useState(() => {
     const d = new Date();
     d.setDate(d.getDate() + 1);
@@ -295,13 +299,23 @@ const BookTeeTime = () => {
         <Button
           className="h-14 w-full rounded-xl text-base font-bold uppercase tracking-wider golf-glow"
           disabled={!selectedTime || booking}
-          onClick={handleBook}
+          onClick={() => {
+            if (!hasFeature("booking_tee_time")) { setShowUpgrade(true); return; }
+            handleBook();
+          }}
         >
           {booking ? "Booking..." : selectedTime
             ? `Book ${selectedTime} ${totalPrice > 0 ? `· ${formatPrice(totalPrice)}` : ""}`
             : "Pilih waktu terlebih dahulu"}
         </Button>
       </div>
+
+      <UpgradeDialog
+        open={showUpgrade}
+        onClose={() => setShowUpgrade(false)}
+        requiredTier="golfer"
+        featureName="Booking Tee Time"
+      />
     </div>
   );
 };

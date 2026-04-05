@@ -44,6 +44,7 @@ import Notifications from "./pages/Notifications";
 import CourseAdminDashboard from "./pages/CourseAdminDashboard";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import HowItWorks from "./pages/HowItWorks";
+import Cooperative from "./pages/Cooperative";
 import PublicProfile from "./pages/PublicProfile";
 import LiveDisplay from "./pages/LiveDisplay";
 import AdminApprovals from "./pages/AdminApprovals";
@@ -117,6 +118,7 @@ const AppInner = () => {
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route path="/how-it-works" element={<HowItWorks />} />
+            <Route path="/cooperative" element={<Cooperative />} />
             <Route path="/p/:username" element={<PublicProfile />} />
             <Route path="/live/:eventId" element={<LiveDisplay />} />
 

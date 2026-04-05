@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, User, Building2, Lock, Palette, LogOut, ChevronRight, Camera, LayoutDashboard, Bell, Gamepad2 } from "lucide-react";
+import { ArrowLeft, User, Building2, Lock, Palette, LogOut, ChevronRight, Camera, LayoutDashboard, Bell, Gamepad2, Users } from "lucide-react";
 import { usePushNotifications } from "@/hooks/use-push-notifications";
 import { useDemoInstall } from "@/hooks/use-demo-install";
 import { Button } from "@/components/ui/button";
@@ -381,6 +381,7 @@ const Settings = () => {
         {adminAccess && adminAccess !== "none" && (
           <SettingsItem icon={LayoutDashboard} label="Admin Dashboard" onClick={handleAdminDashboard} />
         )}
+        <SettingsItem icon={Users} label="GBPlay Cooperative 🏌️" onClick={() => navigate("/cooperative")} />
 
         <Separator className="my-3" />
 

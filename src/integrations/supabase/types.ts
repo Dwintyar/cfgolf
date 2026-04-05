@@ -615,6 +615,44 @@ export type Database = {
           },
         ]
       }
+      cooperative_interests: {
+        Row: {
+          created_at: string
+          id: string
+          member_class: string
+          notes: string | null
+          status: string | null
+          tier: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          member_class: string
+          notes?: string | null
+          status?: string | null
+          tier: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          member_class?: string
+          notes?: string | null
+          status?: string | null
+          tier?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cooperative_interests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversations: {
         Row: {
           created_at: string
@@ -1874,6 +1912,7 @@ export type Database = {
           bio: string | null
           created_at: string
           club_hcp: number | null
+          active_roles: string[] | null
           demo_mode: boolean | null
           full_name: string | null
           handicap: number | null
@@ -1882,6 +1921,8 @@ export type Database = {
           is_approved: boolean | null
           location: string | null
           onboarding_completed: boolean | null
+          subscription_tier: string | null
+          tier_expires_at: string | null
           updated_at: string
           username: string | null
         }
