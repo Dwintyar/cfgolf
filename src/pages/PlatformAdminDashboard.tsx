@@ -166,6 +166,18 @@ const PlatformAdminDashboard = () => {
 
   const pendingClaimsCount = claimRequests?.filter((c: any) => c.status === "pending").length ?? 0;
 
+  const { data: auditLogs } = useQuery({
+    queryKey: ["admin-audit-logs"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("audit_log")
+        .select("*, actor:actor_id(full_name)")
+        .order("created_at", { ascending: false })
+        .limit(50);
+      return data ?? [];
+    },
+  });
+
   const handleApproveClaim = async (claim: any) => {
     setProcessingClaimId(claim.id);
     try {
@@ -455,6 +467,7 @@ const PlatformAdminDashboard = () => {
                 </span>
               )}
             </TabsTrigger>
+            <TabsTrigger value="audit" className="flex-1 text-xs">Audit</TabsTrigger>
           </TabsList>
 
           {/* TAB: USERS */}
@@ -811,6 +824,54 @@ const PlatformAdminDashboard = () => {
                       Notes admin: {claim.admin_note}
                     </p>
                   )}
+                </div>
+              );
+            })}
+          </TabsContent>
+
+          <TabsContent value="audit" className="space-y-2 pt-2">
+            <p className="text-xs text-muted-foreground">Last 50 actions recorded in the system.</p>
+            {(auditLogs?.length ?? 0) === 0 && (
+              <div className="golf-card p-8 text-center text-sm text-muted-foreground">
+                No audit records yet
+              </div>
+            )}
+            {auditLogs?.map((log: any) => {
+              const timeAgo = () => {
+                const diff = Date.now() - new Date(log.created_at).getTime();
+                const mins = Math.floor(diff / 60000);
+                const hours = Math.floor(diff / 3600000);
+                const days = Math.floor(diff / 86400000);
+                if (mins < 1) return "just now";
+                if (hours < 1) return `${mins}m ago`;
+                if (days < 1) return `${hours}h ago`;
+                return `${days}d ago`;
+              };
+              const actionColor: Record<string, string> = {
+                INSERT: "text-green-500 bg-green-500/10",
+                UPDATE: "text-amber-500 bg-amber-500/10",
+                DELETE: "text-red-400 bg-red-400/10",
+              };
+              return (
+                <div key={log.id} className="golf-card p-3 flex items-start gap-3">
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 mt-0.5 ${actionColor[log.action] ?? "bg-muted text-muted-foreground"}`}>
+                    {log.action}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium">
+                      <span className="text-primary">{log.target_table}</span>
+                      {log.target_id && <span className="text-muted-foreground"> · {log.target_id.slice(0, 8)}…</span>}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                      {(log.actor as any)?.full_name ?? log.actor_role ?? "system"} · {log.actor_role}
+                    </p>
+                    {log.new_values && (
+                      <p className="text-[10px] text-muted-foreground mt-1 font-mono truncate">
+                        {JSON.stringify(log.new_values).slice(0, 80)}…
+                      </p>
+                    )}
+                  </div>
+                  <span className="text-[10px] text-muted-foreground shrink-0">{timeAgo()}</span>
                 </div>
               );
             })}
