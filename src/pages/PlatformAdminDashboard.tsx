@@ -187,14 +187,14 @@ const PlatformAdminDashboard = () => {
       // Notify claimant
       await supabase.from("notifications").insert({
         user_id: claim.claimant_id,
-        title: "Klaim Disetujui ✅",
-        message: `Data turnamen atas nama "${(claim.target as any)?.full_name}" berhasil digabung ke akun Anda.`,
+        title: "Claim Approved ✅",
+        message: `Tournament data for "${(claim.target as any)?.full_name}" has been merged into your account.`,
         type: "system",
       });
-      toast.success("Klaim disetujui, data berhasil digabung");
+      toast.success("Claim approved, data merged successfully");
       refetchClaims();
     } catch (e: any) {
-      toast.error(e.message || "Gagal memproses klaim");
+      toast.error(e.message || "Failed to process claim");
     } finally {
       setProcessingClaimId(null);
     }
@@ -207,11 +207,11 @@ const PlatformAdminDashboard = () => {
       .eq("id", claimId);
     await supabase.from("notifications").insert({
       user_id: claimantId,
-      title: "Klaim Ditolak",
-      message: `Klaim profil tidak dapat disetujui. ${adminNote ? `Alasan: ${adminNote}` : "Hubungi admin untuk informasi lebih lanjut."}`,
+      title: "Claim Declined",
+      message: `Profile claim could not be approved. ${adminNote ? `Alasan: ${adminNote}` : "Contact admin for more information."}`,
       type: "system",
     });
-    toast.success("Klaim ditolak");
+    toast.success("Claim declined");
     setProcessingClaimId(null);
     refetchClaims();
   };
@@ -392,14 +392,14 @@ const PlatformAdminDashboard = () => {
       ];
       await Promise.all(updates);
       await supabase.from("profiles").delete().eq("id", oldProfileId);
-      toast.success(`Profile "${oldName}" berhasil digabung ke "${mergeTarget.full_name}"`);
+      toast.success(`Profile "${oldName}" successfully merged to "${mergeTarget.full_name}"`);
       setShowMergeDialog(false);
       setMergeTarget(null);
       setMergeSearch("");
       setMergeResults([]);
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
     } catch (err: any) {
-      toast.error(err.message || "Gagal merge");
+      toast.error(err.message || "Merge failed");
     } finally {
       setMerging(false);
     }
@@ -495,7 +495,7 @@ const PlatformAdminDashboard = () => {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Cari nama user..."
+                placeholder="Search user name..."
                 value={userSearch}
                 onChange={e => setUserSearch(e.target.value)}
                 className="pl-9 h-9 text-sm"
@@ -770,7 +770,7 @@ const PlatformAdminDashboard = () => {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold">{claimant?.full_name ?? "—"}</p>
                       <p className="text-[11px] text-muted-foreground">
-                        mengklaim profil <span className="font-medium text-foreground">"{target?.full_name ?? "—"}"</span>
+                        is claiming profile <span className="font-medium text-foreground">"{target?.full_name ?? "—"}"</span>
                         {target?.location ? ` · ${target.location}` : ""}
                         {target?.handicap != null ? ` · HCP ${target.handicap}` : ""}
                       </p>
@@ -787,7 +787,7 @@ const PlatformAdminDashboard = () => {
                       "bg-red-400/10 text-red-400"
                     }`}>
                       {claim.status === "pending" ? "Pending" :
-                       claim.status === "approved" ? "Disetujui" : "Ditolak"}
+                       claim.status === "approved" ? "Approved" : "Declined"}
                     </span>
                   </div>
                   {isPending && (
@@ -796,7 +796,7 @@ const PlatformAdminDashboard = () => {
                         className="flex-1 h-8 text-xs text-red-400 border-red-400/30 hover:bg-red-400/10"
                         disabled={isProcessing}
                         onClick={() => handleRejectClaim(claim.id, claim.claimant_id, "Identitas tidak dapat diverifikasi")}>
-                        {isProcessing ? "..." : "Tolak"}
+                        {isProcessing ? "..." : "Decline"}
                       </Button>
                       <Button size="sm"
                         className="flex-1 h-8 text-xs"

@@ -1853,7 +1853,7 @@ const EventDetail = () => {
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCheckinDialog(false)}>Cancel</Button>
             <Button onClick={handleSelfCheckin} disabled={checkingIn}>
-              {checkingIn ? "Checking in…" : "Konfirmasi Check-in"}
+              {checkingIn ? "Checking in…" : "Confirm Check-in"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1866,7 +1866,7 @@ const EventDetail = () => {
             <div>
               <Label className="text-xs">Contestant</Label>
               <Select value={selectedContestantForCart} onValueChange={setSelectedContestantForCart}>
-                <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Pilih pemain" /></SelectTrigger>
+                <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Pilih players" /></SelectTrigger>
                 <SelectContent>
                   {contestants?.map(c => (
                     <SelectItem key={c.id} value={c.id}>{(c.profiles as any)?.full_name ?? "Unknown"}</SelectItem>
@@ -1893,7 +1893,7 @@ const EventDetail = () => {
             <div>
               <Label className="text-xs">Contestant</Label>
               <Select value={selectedContestantForCaddy} onValueChange={setSelectedContestantForCaddy}>
-                <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Pilih pemain" /></SelectTrigger>
+                <SelectTrigger className="h-9 text-xs"><SelectValue placeholder="Pilih players" /></SelectTrigger>
                 <SelectContent>
                   {contestants?.map(c => (
                     <SelectItem key={c.id} value={c.id}>{(c.profiles as any)?.full_name ?? "Unknown"}</SelectItem>

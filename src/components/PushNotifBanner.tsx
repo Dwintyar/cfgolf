@@ -44,7 +44,7 @@ export default function PushNotifBanner() {
     <div className="fixed top-0 left-0 right-0 z-50 flex items-center gap-3 bg-[#1D9E75] text-white px-4 py-3 shadow-lg">
       <Bell className="h-5 w-5 shrink-0" />
       <p className="flex-1 text-sm font-medium">
-        Aktifkan notifikasi agar tidak ketinggalan update klub & tournament
+        Enable notifications to stay updated on club & tournament activity
       </p>
       <button
         onClick={handleEnable}

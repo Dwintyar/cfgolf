@@ -124,13 +124,13 @@ const GolferProfile = () => {
     if (!currentUserId) return;
     await supabase.from("club_invitations").update({ status: "accepted" }).eq("id", inviteId);
     await supabase.from("members").insert({ club_id: clubId, user_id: currentUserId, role: "member" });
-    toast({ title: "Berhasil bergabung!" });
+    toast({ title: "Joined successfully!" });
     if (targetId) { fetchClubs(targetId); fetchInvites(targetId); }
   };
 
   const handleDeclineInvite = async (inviteId: string) => {
     await supabase.from("club_invitations").update({ status: "declined" }).eq("id", inviteId);
-    toast({ title: "Undangan ditolak" });
+    toast({ title: "Invitation declined" });
     if (targetId) fetchInvites(targetId);
   };
 
@@ -143,7 +143,7 @@ const GolferProfile = () => {
   const handleDeclineBuddy = async (connectionId: string) => {
     const { error } = await supabase.from("buddy_connections").update({ status: "declined" }).eq("id", connectionId);
     if (error) toast({ title: "Failed", description: error.message, variant: "destructive" });
-    else { setBuddyStatus(null); setBuddyConnectionId(null); toast({ title: "Permintaan ditolak" }); }
+    else { setBuddyStatus(null); setBuddyConnectionId(null); toast({ title: "Request declined" }); }
   };
 
   const handleRemoveBuddy = async () => {
@@ -531,7 +531,7 @@ const GolferProfile = () => {
     if (!profile || !currentUserId) return;
     const { error } = await supabase.from("buddy_connections").insert({ requester_id: currentUserId, addressee_id: profile.id });
     if (error) toast({ title: "Failed", description: error.message, variant: "destructive" });
-    else { setBuddyStatus("sent"); toast({ title: "Permintaan buddy terkirim!" }); }
+    else { setBuddyStatus("sent"); toast({ title: "Buddy request sent!" }); }
   };
 
   const toggleDarkMode = () => {
@@ -660,7 +660,7 @@ const GolferProfile = () => {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-[10px] text-muted-foreground text-center py-2">Belum ada event selesai</p>
+                  <p className="text-[10px] text-muted-foreground text-center py-2">No completed events yet</p>
                 )}
               </div>
             ))}
@@ -1044,7 +1044,7 @@ const GolferProfile = () => {
                       </div>
                     </div>
                   ) : (
-                    <p className="text-sm text-muted-foreground text-center py-4">Belum ada data round</p>
+                    <p className="text-sm text-muted-foreground text-center py-4">No round data yet</p>
                   )}
                 </div>
 
@@ -1317,7 +1317,7 @@ const GolferProfile = () => {
                 )}
                 <div className="grid grid-cols-2 gap-3">
                   {clubs.length === 0 && pendingInvites.length === 0 && (
-                    <p className="col-span-2 text-center text-sm text-muted-foreground py-8">Belum bergabung dengan klub manapun</p>
+                    <p className="col-span-2 text-center text-sm text-muted-foreground py-8">Not joined any club yet</p>
                   )}
                   {clubs.map((c, i) => (
                     <div key={c.id} onClick={() => navigate(`/clubs/${c.id}`)} className="golf-card overflow-hidden animate-fade-in cursor-pointer" style={{ animationDelay: `${i * 60}ms` }}>
@@ -1412,7 +1412,7 @@ const GolferProfile = () => {
                     </div>
                     <p className="text-base font-semibold">No photos yet</p>
                     <p className="text-sm text-muted-foreground mt-1">
-                      {isOwnProfile ? "Tap tombol di atas untuk tambah foto pertama." : "Belum ada foto yang dibagikan."}
+                      {isOwnProfile ? "Tap tombol di atas untuk tambah foto pertama." : "No photos shared yet."}
                     </p>
                   </div>
                 )}
@@ -1492,7 +1492,7 @@ const GolferProfile = () => {
                     <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mb-4 text-3xl">
                       📅
                     </div>
-                    <p className="text-base font-semibold">Belum ada booking</p>
+                    <p className="text-base font-semibold">No bookings</p>
                     <p className="text-sm text-muted-foreground mt-1 max-w-[220px] leading-relaxed">
                       Book tee time di lapangan pilihan Anda melalui tab Venues.
                     </p>
@@ -1508,17 +1508,17 @@ const GolferProfile = () => {
                       cancelled: "text-muted-foreground bg-muted",
                     };
                     const statusLabelMap: Record<string, string> = {
-                      pending:   "Menunggu",
-                      confirmed: "Dikonfirmasi",
-                      ready:     "Lapangan Siap ⛳",
-                      declined:  "Ditolak",
-                      cancelled: "Dibatalkan",
+                      pending:   "Pending",
+                      confirmed: "Confirmed",
+                      ready:     "Course Ready ⛳",
+                      declined:  "Declined",
+                      cancelled: "Cancelled",
                     };
                     const statusColor = isPast && !["declined","cancelled"].includes(b.status)
                       ? "text-muted-foreground bg-muted"
                       : (statusColorMap[b.status] ?? "text-muted-foreground bg-muted");
                     const statusLabel = isPast && !["declined","cancelled"].includes(b.status)
-                      ? "Selesai"
+                      ? "Done"
                       : (statusLabelMap[b.status] ?? b.status);
                     const canCancel = !isPast && ["pending","confirmed"].includes(b.status);
 
@@ -1550,7 +1550,7 @@ const GolferProfile = () => {
                         </div>
 
                         <div className="flex items-center justify-between text-xs">
-                          <span className="text-muted-foreground">{b.players_count} pemain · Rp {Number(b.total_price ?? 0).toLocaleString("id-ID")}</span>
+                          <span className="text-muted-foreground">{b.players_count} players · Rp {Number(b.total_price ?? 0).toLocaleString("id-ID")}</span>
                           {canCancel && (
                             <Button
                               variant="ghost"
@@ -1606,7 +1606,7 @@ const GolferProfile = () => {
                   </p>
                   {(myCaddyBookings?.length ?? 0) === 0 ? (
                     <div className="rounded-xl border border-border bg-card p-8 text-center">
-                      <p className="text-sm text-muted-foreground">Belum ada penugasan mendatang</p>
+                      <p className="text-sm text-muted-foreground">No upcoming assignments</p>
                     </div>
                   ) : myCaddyBookings!.map((b: any) => (
                     <div key={b.id} className="rounded-xl border border-border bg-card p-3 space-y-1.5 mb-2">
@@ -1618,13 +1618,13 @@ const GolferProfile = () => {
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
                           b.status === "ready" ? "bg-primary/10 text-primary" : "bg-green-500/10 text-green-500"
                         }`}>
-                          {b.status === "ready" ? "Siap ⛳" : "Dikonfirmasi"}
+                          {b.status === "ready" ? "Ready ⛳" : "Confirmed"}
                         </span>
                       </div>
                       <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
                         <span>📅 {new Date(b.booking_date).toLocaleDateString("id-ID", { weekday: "short", day: "numeric", month: "short" })}</span>
                         <span>🕐 {b.tee_time?.slice(0,5)}</span>
-                        <span>👥 {b.players_count} pemain</span>
+                        <span>👥 {b.players_count} players</span>
                       </div>
                       <p className="text-[11px] text-muted-foreground">
                         Golfer: {(b.profiles as any)?.full_name ?? "—"}

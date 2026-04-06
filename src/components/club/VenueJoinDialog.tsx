@@ -47,7 +47,7 @@ const VenueJoinDialog = ({ open, onOpenChange, clubId, clubName, userId, onSucce
       }
       return;
     }
-    toast({ title: "Request terkirim ✓", description: `Menunggu persetujuan ${clubName}` });
+    toast({ title: "Request sent ✓", description: `Awaiting approval from ${clubName}` });
     onSuccess();
     onOpenChange(false);
   };
@@ -57,7 +57,7 @@ const VenueJoinDialog = ({ open, onOpenChange, clubId, clubName, userId, onSucce
       <DialogContent className="max-w-sm rounded-2xl">
         <DialogHeader>
           <DialogTitle className="text-base">Bergabung ke {clubName}</DialogTitle>
-          <p className="text-xs text-muted-foreground mt-0.5">Pilih role yang ingin kamu lamar</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Select the role you want to apply for</p>
         </DialogHeader>
 
         <div className="space-y-2 py-1">

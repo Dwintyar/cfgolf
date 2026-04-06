@@ -45,7 +45,7 @@ const InvoiceDocument = ({ data }: { data: InvoiceData }) => {
   if (data.type === "venue") {
     if (pairs["Date"])    rows.push({ label: "Tanggal Main",    value: pairs["Date"] });
     if (pairs["Time"])    rows.push({ label: "Tee Time",        value: pairs["Time"] });
-    if (pairs["Players"]) rows.push({ label: "Jumlah Pemain",  value: pairs["Players"] + " orang" });
+    if (pairs["Players"]) rows.push({ label: "Number of Players",  value: pairs["Players"] + " orang" });
     if (pairs["Caddies"]) rows.push({ label: "Jumlah Caddy",   value: pairs["Caddies"] + " orang" });
     if (pairs["Carts"])   rows.push({ label: "Jumlah Cart",    value: pairs["Carts"] + " unit" });
     if (data.assignedCaddies) rows.push({ label: "Caddy Assigned", value: data.assignedCaddies });
@@ -54,7 +54,7 @@ const InvoiceDocument = ({ data }: { data: InvoiceData }) => {
   } else {
     if (data.bookingDate)   rows.push({ label: "Tanggal Main",   value: data.bookingDate });
     if (data.teeTime)       rows.push({ label: "Tee Time",       value: data.teeTime.slice(0,5) });
-    if (data.playersCount)  rows.push({ label: "Jumlah Pemain",  value: data.playersCount + " orang" });
+    if (data.playersCount)  rows.push({ label: "Number of Players",  value: data.playersCount + " orang" });
   }
 
   const col  = STATUS_COLOR[data.status] ?? "#6b7280";

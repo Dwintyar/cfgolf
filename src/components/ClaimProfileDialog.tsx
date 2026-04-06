@@ -65,9 +65,9 @@ const ClaimProfileDialog = ({ open, onClose, claimantId, claimantName }: ClaimPr
     setSubmitting(false);
     if (error) {
       if (error.code === "23505") {
-        toast.error("Anda sudah pernah mengajukan klaim untuk profil ini");
+        toast.error("You have already submitted a claim for this profile");
       } else {
-        toast.error("Gagal mengajukan klaim");
+        toast.error("Failed to submit claim");
       }
       return;
     }
@@ -79,13 +79,13 @@ const ClaimProfileDialog = ({ open, onClose, claimantId, claimantName }: ClaimPr
     for (const admin of admins ?? []) {
       await supabase.from("notifications").insert({
         user_id: admin.user_id,
-        title: "Klaim Profil Baru 🔔",
-        message: `${claimantName} mengklaim profil "${selected.full_name}". Harap review di Admin Dashboard.`,
+        title: "New Profile Claim 🔔",
+        message: `${claimantName} is claiming profile "${selected.full_name}". Please review in Admin Dashboard.`,
         type: "system",
       });
     }
     setDone(true);
-    toast.success("Klaim berhasil diajukan! Admin akan memverifikasi dalam 1–2 hari kerja.");
+    toast.success("Claim submitted! Admin will verify within 1–2 business days.");
   };
 
   if (!open) return null;
@@ -101,7 +101,7 @@ const ClaimProfileDialog = ({ open, onClose, claimantId, claimantName }: ClaimPr
           <div>
             <p className="font-semibold text-sm">Klaim Data Turnamen</p>
             <p className="text-[11px] text-muted-foreground mt-0.5">
-              Cari nama Anda di data EGT dan hubungkan ke akun ini
+              Search your name in EGT data and link it to this account
             </p>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-full hover:bg-muted">
@@ -123,11 +123,11 @@ const ClaimProfileDialog = ({ open, onClose, claimantId, claimantName }: ClaimPr
                 : <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />}
               <div>
                 <p className="font-medium capitalize">
-                  Klaim {existingClaim.status === "pending" ? "sedang diproses" :
+                  Klaim {existingClaim.status === "pending" ? "is being reviewed" :
                          existingClaim.status === "approved" ? "disetujui" : "ditolak"}
                 </p>
                 <p className="text-[11px] opacity-80 mt-0.5">
-                  Profil: {(existingClaim.profiles as any)?.full_name ?? "—"}
+                  Profile: {(existingClaim.profiles as any)?.full_name ?? "—"}
                   {existingClaim.admin_note && ` · ${existingClaim.admin_note}`}
                 </p>
               </div>
@@ -137,7 +137,7 @@ const ClaimProfileDialog = ({ open, onClose, claimantId, claimantName }: ClaimPr
           {done ? (
             <div className="text-center py-6 space-y-3">
               <div className="text-4xl">📨</div>
-              <p className="font-semibold">Klaim berhasil diajukan!</p>
+              <p className="font-semibold">Claim submitted successfully!</p>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 Tim GolfBuana akan memverifikasi klaim Anda dalam 1–2 hari kerja.
                 Setelah disetujui, semua data turnamen EGT akan otomatis masuk ke akun Anda.
@@ -149,12 +149,12 @@ const ClaimProfileDialog = ({ open, onClose, claimantId, claimantName }: ClaimPr
               {/* Search */}
               <div>
                 <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                  Cari nama Anda di data EGT
+                  Search your name in EGT data
                 </label>
                 <div className="relative mt-1.5">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                   <Input
-                    placeholder="Ketik minimal 2 huruf..."
+                    placeholder="Type at least 2 characters..."
                     value={search}
                     onChange={(e) => { setSearch(e.target.value); setSelected(null); }}
                     className="pl-8 h-10 text-sm"
@@ -166,11 +166,11 @@ const ClaimProfileDialog = ({ open, onClose, claimantId, claimantName }: ClaimPr
               {search.trim().length >= 2 && (
                 <div className="space-y-1.5">
                   {isFetching && (
-                    <p className="text-xs text-muted-foreground text-center py-2">Mencari...</p>
+                    <p className="text-xs text-muted-foreground text-center py-2">Searching...</p>
                   )}
                   {!isFetching && (results?.length ?? 0) === 0 && (
                     <p className="text-xs text-muted-foreground text-center py-2">
-                      Nama tidak ditemukan di database EGT
+                      Name not found in EGT database
                     </p>
                   )}
                   {results?.map((p: any) => (
@@ -226,10 +226,10 @@ const ClaimProfileDialog = ({ open, onClose, claimantId, claimantName }: ClaimPr
                     disabled={submitting}
                     onClick={handleSubmit}
                   >
-                    {submitting ? "Mengajukan..." : "Ajukan Klaim →"}
+                    {submitting ? "Submitting..." : "Submit Claim →"}
                   </Button>
                   <p className="text-[10px] text-center text-muted-foreground">
-                    Admin akan memverifikasi sebelum data digabungkan
+                    Admin will verify before data is merged
                   </p>
                 </div>
               )}

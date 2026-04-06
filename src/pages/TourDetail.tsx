@@ -377,7 +377,7 @@ const TourDetail = () => {
 
   // Delete event handler
   const handleDeleteEvent = async (eventId: string) => {
-    if (!confirm("Hapus event ini? Semua data contestant, pairing, dan scorecard akan ikut terhapus.")) return;
+    if (!confirm("Remove event ini? Semua data contestant, pairing, dan scorecard akan ikut terhapus.")) return;
     setDeletingEventId(eventId);
     const { error } = await supabase.from("events").delete().eq("id", eventId);
     setDeletingEventId(null);
@@ -416,7 +416,7 @@ const TourDetail = () => {
     const playerClubId = player.club_id ?? (player.clubs as any)?.id;
     const clubName = (player.clubs as any)?.name ?? "Club";
 
-    if (!confirm(`Hapus ${playerName} dari tournament?`)) return;
+    if (!confirm(`Remove ${playerName} from tournament?`)) return;
 
     await supabase.from("tour_players").delete().eq("id", player.id);
     const eventIds = events?.map((e: any) => e.id) ?? [];
@@ -630,7 +630,7 @@ const TourDetail = () => {
 
         <TabsContent value="events" className="space-y-3 pt-4 px-4">
           {events?.length === 0 && (
-            <EmptyState icon="📅" title="Belum ada event" desc="Event turnamen akan tampil di sini setelah dijadwalkan." />
+            <EmptyState icon="📅" title="No events yet" desc="Event turnamen akan tampil di sini setelah dijadwalkan." />
           )}
           {events?.map((event, i) => {
             const eventStatusLabel = event.status === "done" ? "Done" : event.status === "playing" || event.status === "checkin" ? "Upcoming" : "Scheduled";
@@ -720,7 +720,7 @@ const TourDetail = () => {
                   setShowAddPlayerDialog(true);
                 }}
               >
-                <UserPlus className="h-3 w-3" /> Daftarkan Player dari Club Saya
+                <UserPlus className="h-3 w-3" /> Register Player from My Club
               </Button>
             </div>
           )}
@@ -879,7 +879,7 @@ const TourDetail = () => {
                   )}
                   {myEvents.length === 0 && (
                     <p className="mt-1 ml-10 text-[9px] text-muted-foreground/50 italic">
-                      Belum ikut event
+                      No events joined yet
                     </p>
                   )}
                 </div>
@@ -974,7 +974,7 @@ const TourDetail = () => {
 
         <TabsContent value="clubs" className="space-y-3 pt-4 px-4">
           {tourClubs?.length === 0 && (
-            <EmptyState icon="🏌️" title="Belum ada klub" desc="Klub peserta akan tampil di sini setelah diundang." />
+            <EmptyState icon="🏌️" title="No clubs yet" desc="Invited clubs will appear here." />
           )}
           {(() => {
             const accepted = tourClubs?.filter(tc => tc.status === "accepted") ?? [];
@@ -1120,12 +1120,12 @@ const TourDetail = () => {
       <Dialog open={showAddPlayerDialog} onOpenChange={(open) => { setShowAddPlayerDialog(open); if (!open) setSearchAddPlayer(""); }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Tambah Player</DialogTitle>
+            <DialogTitle>Add Player</DialogTitle>
           </DialogHeader>
           <div className="relative mb-2">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Cari nama..."
+              placeholder="Search name..."
               value={searchAddPlayer}
               onChange={(e) => setSearchAddPlayer(e.target.value)}
               className="pl-10"
@@ -1164,13 +1164,13 @@ const TourDetail = () => {
 
           <div className="space-y-4">
             <div>
-              <p className="text-xs font-medium text-muted-foreground mb-1.5">Pilih Event</p>
+              <p className="text-xs font-medium text-muted-foreground mb-1.5">Select Event</p>
               <select
                 className="w-full rounded-lg bg-secondary text-sm p-2.5 border-none outline-none"
                 value={selectedEventForInvitation ?? ""}
                 onChange={(e) => setSelectedEventForInvitation(e.target.value || null)}
               >
-                <option value="">-- Pilih event --</option>
+                <option value="">-- Select event --</option>
                 {events?.map((ev: any) => (
                   <option key={ev.id} value={ev.id}>
                     {ev.name} · {new Date(ev.event_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}

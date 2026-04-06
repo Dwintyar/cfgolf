@@ -221,7 +221,7 @@ const CreateEventDialog = ({ tourId, open, onOpenChange, onDone, isPersonal = fa
                     </div>
 
                     <div>
-                      <p className="text-[10px] text-muted-foreground mb-1">Catatan (opsional)</p>
+                      <p className="text-[10px] text-muted-foreground mb-1">Notes (optional)</p>
                       <Input value={bookingNotes} onChange={e => setBookingNotes(e.target.value)}
                         placeholder="Permintaan khusus..." className="h-8 text-xs" />
                     </div>

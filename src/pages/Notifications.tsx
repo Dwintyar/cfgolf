@@ -401,7 +401,7 @@ const Notifications = () => {
         {!isLoading && (!notifications || notifications.length === 0) && (
           <EmptyState
             icon="🔔"
-            title="Belum ada notifikasi"
+            title="No notifications yet"
             desc="Notifikasi klub, turnamen, dan aktivitas teman akan muncul di sini."
           />
         )}

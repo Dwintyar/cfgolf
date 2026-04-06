@@ -251,7 +251,7 @@ const Login = () => {
           {isSignUp && !isForgot && (
             <Input
               type="password"
-              placeholder="Konfirmasi Password"
+              placeholder="Confirm Password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               className="h-12 rounded-xl border-border/50 bg-card/80 backdrop-blur"

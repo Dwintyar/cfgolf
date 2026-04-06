@@ -281,7 +281,7 @@ const CourseAdminDashboard = () => {
   const handleToggleCaddyActive = async (caddy: any) => {
     const { error } = await supabase.from("course_caddies")
       .update({ is_active: !caddy.is_active }).eq("id", caddy.id);
-    if (error) toast({ title: "Gagal memperbarui status", variant: "destructive" });
+    if (error) toast({ title: "Failed to update status", variant: "destructive" });
     else refetchCaddies();
   };
 
@@ -588,7 +588,7 @@ const CourseAdminDashboard = () => {
   };
 
   const handleDeleteTee = async (teeId: string) => {
-    if (!window.confirm("Hapus tee box ini?")) return;
+    if (!window.confirm("Delete this tee box?")) return;
     const { error } = await supabase.from("course_tees").delete().eq("id", teeId);
     if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); }
     else { toast({ title: "Tee deleted" }); queryClient.invalidateQueries({ queryKey: ["course-admin", courseId] }); }
@@ -667,7 +667,7 @@ const CourseAdminDashboard = () => {
                 { label: "Green Fee", value: course?.green_fee_price
                   ? new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(Number(course.green_fee_price))
                   : "—" },
-                { label: "Booking Hari Ini", value: todayBookings ?? 0 },
+                { label: "Booking Today", value: todayBookings ?? 0 },
               ].map(kpi => (
                 <div key={kpi.label} className="golf-card p-4 text-center">
                   <p className="text-2xl font-bold text-primary">{kpi.value}</p>
@@ -1241,7 +1241,7 @@ const CourseAdminDashboard = () => {
                           onClick={() => handleRemoveAdmin(a.id, (a.profiles as any)?.full_name ?? "Admin")}
                           className="text-destructive/60 hover:text-destructive text-xs font-medium px-2 py-1 rounded"
                         >
-                          Hapus
+                          Remove
                         </button>
                       </div>
                     ))}
@@ -1255,7 +1255,7 @@ const CourseAdminDashboard = () => {
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                     <Input
-                      placeholder="Cari user untuk dijadikan Course Admin..."
+                      placeholder="Search user to assign as Course Admin..."
                       value={adminSearch}
                       onChange={e => handleSearchAdmin(e.target.value)}
                       className="pl-8 h-9 text-sm"

@@ -144,7 +144,7 @@ const BookTeeTime = () => {
 
     setBooking(false);
     setConfirmed(true);
-    toast.success("Booking berhasil dikirim!");
+    toast.success("Booking request sent!");
   };
 
   if (!flags.venue_booking) {
@@ -171,16 +171,16 @@ const BookTeeTime = () => {
           <CheckCircle className="mx-auto h-16 w-16 text-primary" />
           <h1 className="mt-4 font-display text-2xl font-bold">Booking Terkirim!</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Permintaan booking Anda telah dikirim ke venue. Menunggu konfirmasi dari pengelola lapangan.
+            Permintaan booking Anda telah dikirim ke venue. Waiting for venue confirmation.
           </p>
           <p className="mt-2 text-sm font-medium">
             {course?.name} · {new Date(selectedDate).toLocaleDateString("id-ID", {
               weekday: "long", day: "numeric", month: "long", year: "numeric"
             })}
           </p>
-          <p className="mt-1 text-lg font-bold text-primary">{selectedTime} · {players} pemain</p>
+          <p className="mt-1 text-lg font-bold text-primary">{selectedTime} · {players} players</p>
           {totalPrice > 0 && (
-            <p className="mt-1 text-sm text-muted-foreground">Estimasi: {formatPrice(totalPrice)}</p>
+            <p className="mt-1 text-sm text-muted-foreground">Estimated: {formatPrice(totalPrice)}</p>
           )}
           <div className="mt-6 flex gap-3">
             <Button variant="outline" className="flex-1" onClick={() => navigate(`/venue/${courseId}`)}>
@@ -235,7 +235,7 @@ const BookTeeTime = () => {
         {/* Time slots */}
         <div>
           <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-            Pilih Waktu Tee-Off
+            Select Tee-Off Time
           </Label>
           {displayPrice > 0 && (
             <p className="text-[11px] text-muted-foreground mt-1">
@@ -269,7 +269,7 @@ const BookTeeTime = () => {
         {/* Players count */}
         <div>
           <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-            <Users className="h-3.5 w-3.5" /> Jumlah Pemain
+            <Users className="h-3.5 w-3.5" /> Number of Players
           </Label>
           <div className="mt-2 flex gap-2">
             {Array.from({ length: slotConfig?.max_players ?? 4 }, (_, i) => i + 1).map((n) => (
@@ -291,10 +291,10 @@ const BookTeeTime = () => {
         {/* Notes */}
         <div>
           <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-            Catatan (opsional)
+            Notes (optional)
           </Label>
           <Input
-            placeholder="Contoh: Butuh cart, bawa stik sendiri..."
+            placeholder="e.g. Need cart, bringing own clubs..."
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             className="mt-1.5 h-11 rounded-xl border-border/50 bg-card/80"
@@ -325,7 +325,7 @@ const BookTeeTime = () => {
         >
           {booking ? "Booking..." : selectedTime
             ? `Book ${selectedTime} ${totalPrice > 0 ? `· ${formatPrice(totalPrice)}` : ""}`
-            : "Pilih waktu terlebih dahulu"}
+            : "Select a time first"}
         </Button>
       </div>
 

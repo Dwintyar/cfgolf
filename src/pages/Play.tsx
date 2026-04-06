@@ -136,7 +136,7 @@ const Play = () => {
       toast({ title: "Gagal mengirim permintaan", description: error.message, variant: "destructive" });
     } else {
       setSentRequests((prev) => new Set(prev).add(addresseeId));
-      toast({ title: "Permintaan buddy terkirim!" });
+      toast({ title: "Buddy request sent!" });
     }
     setActionLoading(null);
   };
@@ -165,7 +165,7 @@ const Play = () => {
     if (error) {
       toast({ title: "Failed", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Permintaan ditolak" });
+      toast({ title: "Request declined" });
       fetchData();
     }
     setActionLoading(null);
@@ -458,7 +458,7 @@ const Play = () => {
                       {search ? "🔍" : "👫"}
                     </div>
                     <p className="text-sm font-semibold">
-                      {search ? "Tidak ditemukan" : "Belum ada teman bermain"}
+                      {search ? "Not found" : "No buddies yet"}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1 max-w-[200px] leading-relaxed">
                       {search ? "Coba kata kunci lain." : "Temukan golfer di tab Discover dan kirim permintaan berteman."}

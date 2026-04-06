@@ -72,7 +72,7 @@ const VenueCoursesSection = ({
             <button
               onClick={() => navigate(`/venue/${course.id}`)}
               className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-secondary transition-colors shrink-0"
-              title="Lihat detail course"
+              title="View course details"
             >
               <ExternalLink className="h-4 w-4 text-muted-foreground" />
             </button>

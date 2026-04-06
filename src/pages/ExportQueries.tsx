@@ -9,9 +9,9 @@ import { supabase } from '@/integrations/supabase/client';
 const queries = [
   // 1. PROFILES & USERS
   { category: 'Profiles & Users', no: 1, description: 'Daftar semua profil pengguna', query: 'SELECT * FROM profiles' },
-  { category: 'Profiles & Users', no: 2, description: 'Ranking pemain berdasarkan handicap', query: 'SELECT * FROM profiles WHERE handicap IS NOT NULL ORDER BY handicap' },
-  { category: 'Profiles & Users', no: 3, description: 'Distribusi pemain per lokasi', query: "SELECT location, COUNT(*) FROM profiles GROUP BY location" },
-  { category: 'Profiles & Users', no: 4, description: 'Cari pemain berdasarkan nama', query: "SELECT * FROM profiles WHERE full_name ILIKE '%keyword%'" },
+  { category: 'Profiles & Users', no: 2, description: 'Ranking players berdasarkan handicap', query: 'SELECT * FROM profiles WHERE handicap IS NOT NULL ORDER BY handicap' },
+  { category: 'Profiles & Users', no: 3, description: 'Distribusi players per lokasi', query: "SELECT location, COUNT(*) FROM profiles GROUP BY location" },
+  { category: 'Profiles & Users', no: 4, description: 'Cari players berdasarkan nama', query: "SELECT * FROM profiles WHERE full_name ILIKE '%keyword%'" },
 
   // 2. CLUBS
   { category: 'Clubs', no: 5, description: 'Daftar semua klub (non-personal)', query: 'SELECT * FROM clubs WHERE is_personal = false' },
@@ -71,9 +71,9 @@ const queries = [
   { category: 'Tour Clubs', no: 41, description: 'Total kuota tiket per tour', query: 'SELECT tour_id, SUM(ticket_quota) FROM tour_clubs GROUP BY tour_id' },
 
   // 12. TOUR PLAYERS
-  { category: 'Tour Players', no: 42, description: 'Semua pemain terdaftar di tour', query: 'SELECT tp.*, p.full_name, p.handicap, c.name AS club_name FROM tour_players tp JOIN profiles p ON p.id = tp.player_id JOIN clubs c ON c.id = tp.club_id' },
+  { category: 'Tour Players', no: 42, description: 'Semua players terdaftar di tour', query: 'SELECT tp.*, p.full_name, p.handicap, c.name AS club_name FROM tour_players tp JOIN profiles p ON p.id = tp.player_id JOIN clubs c ON c.id = tp.club_id' },
   { category: 'Tour Players', no: 43, description: 'Pemain per klub di tour tertentu', query: "SELECT tp.*, p.full_name FROM tour_players tp JOIN profiles p ON p.id = tp.player_id WHERE tp.tour_id = '<tour_id>' AND tp.club_id = '<club_id>'" },
-  { category: 'Tour Players', no: 44, description: 'Jumlah pemain per klub di tour', query: "SELECT club_id, COUNT(*) FROM tour_players WHERE tour_id = '<tour_id>' GROUP BY club_id" },
+  { category: 'Tour Players', no: 44, description: 'Jumlah players per klub di tour', query: "SELECT club_id, COUNT(*) FROM tour_players WHERE tour_id = '<tour_id>' GROUP BY club_id" },
 
   // 13. TOURNAMENT FLIGHTS
   { category: 'Tournament Flights', no: 45, description: 'Flight di tour tertentu', query: "SELECT * FROM tournament_flights WHERE tour_id = '<tour_id>' ORDER BY display_order" },
@@ -105,8 +105,8 @@ const queries = [
 
   // 18. PAIRINGS
   { category: 'Pairings', no: 63, description: 'Semua pairing/group', query: 'SELECT pa.*, e.name AS event_name FROM pairings pa JOIN events e ON e.id = pa.event_id ORDER BY pa.group_number' },
-  { category: 'Pairings', no: 64, description: 'Detail pemain per group', query: 'SELECT pp.*, p.full_name, pa.group_number, pa.tee_time, pa.start_hole FROM pairing_players pp JOIN contestants c ON c.id = pp.contestant_id JOIN profiles p ON p.id = c.player_id JOIN pairings pa ON pa.id = pp.pairing_id' },
-  { category: 'Pairings', no: 65, description: 'Jumlah pemain per group', query: 'SELECT pa.*, COUNT(pp.id) AS player_count FROM pairings pa LEFT JOIN pairing_players pp ON pp.pairing_id = pa.id GROUP BY pa.id' },
+  { category: 'Pairings', no: 64, description: 'Detail players per group', query: 'SELECT pp.*, p.full_name, pa.group_number, pa.tee_time, pa.start_hole FROM pairing_players pp JOIN contestants c ON c.id = pp.contestant_id JOIN profiles p ON p.id = c.player_id JOIN pairings pa ON pa.id = pp.pairing_id' },
+  { category: 'Pairings', no: 65, description: 'Jumlah players per group', query: 'SELECT pa.*, COUNT(pp.id) AS player_count FROM pairings pa LEFT JOIN pairing_players pp ON pp.pairing_id = pa.id GROUP BY pa.id' },
   { category: 'Pairings', no: 66, description: 'Pairing tipe shotgun start', query: "SELECT * FROM pairings WHERE start_type = 'shotgun'" },
 
   // 19. EVENT CHECK-INS
@@ -133,9 +133,9 @@ const queries = [
 
   // 23. HANDICAP HISTORY
   { category: 'Handicap History', no: 81, description: 'Riwayat perubahan handicap', query: 'SELECT hh.*, p.full_name, e.name AS event_name FROM handicap_history hh JOIN profiles p ON p.id = hh.player_id JOIN events e ON e.id = hh.event_id ORDER BY hh.created_at DESC' },
-  { category: 'Handicap History', no: 82, description: 'Trend handicap pemain tertentu', query: "SELECT * FROM handicap_history WHERE player_id = '<player_id>' ORDER BY created_at" },
+  { category: 'Handicap History', no: 82, description: 'Trend handicap players tertentu', query: "SELECT * FROM handicap_history WHERE player_id = '<player_id>' ORDER BY created_at" },
   { category: 'Handicap History', no: 83, description: 'Deteksi sandbagging', query: 'SELECT * FROM handicap_history WHERE sandbagging_flag = true' },
-  { category: 'Handicap History', no: 84, description: 'View trend handicap pemain', query: "SELECT * FROM player_handicap_trend WHERE player_id = '<player_id>'" },
+  { category: 'Handicap History', no: 84, description: 'View trend handicap players', query: "SELECT * FROM player_handicap_trend WHERE player_id = '<player_id>'" },
 
   // 24. EVENT RESULTS
   { category: 'Event Results', no: 85, description: 'Semua pemenang event', query: 'SELECT er.*, p.full_name, wc.category_name FROM event_results er JOIN contestants c ON c.id = er.contestant_id JOIN profiles p ON p.id = c.player_id JOIN tournament_winner_categories wc ON wc.id = er.category_id' },
@@ -150,7 +150,7 @@ const queries = [
   // 26. ROUNDS
   { category: 'Rounds', no: 91, description: 'Semua round', query: 'SELECT r.*, co.name AS course_name, p.full_name AS creator FROM rounds r JOIN courses co ON co.id = r.course_id JOIN profiles p ON p.id = r.created_by' },
   { category: 'Rounds', no: 92, description: 'Pemain dalam round tertentu', query: "SELECT rp.*, p.full_name FROM round_players rp JOIN profiles p ON p.id = rp.user_id WHERE rp.round_id = '<round_id>'" },
-  { category: 'Rounds', no: 93, description: 'Round beserta jumlah pemain', query: 'SELECT r.*, COUNT(rp.id) AS player_count FROM rounds r LEFT JOIN round_players rp ON rp.round_id = r.id GROUP BY r.id' },
+  { category: 'Rounds', no: 93, description: 'Round beserta jumlah players', query: 'SELECT r.*, COUNT(rp.id) AS player_count FROM rounds r LEFT JOIN round_players rp ON rp.round_id = r.id GROUP BY r.id' },
   { category: 'Rounds', no: 94, description: 'Round yang sedang berlangsung', query: "SELECT * FROM rounds WHERE status = 'active'" },
 
   // 27. TEE TIME BOOKINGS
@@ -166,7 +166,7 @@ const queries = [
   { category: 'Conversations & Chat', no: 102, description: 'Pesan terbaru user', query: "SELECT cm.* FROM chat_messages cm WHERE cm.conversation_id IN (SELECT cp.conversation_id FROM conversation_participants cp WHERE cp.user_id = '<user_id>') ORDER BY cm.created_at DESC LIMIT 20" },
 
   // 29. CROSS-TABLE ANALYTICS
-  { category: 'Cross-Table Analytics', no: 103, description: 'Ringkasan partisipasi pemain', query: 'SELECT p.full_name, COUNT(DISTINCT tp.tour_id) AS tours, COUNT(DISTINCT c2.event_id) AS events FROM profiles p LEFT JOIN tour_players tp ON tp.player_id = p.id LEFT JOIN contestants c2 ON c2.player_id = p.id GROUP BY p.id' },
+  { category: 'Cross-Table Analytics', no: 103, description: 'Ringkasan partisipasi players', query: 'SELECT p.full_name, COUNT(DISTINCT tp.tour_id) AS tours, COUNT(DISTINCT c2.event_id) AS events FROM profiles p LEFT JOIN tour_players tp ON tp.player_id = p.id LEFT JOIN contestants c2 ON c2.player_id = p.id GROUP BY p.id' },
   { category: 'Cross-Table Analytics', no: 104, description: 'Dashboard klub lengkap', query: "SELECT c.name, COUNT(DISTINCT m.id) AS members, COUNT(DISTINCT cs.id) AS staff, COUNT(DISTINCT t.id) AS tours FROM clubs c LEFT JOIN members m ON m.club_id = c.id LEFT JOIN club_staff cs ON cs.club_id = c.id LEFT JOIN tours t ON t.organizer_club_id = c.id WHERE c.is_personal = false GROUP BY c.id" },
   { category: 'Cross-Table Analytics', no: 105, description: 'Dashboard operasional event', query: 'SELECT e.name, e.event_date, COUNT(DISTINCT ct.id) AS contestants, COUNT(DISTINCT ec.id) AS checked_in, COUNT(DISTINCT ca.id) AS caddies, COUNT(DISTINCT gca.id) AS carts FROM events e LEFT JOIN contestants ct ON ct.event_id = e.id LEFT JOIN event_checkins ec ON ec.event_id = e.id LEFT JOIN caddy_assignments ca ON ca.event_id = e.id LEFT JOIN golf_cart_assignments gca ON gca.event_id = e.id GROUP BY e.id' },
   { category: 'Cross-Table Analytics', no: 106, description: 'Member lengkap dengan staff role', query: 'SELECT m.role, m.joined_at, p.full_name, p.handicap, cs.staff_role, cs.status AS staff_status, c.name AS club_name FROM members m JOIN profiles p ON p.id = m.user_id JOIN clubs c ON c.id = m.club_id LEFT JOIN club_staff cs ON cs.user_id = m.user_id AND cs.club_id = m.club_id' },

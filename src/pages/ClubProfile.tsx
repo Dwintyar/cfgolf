@@ -304,7 +304,7 @@ const ClubProfile = ({ embedded = false, clubId: propClubId, onBack, onNavigateT
         return;
       }
       await supabase.from("club_invitations").update({ status: "accepted" }).eq("id", invitationId);
-      toast({ title: "Member diterima!" });
+      toast({ title: "Member accepted!" });
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["club-members", id] }),
         queryClient.invalidateQueries({ queryKey: ["club-invitations", id] }),
@@ -320,7 +320,7 @@ const ClubProfile = ({ embedded = false, clubId: propClubId, onBack, onNavigateT
     setProcessingId(invitationId);
     try {
       await supabase.from("club_invitations").update({ status: "declined" }).eq("id", invitationId);
-      toast({ title: "Undangan ditolak" });
+      toast({ title: "Invitation declined" });
       await queryClient.invalidateQueries({ queryKey: ["club-invitations", id] });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -685,7 +685,7 @@ const ClubProfile = ({ embedded = false, clubId: propClubId, onBack, onNavigateT
               </div>
               <Select value={selectedTransferMember ?? ""} onValueChange={(val) => setSelectedTransferMember(val || null)}>
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Pilih anggota..." />
+                  <SelectValue placeholder="Select member..." />
                 </SelectTrigger>
                 <SelectContent>
                   {members?.filter((m) => m.user_id !== currentUserId)

@@ -207,7 +207,7 @@ const Settings = () => {
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     setChangingPw(false);
     if (error) { toast.error(error.message); return; }
-    toast.success("Kata sandi berhasil diubah");
+    toast.success("Password changed successfully");
     setNewPassword("");
     setConfirmPassword("");
     setSection("main");
@@ -336,11 +336,11 @@ const Settings = () => {
         </div>
         <div className="space-y-4 px-4">
           <div>
-            <Label className="text-xs text-muted-foreground">Kata Sandi Baru</Label>
+            <Label className="text-xs text-muted-foreground">New Password</Label>
             <Input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} minLength={6} className="mt-1" />
           </div>
           <div>
-            <Label className="text-xs text-muted-foreground">Konfirmasi Kata Sandi</Label>
+            <Label className="text-xs text-muted-foreground">Confirm Kata Sandi</Label>
             <Input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className="mt-1" />
           </div>
           <Button className="w-full" onClick={handleChangePassword} disabled={changingPw}>
@@ -420,10 +420,10 @@ const Settings = () => {
                   const ok = await installDemo();
                   if (ok) {
                     setDemoMode(true);
-                    toast.success("Mode demo aktif! Cek tab Bookings di profil Anda.");
+                    toast.success("Demo mode activated! Check the Bookings tab in your profile.");
                     queryClient.invalidateQueries();
                   } else {
-                    toast.error("Gagal mengaktifkan demo");
+                    toast.error("Failed to activate demo");
                   }
                 } else {
                   setShowDemoConfirm(true);
@@ -460,7 +460,7 @@ const Settings = () => {
                   <Gamepad2 className="h-5 w-5 text-amber-500" />
                 </div>
                 <div>
-                  <p className="font-semibold text-sm">Hapus data demo?</p>
+                  <p className="font-semibold text-sm">Delete demo data?</p>
                   <p className="text-xs text-muted-foreground mt-0.5">Data nyata Anda tidak akan terpengaruh.</p>
                 </div>
               </div>
@@ -477,14 +477,14 @@ const Settings = () => {
                     if (ok) {
                       setDemoMode(false);
                       setShowDemoConfirm(false);
-                      toast.success("Mode demo dinonaktifkan");
+                      toast.success("Demo mode deactivated");
                       queryClient.invalidateQueries();
                     } else {
-                      toast.error("Gagal menonaktifkan demo");
+                      toast.error("Failed to deactivate demo");
                     }
                   }}
                 >
-                  {demoLoading ? "Menghapus..." : "Hapus & Inactivekan"}
+                  {demoLoading ? "Deleting..." : "Delete & Deactivate"}
                 </Button>
               </div>
             </div>

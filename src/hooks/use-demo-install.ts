@@ -66,7 +66,7 @@ export const useDemoInstall = (userId: string | null) => {
       });
       if (b2Err) throw b2Err;
 
-      // ── 4. Round selesai (5 hari lalu) ───────────────────────
+      // ── 4. Round selesai (5 days ago) ───────────────────────
       const startedAt  = isoTs(5, 7);
       const finishedAt = isoTs(5, 12);
 
@@ -126,7 +126,7 @@ export const useDemoInstall = (userId: string | null) => {
     if (!userId) return false;
     setLoading(true);
     try {
-      // Hapus hole_scores (via scorecard cascade)
+      // Remove hole_scores (via scorecard cascade)
       const { data: demoCc } = await supabase
         .from("scorecards")
         .select("id")
@@ -138,15 +138,15 @@ export const useDemoInstall = (userId: string | null) => {
         await supabase.from("scorecards").delete().in("id", ids);
       }
 
-      // Hapus rounds
+      // Remove rounds
       await supabase.from("rounds")
         .delete().eq("created_by", userId).eq("is_demo", true);
 
-      // Hapus tee_time_bookings
+      // Remove tee_time_bookings
       await supabase.from("tee_time_bookings")
         .delete().eq("user_id", userId).eq("is_demo", true);
 
-      // Hapus members
+      // Remove members
       await supabase.from("members")
         .delete().eq("user_id", userId).eq("is_demo", true);
 

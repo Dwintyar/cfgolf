@@ -139,7 +139,7 @@ const NewMessageDialog = ({ open, onOpenChange, userId }: Props) => {
               </div>
               <p className="text-sm font-semibold">No buddies yet</p>
               <p className="text-xs text-muted-foreground mt-1">
-                Tambah buddy dulu di tab Play untuk bisa memulai chat.
+                Add a buddy in the Play tab to start a chat.
               </p>
             </div>
           )}

@@ -340,17 +340,17 @@ const ClubAdminDashboard = () => {
       .from("tee_time_bookings")
       .update({ caddy_id: caddyUserId || null })
       .eq("id", bookingId);
-    if (error) { toast.error("Gagal assign caddy"); return; }
+    if (error) { toast.error("Failed to assign caddy"); return; }
     if (caddyUserId) {
       const booking = courseBookings?.find((b: any) => b.id === bookingId);
       await supabase.from("notifications").insert({
         user_id: caddyUserId,
-        title: "Penugasan Caddy Baru 🏌️",
-        message: `Anda ditugaskan sebagai caddy pada ${booking?.booking_date ? new Date(booking.booking_date).toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long" }) : ""} pukul ${booking?.tee_time?.slice(0,5) ?? ""} di ${linkedCourse?.name ?? "lapangan"}.`,
+        title: "New Caddy Assignment 🏌️",
+        message: `You have been assigned as caddy pada ${booking?.booking_date ? new Date(booking.booking_date).toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long" }) : ""} pukul ${booking?.tee_time?.slice(0,5) ?? ""} di ${linkedCourse?.name ?? "lapangan"}.`,
         type: "caddy_assignment",
       });
     }
-    toast.success(caddyUserId ? "Caddy berhasil di-assign" : "Caddy assignment dihapus");
+    toast.success(caddyUserId ? "Caddy assigned successfully" : "Caddy assignment removed");
     setAssigningCaddyBookingId(null);
     refetchCourseBookings();
   };
@@ -361,16 +361,16 @@ const ClubAdminDashboard = () => {
       .from("tee_time_bookings")
       .update({ status: newStatus })
       .eq("id", bookingId);
-    if (error) { toast.error("Gagal update status"); setUpdatingBookingId(null); return; }
+    if (error) { toast.error("Failed to update status"); setUpdatingBookingId(null); return; }
 
     const messages: Record<string, string> = {
-      confirmed: `Booking tee time Anda di ${linkedCourse?.name ?? "lapangan"} telah dikonfirmasi.`,
-      declined: `Maaf, booking tee time Anda di ${linkedCourse?.name ?? "lapangan"} tidak dapat diterima.`,
-      ready: `Lapangan siap! Selamat bermain di ${linkedCourse?.name ?? "lapangan"}.`,
+      confirmed: `Your tee time booking di ${linkedCourse?.name ?? "lapangan"} has been confirmed.`,
+      declined: `Maaf, booking tee time Anda di ${linkedCourse?.name ?? "lapangan"} could not be accepted.`,
+      ready: `Course is ready! Enjoy your round di ${linkedCourse?.name ?? "lapangan"}.`,
     };
     await supabase.from("notifications").insert({
       user_id: golferId,
-      title: newStatus === "confirmed" ? "Booking Dikonfirmasi ✓" : newStatus === "declined" ? "Booking Ditolak" : "Lapangan Siap! ⛳",
+      title: newStatus === "confirmed" ? "Booking Confirmed ✓" : newStatus === "declined" ? "Booking Declined" : "Course Ready! ⛳",
       message: messages[newStatus],
       type: "booking_update",
     });
@@ -435,8 +435,8 @@ const ClubAdminDashboard = () => {
       status: "confirmed",
     });
     setSavingRangeBooking(false);
-    if (error) { toast.error("Gagal simpan booking"); return; }
-    toast.success("Booking berhasil disimpan");
+    if (error) { toast.error("Failed to save booking"); return; }
+    toast.success("Booking saved successfully");
     setShowRangeBookingForm(false);
     setRangeForm({ bay_id: "", start_time: "07:00", duration_hours: 1, notes: "", balls_bucket_count: 1 });
     refetchRangeBookings();
@@ -444,7 +444,7 @@ const ClubAdminDashboard = () => {
 
   const handleRangeBookingStatus = async (bookingId: string, status: "confirmed" | "cancelled") => {
     await supabase.from("range_bookings").update({ status }).eq("id", bookingId);
-    toast.success(status === "confirmed" ? "Booking dikonfirmasi" : "Booking dibatalkan");
+    toast.success(status === "confirmed" ? "Booking confirmed" : "Booking cancelled");
     refetchRangeBookings();
   };
 
@@ -506,7 +506,7 @@ const ClubAdminDashboard = () => {
                   .from("club_invitations")
                   .update({ status: "accepted" })
                   .eq("id", inv.id);
-                toast.success("Member diterima!");
+                toast.success("Member accepted!");
                 queryClient.invalidateQueries({ queryKey: ["club-join-requests", clubId] });
                 queryClient.invalidateQueries({ queryKey: ["club-admin-pending", clubId] });
                 queryClient.invalidateQueries({ queryKey: ["club-admin-members", clubId] });
@@ -550,15 +550,15 @@ const ClubAdminDashboard = () => {
 
   const handleRemoveMember = async (memberId: string) => {
     await supabase.from("members").delete().eq("id", memberId);
-    toast.success("Member dihapus");
+    toast.success("Member removed");
     refetchMembers();
   };
 
   const handleStaffRequest = async (staffId: string, action: "active" | "declined") => {
     const { error } = await supabase.from("club_staff").update({ status: action }).eq("id", staffId);
-    if (error) { toast.error("Gagal memperbarui request"); return; }
-    if (action === "active") toast.success("Staff request disetujui ✓");
-    else toast.success("Staff request ditolak");
+    if (error) { toast.error("Failed to update request"); return; }
+    if (action === "active") toast.success("Staff request approved ✓");
+    else toast.success("Staff request declined");
     refetchStaff();
     refetchPendingStaff();
   };
@@ -727,7 +727,7 @@ const ClubAdminDashboard = () => {
                         .from("club_invitations")
                         .update({ status: "accepted" })
                         .eq("id", req.id);
-                      toast.success("Member diterima!");
+                      toast.success("Member accepted!");
                       await Promise.all([
                         queryClient.invalidateQueries({ queryKey: ["club-join-requests", clubId] }),
                         queryClient.invalidateQueries({ queryKey: ["club-admin-members", clubId] }),
@@ -982,7 +982,7 @@ const ClubAdminDashboard = () => {
               <CollapsibleContent>
                 <div className="border-t border-border">
                   {events.length === 0 && (
-                    <p className="p-3 text-xs text-muted-foreground text-center">Belum ada event dalam tour ini</p>
+                    <p className="p-3 text-xs text-muted-foreground text-center">No events in this tour</p>
                   )}
                   {events.map((e: any) => (
                     <div key={e.id} className="flex items-center gap-2 px-3 py-2.5 border-b border-border last:border-b-0">
@@ -1113,7 +1113,7 @@ const ClubAdminDashboard = () => {
       cancelled: "bg-muted text-muted-foreground",
     };
     const statusLabel: Record<string, string> = {
-      pending: "Menunggu", confirmed: "Dikonfirmasi", ready: "Siap", declined: "Ditolak", cancelled: "Dibatalkan",
+      pending: "Pending", confirmed: "Confirmed", ready: "Ready", declined: "Declined", cancelled: "Cancelled",
     };
     const pendingBookings = courseBookings?.filter((b: any) => b.status === "pending") ?? [];
     const otherBookings   = courseBookings?.filter((b: any) => b.status !== "pending") ?? [];
@@ -1135,7 +1135,7 @@ const ClubAdminDashboard = () => {
               <p className="text-sm font-semibold truncate">{golfer?.full_name ?? "Golfer"}</p>
               <p className="text-[11px] text-muted-foreground">
                 {new Date(b.booking_date).toLocaleDateString("id-ID", { weekday: "short", day: "numeric", month: "short" })}
-                {" · "}{b.tee_time?.slice(0, 5)} · {b.players_count} pemain
+                {" · "}{b.tee_time?.slice(0, 5)} · {b.players_count} players
               </p>
               {b.total_price && <p className="text-[11px] text-primary font-medium">{formatRupiah(b.total_price)}</p>}
               {b.notes && <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-2">{b.notes}</p>}
@@ -1157,7 +1157,7 @@ const ClubAdminDashboard = () => {
                   className="flex-1 h-8 text-xs"
                   disabled={isUpdating}
                   onClick={() => handleTeeTimeStatus(b.id, "confirmed", b.user_id)}>
-                  {isUpdating ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Check className="h-3 w-3 mr-1" />Konfirmasi</>}
+                  {isUpdating ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Check className="h-3 w-3 mr-1" />Confirm</>}
                 </Button>
               </div>
             ) : (
@@ -1184,7 +1184,7 @@ const ClubAdminDashboard = () => {
                     ))}
                   </select>
                   <Button size="sm" variant="ghost" className="h-8 px-2 text-xs"
-                    onClick={() => setAssigningCaddyBookingId(null)}>Batal</Button>
+                    onClick={() => setAssigningCaddyBookingId(null)}>Cancel</Button>
                 </div>
               ) : (
                 <button
@@ -1200,11 +1200,11 @@ const ClubAdminDashboard = () => {
                 <Button size="sm" className="w-full h-8 text-xs bg-primary/10 text-primary hover:bg-primary/20"
                   disabled={isUpdating}
                   onClick={() => handleTeeTimeStatus(b.id, "ready", b.user_id)}>
-                  {isUpdating ? <Loader2 className="h-3 w-3 animate-spin" /> : "⛳ Set Lapangan Siap"}
+                  {isUpdating ? <Loader2 className="h-3 w-3 animate-spin" /> : "⛳ Set Course Ready"}
                 </Button>
               ) : (
                 <Button size="sm" className="w-full h-8 text-xs" variant="outline" disabled>
-                  ⛳ Set Lapangan Siap
+                  ⛳ Set Course Ready
                 </Button>
               )}
             </div>
@@ -1219,24 +1219,24 @@ const ClubAdminDashboard = () => {
           <div className="golf-card p-3 space-y-0.5">
             <Clock className="h-4 w-4 text-amber-500" />
             <p className="text-xl font-bold">{pendingBookings.length}</p>
-            <p className="text-[10px] text-muted-foreground">Menunggu</p>
+            <p className="text-[10px] text-muted-foreground">Pending</p>
           </div>
           <div className="golf-card p-3 space-y-0.5">
             <Check className="h-4 w-4 text-primary" />
             <p className="text-xl font-bold">{todayBookings}</p>
-            <p className="text-[10px] text-muted-foreground">Hari Ini</p>
+            <p className="text-[10px] text-muted-foreground">Today</p>
           </div>
           <div className="golf-card p-3 space-y-0.5">
             <Calendar className="h-4 w-4 text-green-500" />
             <p className="text-xl font-bold">{weekBookings}</p>
-            <p className="text-[10px] text-muted-foreground">Minggu Ini</p>
+            <p className="text-[10px] text-muted-foreground">This Week</p>
           </div>
         </div>
 
         {pendingBookings.length > 0 && (
           <>
             <p className="text-[10px] font-semibold text-amber-500 uppercase tracking-wider">
-              ● {pendingBookings.length} Booking Menunggu Konfirmasi
+              ● {pendingBookings.length} Booking Menunggu Confirm
             </p>
             {pendingBookings.map(renderCard)}
           </>
@@ -1252,7 +1252,7 @@ const ClubAdminDashboard = () => {
         {(courseBookings?.length ?? 0) === 0 && (
           <div className="golf-card p-8 text-center text-sm text-muted-foreground">
             <Calendar className="mx-auto h-8 w-8 text-muted-foreground/30 mb-2" />
-            <p>Belum ada booking tee time</p>
+            <p>No tee time bookings</p>
           </div>
         )}
       </TabsContent>
@@ -1332,7 +1332,7 @@ const ClubAdminDashboard = () => {
         {todayRangeBookings === 0 && (
           <div className="golf-card p-8 text-center text-sm text-muted-foreground">
             <Clock className="mx-auto h-8 w-8 text-muted-foreground/30 mb-2" />
-            <p>Belum ada booking</p>
+            <p>No bookings</p>
           </div>
         )}
         {rangeBookings?.map((b: any) => (
@@ -1352,7 +1352,7 @@ const ClubAdminDashboard = () => {
                 )}
               </div>
               <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${statusColor[b.status] ?? "bg-muted text-muted-foreground"}`}>
-                {b.status === "confirmed" ? "Active" : b.status === "pending" ? "Pending" : "Batal"}
+                {b.status === "confirmed" ? "Active" : b.status === "pending" ? "Pending" : "Cancel"}
               </span>
             </div>
             {b.status === "pending" && (
@@ -1364,7 +1364,7 @@ const ClubAdminDashboard = () => {
                 </Button>
                 <Button size="sm" className="flex-1 h-7 text-xs"
                   onClick={() => handleRangeBookingStatus(b.id, "confirmed")}>
-                  Konfirmasi
+                  Confirm
                 </Button>
               </div>
             )}
@@ -1378,7 +1378,7 @@ const ClubAdminDashboard = () => {
             onClick={() => setShowRangeBookingForm(false)}>
             <div className="bg-card border border-border rounded-t-2xl w-full max-w-lg p-5 space-y-3"
               onClick={(e) => e.stopPropagation()}>
-              <p className="text-sm font-semibold">Tambah Booking</p>
+              <p className="text-sm font-semibold">Add Booking</p>
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-[10px] text-muted-foreground uppercase tracking-wider">Bay</label>
@@ -1387,7 +1387,7 @@ const ClubAdminDashboard = () => {
                     value={rangeForm.bay_id}
                     onChange={(e) => setRangeForm(f => ({ ...f, bay_id: e.target.value }))}
                   >
-                    <option value="">Pilih bay</option>
+                    <option value="">Select bay</option>
                     {rangeBays?.filter((b: any) => b.is_active).map((bay: any) => (
                       <option key={bay.id} value={bay.id}>
                         Bay {bay.bay_number} {bay.bay_type ? `(${bay.bay_type})` : ""} · {formatRupiah(bay.price_per_hour ?? 0)}/jam
@@ -1432,9 +1432,9 @@ const ClubAdminDashboard = () => {
                 className="h-9 text-sm"
               />
               <div className="flex gap-2">
-                <Button variant="outline" className="flex-1" onClick={() => setShowRangeBookingForm(false)}>Batal</Button>
+                <Button variant="outline" className="flex-1" onClick={() => setShowRangeBookingForm(false)}>Cancel</Button>
                 <Button className="flex-1" disabled={!rangeForm.bay_id || savingRangeBooking} onClick={handleSaveRangeBooking}>
-                  {savingRangeBooking ? "Saving..." : "Simpan Booking"}
+                  {savingRangeBooking ? "Saving..." : "Save Booking"}
                 </Button>
               </div>
             </div>
@@ -1559,7 +1559,7 @@ const ClubAdminDashboard = () => {
           </CardHeader>
           <CardContent className="space-y-3">
             {admins.length === 0 ? (
-              <p className="text-xs text-muted-foreground">Belum ada admin.</p>
+              <p className="text-xs text-muted-foreground">No admins yet.</p>
             ) : (
               <div className="space-y-2">
                 {admins.map((a: any) => (
@@ -1649,7 +1649,7 @@ const ClubAdminDashboard = () => {
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel>Batal</AlertDialogCancel>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
                     <AlertDialogAction onClick={handleTransferOwnership}>Ya, Transfer</AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
@@ -1683,7 +1683,7 @@ const ClubAdminDashboard = () => {
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>Batal</AlertDialogCancel>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
                   <AlertDialogAction onClick={handleArchiveClub} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Ya, Archive</AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>

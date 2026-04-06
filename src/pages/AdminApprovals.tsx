@@ -160,7 +160,7 @@ const AdminApprovals = () => {
             </div>
             <div>
               <p className="text-2xl font-bold tabular-nums">{pendingCount}</p>
-              <p className="text-xs text-muted-foreground">Menunggu</p>
+              <p className="text-xs text-muted-foreground">Pending</p>
             </div>
           </CardContent>
         </Card>
@@ -287,7 +287,7 @@ const AdminApprovals = () => {
                     <TableCell className="text-muted-foreground text-sm">{a.email}</TableCell>
                     <TableCell>
                       <Badge variant={a.status === "approved" ? "default" : "destructive"} className={a.status === "approved" ? "bg-emerald-600" : ""}>
-                        {a.status === "approved" ? "Disetujui" : "Rejected"}
+                        {a.status === "approved" ? "Approved" : "Rejected"}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">

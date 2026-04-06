@@ -60,12 +60,12 @@ const ResetPassword = () => {
               className="h-12 rounded-xl border-border/50 bg-card/80 backdrop-blur" minLength={6}
             />
             <Input
-              type="password" placeholder="Konfirmasi Password" value={confirm}
+              type="password" placeholder="Confirm Password" value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
               className="h-12 rounded-xl border-border/50 bg-card/80 backdrop-blur"
             />
             <Button type="submit" className="h-12 w-full rounded-xl text-base font-semibold golf-glow" disabled={loading}>
-              {loading ? "Saving…" : "Simpan Password Baru"}
+              {loading ? "Saving…" : "Save New Password"}
             </Button>
           </form>
         ) : (

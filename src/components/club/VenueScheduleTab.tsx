@@ -321,7 +321,7 @@ const VenueScheduleTab = ({ clubId }: { clubId: string }) => {
                               }}
                               className="flex-1 h-8 rounded-lg border border-border bg-background px-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
                             >
-                              <option value="">— Pilih caddy —</option>
+                              <option value="">— Select caddy —</option>
                               {courseCaddies.map((c: any) => (
                                 <option key={c.id} value={c.name}>
                                   {c.name}{c.caddy_number ? ` (#${c.caddy_number})` : ""}

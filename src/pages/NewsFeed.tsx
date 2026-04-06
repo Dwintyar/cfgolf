@@ -171,7 +171,7 @@ const NewsFeed = ({ embedded = false }: { embedded?: boolean }) => {
   };
 
   const handleDeletePost = async (postId: string) => {
-    if (!window.confirm("Hapus postingan ini?")) return;
+    if (!window.confirm("Delete this post?")) return;
     const { error } = await supabase.from("posts").delete().eq("id", postId).eq("author_id", userId!);
     if (error) { toast.error("Gagal menghapus postingan"); return; }
     toast.success("Post deleted");
@@ -544,7 +544,7 @@ const NewsFeed = ({ embedded = false }: { embedded?: boolean }) => {
                     className="w-full text-left text-xs text-red-400 px-2 py-1 hover:bg-muted rounded"
                     onClick={() => { setTaggedCourseId(null); setTaggedCourseName(null); setShowCourseSheet(false); }}
                   >
-                    ✕ Hapus tag course
+                    ✕ Remove tag course
                   </button>
                 )}
                 {courses?.map((c: any) => (
