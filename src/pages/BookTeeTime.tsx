@@ -10,6 +10,7 @@ import venueImg from "@/assets/golf-venue.jpg";
 import { toast } from "sonner";
 import { useTier } from "@/hooks/use-tier";
 import UpgradeDialog from "@/components/UpgradeDialog";
+import { useFeatureFlags } from "@/hooks/use-feature-flags";
 
 const BookTeeTime = () => {
   const navigate = useNavigate();
@@ -17,6 +18,7 @@ const BookTeeTime = () => {
   const [userId, setUserId] = useState<string | null>(null);
   const [showUpgrade, setShowUpgrade] = useState(false);
   const { hasFeature } = useTier(userId);
+  const { flags } = useFeatureFlags();
   const [selectedDate, setSelectedDate] = useState(() => {
     const d = new Date();
     d.setDate(d.getDate() + 1);
@@ -144,6 +146,23 @@ const BookTeeTime = () => {
     setConfirmed(true);
     toast.success("Booking berhasil dikirim!");
   };
+
+  if (!flags.venue_booking) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center p-6 text-center">
+        <div className="animate-fade-in space-y-4">
+          <div className="text-5xl">⛳</div>
+          <h1 className="font-display text-2xl font-bold">Tee Time Booking</h1>
+          <p className="text-sm text-muted-foreground max-w-xs mx-auto leading-relaxed">
+            Online tee time booking is coming soon. Please contact the venue directly to book your tee time.
+          </p>
+          <Button variant="outline" onClick={() => navigate(-1)}>
+            ← Back to Course
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   if (confirmed) {
     return (
