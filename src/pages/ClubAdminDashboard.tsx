@@ -20,7 +20,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDeskripsi, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger
 } from "@/components/ui/alert-dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
@@ -1644,9 +1644,9 @@ const ClubAdminDashboard = () => {
                 <AlertDialogContent>
                   <AlertDialogHeader>
                     <AlertDialogTitle>Transfer Ownership</AlertDialogTitle>
-                    <AlertDialogDeskripsi>
+                    <AlertDialogDescription>
                       Anda akan menyerahkan kepemilikan klub kepada <strong>{getProfileName(transferTargetId)}</strong>. Anda akan menjadi Admin biasa. Tindakan ini tidak dapat dibatalkan.
-                    </AlertDialogDeskripsi>
+                    </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Batal</AlertDialogCancel>
@@ -1678,9 +1678,9 @@ const ClubAdminDashboard = () => {
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>Archive Club</AlertDialogTitle>
-                  <AlertDialogDeskripsi>
+                  <AlertDialogDescription>
                     Club akan diarsipkan dan tidak bisa menerima member baru. Data tetap tersimpan. Lanjutkan?
-                  </AlertDialogDeskripsi>
+                  </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Batal</AlertDialogCancel>
