@@ -1,5 +1,4 @@
-import GBLogo from "@/assets/logo-gb.svg";
-import GBLogoDark from "@/assets/logo-gb-dark.svg";
+import GBLogoImg from "@/components/GBLogoImg";
 import { ArrowLeft, Globe, Mail, Camera, UserPlus, UserCheck, MessageCircle, Crown, Check, X, BarChart3, TrendingDown, Trophy, MapPin, Settings, Clock, Share2, Shield, CalendarDays, Loader2, ClipboardList , FileText} from "lucide-react";
 import CommitteeRoleBadges from "@/components/CommitteeRoleBadges";
 import { useNavigate, useParams } from "react-router-dom";
@@ -1198,7 +1197,7 @@ const GolferProfile = () => {
               </button>
             ) : (
               <div className="flex items-center gap-2 px-4 pt-3 pb-0">
-                <img src={document.documentElement.classList.contains("light") ? GBLogo : GBLogoDark} alt="GolfBuana" className="h-8 w-8 object-contain shrink-0" />
+                <GBLogoImg alt="GolfBuana" className="h-8 w-8 object-contain shrink-0" />
                 <h1 className="text-xl font-bold">Profile</h1>
               </div>
             )}

@@ -1,3 +1,4 @@
+import GBLogoImg from "@/components/GBLogoImg";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,8 +12,6 @@ import {
   Building2, Search, Flag, ShieldCheck,
   ChevronDown, LogOut, TrendingUp, User
 } from "lucide-react";
-import GBLogoDark from "@/assets/logo-gb-dark.svg";
-import GBLogo from "@/assets/logo-gb.svg";
 
 const useWindowWidth = () => {
   const [width, setWidth] = useState(
@@ -279,7 +278,7 @@ const DesktopLayout = ({ children, sidebarRightHidden = false, noPadding = false
             onClick={() => navigate("/news")}
             className="flex items-center gap-2 hover:opacity-80 transition-opacity"
           >
-            <img src={document.documentElement.classList.contains("light") ? GBLogo : GBLogoDark} alt="GolfBuana" className="h-9 w-9 object-contain" />
+            <GBLogoImg alt="GolfBuana" className="h-9 w-9 object-contain" />
           </button>
 
           {/* Search bar di samping logo */}

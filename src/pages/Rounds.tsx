@@ -1,5 +1,4 @@
-import GBLogo from "@/assets/logo-gb.svg";
-import GBLogoDark from "@/assets/logo-gb-dark.svg";
+import GBLogoImg from "@/components/GBLogoImg";
 import { useState } from "react";
 import TourList from "./TourList";
 
@@ -10,7 +9,7 @@ const Rounds = () => {
       <div className="shrink-0 bg-card border-b border-border/50">
         <div className="flex px-4 pt-3 pb-0 items-center justify-between">
           <div className="flex items-center gap-2">
-            <img src={document.documentElement.classList.contains("light") ? GBLogo : GBLogoDark} alt="GolfBuana" className="h-8 w-8 object-contain shrink-0" />
+            <GBLogoImg alt="GolfBuana" className="h-8 w-8 object-contain shrink-0" />
             <h1 className="text-xl font-bold text-foreground">Rounds</h1>
           </div>
         </div>

@@ -1,7 +1,6 @@
+import GBLogoImg from "@/components/GBLogoImg";
 import { useNavigate } from "react-router-dom";
 import { Settings, UserCircle, MessageCircle, Bell } from "lucide-react";
-import GBLogoDark from "@/assets/logo-gb-dark.svg";
-import GBLogo from "@/assets/logo-gb.svg";
 import { usePendingApprovals } from "@/hooks/use-pending-approvals";
 
 interface AppHeaderProps {
@@ -17,7 +16,7 @@ const AppHeader = ({ title, icon, rightContent }: AppHeaderProps) => {
   return (
     <div className="flex items-center justify-between px-4 py-3 lg:hidden">
       <div className="flex items-center gap-2.5">
-        <img src={document.documentElement.classList.contains("light") ? GBLogo : GBLogoDark} alt="GolfBuana" className="h-9 w-9 object-contain" />
+        <GBLogoImg alt="GolfBuana" className="h-9 w-9 object-contain" />
         <h1 className="font-display text-xl font-bold leading-none">{title}</h1>
         {icon}
       </div>
