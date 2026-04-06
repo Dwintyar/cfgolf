@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { CalendarDays, Users, UserCheck, Car } from "lucide-react";
+import { useFeatureFlags } from "@/hooks/use-feature-flags";
 
 const Venue = () => {
   const navigate = useNavigate();
@@ -23,6 +24,7 @@ const Venue = () => {
   const fromClubs = searchParams.get("from") === "clubs";
   const fromClubId = searchParams.get("clubId");
   const { id } = useParams<{ id: string }>();
+  const { flags } = useFeatureFlags();
   const [selectedTime, setSelectedTime] = useState("07:00");
   const [distUnit, setDistUnit] = useState<"yd" | "m">("m");
   const [showBooking, setShowBooking] = useState(false);
@@ -276,31 +278,52 @@ const Venue = () => {
 
             {/* Tee time selection */}
             <div className="mt-6">
-              <p className="text-sm font-semibold mb-3">Pilih waktu tee-off</p>
-              <div className="grid grid-cols-3 gap-2">
-                {teeTimes.map((time) => (
-                  <button
-                    key={time}
-                    onClick={() => setSelectedTime(time)}
-                    className={`rounded-xl py-2.5 text-sm font-medium transition-all ${
-                      selectedTime === time
-                        ? "bg-primary text-primary-foreground golf-glow"
-                        : "golf-card hover:border-primary/30"
-                    }`}
-                  >
-                    {time}
-                  </button>
-                ))}
-              </div>
+              {flags.tee_time_picker ? (
+                <>
+                  <p className="text-sm font-semibold mb-3">Pilih waktu tee-off</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {teeTimes.map((time) => (
+                      <button
+                        key={time}
+                        onClick={() => setSelectedTime(time)}
+                        className={`rounded-xl py-2.5 text-sm font-medium transition-all ${
+                          selectedTime === time
+                            ? "bg-primary text-primary-foreground golf-glow"
+                            : "golf-card hover:border-primary/30"
+                        }`}
+                      >
+                        {time}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <div className="bg-muted/50 rounded-xl p-4 text-center">
+                  <p className="text-xs text-muted-foreground">
+                    🕐 Jadwal tee time akan tersedia segera
+                  </p>
+                </div>
+              )}
 
               {/* Book This Course button */}
-              <Button
-                className="w-full mt-4 h-12 text-base font-bold gap-2"
-                onClick={() => setShowBooking(true)}
-              >
-                <CalendarDays className="h-5 w-5" />
-                Book This Course
-              </Button>
+              {flags.venue_booking ? (
+                <Button
+                  className="w-full mt-4 h-12 text-base font-bold gap-2"
+                  onClick={() => setShowBooking(true)}
+                >
+                  <CalendarDays className="h-5 w-5" />
+                  Book This Course
+                </Button>
+              ) : (
+                <Button
+                  className="w-full mt-4 h-12 text-base font-bold gap-2"
+                  variant="outline"
+                  disabled
+                >
+                  <CalendarDays className="h-5 w-5" />
+                  Booking — Segera Hadir
+                </Button>
+              )}
             </div>
 
             {/* Hole Details */}

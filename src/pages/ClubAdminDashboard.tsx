@@ -30,11 +30,13 @@ import CreateTourDialog from "@/components/tour/CreateTourDialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { Pin, MoreVertical } from "lucide-react";
+import { useFeatureFlags } from "@/hooks/use-feature-flags";
 
 const ClubAdminDashboard = () => {
   const { clubId: paramClubId } = useParams<{ clubId: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { flags } = useFeatureFlags();
   const [userId, setUserId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("members");
   const [memberSearch, setMemberSearch] = useState("");
@@ -1143,20 +1145,26 @@ const ClubAdminDashboard = () => {
             </span>
           </div>
           {b.status === "pending" && (
-            <div className="flex gap-2 pt-1">
-              <Button size="sm" variant="outline"
-                className="flex-1 h-8 text-xs border-red-400/40 text-red-400 hover:bg-red-400/10"
-                disabled={isUpdating}
-                onClick={() => handleTeeTimeStatus(b.id, "declined", b.user_id)}>
-                {isUpdating ? <Loader2 className="h-3 w-3 animate-spin" /> : <><X className="h-3 w-3 mr-1" />Reject</>}
-              </Button>
-              <Button size="sm"
-                className="flex-1 h-8 text-xs"
-                disabled={isUpdating}
-                onClick={() => handleTeeTimeStatus(b.id, "confirmed", b.user_id)}>
-                {isUpdating ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Check className="h-3 w-3 mr-1" />Konfirmasi</>}
-              </Button>
-            </div>
+            flags.venue_schedule_admin ? (
+              <div className="flex gap-2 pt-1">
+                <Button size="sm" variant="outline"
+                  className="flex-1 h-8 text-xs border-red-400/40 text-red-400 hover:bg-red-400/10"
+                  disabled={isUpdating}
+                  onClick={() => handleTeeTimeStatus(b.id, "declined", b.user_id)}>
+                  {isUpdating ? <Loader2 className="h-3 w-3 animate-spin" /> : <><X className="h-3 w-3 mr-1" />Reject</>}
+                </Button>
+                <Button size="sm"
+                  className="flex-1 h-8 text-xs"
+                  disabled={isUpdating}
+                  onClick={() => handleTeeTimeStatus(b.id, "confirmed", b.user_id)}>
+                  {isUpdating ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Check className="h-3 w-3 mr-1" />Konfirmasi</>}
+                </Button>
+              </div>
+            ) : (
+              <div className="pt-1 bg-muted/40 rounded-lg px-3 py-2 text-center">
+                <p className="text-[10px] text-muted-foreground">Fitur konfirmasi booking belum aktif</p>
+              </div>
+            )
           )}
           {b.status === "confirmed" && (
             <div className="space-y-2 pt-1">
@@ -1188,11 +1196,17 @@ const ClubAdminDashboard = () => {
                     : "Assign caddy →"}
                 </button>
               )}
-              <Button size="sm" className="w-full h-8 text-xs bg-primary/10 text-primary hover:bg-primary/20"
-                disabled={isUpdating}
-                onClick={() => handleTeeTimeStatus(b.id, "ready", b.user_id)}>
-                {isUpdating ? <Loader2 className="h-3 w-3 animate-spin" /> : "⛳ Set Lapangan Siap"}
-              </Button>
+              {flags.venue_schedule_admin ? (
+                <Button size="sm" className="w-full h-8 text-xs bg-primary/10 text-primary hover:bg-primary/20"
+                  disabled={isUpdating}
+                  onClick={() => handleTeeTimeStatus(b.id, "ready", b.user_id)}>
+                  {isUpdating ? <Loader2 className="h-3 w-3 animate-spin" /> : "⛳ Set Lapangan Siap"}
+                </Button>
+              ) : (
+                <Button size="sm" className="w-full h-8 text-xs" variant="outline" disabled>
+                  ⛳ Set Lapangan Siap
+                </Button>
+              )}
             </div>
           )}
         </div>

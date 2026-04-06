@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Calendar, Users, UserCheck, ChevronDown, ChevronUp, Save, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { useFeatureFlags } from "@/hooks/use-feature-flags";
 const InvoiceModal = lazy(() => import("@/components/invoice/InvoiceModal"));
 import type { InvoiceData } from "@/components/invoice/InvoiceModal";
 
@@ -32,6 +33,7 @@ function parseNotesPairs(notes: string | null): Record<string, string> {
 const VenueScheduleTab = ({ clubId }: { clubId: string }) => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { flags } = useFeatureFlags();
   const [scheduleTab, setScheduleTab] = useState<"upcoming" | "completed">("upcoming");
   const [expandedAssign, setExpandedAssign] = useState<string | null>(null);
   const [invoiceData, setInvoiceData] = useState<InvoiceData | null>(null);
@@ -276,24 +278,26 @@ const VenueScheduleTab = ({ clubId }: { clubId: string }) => {
                       onClick={() => handleBookingAction(booking.id, "ready")}>
                       🏁 Set Ready
                     </Button>
-                    <Button size="sm" variant="outline" className="h-8 w-8 p-0 shrink-0"
-                      title="Invoice"
-                      onClick={() => setInvoiceData({
-                        type: "venue",
-                        bookingId: booking.id,
-                        venueName: booking.clubs?.name ?? booking.profiles?.full_name,
-                        courseName: (booking.courses as any)?.name,
-                        organizerClub: booking.clubs?.name,
-                        requesterName: booking.profiles?.full_name,
-                        bookingNotes: booking.notes,
-                        assignedCaddies: booking.assigned_caddies,
-                        assignedCarts: booking.assigned_cart_numbers,
-                        greenFeeAgreed: booking.green_fee_agreed,
-                        status: booking.status,
-                        createdAt: booking.created_at,
-                      })}>
-                      <FileText className="h-3.5 w-3.5" />
-                    </Button>
+                    {flags.invoice_download && (
+                      <Button size="sm" variant="outline" className="h-8 w-8 p-0 shrink-0"
+                        title="Invoice"
+                        onClick={() => setInvoiceData({
+                          type: "venue",
+                          bookingId: booking.id,
+                          venueName: booking.clubs?.name ?? booking.profiles?.full_name,
+                          courseName: (booking.courses as any)?.name,
+                          organizerClub: booking.clubs?.name,
+                          requesterName: booking.profiles?.full_name,
+                          bookingNotes: booking.notes,
+                          assignedCaddies: booking.assigned_caddies,
+                          assignedCarts: booking.assigned_cart_numbers,
+                          greenFeeAgreed: booking.green_fee_agreed,
+                          status: booking.status,
+                          createdAt: booking.created_at,
+                        })}>
+                        <FileText className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
                   </div>
                 </div>
 

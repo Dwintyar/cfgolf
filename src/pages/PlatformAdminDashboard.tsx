@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Users, Building2, Calendar, MapPin, BarChart3, Search, Shield, Eye, Trash2,
-  ChevronRight, Plus, CheckCircle, Filter, TrendingUp, Trophy, Flag
+  ChevronRight, Plus, CheckCircle, Filter, TrendingUp, Trophy, Flag, ToggleLeft, ToggleRight
 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -29,6 +30,113 @@ const StatCard = ({ icon: Icon, label, value, color = "text-primary" }: {
     <p className="text-xs text-muted-foreground">{label}</p>
   </div>
 );
+
+const FeatureFlagsTab = () => {
+  const queryClient = useQueryClient();
+
+  const { data: flags, isLoading } = useQuery({
+    queryKey: ["feature_flags"],
+    queryFn: async () => {
+      const { data } = await supabase.from("feature_flags").select("*").order("key");
+      return data ?? [];
+    },
+  });
+
+  const toggle = useMutation({
+    mutationFn: async ({ key, enabled }: { key: string; enabled: boolean }) => {
+      const { error } = await supabase
+        .from("feature_flags")
+        .update({ enabled, updated_by: "platform_admin" })
+        .eq("key", key);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["feature_flags"] });
+      toast.success("Feature flag updated");
+    },
+    onError: () => toast.error("Gagal update feature flag"),
+  });
+
+  const groupColors: Record<string, string> = {
+    venue_booking: "text-orange-400",
+    caddy_assignment: "text-blue-400",
+    staff_join_request: "text-purple-400",
+    invoice_download: "text-green-400",
+    tee_time_picker: "text-cyan-400",
+    venue_schedule_admin: "text-rose-400",
+  };
+
+  if (isLoading) return <div className="text-center py-8 text-muted-foreground text-sm">Loading...</div>;
+
+  const activeCount = (flags ?? []).filter((f: any) => f.enabled).length;
+  const totalCount = (flags ?? []).length;
+
+  return (
+    <div className="space-y-4">
+      {/* Summary */}
+      <div className="golf-card p-4 flex items-center justify-between">
+        <div>
+          <p className="text-xs text-muted-foreground">Fitur Aktif</p>
+          <p className="text-2xl font-bold">{activeCount} <span className="text-sm font-normal text-muted-foreground">/ {totalCount}</span></p>
+        </div>
+        <div className={`h-12 w-12 rounded-full flex items-center justify-center ${activeCount === 0 ? "bg-muted" : "bg-primary/10"}`}>
+          <ToggleRight className={`h-6 w-6 ${activeCount === 0 ? "text-muted-foreground" : "text-primary"}`} />
+        </div>
+      </div>
+
+      {/* Info banner */}
+      <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3">
+        <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+          🚦 Platform saat ini dalam mode <strong>Logbook</strong>
+        </p>
+        <p className="text-xs text-muted-foreground mt-1">
+          Aktifkan fitur satu per satu setelah caddy dan venue siap bergabung. Perubahan langsung berlaku tanpa redeploy.
+        </p>
+      </div>
+
+      {/* Flag list */}
+      <div className="space-y-2">
+        {(flags ?? []).map((flag: any) => (
+          <div key={flag.key} className="golf-card p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className={`text-sm font-semibold ${groupColors[flag.key] ?? "text-foreground"}`}>
+                    {flag.label}
+                  </span>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                    flag.enabled
+                      ? "bg-green-500/15 text-green-500"
+                      : "bg-muted text-muted-foreground"
+                  }`}>
+                    {flag.enabled ? "ON" : "OFF"}
+                  </span>
+                </div>
+                {flag.description && (
+                  <p className="text-xs text-muted-foreground mt-0.5 truncate">{flag.description}</p>
+                )}
+                {flag.updated_at && (
+                  <p className="text-[10px] text-muted-foreground/60 mt-1">
+                    Diupdate: {new Date(flag.updated_at).toLocaleString("id-ID")}
+                  </p>
+                )}
+              </div>
+              <Switch
+                checked={flag.enabled}
+                onCheckedChange={(checked) => toggle.mutate({ key: flag.key, enabled: checked })}
+                disabled={toggle.isPending}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <p className="text-[10px] text-center text-muted-foreground pb-4">
+        Hanya platform admin yang dapat mengakses halaman ini
+      </p>
+    </div>
+  );
+};
 
 const PlatformAdminDashboard = () => {
   const navigate = useNavigate();
@@ -338,6 +446,7 @@ const PlatformAdminDashboard = () => {
             <TabsTrigger value="events" className="flex-1 text-xs">Event</TabsTrigger>
             <TabsTrigger value="venues" className="flex-1 text-xs">Courses</TabsTrigger>
             <TabsTrigger value="reports" className="flex-1 text-xs">Reports</TabsTrigger>
+            <TabsTrigger value="features" className="flex-1 text-xs">Features</TabsTrigger>
             <TabsTrigger value="claims" className="flex-1 text-xs relative">
               Claims
               {pendingClaimsCount > 0 && (
@@ -630,6 +739,11 @@ const PlatformAdminDashboard = () => {
                 <div className="flex justify-between"><span className="text-muted-foreground">Total Venue</span><span className="font-bold">{stats?.totalVenues}</span></div>
               </div>
             </div>
+          </TabsContent>
+
+          {/* ── FEATURES TAB ── */}
+          <TabsContent value="features" className="space-y-3 pt-2">
+            <FeatureFlagsTab />
           </TabsContent>
 
           <TabsContent value="claims" className="space-y-3 pt-2">

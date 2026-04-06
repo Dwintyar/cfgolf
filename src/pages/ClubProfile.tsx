@@ -19,6 +19,7 @@ import VenueRoundsTab from "@/components/tour/VenueRoundsTab";
 import VenueScheduleTab from "@/components/club/VenueScheduleTab";
 import InviteMemberDialog from "@/components/InviteMemberDialog";
 import VenueJoinDialog from "@/components/club/VenueJoinDialog";
+import { useFeatureFlags } from "@/hooks/use-feature-flags";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -51,6 +52,7 @@ const ClubProfile = ({ embedded = false, clubId: propClubId, onBack, onNavigateT
   const params = useParams<{ id: string }>();
   const id = propClubId ?? params.id;
   const isEmbeddedUrl = typeof window !== "undefined" && new URLSearchParams(window.location.search).has("embedded");
+  const { flags } = useFeatureFlags();
   const [search, setSearch] = useState("");
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isOwner, setIsOwner] = useState(false);
@@ -425,9 +427,15 @@ const ClubProfile = ({ embedded = false, clubId: propClubId, onBack, onNavigateT
                   </Badge>
                 )
               ) : (
-                <Button size="sm" onClick={() => setShowVenueJoin(true)}>
-                  <UserPlus className="h-3.5 w-3.5 mr-1.5" /> Join as Staff
-                </Button>
+                flags.staff_join_request ? (
+                  <Button size="sm" onClick={() => setShowVenueJoin(true)}>
+                    <UserPlus className="h-3.5 w-3.5 mr-1.5" /> Join as Staff
+                  </Button>
+                ) : (
+                  <Button size="sm" variant="outline" disabled>
+                    <UserPlus className="h-3.5 w-3.5 mr-1.5" /> Segera Hadir
+                  </Button>
+                )
               )
             ) : (
             hasPendingRequest || joining ? (
