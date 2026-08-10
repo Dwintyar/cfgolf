@@ -383,11 +383,17 @@ const CourseAdminDashboard = () => {
         if (error) throw error;
         return data;
       } else {
-        const { error } = await supabase
+        // .select() matters: an UPDATE blocked by RLS returns no error, only
+        // zero rows, and would otherwise be reported to the user as saved.
+        const { data, error } = await supabase
           .from("courses")
           .update(payload)
-          .eq("id", courseId!);
+          .eq("id", courseId!)
+          .select("id");
         if (error) throw error;
+        if (!data || data.length === 0) {
+          throw new Error("Nothing was saved — you may not have permission to edit this course.");
+        }
         return { id: courseId };
       }
     },
@@ -561,13 +567,20 @@ const CourseAdminDashboard = () => {
     if (!courseId || !teeForm.tee_name.trim()) return;
     setSavingTee(true);
     if (editingTeeId) {
-      const { error } = await supabase.from("course_tees").update({
+      const { data, error } = await supabase.from("course_tees").update({
         tee_name: teeForm.tee_name.trim(),
         color: teeForm.color,
         rating: teeForm.rating,
         slope: teeForm.slope,
-      }).eq("id", editingTeeId);
+      }).eq("id", editingTeeId).select("id");
       if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); }
+      else if (!data || data.length === 0) {
+        toast({
+          title: "Not saved",
+          description: "You may not have permission to edit this tee.",
+          variant: "destructive",
+        });
+      }
       else { toast({ title: "Tee updated!" }); }
     } else {
       const { error } = await supabase.from("course_tees").insert({

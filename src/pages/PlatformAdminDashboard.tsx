@@ -138,6 +138,41 @@ const FeatureFlagsTab = () => {
   );
 };
 
+/**
+ * Reassign every row belonging to `oldId` over to `newId` across the tables
+ * that reference a player.
+ *
+ * Supabase resolves with `{ error }` rather than throwing, so a bare
+ * Promise.all would swallow failures completely — and an RLS-blocked UPDATE
+ * does not even set `error`, it just affects zero rows. Both are checked here
+ * so a half-finished merge surfaces instead of silently splitting a player's
+ * history across two profiles.
+ */
+async function reassignPlayerData(
+  oldId: string,
+  newId: string,
+): Promise<{ ok: boolean; failed: string[] }> {
+  const moves: { table: string; column: "player_id" | "user_id" }[] = [
+    { table: "contestants", column: "player_id" },
+    { table: "tour_players", column: "player_id" },
+    { table: "handicap_history", column: "player_id" },
+    { table: "scorecards", column: "player_id" },
+    { table: "members", column: "user_id" },
+    { table: "round_players", column: "user_id" },
+  ];
+
+  const failed: string[] = [];
+
+  for (const { table, column } of moves) {
+    const { error } = await (supabase.from(table as never) as any)
+      .update({ [column]: newId })
+      .eq(column, oldId);
+    if (error) failed.push(`${table} (${error.message})`);
+  }
+
+  return { ok: failed.length === 0, failed };
+}
+
 const PlatformAdminDashboard = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -184,17 +219,13 @@ const PlatformAdminDashboard = () => {
       // Run merge: move all data from target to claimant
       const oldId = claim.target_profile_id;
       const newId = claim.claimant_id;
-      await Promise.all([
-        supabase.from("contestants").update({ player_id: newId }).eq("player_id", oldId),
-        supabase.from("tour_players").update({ player_id: newId }).eq("player_id", oldId),
-        supabase.from("handicap_history").update({ player_id: newId }).eq("player_id", oldId),
-        supabase.from("scorecards").update({ player_id: newId }).eq("player_id", oldId),
-        supabase.from("members").update({ user_id: newId }).eq("user_id", oldId),
-        supabase.from("round_players").update({ user_id: newId }).eq("user_id", oldId),
-      ]);
+      const merge = await reassignPlayerData(oldId, newId);
+      if (!merge.ok) {
+        throw new Error(`Merge incomplete — these tables did not move: ${merge.failed.join(", ")}`);
+      }
       // Update claim status
       await supabase.from("profile_claim_requests")
-        .update({ status: "approved", admin_note: "Data turnamen berhasil digabung" })
+        .update({ status: "approved", admin_note: "Tournament data merged successfully" })
         .eq("id", claim.id);
       // Notify claimant
       await supabase.from("notifications").insert({
@@ -394,15 +425,14 @@ const PlatformAdminDashboard = () => {
     if (!mergeTarget || merging) return;
     setMerging(true);
     try {
-      const updates = [
-        supabase.from("contestants").update({ player_id: mergeTarget.id }).eq("player_id", oldProfileId),
-        supabase.from("tour_players").update({ player_id: mergeTarget.id }).eq("player_id", oldProfileId),
-        supabase.from("handicap_history").update({ player_id: mergeTarget.id }).eq("player_id", oldProfileId),
-        supabase.from("scorecards").update({ player_id: mergeTarget.id }).eq("player_id", oldProfileId),
-        supabase.from("members").update({ user_id: mergeTarget.id }).eq("user_id", oldProfileId),
-        supabase.from("round_players").update({ user_id: mergeTarget.id }).eq("user_id", oldProfileId),
-      ];
-      await Promise.all(updates);
+      const merge = await reassignPlayerData(oldProfileId, mergeTarget.id);
+      // The old profile is deleted below. Deleting it while rows still point at
+      // it would orphan that data permanently, so bail out before the delete.
+      if (!merge.ok) {
+        throw new Error(
+          `Merge aborted before deleting the old profile — these tables did not move: ${merge.failed.join(", ")}`
+        );
+      }
       await supabase.from("profiles").delete().eq("id", oldProfileId);
       toast.success(`Profile "${oldName}" successfully merged to "${mergeTarget.full_name}"`);
       setShowMergeDialog(false);
