@@ -10,6 +10,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { notifyUser } from "@/lib/notify";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 type BuddyTab = "suggestions" | "requests" | "buddies";
 
@@ -44,6 +48,7 @@ const Play = () => {
   const [buddies, setBuddies] = useState<(BuddyConnection & { profile: Profile })[]>([]);
   const [sentRequests, setSentRequests] = useState<Set<string>>(new Set());
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [cancelTarget, setCancelTarget] = useState<Profile | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -173,6 +178,44 @@ const Play = () => {
       toast({ title: "Buddy request sent!" });
     }
     setActionLoading(null);
+  };
+
+  const cancelRequest = async () => {
+    if (!cancelTarget || !currentUserId) return;
+    const target = cancelTarget;
+    setCancelTarget(null);
+    setActionLoading(target.id);
+
+    const { error } = await supabase
+      .from("buddy_connections")
+      .delete()
+      .eq("requester_id", currentUserId)
+      .eq("addressee_id", target.id)
+      .eq("status", "pending");
+
+    if (error) {
+      toast({ title: "Failed", description: error.message, variant: "destructive" });
+      setActionLoading(null);
+      return;
+    }
+
+    // Drop the pending notification so the other golfer does not act on a
+    // request that no longer exists. Already-delivered push cannot be recalled.
+    await supabase
+      .from("notifications")
+      .delete()
+      .eq("user_id", target.id)
+      .eq("type", "buddy")
+      .eq("is_read", false)
+      .filter("metadata->>requester_id", "eq", currentUserId);
+
+    setSentRequests((prev) => {
+      const next = new Set(prev);
+      next.delete(target.id);
+      return next;
+    });
+    setActionLoading(null);
+    toast({ title: "Buddy request cancelled" });
   };
 
   const acceptRequest = async (connectionId: string) => {
@@ -404,8 +447,8 @@ const Play = () => {
                       <Button
                         size="sm"
                         variant={isSent ? "outline" : "default"}
-                        disabled={isSent || actionLoading === p.id}
-                        onClick={() => sendRequest(p.id)}
+                        disabled={actionLoading === p.id}
+                        onClick={() => (isSent ? setCancelTarget(p) : sendRequest(p.id))}
                         className="h-9 rounded-lg text-xs font-bold shrink-0"
                       >
                         {isSent ? "Requested" : (
@@ -548,6 +591,27 @@ const Play = () => {
 
 
     </div>
+
+    <AlertDialog open={!!cancelTarget} onOpenChange={(v) => { if (!v) setCancelTarget(null); }}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Cancel buddy request?</AlertDialogTitle>
+          <AlertDialogDescription>
+            {cancelTarget?.full_name ?? "This golfer"} will no longer see your request.
+            You can send a new one at any time.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Keep request</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={cancelRequest}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            Cancel request
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
     </DesktopLayout>
   );
 };

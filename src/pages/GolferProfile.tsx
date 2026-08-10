@@ -15,6 +15,10 @@ import { toast } from "@/hooks/use-toast";
 import InvoiceModal, { InvoiceData } from "@/components/invoice/InvoiceModal";
 import CreateClubDialog from "@/components/CreateClubDialog";
 import { notifyUser } from "@/lib/notify";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 type Tab = "about" | "clubs" | "stats" | "gallery" | "bookings" | "caddy";
 type DesktopTab = "overview" | "stats" | "history";
@@ -52,6 +56,7 @@ const GolferProfile = () => {
   const [uploading, setUploading] = useState(false);
   const [isOwnProfile, setIsOwnProfile] = useState(false);
   const [buddyStatus, setBuddyStatus] = useState<string | null>(null);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [buddyConnectionId, setBuddyConnectionId] = useState<string | null>(null);
   const [showCreateClub, setShowCreateClub] = useState(false);
   // Get userId synchronously from cached session
@@ -151,6 +156,34 @@ const GolferProfile = () => {
     const { error } = await supabase.from("buddy_connections").delete().eq("id", buddyConnectionId);
     if (error) toast({ title: "Failed", description: error.message, variant: "destructive" });
     else { setBuddyStatus(null); setBuddyConnectionId(null); toast({ title: "Buddy dihapus" }); }
+  };
+
+  const handleCancelBuddyRequest = async () => {
+    if (!buddyConnectionId || !profile || !currentUserId) return;
+    const { error } = await supabase
+      .from("buddy_connections")
+      .delete()
+      .eq("id", buddyConnectionId);
+
+    if (error) {
+      toast({ title: "Failed", description: error.message, variant: "destructive" });
+      return;
+    }
+
+    // Drop the pending notification so the other golfer does not act on a
+    // request that no longer exists. Already-delivered push cannot be recalled.
+    await supabase
+      .from("notifications")
+      .delete()
+      .eq("user_id", profile.id)
+      .eq("type", "buddy")
+      .eq("is_read", false)
+      .filter("metadata->>requester_id", "eq", currentUserId);
+
+    setBuddyStatus(null);
+    setBuddyConnectionId(null);
+    setCancelDialogOpen(false);
+    toast({ title: "Buddy request cancelled" });
   };
 
   useEffect(() => {
@@ -906,8 +939,8 @@ const GolferProfile = () => {
                           <UserCheck className="h-4 w-4" /> Buddies
                         </Button>
                       ) : buddyStatus === "sent" ? (
-                        <Button variant="outline" size="sm" className="w-full gap-2" disabled>
-                          <Clock className="h-4 w-4" /> Request Sent
+                        <Button variant="outline" size="sm" className="w-full gap-2" onClick={() => setCancelDialogOpen(true)}>
+                          <Clock className="h-4 w-4" /> Request Sent · Tap to cancel
                         </Button>
                       ) : buddyStatus === "pending" ? (
                         <div className="flex gap-2">
@@ -1257,7 +1290,7 @@ const GolferProfile = () => {
                   {buddyStatus === "accepted" ? (
                     <Button className="flex-1 h-11 rounded-xl text-sm font-bold uppercase tracking-wider" variant="outline" disabled><UserCheck className="h-4 w-4 mr-2" /> Buddies</Button>
                   ) : buddyStatus === "sent" ? (
-                    <Button className="flex-1 h-11 rounded-xl text-sm font-bold uppercase tracking-wider" variant="outline" disabled>Requested</Button>
+                    <Button className="flex-1 h-11 rounded-xl text-sm font-bold uppercase tracking-wider" variant="outline" onClick={() => setCancelDialogOpen(true)}>Requested</Button>
                   ) : (
                     <Button className="flex-1 h-11 rounded-xl text-sm font-bold uppercase tracking-wider" onClick={handleAddBuddy}><UserPlus className="h-4 w-4 mr-2" /> Add Buddy</Button>
                   )}
@@ -1841,6 +1874,27 @@ const GolferProfile = () => {
             data={invoiceData}
           />
       )}
+
+      <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel buddy request?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {profile?.full_name ?? "This golfer"} will no longer see your request.
+              You can send a new one at any time.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep request</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleCancelBuddyRequest}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Cancel request
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
