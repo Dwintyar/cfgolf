@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { Clock, Mail } from "lucide-react";
+import { Clock, Mail, XCircle } from "lucide-react";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -19,6 +19,7 @@ const Login = () => {
   const [isForgot, setIsForgot] = useState(false);
   const [loading, setLoading] = useState(false);
   const [pendingApproval, setPendingApproval] = useState(false);
+  const [rejected, setRejected] = useState(false);
 
   const checkOnboarding = async (userId: string) => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -30,9 +31,23 @@ const Login = () => {
 
     // Profile belum ada — user baru via Google OAuth
     if (!data) {
-      // Insert ke pending_approvals
       const email = user?.email ?? "";
       const fullName = user?.user_metadata?.full_name ?? user?.user_metadata?.name ?? "";
+
+      // A rejection is final. Without this check the upsert below would reset
+      // status back to "pending" and quietly undo the admin's decision.
+      const { data: existing } = await supabase
+        .from("pending_approvals")
+        .select("status")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (existing?.status === "rejected") {
+        await supabase.auth.signOut();
+        setRejected(true);
+        return;
+      }
+
       await supabase.from("pending_approvals").upsert({
         user_id: userId,
         email,
@@ -60,18 +75,18 @@ const Login = () => {
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        if (session && !pendingApproval) {
+        if (session && !pendingApproval && !rejected) {
           checkOnboarding(session.user.id);
         }
       }
     );
 
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session && !pendingApproval) checkOnboarding(session.user.id);
+      if (session && !pendingApproval && !rejected) checkOnboarding(session.user.id);
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate, pendingApproval]);
+  }, [navigate, pendingApproval, rejected]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -163,6 +178,40 @@ const Login = () => {
     });
     if (error) toast.error(error.message);
   };
+
+  // Rejected screen — shown instead of the waiting screen so a rejected
+  // applicant is not left expecting an approval that will never come.
+  if (rejected) {
+    return (
+      <div className="relative flex min-h-screen flex-col items-center justify-center">
+        <img src={loginBg} alt="Golf course" className="absolute inset-0 h-full w-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-transparent" />
+        <div className="relative z-10 w-full max-w-sm px-6">
+          <div className="rounded-2xl bg-card/90 backdrop-blur-lg border border-border/50 p-6 text-center space-y-4">
+            <div className="mx-auto w-14 h-14 rounded-full bg-destructive/10 flex items-center justify-center">
+              <XCircle className="h-7 w-7 text-destructive" />
+            </div>
+            <h2 className="text-lg font-bold text-foreground">Registration Not Approved</h2>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Your registration was reviewed and not approved. Signing in again
+              will not change this.
+            </p>
+            <div className="flex items-center gap-2 justify-center text-xs text-muted-foreground pt-2">
+              <Mail className="h-3.5 w-3.5" />
+              <span>Contact <span className="font-medium text-foreground">dwintyar@gmail.com</span> if you believe this is a mistake</span>
+            </div>
+            <Button
+              variant="outline"
+              className="w-full mt-2"
+              onClick={() => setRejected(false)}
+            >
+              Back to Login
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Waiting screen
   if (pendingApproval) {
