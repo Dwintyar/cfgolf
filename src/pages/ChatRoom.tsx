@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { notifyChatMessage } from "@/lib/notify";
 
 const ChatRoom = () => {
   const navigate = useNavigate();
@@ -118,6 +119,24 @@ const ChatRoom = () => {
       console.error("Send failed:", error);
       toast.error("Failed to send message");
       setMessage(text);
+      return;
+    }
+
+    // Persist a notification for the other participants so the message still
+    // reaches them when the app is closed (realtime toast only works in-app).
+    const { data: others } = await supabase
+      .from("conversation_participants")
+      .select("user_id")
+      .eq("conversation_id", conversationId)
+      .neq("user_id", userId);
+
+    if (others && others.length > 0) {
+      const { data: me } = await supabase
+        .from("profiles").select("full_name").eq("id", userId).maybeSingle();
+      const senderName = me?.full_name ?? "Someone";
+      await Promise.all(
+        others.map((o) => notifyChatMessage(o.user_id, conversationId, senderName, text)),
+      );
     }
   };
 

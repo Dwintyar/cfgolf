@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { notifyUser } from "@/lib/notify";
 
 type BuddyTab = "suggestions" | "requests" | "buddies";
 
@@ -136,6 +137,14 @@ const Play = () => {
       toast({ title: "Gagal mengirim permintaan", description: error.message, variant: "destructive" });
     } else {
       setSentRequests((prev) => new Set(prev).add(addresseeId));
+      const { data: me } = await supabase
+        .from("profiles").select("full_name").eq("id", currentUserId).maybeSingle();
+      await notifyUser(addresseeId, {
+        title: "New Buddy Request 🤝",
+        message: `${me?.full_name ?? "A golfer"} wants to connect with you.`,
+        type: "buddy",
+        metadata: { requester_id: currentUserId, url: "/play" },
+      });
       toast({ title: "Buddy request sent!" });
     }
     setActionLoading(null);

@@ -442,8 +442,8 @@ const TourDetail = () => {
         await supabase.from("notifications").insert({
           user_id: admin.user_id,
           type: "tournament_update",
-          title: "Player dihapus dari tournament",
-          message: `${playerName} telah dihapus dari ${tour?.name} oleh panitia.`,
+          title: "Player Removed from Tournament",
+          message: `${playerName} has been removed from ${tour?.name} by the organiser.`,
           metadata: { tour_id: id, club_id: playerClubId },
         });
       }
@@ -459,8 +459,8 @@ const TourDetail = () => {
         await supabase.from("notifications").insert({
           user_id: org.user_id,
           type: "tournament_update",
-          title: "Player dihapus oleh club",
-          message: `${playerName} dari ${clubName} telah dihapus dari ${tour?.name}.`,
+          title: "Player Removed by Club",
+          message: `${playerName} from ${clubName} has been removed from ${tour?.name}.`,
           metadata: { tour_id: id },
         });
       }

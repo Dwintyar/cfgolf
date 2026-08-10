@@ -10,6 +10,7 @@ import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { CalendarIcon, Building2, ExternalLink, ChevronDown, ChevronUp } from "lucide-react";
 import { useRef } from "react";
+import { notifyClubAdmins, notifyUser } from "@/lib/notify";
 
 interface Props {
   tourId: string;
@@ -94,12 +95,24 @@ const CreateEventDialog = ({ tourId, open, onOpenChange, onDone, isPersonal = fa
     setShowBooking(false);
     toast.success("Booking request terkirim ke venue ✓");
 
-    // Notify venue
-    await supabase.from("notifications").insert({
-      user_id: user.id,
+    // Notify the venue's admins so they can act on the request
+    await notifyClubAdmins(
+      venueClub.id,
+      {
+        title: "New Booking Request 🏌️",
+        message: `${selectedCourse?.name} requested for ${date} at ${bookingTime} — ${bookingPlayers} players, ${bookingCaddies} caddies, ${bookingCarts} carts.`,
+        type: "booking",
+        metadata: { course_id: courseId, date, url: `/club/${venueClub.id}` },
+      },
+      user.id,
+    );
+
+    // Confirmation copy for the organiser who sent it
+    await notifyUser(user.id, {
       title: "Booking Request Sent",
       message: `Your booking request for ${selectedCourse?.name} on ${date} has been sent to ${venueClub.name}.`,
       type: "booking",
+      metadata: { course_id: courseId, date },
     });
   };
 

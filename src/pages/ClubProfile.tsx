@@ -20,6 +20,7 @@ import VenueScheduleTab from "@/components/club/VenueScheduleTab";
 import InviteMemberDialog from "@/components/InviteMemberDialog";
 import VenueJoinDialog from "@/components/club/VenueJoinDialog";
 import { useFeatureFlags } from "@/hooks/use-feature-flags";
+import { notifyClubAdmins } from "@/lib/notify";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -282,6 +283,23 @@ const ClubProfile = ({ embedded = false, clubId: propClubId, onBack, onNavigateT
         }
         throw error;
       }
+      const { data: me } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", currentUserId)
+        .maybeSingle();
+
+      await notifyClubAdmins(
+        id,
+        {
+          title: "New Join Request 👋",
+          message: `${me?.full_name ?? "A golfer"} requested to join your club.`,
+          type: "club_invite",
+          metadata: { club_id: id, url: `/club/${id}` },
+        },
+        currentUserId,
+      );
+
       toast({ title: "Permintaan bergabung terkirim!" });
       queryClient.invalidateQueries({ queryKey: ["my-join-request", id, currentUserId] });
       queryClient.invalidateQueries({ queryKey: ["club-invitations", id] });

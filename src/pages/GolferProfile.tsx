@@ -14,6 +14,7 @@ import { useQuery } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
 import InvoiceModal, { InvoiceData } from "@/components/invoice/InvoiceModal";
 import CreateClubDialog from "@/components/CreateClubDialog";
+import { notifyUser } from "@/lib/notify";
 
 type Tab = "about" | "clubs" | "stats" | "gallery" | "bookings" | "caddy";
 type DesktopTab = "overview" | "stats" | "history";
@@ -530,7 +531,18 @@ const GolferProfile = () => {
     if (!profile || !currentUserId) return;
     const { error } = await supabase.from("buddy_connections").insert({ requester_id: currentUserId, addressee_id: profile.id });
     if (error) toast({ title: "Failed", description: error.message, variant: "destructive" });
-    else { setBuddyStatus("sent"); toast({ title: "Buddy request sent!" }); }
+    else {
+      setBuddyStatus("sent");
+      const { data: me } = await supabase
+        .from("profiles").select("full_name").eq("id", currentUserId).maybeSingle();
+      await notifyUser(profile.id, {
+        title: "New Buddy Request 🤝",
+        message: `${me?.full_name ?? "A golfer"} wants to connect with you.`,
+        type: "buddy",
+        metadata: { requester_id: currentUserId, url: "/play" },
+      });
+      toast({ title: "Buddy request sent!" });
+    }
   };
 
   const toggleDarkMode = () => {

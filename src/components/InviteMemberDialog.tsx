@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Search, Send } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { notifyUser } from "@/lib/notify";
 
 interface Props {
   clubId: string;
@@ -75,6 +76,19 @@ const InviteMemberDialog = ({ clubId, open, onOpenChange, onDone }: Props) => {
     if (error) {
       toast({ title: "Gagal mengundang", description: error.message, variant: "destructive" });
     } else {
+      const { data: club } = await supabase
+        .from("clubs")
+        .select("name")
+        .eq("id", clubId)
+        .maybeSingle();
+
+      await notifyUser(userId, {
+        title: "Club Invitation 🎟️",
+        message: `You have been invited to join ${club?.name ?? "a club"}.`,
+        type: "club_invite",
+        metadata: { club_id: clubId, url: `/club/${clubId}` },
+      });
+
       toast({ title: "Undangan berhasil dikirim!" });
       onDone();
     }
