@@ -168,6 +168,49 @@ export function useChatNotifications() {
     };
   }, [userId]);
 
+  // Subscribe to incoming buddy requests
+  useEffect(() => {
+    if (!userId) return;
+
+    const channel = supabase
+      .channel("global-buddy-notifications")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "buddy_connections",
+          filter: `addressee_id=eq.${userId}`,
+        },
+        async (payload) => {
+          const conn = payload.new as any;
+          if (conn.requester_id === userId) return;
+
+          const { data: requester } = await supabase
+            .from("profiles")
+            .select("full_name")
+            .eq("id", conn.requester_id)
+            .maybeSingle();
+
+          toast.message("🤝 New Buddy Request", {
+            description: `${requester?.full_name ?? "A golfer"} wants to connect with you.`,
+            action: {
+              label: "View",
+              onClick: () => {
+                window.location.href = "/play";
+              },
+            },
+            duration: 6000,
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userId]);
+
   // Reset unread count when visiting chat pages
   useEffect(() => {
     if (location.pathname.startsWith("/chat")) {

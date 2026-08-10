@@ -49,6 +49,31 @@ const Play = () => {
     fetchData();
   }, []);
 
+  // Refresh the lists when a buddy connection involving this user changes,
+  // so incoming requests appear without a manual reload.
+  useEffect(() => {
+    if (!currentUserId) return;
+
+    const channel = supabase
+      .channel("play-buddy-sync")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "buddy_connections" },
+        (payload) => {
+          const row = (payload.new ?? payload.old) as any;
+          if (!row) return;
+          if (row.requester_id === currentUserId || row.addressee_id === currentUserId) {
+            fetchData();
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [currentUserId]);
+
   const fetchData = async () => {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
