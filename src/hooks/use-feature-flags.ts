@@ -28,9 +28,14 @@ export const useFeatureFlags = () => {
         .from("feature_flags")
         .select("key, enabled");
       if (error) return DEFAULT_FLAGS;
-      return Object.fromEntries(
-        (data ?? []).map((f: { key: string; enabled: boolean }) => [f.key, f.enabled])
-      ) as FeatureFlags;
+      // Merge over the defaults so a flag that exists in code but has no row
+      // in the table yet resolves to false rather than undefined.
+      return {
+        ...DEFAULT_FLAGS,
+        ...Object.fromEntries(
+          (data ?? []).map((f: { key: string; enabled: boolean }) => [f.key, f.enabled])
+        ),
+      } as FeatureFlags;
     },
     staleTime: 1000 * 60 * 5, // cache 5 menit
   });

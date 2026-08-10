@@ -31,6 +31,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Switch } from "@/components/ui/switch";
 import { Pin, MoreVertical } from "lucide-react";
 import { useFeatureFlags } from "@/hooks/use-feature-flags";
+import { notifyUser } from "@/lib/notify";
 
 const ClubAdminDashboard = () => {
   const { clubId: paramClubId } = useParams<{ clubId: string }>();
@@ -343,11 +344,28 @@ const ClubAdminDashboard = () => {
     if (error) { toast.error("Failed to assign caddy"); return; }
     if (caddyUserId) {
       const booking = courseBookings?.find((b: any) => b.id === bookingId);
-      await supabase.from("notifications").insert({
-        user_id: caddyUserId,
+      const when = booking?.booking_date
+        ? new Date(booking.booking_date).toLocaleDateString("en-GB", {
+            weekday: "long", day: "numeric", month: "long",
+          })
+        : "";
+      const time = booking?.tee_time?.slice(0, 5) ?? "";
+      const courseName = linkedCourse?.name ?? "the course";
+
+      await notifyUser(caddyUserId, {
         title: "New Caddy Assignment 🏌️",
-        message: `You have been assigned as caddy pada ${booking?.booking_date ? new Date(booking.booking_date).toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long" }) : ""} pukul ${booking?.tee_time?.slice(0,5) ?? ""} di ${linkedCourse?.name ?? "lapangan"}.`,
+        message: `You have been assigned as caddy on ${when} at ${time}, ${courseName}.`,
         type: "caddy_assignment",
+        metadata: { booking_id: bookingId, url: "/profile" },
+      });
+
+      // The golfer needs to know who is caddying for them.
+      const caddyName = venueCaddyStaff?.find((cs: any) => cs.user_id === caddyUserId);
+      await notifyUser(golferUserId, {
+        title: "Caddy Assigned 🎒",
+        message: `${(caddyName?.profiles as any)?.full_name ?? "A caddy"} will be your caddy on ${when} at ${time}, ${courseName}.`,
+        type: "caddy_assignment",
+        metadata: { booking_id: bookingId, url: "/profile" },
       });
     }
     toast.success(caddyUserId ? "Caddy assigned successfully" : "Caddy assignment removed");
@@ -363,16 +381,18 @@ const ClubAdminDashboard = () => {
       .eq("id", bookingId);
     if (error) { toast.error("Failed to update status"); setUpdatingBookingId(null); return; }
 
+    const courseName = linkedCourse?.name ?? "the course";
     const messages: Record<string, string> = {
-      confirmed: `Your tee time booking di ${linkedCourse?.name ?? "lapangan"} has been confirmed.`,
-      declined: `Maaf, booking tee time Anda di ${linkedCourse?.name ?? "lapangan"} could not be accepted.`,
-      ready: `Course is ready! Enjoy your round di ${linkedCourse?.name ?? "lapangan"}.`,
+      confirmed: `Your tee time booking at ${courseName} has been confirmed.`,
+      declined: `Sorry, your tee time booking at ${courseName} could not be accepted.`,
+      ready: `Course is ready! Enjoy your round at ${courseName}.`,
     };
-    await supabase.from("notifications").insert({
-      user_id: golferId,
-      title: newStatus === "confirmed" ? "Booking Confirmed ✓" : newStatus === "declined" ? "Booking Declined" : "Course Ready! ⛳",
+    await notifyUser(golferId, {
+      title: newStatus === "confirmed" ? "Booking Confirmed ✓"
+        : newStatus === "declined" ? "Booking Declined" : "Course Ready! ⛳",
       message: messages[newStatus],
       type: "booking_update",
+      metadata: { booking_id: bookingId, url: "/profile" },
     });
 
     const labels: Record<string, string> = { confirmed: "dikonfirmasi", declined: "ditolak", ready: "siap" };
@@ -1162,21 +1182,25 @@ const ClubAdminDashboard = () => {
               </div>
             ) : (
               <div className="pt-1 bg-muted/40 rounded-lg px-3 py-2 text-center">
-                <p className="text-[10px] text-muted-foreground">Fitur konfirmasi booking belum aktif</p>
+                <p className="text-[10px] text-muted-foreground">Booking confirmation is not active yet</p>
               </div>
             )
           )}
           {b.status === "confirmed" && (
             <div className="space-y-2 pt-1">
-              {/* Caddy assignment */}
-              {assigningCaddyBookingId === b.id ? (
+              {/* Caddy assignment — gated by its own flag */}
+              {!flags.caddy_assignment ? (
+                <div className="bg-muted/40 rounded-lg px-3 py-2 text-center">
+                  <p className="text-[10px] text-muted-foreground">Caddy assignment is not active yet</p>
+                </div>
+              ) : assigningCaddyBookingId === b.id ? (
                 <div className="flex gap-2">
                   <select
                     className="flex-1 h-8 text-xs rounded-lg border border-border bg-background px-2"
                     defaultValue={b.caddy_id ?? ""}
                     onChange={(e) => handleAssignCaddy(b.id, e.target.value, b.user_id)}
                   >
-                    <option value="">— Tanpa caddy —</option>
+                    <option value="">— No caddy —</option>
                     {venueCaddyStaff?.map((cs: any) => (
                       <option key={cs.user_id} value={cs.user_id}>
                         {(cs.profiles as any)?.full_name ?? cs.user_id}
@@ -1192,7 +1216,7 @@ const ClubAdminDashboard = () => {
                   onClick={() => setAssigningCaddyBookingId(b.id)}
                 >
                   🎒 {b.caddy_id
-                    ? `Caddy: ${venueCaddyStaff?.find((cs: any) => cs.user_id === b.caddy_id) ? (venueCaddyStaff.find((cs: any) => cs.user_id === b.caddy_id)?.profiles as any)?.full_name : "Assigned"} · Ganti`
+                    ? `Caddy: ${venueCaddyStaff?.find((cs: any) => cs.user_id === b.caddy_id) ? (venueCaddyStaff.find((cs: any) => cs.user_id === b.caddy_id)?.profiles as any)?.full_name : "Assigned"} · Change`
                     : "Assign caddy →"}
                 </button>
               )}

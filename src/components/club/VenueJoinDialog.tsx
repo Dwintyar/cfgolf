@@ -4,6 +4,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { UserCheck, Flag, Anchor, GraduationCap, Users } from "lucide-react";
+import { notifyClubAdmins } from "@/lib/notify";
 
 const ROLES = [
   { id: "caddy",   label: "Caddy",   desc: "Pendamping & pembawa tas golfer",       icon: UserCheck },
@@ -47,6 +48,27 @@ const VenueJoinDialog = ({ open, onOpenChange, clubId, clubName, userId, onSucce
       }
       return;
     }
+    // Tell the venue admins, otherwise the application sits unseen until
+    // someone happens to open the Staff tab.
+    const { data: me } = await supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("id", userId)
+      .maybeSingle();
+
+    const roleLabel = ROLES.find((r) => r.id === selected)?.label ?? selected;
+
+    await notifyClubAdmins(
+      clubId,
+      {
+        title: "New Staff Application 🙋",
+        message: `${me?.full_name ?? "Someone"} applied to join ${clubName} as ${roleLabel}.`,
+        type: "staff_request",
+        metadata: { club_id: clubId, staff_role: selected, url: `/club/${clubId}` },
+      },
+      userId,
+    );
+
     toast({ title: "Request sent ✓", description: `Awaiting approval from ${clubName}` });
     onSuccess();
     onOpenChange(false);
