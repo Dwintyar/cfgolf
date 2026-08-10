@@ -29,37 +29,41 @@ const Login = () => {
       .eq("id", userId)
       .maybeSingle();
 
-    // Profile belum ada — user baru via Google OAuth
-    if (!data) {
+    // Anyone not yet approved needs a row in the review queue — whether or not
+    // a profile already exists. A database trigger creates the profile as soon
+    // as the auth account is made, so keying this on "profile is missing" left
+    // users with a profile but no queue entry: they saw the waiting screen
+    // forever while never appearing in the admin list, and the notification
+    // webhook (which fires on INSERT) never ran.
+    if (!data || !data.is_approved) {
       const email = user?.email ?? "";
       const fullName = user?.user_metadata?.full_name ?? user?.user_metadata?.name ?? "";
 
-      // A rejection is final. Without this check the upsert below would reset
-      // status back to "pending" and quietly undo the admin's decision.
       const { data: existing } = await supabase
         .from("pending_approvals")
         .select("status")
         .eq("user_id", userId)
         .maybeSingle();
 
+      // A rejection stands until an admin clears or approves the record.
       if (existing?.status === "rejected") {
         await supabase.auth.signOut();
         setRejected(true);
         return;
       }
 
-      await supabase.from("pending_approvals").upsert({
-        user_id: userId,
-        email,
-        full_name: fullName,
-        status: "pending",
-      }, { onConflict: "user_id" });
-      await supabase.auth.signOut();
-      setPendingApproval(true);
-      return;
-    }
+      // Only write when there is no record yet. Re-writing an existing pending
+      // row would be an UPDATE, which does not fire the notification webhook,
+      // and would pointlessly churn the queue on every sign-in attempt.
+      if (!existing) {
+        await supabase.from("pending_approvals").insert({
+          user_id: userId,
+          email,
+          full_name: fullName,
+          status: "pending",
+        });
+      }
 
-    if (!data?.is_approved) {
       await supabase.auth.signOut();
       setPendingApproval(true);
       return;
