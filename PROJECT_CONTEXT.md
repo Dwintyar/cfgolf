@@ -379,8 +379,61 @@ Four bottom tabs: **Lounge · Clubs · Rounds · Profile**
 - **Profile** — About, Clubs, Stats, Gallery, Bookings, plus Settings and
   admin dashboards for club admins and platform admins.
 
-Auth screens: Login, Sign Up, Pending Approval. Google OAuth is the only
-social provider in use.
+Auth: Login and Pending Approval. Google OAuth is the only provider in use;
+see §4.5 for the approval gate.
+
+### 5.1 Priority for the native rebuild
+
+The PWA has 69 distinct screens (see `twa_pagelist.txt` and the 70 reference
+screenshots). Rebuilding all of them natively is months of work for a payoff
+that is mostly invisible — the ordering below is drawn from what the database
+actually shows people doing.
+
+The signal is lopsided. Tournament data is the crown jewel: EGT history back to
+2012, 25 events, 1000+ contestants, 134 pairings, 223 handicap history entries,
+152 recorded results. Social features are barely touched: 10 chat messages and
+7 buddy requests in four and a half months. Bookings: 2. So the first release
+should lean hard on tournaments and personal record, not on chat.
+
+**Tier 1 — golfer core, 12 screens. Ship this first.**
+
+Login · Rounds Upcoming · Rounds Completed · Event detail (leaderboard) ·
+Event pairings · Event check-in · Handicap correction · Profile About ·
+Profile Stats · Clubs My Clubs · Club detail (Members + Tournaments) ·
+Tour detail (leaderboard + events)
+
+An EGC golfer opens the app to see when they play next, who is in their flight,
+what they scored, and where their handicap is heading. All of that lives here,
+and the historical data is already populated — the app feels full on day one.
+
+**Tier 2 — social and growth, 9 screens.**
+
+Lounge Channels Following · Lounge Channels Discover · Channel detail ·
+Chats list · Chat room · Contacts (Suggestions / Requests / My Buddies) ·
+Clubs Discover Community · Club join flow · GBPlay Cooperative
+
+The cooperative page is the founding-member funnel, so it can be pulled
+forward if recruitment starts before Tier 1 finishes. It has no dependency on
+the tournament screens.
+
+**Tier 3 — leave on the web, 11 screens.**
+
+All Club Admin and Platform Admin panels: tour and event management, course
+management, users, features, reports, approvals. Admin work happens on large
+screens with wide tables and long forms; rebuilding that for a narrow viewport
+is a lot of effort for a worse result. The PWA handles it well and stays live.
+
+**Excluded until the flags are on — 12 screens.**
+
+Every venue and caddy screen. All six flags are OFF, and §4.0 shows how
+quickly code for hidden features rots unnoticed. Build them when the caddy and
+venue stakeholder groups are actually being onboarded.
+
+**Result: 21 screens for the first release rather than 69.**
+
+Treat the reference screenshots as a map of flows, not a pixel target. React
+Native should use platform-native controls; reproducing the PWA's CSS
+component by component gives up the native feel without gaining anything.
 
 ---
 
