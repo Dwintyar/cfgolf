@@ -63,35 +63,49 @@ const AdminApprovals = () => {
     if (!currentUserId || !approval.user_id) return;
     setActionLoading(approval.id);
     try {
-      // Update profile
-      const { error: profileError } = await supabase
+      // Update profile. `.select()` matters: an UPDATE blocked by RLS returns
+      // no error, just zero rows — without this the UI reports a success that
+      // never happened.
+      const { data: updatedProfile, error: profileError } = await supabase
         .from("profiles")
         .update({
           is_approved: true,
           approved_at: new Date().toISOString(),
           approved_by: currentUserId,
         })
-        .eq("id", approval.user_id);
+        .eq("id", approval.user_id)
+        .select("id");
 
       if (profileError) throw profileError;
+      if (!updatedProfile || updatedProfile.length === 0) {
+        throw new Error(
+          "Could not update the profile — it may not exist yet, or RLS is blocking the update."
+        );
+      }
 
       // Update pending_approvals
-      const { error: paError } = await supabase
+      const { data: updatedApproval, error: paError } = await supabase
         .from("pending_approvals")
         .update({
           status: "approved",
           reviewed_at: new Date().toISOString(),
           reviewed_by: currentUserId,
         } as any)
-        .eq("id", approval.id);
+        .eq("id", approval.id)
+        .select("id");
 
       if (paError) throw paError;
+      if (!updatedApproval || updatedApproval.length === 0) {
+        throw new Error(
+          "Profile approved, but the approval record did not update — check the UPDATE policy on pending_approvals."
+        );
+      }
 
-      toast.success(`${approval.full_name || approval.email} berhasil disetujui`);
+      toast.success(`${approval.full_name || approval.email} approved`);
       queryClient.invalidateQueries({ queryKey: ["admin-pending-approvals"] });
       queryClient.invalidateQueries({ queryKey: ["admin-all-approvals"] });
     } catch (err: any) {
-      toast.error(err.message || "Gagal menyetujui");
+      toast.error(err.message || "Failed to approve");
     } finally {
       setActionLoading(null);
     }
@@ -101,22 +115,28 @@ const AdminApprovals = () => {
     if (!currentUserId) return;
     setActionLoading(approval.id);
     try {
-      const { error } = await supabase
+      const { data: updated, error } = await supabase
         .from("pending_approvals")
         .update({
           status: "rejected",
           reviewed_at: new Date().toISOString(),
           reviewed_by: currentUserId,
         } as any)
-        .eq("id", approval.id);
+        .eq("id", approval.id)
+        .select("id");
 
       if (error) throw error;
+      if (!updated || updated.length === 0) {
+        throw new Error(
+          "Nothing was updated — check the UPDATE policy on pending_approvals."
+        );
+      }
 
-      toast.success(`${approval.full_name || approval.email} ditolak`);
+      toast.success(`${approval.full_name || approval.email} rejected`);
       queryClient.invalidateQueries({ queryKey: ["admin-pending-approvals"] });
       queryClient.invalidateQueries({ queryKey: ["admin-all-approvals"] });
     } catch (err: any) {
-      toast.error(err.message || "Gagal menolak");
+      toast.error(err.message || "Failed to reject");
     } finally {
       setActionLoading(null);
     }
