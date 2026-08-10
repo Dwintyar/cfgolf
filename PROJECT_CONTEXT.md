@@ -184,6 +184,42 @@ they only disappear once pushes are actually being sent.
 centralises the insert, dedupes chat pings per conversation, and looks up
 club admins. Direct inserts bypass all of that.
 
+### 4.3 Deployment — three targets, only one is automatic
+
+Pushing to `main` deploys the **frontend only**. Two other surfaces have to be
+deployed by hand, and forgetting them reproduces §4.0 exactly: the corrected
+code sits in the repo while the old version keeps running in production.
+
+| Surface | Lives in | How it ships |
+|---|---|---|
+| PWA frontend | `src/`, `public/`, `index.html` | Vercel, automatic on push to `main` |
+| Edge functions | `supabase/functions/` | **Manual** — Supabase dashboard or CLI |
+| Schema, RLS, publication, flags | not in the repo at all | **Manual** — SQL Editor |
+
+Deploying an edge function:
+
+```bash
+npx supabase login
+npx supabase link --project-ref duktebslocooppxedanv
+npx supabase functions deploy <function-name>
+```
+
+Observed instance: `notify-admin-signup` was rebranded from CFGolf and its
+dead `cfgolf.lovable.app` approval link repointed at `golfbuana.com`. The
+commit landed and Vercel deployed, but the next signup email still carried
+the old branding and the broken link, because the function itself had not
+been redeployed.
+
+**Database state is not version-controlled.** Feature flag rows, RLS policies,
+webhooks, and publication membership exist only in the live project. The repo
+cannot tell you their current state — query it. Two consequences seen in
+practice: a flag row whose `description` no longer matched what the code did,
+and a `notifications` webhook whose existence could only be confirmed from the
+dashboard.
+
+**After changing anything in `supabase/functions/`, deploy it and then trigger
+the function for real.** Reading the diff proves nothing about what is running.
+
 ---
 
 ## 5. Screens to build
