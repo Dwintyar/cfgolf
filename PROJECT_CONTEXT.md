@@ -22,6 +22,11 @@ regardless of which tool you are using.
 Keep this file current: append to §4 whenever a new backend gotcha is found.
 That section is the expensive knowledge — no tool can infer it.
 
+*Last updated 10 August 2026, after an audit session that found sixteen
+production bugs across notifications, signup approval, venue and caddy flows,
+and admin data operations. Every one of them was code that existed, read
+correctly, and never ran.*
+
 ---
 
 ## 1. Non-negotiable constraints
@@ -59,14 +64,48 @@ and gas professionals with tournament history since 2012, running the EGT
 tournament series.
 
 **Current mode is "Logbook Mode":** six feature flags in the `feature_flags`
-table all default OFF, hiding caddy and venue features. Build golfer-facing
+table are all OFF, hiding caddy and venue features. Build golfer-facing
 screens first. Read flags at runtime; never hardcode features as visible.
+
+The flags: `venue_booking`, `caddy_assignment`, `staff_join_request`,
+`invoice_download`, `tee_time_picker`, `venue_schedule_admin`. Read them via
+`useFeatureFlags`, which spreads the query result over `DEFAULT_FLAGS` so a
+flag defined in code but missing a row resolves to false rather than
+undefined.
+
+### Where the two codebases stand (August 2026)
+
+- **`cfgolf`** — the PWA at golfbuana.com, deployed on Vercel. Mature and in
+  production. Also wrapped as an Android TWA via Bubblewrap, package
+  `com.golfbuana.app`.
+- **`golfbuana-app`** — native rebuild on Expo SDK 57, started August 2026.
+  Foundation only: Expo Router with auth gating, typed Supabase client, auth
+  store, design tokens, a working login screen. The four tab screens are
+  placeholders. Deliberately uses the **same** package ID as the TWA so it can
+  ship as an update to that Play Store listing rather than a separate app —
+  which requires the existing keystore (`android.keystore`, alias
+  `golfbuana_keystore`) be uploaded to EAS credentials.
+- **`gbplay-native`** (Expo SDK 54) and **`golfbuana-flutter`** are abandoned.
+  Do not build on them.
+
+Lovable is no longer used. GitHub is the single source of truth.
 
 ---
 
-## 3. Database schema — 61 tables
+## 3. Database schema
 
-Do not query anything not on this list.
+> **The generated types are stale.** `src/integrations/supabase/types.ts` was
+> generated some time ago and is missing at least `event_rounds` and
+> `post_comments`, both of which exist in the live database. The list below is
+> derived from that file and inherits the same gap. Regenerate before relying
+> on it:
+> `npx supabase gen types typescript --project-id duktebslocooppxedanv > src/integrations/supabase/types.ts`
+> then copy the result to `golfbuana-app/src/types/database.ts`.
+>
+> To see what actually exists right now:
+> `SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY 1;`
+
+Do not query anything not on this list without checking it exists first.
 
 **Identity & social**
 `profiles`, `buddy_connections`, `conversations`, `conversation_participants`,
@@ -118,11 +157,15 @@ present, reads correctly, passes `tsc` and `npm run build`, and never
 executes. Nothing appears in the console. Nothing appears in the logs. The
 feature is simply absent at runtime, and can stay that way for months.
 
-Four instances found in a single audit session (August 2026):
+Instances found in a single audit session (10 August 2026), all in production,
+several of them for months:
 
 1. **Notifications never written.** Buddy requests, club invitations and chat
    messages had no `notifications` insert at all. The table held 6 rows in
-   four and a half months, all of them manual tests.
+   four and a half months, all of them manual tests. Push notification had
+   therefore never once worked in production, despite the entire pipeline —
+   VAPID keys, service worker, webhook, edge function, 29 live subscriptions —
+   being correctly configured the whole time.
 2. **Realtime listener never fired.** A complete, correct listener for
    `club_invitations` had been written — but the table was not in the
    `supabase_realtime` publication, so Postgres never broadcast to it.
@@ -131,20 +174,53 @@ Four instances found in a single audit session (August 2026):
    new request, because the unique pair constraint blocked a second insert.
 4. **Feature flag gating nothing.** `caddy_assignment` was defined in the
    hook and toggleable in the admin dashboard, but zero code read it. The UI
-   it appeared to control was actually gated by `venue_schedule_admin`.
+   it appeared to control was actually gated by `venue_schedule_admin`. Its
+   description in the database also named a screen that was never built.
+5. **Notification addressed to the wrong person.** A booking request marked
+   `// Notify venue` sent the notification to `user.id` — the sender. The
+   venue was never told a request had arrived.
+6. **UPDATE blocked by a missing policy, reported as success.** No table had
+   an UPDATE policy for `pending_approvals`, so every Approve and Reject
+   changed nothing. The handlers checked `error` only, and an RLS-blocked
+   UPDATE sets no error — it affects zero rows. Signup approval, the gate to
+   the entire platform, had never worked. The same gap existed on `courses`,
+   `course_tees`, `handicap_history` and `round_players`.
+7. **Six writes with no error handling at all.** Profile merge fired six
+   UPDATEs through `Promise.all` and discarded every result. One path then
+   deleted the old profile, which would orphan any rows that had not moved.
+8. **Branch keyed on the wrong condition.** The signup queue was only written
+   when no `profiles` row existed — but a trigger creates the profile with the
+   auth account, so unapproved users with a profile fell through: they saw the
+   waiting screen forever, never appeared in the admin list, and no email was
+   sent, because the notification webhook fires on INSERT.
+9. **Stale branding surviving a rename.** `notify-admin-signup` still emailed
+   admins as "CFGolf System" with a button pointing at `cfgolf.lovable.app`.
+   Every signup notification carried a dead link.
 
 **Consequences for how to work here:**
 
 - Reading the code is not verification. A flow counts as working only when a
   row has been observed in the database, or the effect seen on a device.
+- **Check rows affected, not just `error`.** An RLS-blocked write returns no
+  error. Add `.select()` to every UPDATE and DELETE whose success is reported
+  to the user, and treat an empty result as failure.
+- **Never `Promise.all` a batch of writes without inspecting each result.**
+  Supabase resolves with `{ error }` rather than throwing.
+- **Never delete a record that other rows point at until every reassignment
+  is confirmed.**
 - When adding a realtime listener, add the table to the publication in the
   same change: `ALTER PUBLICATION supabase_realtime ADD TABLE <t>;` plus
   `ALTER TABLE <t> REPLICA IDENTITY FULL;`
-- When adding a feature flag, grep for its usage before considering it done.
+- When adding a feature flag, grep for its usage before considering it done,
+  and make sure its `description` row matches what the code actually gates.
 - When a state renders a disabled control, check that some other path can
   leave that state.
-- Silent failure is the norm in this stack: RLS blocks reads without error,
-  deep selects return empty without error, unpublished tables never broadcast.
+- **Audit RLS by operation, not by table.** A table with SELECT and INSERT
+  policies looks configured; the gap only shows when you check UPDATE and
+  DELETE separately. See the queries in §4.4.
+- Silent failure is the norm in this stack: RLS blocks reads and writes
+  without error, deep selects return empty without error, unpublished tables
+  never broadcast, and non-frontend code does not deploy with the frontend.
   Suspect a missing permission or registration before suspecting the logic.
 
 ### 4.1 Query behaviour
@@ -219,6 +295,73 @@ dashboard.
 
 **After changing anything in `supabase/functions/`, deploy it and then trigger
 the function for real.** Reading the diff proves nothing about what is running.
+
+---
+
+### 4.4 Auditing RLS
+
+Run these against the live project; the repo cannot tell you the answer.
+
+```sql
+-- Tables with RLS on but no policy at all — invisible to the app entirely
+SELECT c.relname FROM pg_class c
+JOIN pg_namespace n ON n.oid = c.relnamespace
+LEFT JOIN pg_policy p ON p.polrelid = c.oid
+WHERE n.nspname='public' AND c.relkind='r' AND c.relrowsecurity
+GROUP BY c.relname HAVING COUNT(p.polname)=0;
+
+-- Readable but not writable — the shape that produced findings 6 and 7
+SELECT c.relname FROM pg_class c
+JOIN pg_namespace n ON n.oid = c.relnamespace
+WHERE n.nspname='public' AND c.relkind='r' AND c.relrowsecurity
+  AND EXISTS (SELECT 1 FROM pg_policy p WHERE p.polrelid=c.oid AND p.polcmd IN ('r','*'))
+  AND NOT EXISTS (SELECT 1 FROM pg_policy p WHERE p.polrelid=c.oid AND p.polcmd IN ('w','*'));
+```
+
+`polcmd`: `r`=SELECT, `a`=INSERT, `w`=UPDATE, `d`=DELETE, `*`=ALL.
+
+A table appearing in the second query is not automatically a bug — append-only
+tables (`audit_log`, `post_likes`, `channel_follows`, `event_teeoff_log`) are
+correct as they are. Cross-check against the code before adding policies:
+
+```bash
+grep -rn 'from("<table>")' src --include=*.tsx -A3 | grep '\.update('
+```
+
+As of August 2026 the following UPDATE/DELETE policies exist and are keyed on
+`system_admins` membership: `pending_approvals` (UPDATE, DELETE),
+`handicap_history` (UPDATE), `round_players` (UPDATE). `courses` and
+`course_tees` (UPDATE) are keyed on club owner/admin membership instead. None
+of them check `system_admins.is_active` — a deactivated admin would still pass.
+
+### 4.5 Signup and approval flow
+
+Access is gated: a new account cannot use the platform until an admin approves
+it. The moving parts, in order:
+
+1. Google OAuth sign-in creates the auth user. **A database trigger creates the
+   `profiles` row immediately**, with `is_approved` false.
+2. `checkOnboarding` in `src/pages/Login.tsx` runs on every auth state change.
+   If the user is not approved, it inserts a `pending_approvals` row — but only
+   when no record exists yet, because a rewrite would be an UPDATE.
+3. The INSERT fires the `notify-admin-on-signup` trigger → the
+   `notify-admin-signup` edge function → an email to the admin.
+4. `/admin/approvals` lists pending records. Approve sets `profiles.is_approved`
+   and marks the record; Reject marks it rejected; a delete button removes the
+   record entirely.
+5. A `rejected` record short-circuits the next sign-in and shows a dedicated
+   "not approved" screen rather than the waiting screen.
+
+Consequences worth remembering:
+
+- **The webhook fires on INSERT only.** Anything that reuses an existing row —
+  an upsert, a status reset — produces no email. This is why rejection is
+  cleared by deleting the record rather than flipping it back to pending.
+- **Deleting a record is what lets someone reapply.** Approving from the
+  rejected list is the alternative when you simply changed your mind.
+- **Non-admins opening `/admin/approvals` are silently redirected to Lounge.**
+  Confusing when an admin forwards the email link to the wrong browser session.
+  Worth replacing with an explicit message.
 
 ---
 
