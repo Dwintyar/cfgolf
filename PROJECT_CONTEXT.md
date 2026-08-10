@@ -111,6 +111,44 @@ Key columns on `profiles`: `id`, `full_name`, `avatar_url`, `handicap`,
 
 These were found by debugging the production PWA. They are not theoretical.
 
+### 4.0 The dominant failure mode: code that exists but never runs
+
+Every bug found in this codebase so far has had the same shape. The code is
+present, reads correctly, passes `tsc` and `npm run build`, and never
+executes. Nothing appears in the console. Nothing appears in the logs. The
+feature is simply absent at runtime, and can stay that way for months.
+
+Four instances found in a single audit session (August 2026):
+
+1. **Notifications never written.** Buddy requests, club invitations and chat
+   messages had no `notifications` insert at all. The table held 6 rows in
+   four and a half months, all of them manual tests.
+2. **Realtime listener never fired.** A complete, correct listener for
+   `club_invitations` had been written — but the table was not in the
+   `supabase_realtime` publication, so Postgres never broadcast to it.
+3. **Button permanently disabled.** The "Request Sent" state was rendered
+   `disabled`, leaving the sender with no way to cancel and no way to send a
+   new request, because the unique pair constraint blocked a second insert.
+4. **Feature flag gating nothing.** `caddy_assignment` was defined in the
+   hook and toggleable in the admin dashboard, but zero code read it. The UI
+   it appeared to control was actually gated by `venue_schedule_admin`.
+
+**Consequences for how to work here:**
+
+- Reading the code is not verification. A flow counts as working only when a
+  row has been observed in the database, or the effect seen on a device.
+- When adding a realtime listener, add the table to the publication in the
+  same change: `ALTER PUBLICATION supabase_realtime ADD TABLE <t>;` plus
+  `ALTER TABLE <t> REPLICA IDENTITY FULL;`
+- When adding a feature flag, grep for its usage before considering it done.
+- When a state renders a disabled control, check that some other path can
+  leave that state.
+- Silent failure is the norm in this stack: RLS blocks reads without error,
+  deep selects return empty without error, unpublished tables never broadcast.
+  Suspect a missing permission or registration before suspecting the logic.
+
+### 4.1 Query behaviour
+
 **Deep nested selects fail silently.** Supabase returns empty results without
 an error for deep joins. Use flat queries and join in JavaScript with maps.
 The tournament pairings view needs 8 separate flat queries.
@@ -120,6 +158,8 @@ be split into two batches of 72 scorecards or the URL exceeds the limit.
 
 **`tickets` is authoritative** for which club a player represents in an event
 — not `tour_players`.
+
+### 4.2 Notifications, realtime and permissions
 
 **Notifications drive push.** Inserting a row into `notifications` fires a
 Database Webhook to the `send-push-notification` edge function. To notify a
@@ -132,6 +172,17 @@ user, insert a row; never call the function directly. Columns: `user_id`,
 
 **RLS is active on all tables.** Reads are filtered by policy. If a query
 returns empty unexpectedly, suspect RLS before suspecting the query.
+
+**Push subscriptions are per user, not per device.** A row in
+`push_subscriptions` is tied to the `user_id` that was signed in when
+permission was granted. Signing in as a different account on the same phone
+does not carry it over — that account must grant permission again. Expired
+endpoints are cleaned up automatically when a send returns 410 or 404, so
+they only disappear once pushes are actually being sent.
+
+**Use `src/lib/notify.ts`, never insert into `notifications` directly.** It
+centralises the insert, dedupes chat pings per conversation, and looks up
+club admins. Direct inserts bypass all of that.
 
 ---
 
