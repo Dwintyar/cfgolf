@@ -14,7 +14,7 @@ serve(async (req) => {
   try {
     const vapidPublicKey  = Deno.env.get("VAPID_PUBLIC_KEY");
     const vapidPrivateKey = Deno.env.get("VAPID_PRIVATE_KEY");
-    const vapidEmail      = Deno.env.get("VAPID_EMAIL") ?? "mailto:admin@cfgolf.app";
+    const vapidEmail      = Deno.env.get("VAPID_EMAIL") ?? "mailto:admin@golfbuana.com";
     const supabaseUrl     = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey     = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
@@ -57,10 +57,10 @@ serve(async (req) => {
     console.log(`Sending push to ${subs.length} subscription(s) for user ${user_id}`);
 
     const pushPayload = JSON.stringify({
-      title: title ?? "CFGolf",
+      title: title ?? "GolfBuana",
       body: message ?? "",
       url: metadata?.url ?? "/notifications",
-      tag: "cfgolf-notif",
+      tag: "golfbuana-notif",
     });
 
     const results = await Promise.allSettled(

@@ -6,10 +6,10 @@
   "start_url": "https://golfbuana.com/",
   "scope": "https://golfbuana.com/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#1D9E75",
+  "background_color": "#13201A",
+  "theme_color": "#2BAB60",
   "orientation": "portrait",
-  "lang": "id",
+  "lang": "en",
   "categories": [
     "sports",
     "social",
