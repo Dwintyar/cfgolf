@@ -8,7 +8,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { CheckCircle2, XCircle, Clock, Users, ArrowLeft } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, Users, ArrowLeft, Trash2 } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 
@@ -21,6 +25,7 @@ const AdminApprovals = () => {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -142,6 +147,44 @@ const AdminApprovals = () => {
     }
   };
 
+  /**
+   * Remove a review record entirely.
+   *
+   * A rejected row blocks the applicant from reapplying: the login flow
+   * short-circuits on status "rejected", and even without that guard a second
+   * attempt would only UPDATE the existing row — while the admin notification
+   * webhook fires on INSERT. Deleting the record restores a clean slate, so
+   * the person can sign up again and the notification email works as normal.
+   */
+  const handleDelete = async () => {
+    const target = deleteTarget;
+    if (!target) return;
+    setDeleteTarget(null);
+    setActionLoading(target.id);
+    try {
+      const { data: removed, error } = await supabase
+        .from("pending_approvals")
+        .delete()
+        .eq("id", target.id)
+        .select("id");
+
+      if (error) throw error;
+      if (!removed || removed.length === 0) {
+        throw new Error(
+          "Nothing was removed — check the DELETE policy on pending_approvals."
+        );
+      }
+
+      toast.success(`${target.full_name || target.email} removed — they may apply again`);
+      queryClient.invalidateQueries({ queryKey: ["admin-pending-approvals"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-all-approvals"] });
+    } catch (err: any) {
+      toast.error(err.message || "Failed to remove");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   if (authLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -206,7 +249,7 @@ const AdminApprovals = () => {
               <p className="text-2xl font-bold tabular-nums">
                 {allApprovals?.filter(a => a.status === "rejected").length ?? 0}
               </p>
-              <p className="text-xs text-muted-foreground">Rejected</p>
+              <p className="text-xs text-muted-foreground">Blocked</p>
             </div>
           </CardContent>
         </Card>
@@ -296,7 +339,7 @@ const AdminApprovals = () => {
                   <TableHead>Nama</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Tanggal</TableHead>
+                  <TableHead>Date</TableHead>
                   <TableHead></TableHead>
                 </TableRow>
               </TableHeader>
@@ -316,17 +359,29 @@ const AdminApprovals = () => {
                         : "—"}
                     </TableCell>
                     <TableCell>
-                      {a.status === "rejected" && (
+                      <div className="flex items-center gap-2 justify-end">
+                        {a.status === "rejected" && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-xs text-emerald-600 border-emerald-600/30 hover:bg-emerald-600/10"
+                            disabled={actionLoading === a.id}
+                            onClick={() => handleApprove(a)}
+                          >
+                            {actionLoading === a.id ? "..." : "Approve"}
+                          </Button>
+                        )}
                         <Button
                           size="sm"
-                          variant="outline"
-                          className="h-7 text-xs text-emerald-600 border-emerald-600/30 hover:bg-emerald-600/10"
+                          variant="ghost"
+                          className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
                           disabled={actionLoading === a.id}
-                          onClick={() => handleApprove(a)}
+                          onClick={() => setDeleteTarget(a)}
+                          title="Remove this record so they can apply again"
                         >
-                          {actionLoading === a.id ? "..." : "Setujui"}
+                          <Trash2 className="h-3.5 w-3.5" />
                         </Button>
-                      )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -335,6 +390,29 @@ const AdminApprovals = () => {
           </CardContent>
         </Card>
       )}
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(v) => { if (!v) setDeleteTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove this record?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteTarget?.full_name || deleteTarget?.email} will be removed from
+              the review history. They will be able to sign up again, and you will
+              receive a new notification email when they do. Their account itself
+              is not deleted.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep record</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
