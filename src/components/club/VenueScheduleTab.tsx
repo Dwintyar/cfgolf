@@ -304,6 +304,13 @@ const VenueScheduleTab = ({ clubId }: { clubId: string }) => {
                 {/* Assign form */}
                 {isExpanded && form && (
                   <div className="px-4 pb-4 space-y-3 border-t border-green-500/20 pt-3">
+                    {!flags.caddy_assignment ? (
+                      <div className="bg-muted/40 rounded-lg px-3 py-2 text-center">
+                        <p className="text-[10px] text-muted-foreground">
+                          Caddy assignment is not active yet
+                        </p>
+                      </div>
+                    ) : (
                     <div className="space-y-2">
                       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                         Caddies ({caddyCount} needed)
@@ -329,7 +336,7 @@ const VenueScheduleTab = ({ clubId }: { clubId: string }) => {
                               ))}
                             </select>
                           ) : (
-                            <input type="text" value={val} placeholder="Nama caddy"
+                            <input type="text" value={val} placeholder="Caddy name"
                               onChange={e => {
                                 const updated = [...form.caddies];
                                 updated[i] = e.target.value;
@@ -341,6 +348,7 @@ const VenueScheduleTab = ({ clubId }: { clubId: string }) => {
                         </div>
                       ))}
                     </div>
+                    )}
 
                     <div className="space-y-1.5">
                       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Cart Numbers</p>
