@@ -121,36 +121,40 @@ const Onboarding = () => {
     setStep(2);
   };
 
+  // Claiming an old seed profile moves that person's tournament history to this
+  // account, so it goes through admin review (same queue as ClaimProfileDialog)
+  // instead of being merged directly from the client. Anyone could type a
+  // matching name; the platform admin approves and runs the merge.
   const handleClaimProfile = async (oldProfileId: string) => {
     if (!userId || claiming) return;
     setClaiming(true);
     try {
-      // Tables that reference profiles by player_id/user_id
-      const updates = [
-        supabase.from("contestants").update({ player_id: userId }).eq("player_id", oldProfileId),
-        supabase.from("tour_players").update({ player_id: userId }).eq("player_id", oldProfileId),
-        supabase.from("handicap_history").update({ player_id: userId }).eq("player_id", oldProfileId),
-        supabase.from("scorecards").update({ player_id: userId }).eq("player_id", oldProfileId),
-        supabase.from("members").update({ user_id: userId }).eq("user_id", oldProfileId),
-      ];
-      await Promise.all(updates);
+      const { error } = await supabase.from("profile_claim_requests").insert({
+        claimant_id: userId,
+        target_profile_id: oldProfileId,
+        reason: "Claimed during onboarding (name match)",
+        status: "pending",
+      });
+      if (error && error.code !== "23505") throw error;
 
-      // Copy HCP from old profile if user hasn't set one
-      if (!handicap) {
-        const { data: old } = await supabase.from("profiles").select("handicap").eq("id", oldProfileId).single();
-        if (old?.handicap) {
-          await supabase.from("profiles").update({ handicap: old.handicap }).eq("id", userId);
-        }
+      const { data: admins } = await supabase
+        .from("system_admins")
+        .select("user_id")
+        .eq("is_active", true);
+      for (const admin of admins ?? []) {
+        await supabase.from("notifications").insert({
+          user_id: admin.user_id,
+          title: "New Profile Claim 🔔",
+          message: `${fullName.trim()} claimed an existing profile during onboarding. Review it in the admin dashboard.`,
+          type: "system",
+        });
       }
 
-      // Delete old profile (it's now orphaned)
-      await supabase.from("profiles").delete().eq("id", oldProfileId);
-
-      toast.success("Profile berhasil diklaim! Data tournament Anda sudah terhubung.");
+      toast.success("Klaim dikirim. Data turnamen Anda akan terhubung setelah disetujui admin.");
       setClaimCandidates([]);
       setStep(2);
     } catch (err: any) {
-      toast.error(err.message || "Gagal klaim profile");
+      toast.error(err.message || "Gagal mengirim klaim");
     } finally {
       setClaiming(false);
     }

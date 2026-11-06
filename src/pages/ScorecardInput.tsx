@@ -123,7 +123,9 @@ const ScorecardInput = () => {
   useEffect(() => {
     if (!event || !eventId || !userId) return;
     if (event.status === "scheduled" || event.status === "ready") {
-      supabase.from("events").update({ status: "playing" }).eq("id", eventId);
+      // Players can't write to events directly (RLS); this RPC only moves
+      // scheduled/ready -> playing, and only for the event's contestants or managers.
+      (supabase.rpc as any)("mark_event_playing", { p_event_id: eventId });
     }
     const autoRegister = async () => {
       const { data: existing } = await supabase
@@ -207,8 +209,8 @@ const ScorecardInput = () => {
         // Finish round
         await supabase.from("rounds").update({ status: "done", finished_at: new Date().toISOString() }).eq("id", round.id);
         
-        // Finalize event — set to done
-        await supabase.from("events").update({ status: "done" }).eq("id", eventId!);
+        // The event is NOT finalized here: one player finishing must not close the
+        // event for everyone. The organizer finalizes via WinnerResultsDialog.
 
         // Update HCP
         const courseRating = (event?.courses as any)?.par ?? 72;

@@ -772,8 +772,8 @@ const EventDetail = () => {
     try {
       // Update HCP for this player only
       await invokeWithAuth("update-player-handicap", { event_id: id });
-      // Set status done
-      await supabase.from("events").update({ status: "done" }).eq("id", id);
+      // Event status is left to the organizer (WinnerResultsDialog), so one
+      // player finishing no longer closes the event for everyone.
       toast.success("Round finished! Your HCP has been updated.");
       queryClient.invalidateQueries({ queryKey: ["event", id] });
       refetchResults();
